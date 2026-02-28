@@ -4,10 +4,13 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "sourceMap": true,
+
     "module": "ES2022",
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
+
     "types": ["node"],
-    "lib": ["ES2022"]
+    "lib": ["ES2022"],
+    "skipLibCheck": true
   },
   "include": ["src/**/*"]
 }

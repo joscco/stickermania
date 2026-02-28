@@ -1,4 +1,8 @@
-import "./styles.css";
-import { renderApp } from "./ui/app";
+import { bootstrapApplication } from "@angular/platform-browser";
+import { provideRouter, withHashLocation } from "@angular/router";
+import { AppComponent } from "./app/app.component";
+import { routes } from "./app/app.routes";
 
-renderApp(document.getElementById("app"));
+bootstrapApplication(AppComponent, {
+  providers: [provideRouter(routes, withHashLocation())]
+}).catch((error) => console.error(error));

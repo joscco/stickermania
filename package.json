@@ -10,9 +10,11 @@
   "scripts": {
     "dev:back": "npm run build -w @birthday/shared && npm run dev -w @birthday/backend",
     "dev:front": "npm run dev -w @birthday/frontend",
-
     "build": "npm run build --workspaces --if-present",
     "start": "node apps/backend/dist/index.js --serve-static",
     "lint": "npm run lint --workspaces --if-present"
+  },
+  "dependencies": {
+    "ws": "^8.19.0"
   }
 }
