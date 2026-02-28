@@ -10,11 +10,12 @@
   "scripts": {
     "dev:back": "npm run build -w @birthday/shared && npm run dev -w @birthday/backend",
     "dev:front": "npm run dev -w @birthday/frontend",
-    "build": "npm run build --workspaces --if-present",
-    "start": "node apps/backend/dist/index.js --serve-static",
-    "lint": "npm run lint --workspaces --if-present"
+    "build:all": "npm run build -w @birthday/shared && npm run build -w @birthday/frontend && npm run build -w @birthday/backend",
+    "start:party": "npm run build:all && node apps/backend/dist/index.js --serve-static",
+    "start:party:admin": "npm run build:all && ADMIN_PASSWORD=master node apps/backend/dist/index.js --serve-static"
   },
   "dependencies": {
+    "gsap": "^3.14.2",
     "ws": "^8.19.0"
   }
 }

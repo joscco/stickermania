@@ -2,10 +2,10 @@ import WebSocket, { WebSocketServer } from "ws";
 import type http from "node:http";
 import crypto from "node:crypto";
 import type { ClientToServerMessage, ServerToClientMessage } from "@birthday/shared";
-import { handleMessage } from "./handleMessage";
-import type { BackendConfig } from "../config";
-import { saveWorldToDisk } from "../world/persistence";
-import { WorldStore } from "../world/worldStore";
+import { handleMessage } from "./handleMessage.js";
+import type { BackendConfig } from "../config.js";
+import { saveWorldToDisk } from "../world/persistence.js";
+import { WorldStore } from "../world/worldStore.js";
 
 function send(ws: WebSocket, message: ServerToClientMessage): void {
     ws.send(JSON.stringify(message));
@@ -15,6 +15,15 @@ function broadcastState(args: { wss: WebSocketServer; worldStore: WorldStore }):
     const message: ServerToClientMessage = { type: "state", state: args.worldStore.getState() };
     const payload: string = JSON.stringify(message);
 
+    for (const client of args.wss.clients) {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(payload);
+        }
+    }
+}
+
+function broadcast(args: { wss: WebSocketServer; message: ServerToClientMessage }): void {
+    const payload: string = JSON.stringify(args.message);
     for (const client of args.wss.clients) {
         if (client.readyState === WebSocket.OPEN) {
             client.send(payload);
@@ -34,6 +43,7 @@ export function attachWebSocketServer(args: {
     const wss = new WebSocketServer({ server: args.server, path: "/ws" });
 
     wss.on("connection", (ws) => {
+        let isAdminConnection: boolean = false;
         const clientId: string = crypto.randomUUID();
 
         send(ws, { type: "welcome", clientId, serverTime: Date.now() });
@@ -53,14 +63,28 @@ export function attachWebSocketServer(args: {
                 return;
             }
 
+            if (parsed.type === "join") {
+                const receivedAdminKey: string | undefined = parsed.adminKey;
+                if (receivedAdminKey && args.backendConfig.adminPassword) {
+                    if (receivedAdminKey === args.backendConfig.adminPassword) {
+                        isAdminConnection = true;
+                    }
+                }
+            }
+
             const result = handleMessage({
                 message: parsed,
                 worldStore: args.worldStore,
-                backendConfig: args.backendConfig
+                backendConfig: args.backendConfig,
+                isAdminConnection
             });
 
             for (const responseMessage of result.responseMessages) {
                 send(ws, responseMessage);
+            }
+
+            for (const broadcastMessage of result.broadcastMessages) {
+                broadcast({ wss, message: broadcastMessage });
             }
 
             if (result.didChangeState) {
@@ -68,6 +92,7 @@ export function attachWebSocketServer(args: {
                     persistPath: args.backendConfig.persistPath,
                     worldState: args.worldStore.getState()
                 });
+
                 broadcastState({ wss, worldStore: args.worldStore });
             }
         });

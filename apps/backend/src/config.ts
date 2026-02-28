@@ -4,6 +4,7 @@ export interface BackendConfig {
     gridHeight: number;
     persistPath: string;
     shouldServeStatic: boolean;
+    adminPassword: string | null;
 }
 
 function parseNumberEnv(value: string | undefined, fallbackValue: number): number {
@@ -21,19 +22,22 @@ function parseNumberEnv(value: string | undefined, fallbackValue: number): numbe
 
 export function loadBackendConfig(args: { argv: string[]; cwd: string }): BackendConfig {
     const port: number = parseNumberEnv(process.env.PORT, 3001);
-    const gridWidth: number = parseNumberEnv(process.env.GRID_WIDTH, 30);
-    const gridHeight: number = parseNumberEnv(process.env.GRID_HEIGHT, 20);
+    const gridWidth: number = parseNumberEnv(process.env.GRID_WIDTH, 22);
+    const gridHeight: number = parseNumberEnv(process.env.GRID_HEIGHT, 10);
 
     const persistPath: string =
         process.env.PERSIST_PATH ?? `${args.cwd}/world-state.json`;
 
     const shouldServeStatic: boolean = args.argv.includes("--serve-static");
 
+    const adminPassword: string | null = process.env.ADMIN_PASSWORD ?? null;
+
     return {
         port,
         gridWidth,
         gridHeight,
         persistPath,
-        shouldServeStatic
+        shouldServeStatic,
+        adminPassword
     };
 }

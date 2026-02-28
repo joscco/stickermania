@@ -118,7 +118,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
   }
 
   private buildDefaultWebsocketUrl(): string {
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    return `${protocol}://${window.location.hostname}:3001/ws`;
+    const protocol: string = window.location.protocol === "https:" ? "wss" : "ws";
+    return `${protocol}://${window.location.host}/ws`;
   }
 }

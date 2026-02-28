@@ -1,0 +1,15 @@
+<div
+  class="fixed z-40 flex w-[min(340px,90vw)] flex-col gap-2"
+  [style.right]="'calc(env(safe-area-inset-right) + 0.75rem)'"
+  [style.top]="'calc(env(safe-area-inset-top) + 0.75rem)'"
+>
+  @for (event of displayedEvents(); track event.id) {
+    <div
+      #toast
+      class="rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-xs text-slate-200 backdrop-blur"
+      [attr.data-id]="event.id"
+    >
+      {{ event.text }}
+    </div>
+  }
+</div>

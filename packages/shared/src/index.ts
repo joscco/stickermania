@@ -40,17 +40,18 @@ export interface WorldState {
 export type ClientKind = "player" | "board";
 
 export type ClientToServerMessage =
-  | { type: "join"; kind: ClientKind }
+  | { type: "join"; kind: ClientKind; adminKey?: string }
   | { type: "place"; x: number; y: number; objectType: ObjectType }
   | { type: "remove"; x: number; y: number }
   | { type: "reset" }
   | { type: "ping"; t: number };
 
 export type ServerToClientMessage =
-  | { type: "welcome"; clientId: string; serverTime: number }
-  | { type: "state"; state: WorldState }
-  | { type: "error"; message: string }
-  | { type: "pong"; t: number; serverTime: number };
+    | { type: "welcome"; clientId: string; serverTime: number }
+    | { type: "state"; state: WorldState }
+    | { type: "error"; message: string }
+    | { type: "pong"; t: number; serverTime: number }
+    | { type: "event"; text: string; createdAt: number };
 
 export function toCellKey(x: number, y: number): CellKey {
   return `${x},${y}`;

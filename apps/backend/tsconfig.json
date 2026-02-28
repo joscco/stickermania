@@ -5,8 +5,8 @@
     "rootDir": "./src",
     "sourceMap": true,
 
-    "module": "ES2022",
-    "moduleResolution": "Bundler",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
 
     "types": ["node"],
     "lib": ["ES2022"],

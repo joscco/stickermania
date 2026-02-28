@@ -1,32 +1,56 @@
-<div class="min-h-screen bg-slate-950 text-slate-100">
+<div class="min-h-screen bg-slate-950 text-slate-100 relative">
   <div class="mx-auto w-full max-w-6xl px-4 py-4">
+    <!-- Topbar -->
     <div class="rounded-2xl border border-white/10 bg-white/5 shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
       <div class="flex items-center justify-between gap-3 px-4 py-3">
         <div class="flex items-center gap-2 text-sm text-slate-300">
           <span class="text-base font-semibold text-slate-100">Board</span>
           <span class="rounded-full border border-white/15 bg-black/20 px-3 py-1 text-xs">Beamer view</span>
         </div>
-        <div class="rounded-full border border-white/15 bg-black/20 px-3 py-1 text-xs text-slate-300">
-          <span>{{ store.connectionStatus() }}</span>
-          @if (store.revision() !== null) {
-            <span>· rev {{ store.revision() }}</span>
-          }
-          @if (store.lastError()) {
-            <span>· {{ store.lastError() }}</span>
-          }
+
+        <div class="flex items-center gap-2">
+          <button
+            class="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-slate-100 hover:bg-rose-500/15 active:translate-y-px disabled:opacity-40"
+            (click)="resetWorld()"
+            [disabled]="!canReset()"
+            title="Reset requires admin"
+          >
+            Reset
+          </button>
+          <div class="rounded-full border border-white/15 bg-black/20 px-3 py-1 text-xs text-slate-300">
+            <span>{{ store.connectionStatus() }}</span>
+            @if (store.revision() !== null) {
+              <span>· rev {{ store.revision() }}</span>
+            }
+            @if (store.lastError()) {
+              <span>· {{ store.lastError() }}</span>
+            }
+          </div>
         </div>
       </div>
     </div>
-    <div class="mt-3 rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
-      <div class="grid select-none gap-1" [style.gridTemplateColumns]="gridTemplateColumns()">
-        @for (cell of cells(); track cell.x) {
-          <div class="grid h-11 w-11 place-items-center rounded-lg border border-white/10 bg-black/20 text-xl"
-            [class.bg-white/5]="cell.emoji !== ''"
-            [class.border-white/15]="cell.emoji !== ''">
+
+    <!-- Grid + QR overlay wrapper -->
+    <div
+      class="relative mt-3 rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.35)]"
+    >
+      <!-- Grid -->
+      <div class="grid select-none gap-1" [ngStyle]="{ gridTemplateColumns: gridTemplateColumns() }">
+        @for (cell of cells(); track cellKey(cell)) {
+          <div
+            class="grid h-11 w-11 place-items-center rounded-lg border text-xl"
+            [ngClass]="{
+              'bg-black/20': cell.emoji === '',
+              'bg-white/5': cell.emoji !== '',
+              'border-white/10': cell.emoji === '',
+              'border-white/15': cell.emoji !== ''
+            }"
+          >
             {{ cell.emoji }}
           </div>
         }
       </div>
+
       @if (!store.world()) {
         <div class="mt-3 text-xs text-slate-400">
           Waiting for world…
@@ -34,5 +58,19 @@
       }
     </div>
   </div>
-</div>
 
+  <!-- Subtle corner QR -->
+  <app-player-qr-card
+    [playerQrDataUrl]="playerQrDataUrl()"
+    [playerUrl]="playerUrl()"
+    [copyHint]="copyHint()"
+    class="absolute bottom-3 right-3 flex items-end gap-2"
+  ></app-player-qr-card>
+
+  <app-admin-overlay
+    [visible]="showAdminOverlay()"
+    [errorText]="adminErrorText()"
+    (submitAdminKey)="onAdminKeySubmitted($event)"
+  ></app-admin-overlay>
+</div>
+<app-event-toasts [events]="events()"></app-event-toasts>
