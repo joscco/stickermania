@@ -1,0 +1,37 @@
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Node / package managers
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Workspace build outputs
+apps/frontend/dist/
+apps/backend/dist/
+packages/shared/dist/
+
+# Vite
+apps/frontend/.vite/
+.vite/
+
+# TypeScript caches
+*.tsbuildinfo
+
+# Local runtime data
+world-state.json
+
+# Env files
+.env
+.env.*.local
