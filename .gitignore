@@ -37,4 +37,4 @@ world-state.json
 .env.*.local
 
 # WLAN-Konfiguration
-apps/frontend/public/assets/wlan-config.json
+**/wlan-config.json
