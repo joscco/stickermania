@@ -1,15 +1,29 @@
 import { Injectable, computed, signal } from "@angular/core";
-import type { WorldState } from "@birthday/shared";
+import type { GameState, Player, Drawing } from "@birthday/shared";
 
 export type ConnectionStatus = "connecting" | "connected" | "disconnected";
 
 @Injectable({ providedIn: "root" })
 export class WorldStore {
   public readonly connectionStatus = signal<ConnectionStatus>("connecting");
-  public readonly world = signal<WorldState | null>(null);
+  public readonly gameState = signal<GameState | null>(null);
   public readonly lastError = signal<string | null>(null);
 
-  public readonly revision = computed(() => this.world()?.revision ?? null);
+  public readonly revision = computed(() => this.gameState()?.revision ?? null);
+
+  public readonly players = computed<Record<string, Player>>(() => this.gameState()?.players ?? {});
+  public readonly drawings = computed<Record<string, Drawing>>(() => this.gameState()?.drawings ?? {});
+
+  public readonly leaderboard = computed<Player[]>(() => {
+    const players = Object.values(this.players());
+    return players
+      .filter(p => p.name.length > 0)
+      .sort((a, b) => b.score - a.score);
+  });
+
+  public readonly drawingsList = computed<Drawing[]>(() => {
+    return Object.values(this.drawings()).sort((a, b) => a.placedAt - b.placedAt);
+  });
 
   public setConnected(): void {
     this.connectionStatus.set("connected");
@@ -28,8 +42,9 @@ export class WorldStore {
     this.lastError.set(message);
   }
 
-  public setWorld(world: WorldState): void {
-    this.world.set(world);
+  public setGameState(state: GameState): void {
+    this.gameState.set(state);
     this.lastError.set(null);
   }
+
 }

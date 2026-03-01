@@ -1,15 +1,41 @@
-import { Injectable, computed, signal } from "@angular/core";
-import type { ChallengeStateDto } from "./api.service";
+import { Injectable, signal } from "@angular/core";
+import type { PlayerMode, PlayerTask } from "@birthday/shared";
 
 @Injectable({ providedIn: "root" })
-export class ChallengeStore {
-  public readonly state = signal<ChallengeStateDto | null>(null);
+export class GameSessionStore {
+  public readonly playerId = signal<string | null>(null);
+  public readonly clientId = signal<string | null>(null);
+  public readonly playerName = signal<string>("");
+  public readonly currentMode = signal<PlayerMode>("LOBBY");
+  public readonly currentTask = signal<PlayerTask | null>(null);
 
-  public readonly revision = computed(() => this.state()?.revision ?? null);
-  public readonly activeChallenge = computed(() => this.state()?.activeChallenge ?? null);
-  public readonly activeSubmission = computed(() => this.state()?.activeSubmission ?? null);
+  /** Toast-like feedback messages */
+  public readonly feedback = signal<{ text: string; type: "success" | "error" } | null>(null);
 
-  public setState(next: ChallengeStateDto): void {
-    this.state.set(next);
+  public setJoined(args: { playerId: string; clientId: string }): void {
+    this.playerId.set(args.playerId);
+    this.clientId.set(args.clientId);
+  }
+
+  public setTask(task: PlayerTask): void {
+    this.currentTask.set(task);
+    this.currentMode.set(task.mode);
+  }
+
+  public clearTask(): void {
+    this.currentTask.set(null);
+    this.currentMode.set("IDLE");
+  }
+
+  public setLobby(): void {
+    this.currentMode.set("LOBBY");
+    this.currentTask.set(null);
+  }
+
+  public showFeedback(text: string, type: "success" | "error"): void {
+    this.feedback.set({ text, type });
+    setTimeout(() => {
+      this.feedback.set(null);
+    }, 2500);
   }
 }

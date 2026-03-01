@@ -3,21 +3,34 @@
   [style.width.px]="sceneWidthPx * viewScale"
   [style.height.px]="sceneHeightPx * viewScale"
 >
-  <div class="absolute inset-0 rounded-2xl border border-white/10 bg-white/5"></div>
+  <!-- Background with subtle grid -->
+  <div class="absolute inset-0 rounded-2xl border border-black/[0.06] bg-stone-50"
+    style="background-image: radial-gradient(circle, #d6d3d1 0.8px, transparent 0.8px); background-size: 40px 40px;">
+  </div>
 
-  @for (placement of placementsSorted(); track placement.id) {
+  @for (drawing of drawingsSorted(); track drawing.id) {
     <div
-      class="absolute grid place-items-center rounded-xl border border-white/10 bg-black/25"
-      [style.width.px]="baseStickerSizePx * viewScale"
-      [style.height.px]="baseStickerSizePx * viewScale"
-      [style.fontSize.px]="baseFontSizePx * viewScale"
-      [style.left.%]="placement.x * 100"
-      [style.top.%]="placement.y * 100"
-      [style.zIndex]="placement.zIndex"
-      [style.transform]="'translate(-50%, -50%) rotate(' + placement.rotationDeg + 'deg) scale(' + placement.scale + ')'"
-      [style.transformOrigin]="'center'"
+      class="absolute cursor-pointer transition-transform duration-150 hover:scale-110"
+      [class.ring-4]="highlightDrawingId === drawing.id"
+      [class.ring-amber-400]="highlightDrawingId === drawing.id"
+      [class.opacity-50]="drawing.foundBy !== null && highlightDrawingId !== drawing.id"
+      [style.left.%]="drawing.x * 100"
+      [style.top.%]="drawing.y * 100"
+      [style.width.px]="drawing.width * sceneWidthPx * viewScale"
+      [style.height.px]="drawing.height * sceneHeightPx * viewScale"
+      [style.transform]="'translate(-50%, -50%)'"
+      [style.zIndex]="drawing.foundBy ? 1 : 2"
+      (click)="handleDrawingClick(drawing.id)"
     >
-      {{ emojiForType(placement.type) }}
+      <img
+        class="w-full h-full object-contain rounded-xl border border-black/[0.06] bg-white/90 shadow-sm p-1"
+        [src]="drawing.imageDataUrl"
+        [alt]="drawing.prompt"
+        draggable="false"
+      />
+      @if (drawing.foundBy) {
+        <div class="absolute -top-1 -right-1 text-xs bg-emerald-500 text-white rounded-full w-5 h-5 grid place-items-center shadow">✓</div>
+      }
     </div>
   }
 </div>

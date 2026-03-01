@@ -1,17 +1,20 @@
-import type { WorldState } from "@birthday/shared";
+import type { GameState } from "@birthday/shared";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function isWorldStateLike(value: unknown): value is WorldState {
+export function isGameStateLike(value: unknown): value is GameState {
     if (!isRecord(value)) {
         return false;
     }
 
     const maybeState = value as Record<string, unknown>;
 
-    if (!isRecord(maybeState["placements"])) {
+    if (!isRecord(maybeState["players"])) {
+        return false;
+    }
+    if (!isRecord(maybeState["drawings"])) {
         return false;
     }
     if (typeof maybeState["revision"] !== "number") {
@@ -24,15 +27,16 @@ export function isWorldStateLike(value: unknown): value is WorldState {
     return true;
 }
 
-export function sanitizeWorldState(args: { candidate: unknown; fallback: WorldState }): WorldState {
-    if (!isWorldStateLike(args.candidate)) {
+export function sanitizeGameState(args: { candidate: unknown; fallback: GameState }): GameState {
+    if (!isGameStateLike(args.candidate)) {
         return args.fallback;
     }
 
     const maybeState = args.candidate as any;
 
     return {
-        placements: maybeState.placements,
+        players: maybeState.players ?? {},
+        drawings: maybeState.drawings ?? {},
         revision: typeof maybeState.revision === "number" ? maybeState.revision : args.fallback.revision,
         updatedAt: typeof maybeState.updatedAt === "number" ? maybeState.updatedAt : Date.now()
     };

@@ -1,188 +1,279 @@
-<div class="h-[100dvh] overflow-hidden bg-slate-950 text-slate-100 overscroll-none">
+<div class="h-dvh overflow-hidden bg-stone-100 text-stone-900 overscroll-none flex flex-col">
+
   <!-- Top bar -->
-  <div class="sticky top-0 z-30 bg-slate-950/80 backdrop-blur">
-    <div class="mx-auto w-full max-w-6xl px-4 py-3">
-      <div class="flex items-center justify-between gap-3">
+  <div class="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-black/[0.06]">
+    <div class="mx-auto w-full max-w-lg px-3 py-2">
+      <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2">
-          <div class="text-base font-semibold tracking-tight">Player</div>
-
-          <div class="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-xs text-slate-300">
-            {{ store.connectionStatus() }}
-            @if (store.lastError()) { · {{ store.lastError() }} }
-          </div>
-
-          @if (challengeStore.activeChallenge()) {
-            <div class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-200">
-              Challenge aktiv
-            </div>
+          <span class="text-sm font-semibold">🎨 Zeichne & Suche</span>
+          @if (session.playerName()) {
+            <span class="text-xs text-stone-400">{{ session.playerName() }}</span>
           }
         </div>
-
         <div class="flex items-center gap-2">
-          <button
-            class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm hover:bg-white/10 active:translate-y-px"
-            (click)="zoomOut()"
-            aria-label="Zoom out"
-          >
-            −
-          </button>
+          <span class="text-xs font-medium text-amber-600">⭐ {{ myScore() }}</span>
+          @if (session.currentMode() !== 'LOBBY') {
+            <span class="text-[10px] px-2 py-0.5 rounded-full"
+              [class.bg-emerald-100]="session.currentMode() === 'DRAW'"
+              [class.text-emerald-700]="session.currentMode() === 'DRAW'"
+              [class.bg-blue-100]="session.currentMode() === 'SEARCH'"
+              [class.text-blue-700]="session.currentMode() === 'SEARCH'"
+              [class.bg-stone-100]="session.currentMode() === 'IDLE'"
+              [class.text-stone-500]="session.currentMode() === 'IDLE'"
+            >
+              {{ session.currentMode() === 'DRAW' ? '🖌 Zeichnen' : session.currentMode() === 'SEARCH' ? '🔍 Suchen' : '⏳ Warten' }}
+            </span>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main content area -->
+  <div class="flex-1 overflow-hidden">
+
+    <!-- ════ LOBBY: Name Entry ════ -->
+    @if (session.currentMode() === 'LOBBY' && !isNameSet) {
+      <div class="h-full flex items-center justify-center p-4">
+        <div class="w-full max-w-sm">
+          <div class="text-center mb-6">
+            <div class="text-4xl mb-2">🎂</div>
+            <h1 class="text-xl font-bold">Willkommen!</h1>
+            <p class="text-sm text-stone-500 mt-1">Gib deinen Namen ein, um mitzuspielen</p>
+          </div>
+
+          <input
+            class="w-full rounded-2xl border border-black/[0.06] bg-white px-4 py-3 text-center text-lg outline-none focus:border-stone-400"
+            placeholder="Dein Name"
+            [value]="nameInput()"
+            (input)="nameInput.set(($any($event.target).value ?? ''))"
+            (keydown.enter)="submitName()"
+            maxlength="24"
+          />
 
           <button
-            class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm hover:bg-white/10 active:translate-y-px"
-            (click)="zoomIn()"
-            aria-label="Zoom in"
+            class="mt-3 w-full rounded-2xl bg-stone-900 text-white px-4 py-3 text-sm font-medium hover:bg-stone-800 active:translate-y-px disabled:opacity-40"
+            [disabled]="nameInput().trim().length === 0"
+            (click)="submitName()"
           >
-            +
-          </button>
-
-          <button
-            class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm hover:bg-white/10 active:translate-y-px"
-            (click)="centerViewport()"
-          >
-            Center
-          </button>
-
-          <button
-            class="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm hover:bg-rose-500/15 active:translate-y-px"
-            (click)="resetWorld()"
-          >
-            Reset
+            Weiter →
           </button>
         </div>
       </div>
+    }
 
-      <!-- Hand -->
-      <div class="mt-3 flex items-center justify-between gap-3">
-        <div class="flex gap-2">
-          @for (slot of handStore.hand(); track slot.id) {
+    <!-- ════ LOBBY: Avatar Drawing ════ -->
+    @if (session.currentMode() === 'LOBBY' && isNameSet && !hasAvatar) {
+      <div class="h-full flex flex-col items-center p-4">
+        <div class="text-center mb-3">
+          <h2 class="text-lg font-bold">Zeichne deinen Avatar</h2>
+          <p class="text-xs text-stone-500">{{ session.playerName() }}, mal dich selbst! 🎨</p>
+        </div>
+
+        <div class="relative w-[200px] h-[200px] rounded-2xl border-2 border-black/[0.06] overflow-hidden bg-white">
+          <canvas
+            #avatarCanvas
+            class="w-full h-full"
+            style="touch-action: none;"
+            (pointerdown)="onCanvasPointerDown($event, 'avatar')"
+            (pointermove)="onCanvasPointerMove($event, 'avatar')"
+            (pointerup)="onCanvasPointerUp($event)"
+            (pointercancel)="onCanvasPointerUp($event)"
+          ></canvas>
+        </div>
+
+        <!-- Color picker -->
+        <div class="flex gap-2 mt-3">
+          @for (color of colors; track color) {
             <button
-              class="flex items-center gap-2 rounded-2xl border px-3 py-2 text-left transition-colors"
-              [ngClass]="{
-                'border-cyan-300/60 bg-cyan-300/10': handStore.getActiveSlot().id === slot.id,
-                'border-white/10 bg-black/20 hover:bg-white/5': handStore.getActiveSlot().id !== slot.id
-              }"
-              (click)="selectHandIndex($index)"
-              title="Select this sticker"
-            >
-              <span class="text-xl">{{ emojiForType(slot.type) }}</span>
-              <span class="text-sm font-semibold">{{ slot.type }}</span>
-            </button>
+              class="w-7 h-7 rounded-full border-2 transition-transform"
+              [style.background]="color"
+              [class.border-stone-900]="currentColor() === color"
+              [class.scale-110]="currentColor() === color"
+              [class.border-black/10]="currentColor() !== color"
+              (click)="selectColor(color)"
+            ></button>
           }
         </div>
+
+        <div class="flex gap-2 mt-3">
+          <button
+            class="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm hover:bg-stone-50"
+            (click)="clearCanvas('avatar')"
+          >
+            Löschen
+          </button>
+          <button
+            class="rounded-xl bg-stone-900 text-white px-6 py-2 text-sm font-medium hover:bg-stone-800 active:translate-y-px"
+            (click)="submitAvatar()"
+          >
+            Fertig ✓
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- ════ IDLE: Waiting for task ════ -->
+    @if (session.currentMode() === 'IDLE') {
+      <div class="h-full flex flex-col items-center justify-center p-4">
+        <div class="text-4xl mb-3 animate-bounce">⏳</div>
+        <h2 class="text-lg font-semibold">Warte auf Aufgabe…</h2>
+        <p class="text-xs text-stone-500 mt-1">Dein Score: {{ myScore() }} Punkte</p>
 
         <button
-          class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm hover:bg-white/10 active:translate-y-px"
-          (click)="reshuffleHand()"
-          title="New stickers"
+          class="mt-4 rounded-xl bg-stone-900 text-white px-6 py-2.5 text-sm font-medium hover:bg-stone-800 active:translate-y-px"
+          (click)="requestTask()"
         >
-          ↻ Hand
+          Neue Aufgabe anfordern
         </button>
+
+        <!-- Mini leaderboard -->
+        @if (leaderboard().length > 0) {
+          <div class="mt-6 w-full max-w-xs">
+            <div class="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">Highscore</div>
+            @for (player of leaderboard().slice(0, 5); track player.id; let i = $index) {
+              <div class="flex items-center gap-2 py-1.5 px-2 rounded-lg" [class.bg-amber-50]="i === 0">
+                <span class="text-sm w-5 text-center">{{ i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1) + '.' }}</span>
+                @if (player.avatarDataUrl) {
+                  <img class="w-6 h-6 rounded-full border border-black/[0.06]" [src]="player.avatarDataUrl" />
+                }
+                <span class="text-sm flex-1 truncate">{{ player.name }}</span>
+                <span class="text-xs font-medium text-amber-600">{{ player.score }}</span>
+              </div>
+            }
+          </div>
+        }
       </div>
+    }
 
-      <!-- Challenge panel -->
-      @if (challengeStore.activeChallenge()) {
-        <div class="mt-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <div class="text-sm font-semibold">Challenge</div>
-              <div class="text-slate-200">{{ challengeStore.activeChallenge()!.text }}</div>
-              <div class="mt-1 text-[11px] text-slate-400">Du: {{ voterIdShort() }}</div>
-            </div>
+    <!-- ════ DRAW MODE ════ -->
+    @if (session.currentMode() === 'DRAW') {
+      <div class="h-full flex flex-col">
+        <!-- Prompt -->
+        <div class="text-center py-3 px-4">
+          <div class="text-xs text-stone-400 uppercase tracking-wider">Zeichne:</div>
+          <div class="text-2xl font-bold mt-0.5">{{ session.currentTask()?.prompt }}</div>
+        </div>
 
+        <!-- Canvas -->
+        <div class="flex-1 mx-3 mb-2 rounded-2xl border-2 border-black/[0.06] overflow-hidden bg-white relative">
+          <canvas
+            #drawCanvas
+            class="w-full h-full"
+            style="touch-action: none;"
+            (pointerdown)="onCanvasPointerDown($event, 'draw')"
+            (pointermove)="onCanvasPointerMove($event, 'draw')"
+            (pointerup)="onCanvasPointerUp($event)"
+            (pointercancel)="onCanvasPointerUp($event)"
+          ></canvas>
+        </div>
+
+        <!-- Tools -->
+        <div class="px-3 pb-3 space-y-2">
+          <!-- Colors -->
+          <div class="flex items-center justify-center gap-2">
+            @for (color of colors; track color) {
+              <button
+                class="w-8 h-8 rounded-full border-2 transition-transform"
+                [style.background]="color"
+                [class.border-stone-900]="currentColor() === color"
+                [class.scale-110]="currentColor() === color"
+                [class.border-black/10]="currentColor() !== color"
+                (click)="selectColor(color)"
+              ></button>
+            }
+          </div>
+
+          <!-- Brush size -->
+          <div class="flex items-center justify-center gap-3">
+            <span class="text-xs text-stone-400">Dünn</span>
+            <input
+              type="range"
+              min="2"
+              max="16"
+              [value]="brushSize()"
+              (input)="brushSize.set(+($any($event.target).value))"
+              class="w-32"
+            />
+            <span class="text-xs text-stone-400">Dick</span>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex gap-2">
             <button
-              class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm hover:bg-emerald-500/15 active:translate-y-px disabled:opacity-40"
-              (click)="submitForVote()"
-              [disabled]="challengeStore.activeSubmission()?.status === 'OPEN'"
-              title="Submit current scene for vote"
+              class="flex-1 rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm hover:bg-stone-50"
+              (click)="clearCanvas('draw')"
             >
-              Einreichen
+              🗑 Löschen
+            </button>
+            <button
+              class="flex-1 rounded-xl bg-emerald-600 text-white px-3 py-2.5 text-sm font-medium hover:bg-emerald-700 active:translate-y-px"
+              (click)="submitDrawing()"
+            >
+              ✓ Fertig
             </button>
           </div>
         </div>
-      }
-
-      <div class="mt-2 text-xs text-slate-400">
-        Drag = pan · Pinch / wheel / +/- = zoom · Tap = place
       </div>
-    </div>
-  </div>
+    }
 
-  <!-- Viewport -->
-  <div class="mx-auto w-full max-w-6xl px-4 py-4">
-    <div
-      #viewport
-      class="relative h-[calc(100dvh-310px)] overflow-hidden rounded-2xl bg-black/20"
-      style="touch-action: none;"
-      (pointerdown)="onViewportPointerDown($event)"
-      (pointermove)="onViewportPointerMove($event)"
-      (pointerup)="onViewportPointerUp($event)"
-      (pointercancel)="onViewportPointerUp($event)"
-      (wheel)="onViewportWheel($event)"
-    >
-      <div class="absolute left-0 top-0 origin-top-left" [style.transform]="contentTransform()">
-        <app-scene-renderer
-          [world]="store.world()"
-          [sceneWidthPx]="sceneWidthPx"
-          [sceneHeightPx]="sceneHeightPx"
-          [viewScale]="viewportController.scale()"
-        ></app-scene-renderer>
-      </div>
-
-      @if (!store.world()) {
-        <div class="absolute left-3 top-3 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-slate-300 backdrop-blur">
-          Waiting for world…
-        </div>
-      }
-    </div>
-  </div>
-
-  <!-- Vote overlay -->
-  @if (challengeStore.activeSubmission() && challengeStore.activeSubmission()!.status === 'OPEN') {
-    <div class="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">
-      <div class="w-full max-w-xl rounded-2xl border border-white/10 bg-slate-950 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.6)]">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <div class="text-base font-semibold">Vote</div>
-            <div class="text-xs text-slate-400">Gilt das?</div>
-          </div>
-
-          <div class="text-xs text-slate-300">
-            ✅ {{ challengeStore.activeSubmission()!.yesVotes }} · ❌ {{ challengeStore.activeSubmission()!.noVotes }}
-          </div>
+    <!-- ════ SEARCH MODE ════ -->
+    @if (session.currentMode() === 'SEARCH') {
+      <div class="h-full flex flex-col">
+        <!-- Search prompt -->
+        <div class="text-center py-2 px-4 bg-blue-50 border-b border-blue-100">
+          <div class="text-xs text-blue-500 uppercase tracking-wider">Finde auf der Karte:</div>
+          <div class="text-lg font-bold text-blue-800">🔍 {{ currentSearchTask?.prompt }}</div>
+          <div class="text-[10px] text-blue-400 mt-0.5">von {{ currentSearchTask?.artistName }} · Tippe auf die richtige Zeichnung</div>
         </div>
 
-        <div class="mt-3 rounded-2xl border border-white/10 bg-black/20 p-2 overflow-auto">
-          @if (challengeStore.activeSubmission()!.screenshotDataUrl) {
-            <img
-              class="w-full rounded-2xl border border-white/10 bg-black/20"
-              [src]="challengeStore.activeSubmission()!.screenshotDataUrl!"
-              alt="Submission screenshot"
-            />
-          } @else {
+        <!-- Viewport with scene -->
+        <div class="flex-1 relative overflow-hidden"
+          #viewport
+          style="touch-action: none;"
+          (pointerdown)="onViewportPointerDown($event)"
+          (pointermove)="onViewportPointerMove($event)"
+          (pointerup)="onViewportPointerUp($event)"
+          (pointercancel)="onViewportPointerUp($event)"
+          (wheel)="onViewportWheel($event)"
+        >
+          <div class="absolute left-0 top-0 origin-top-left" [style.transform]="contentTransform()">
             <app-scene-renderer
-              [world]="challengeStore.activeSubmission()!.snapshotWorld"
-              [sceneWidthPx]="1000"
-              [sceneHeightPx]="700"
-              [viewScale]="0.6"
+              class="block"
+              [gameState]="store.gameState()"
+              [sceneWidthPx]="sceneWidthPx"
+              [sceneHeightPx]="sceneHeightPx"
+              [viewScale]="viewportController.scale()"
+              [onDrawingTapped]="handleDrawingTapped"
             ></app-scene-renderer>
-          }
+          </div>
         </div>
 
-        <div class="mt-3 flex gap-2">
-          <button
-            class="flex-1 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm hover:bg-emerald-500/15"
-            (click)="castVote(true)"
-          >
-            ✅ Ja
-          </button>
-          <button
-            class="flex-1 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm hover:bg-rose-500/15"
-            (click)="castVote(false)"
-          >
-            ❌ Nein
-          </button>
-        </div>
+        <!-- Search feedback overlay -->
+        @if (searchFeedback()) {
+          <div class="absolute inset-x-0 top-1/3 z-50 flex justify-center pointer-events-none">
+            <div class="rounded-2xl px-6 py-4 text-lg font-bold shadow-xl"
+              [class.bg-emerald-500]="searchFeedback()!.correct"
+              [class.text-white]="searchFeedback()!.correct"
+              [class.bg-red-500]="!searchFeedback()!.correct"
+              [class.text-white]="!searchFeedback()!.correct"
+            >
+              {{ searchFeedback()!.text }}
+            </div>
+          </div>
+        }
       </div>
+    }
+  </div>
+
+  <!-- Feedback toast -->
+  @if (session.feedback()) {
+    <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 rounded-xl px-4 py-2 text-sm font-medium shadow-lg"
+      [class.bg-emerald-500]="session.feedback()!.type === 'success'"
+      [class.text-white]="true"
+      [class.bg-red-500]="session.feedback()!.type === 'error'"
+    >
+      {{ session.feedback()!.text }}
     </div>
   }
 </div>

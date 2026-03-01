@@ -1,6 +1,6 @@
 import { CommonModule } from "@angular/common";
 import { Component, Input } from "@angular/core";
-import { OBJECT_TYPES, type ObjectType, type StickerPlacement, type WorldState } from "@birthday/shared";
+import type { GameState, Drawing } from "@birthday/shared";
 
 @Component({
   selector: "app-scene-renderer",
@@ -10,32 +10,33 @@ import { OBJECT_TYPES, type ObjectType, type StickerPlacement, type WorldState }
 })
 export class SceneRendererComponent {
   @Input({ required: true })
-  public world: WorldState | null = null;
+  public gameState: GameState | null = null;
 
   @Input()
-  public sceneWidthPx: number = 1000;
+  public sceneWidthPx: number = 1600;
 
   @Input()
-  public sceneHeightPx: number = 700;
+  public sceneHeightPx: number = 900;
 
   @Input()
   public viewScale: number = 1;
 
   @Input()
-  public baseStickerSizePx: number = 40;
+  public highlightDrawingId: string | null = null;
 
   @Input()
-  public baseFontSizePx: number = 18;
+  public onDrawingTapped: ((drawingId: string) => void) | null = null;
 
-  public placementsSorted(): StickerPlacement[] {
-    if (!this.world) {
+  public drawingsSorted(): Drawing[] {
+    if (!this.gameState) {
       return [];
     }
-    return Object.values(this.world.placements).sort((a, b) => a.zIndex - b.zIndex);
+    return Object.values(this.gameState.drawings).sort((a, b) => a.placedAt - b.placedAt);
   }
 
-  public emojiForType(objectType: ObjectType): string {
-    const found = OBJECT_TYPES.find((entry) => entry.type === objectType);
-    return found?.emoji ?? "❓";
+  public handleDrawingClick(drawingId: string): void {
+    if (this.onDrawingTapped) {
+      this.onDrawingTapped(drawingId);
+    }
   }
 }

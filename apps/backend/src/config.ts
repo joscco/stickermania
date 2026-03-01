@@ -1,7 +1,7 @@
 export interface BackendConfig {
     port: number;
-    gridWidth: number;
-    gridHeight: number;
+    fieldWidth: number;
+    fieldHeight: number;
     persistPath: string;
     shouldServeStatic: boolean;
     adminPassword: string | null;
@@ -22,8 +22,8 @@ function parseNumberEnv(value: string | undefined, fallbackValue: number): numbe
 
 export function loadBackendConfig(args: { argv: string[]; cwd: string }): BackendConfig {
     const port: number = parseNumberEnv(process.env.PORT, 3001);
-    const gridWidth: number = parseNumberEnv(process.env.GRID_WIDTH, 22);
-    const gridHeight: number = parseNumberEnv(process.env.GRID_HEIGHT, 10);
+    const fieldWidth: number = parseNumberEnv(process.env.FIELD_WIDTH, 1600);
+    const fieldHeight: number = parseNumberEnv(process.env.FIELD_HEIGHT, 900);
 
     const persistPath: string =
         process.env.PERSIST_PATH ?? `${args.cwd}/world-state.json`;
@@ -34,8 +34,8 @@ export function loadBackendConfig(args: { argv: string[]; cwd: string }): Backen
 
     return {
         port,
-        gridWidth,
-        gridHeight,
+        fieldWidth,
+        fieldHeight,
         persistPath,
         shouldServeStatic,
         adminPassword

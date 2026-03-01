@@ -1,27 +1,22 @@
-export interface ChallengeState {
-    revision: number;
-    activeChallenge: null | {
-        id: string;
-        text: string;
-        endsAt: number;
-        createdAt: number;
-    };
-
-    activeSubmission: null | {
-        screenshotDataUrl?: string | null;
-        id: string;
-        challengeId: string;
-        createdAt: number;
-        endsAt: number;
-        snapshotWorld: any; // we keep it simple; validated on load
-        yesVotes: number;
-        noVotes: number;
-        voters: Record<string, true>; // voterId -> true
-        status: "OPEN" | "ACCEPTED" | "REJECTED";
-    };
-}
+import type { GameState } from "@birthday/shared";
 
 export interface PersistedState {
-    world: any;
-    challenge: ChallengeState;
+  game: GameState;
+}
+
+/** Per-player session tracked on the server */
+export interface PlayerSession {
+  playerId: string;
+  clientId: string;
+  kind: "player" | "board";
+  /** The prompt the player is currently drawing */
+  currentDrawPrompt: string | null;
+  /** The drawingId the player is currently searching for */
+  currentSearchDrawingId: string | null;
+  /** Prompts this player has already drawn (avoid repeats) */
+  usedDrawPrompts: Set<string>;
+  /** DrawingIds this player has already searched for */
+  usedSearchIds: Set<string>;
+  /** Whether the player alternates: last was "DRAW" or "SEARCH" */
+  lastTaskMode: "DRAW" | "SEARCH" | null;
 }

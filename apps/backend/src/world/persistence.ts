@@ -1,28 +1,31 @@
 import fs from "node:fs";
-import type { WorldState } from "@birthday/shared";
-import { sanitizeWorldState } from "./validation.js";
+import type { GameState } from "@birthday/shared";
+import { sanitizeGameState } from "./validation.js";
 
-export function loadWorldFromDisk(args: {
+export function loadGameFromDisk(args: {
     persistPath: string;
-    createEmptyWorld: () => WorldState;
-}): WorldState {
+    createEmpty: () => GameState;
+}): GameState {
     try {
         if (!fs.existsSync(args.persistPath)) {
-            return args.createEmptyWorld();
+            return args.createEmpty();
         }
 
         const raw: string = fs.readFileSync(args.persistPath, "utf-8");
         const parsed: unknown = JSON.parse(raw);
 
-        return sanitizeWorldState({ candidate: parsed, fallback: args.createEmptyWorld() });
+        // Support both old format ({world:..., challenge:...}) and new ({game:...})
+        const candidate = (parsed as any)?.game ?? parsed;
+
+        return sanitizeGameState({ candidate, fallback: args.createEmpty() });
     } catch {
-        return args.createEmptyWorld();
+        return args.createEmpty();
     }
 }
 
-export function saveWorldToDisk(args: { persistPath: string; worldState: WorldState }): void {
+export function saveGameToDisk(args: { persistPath: string; state: GameState }): void {
     try {
-        fs.writeFileSync(args.persistPath, JSON.stringify(args.worldState, null, 2), "utf-8");
+        fs.writeFileSync(args.persistPath, JSON.stringify({ game: args.state }, null, 2), "utf-8");
     } catch {
         // party mode: ignore persistence issues
     }

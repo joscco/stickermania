@@ -1,153 +1,248 @@
 import crypto from "node:crypto";
-import type { ChallengeState } from "./gameTypes.js";
+import { DRAW_PROMPTS, type GameState, type Player, type Drawing, type PlayerTask } from "@birthday/shared";
+import type { PlayerSession } from "./gameTypes.js";
 
-export class ChallengeStore {
-    private state: ChallengeState;
+export class GameStore {
+  private state: GameState;
+  private sessions: Map<string, PlayerSession> = new Map(); // clientId -> session
+  private promptPool: string[];
 
-    public constructor(args?: { initial?: ChallengeState }) {
-        this.state = args?.initial ?? {
-            revision: 0,
-            activeChallenge: null,
-            activeSubmission: null
-        };
+  public constructor(args?: { initial?: GameState }) {
+    this.state = args?.initial ?? GameStore.createEmpty();
+    this.promptPool = GameStore.shuffle([...DRAW_PROMPTS]);
+  }
+
+  public static createEmpty(): GameState {
+    return { players: {}, drawings: {}, revision: 0, updatedAt: Date.now() };
+  }
+
+  // ──────── State access ────────
+
+  public getState(): GameState {
+    return this.state;
+  }
+
+  public getSession(clientId: string): PlayerSession | undefined {
+    return this.sessions.get(clientId);
+  }
+
+  // ──────── Player management ────────
+
+  public joinPlayer(args: { clientId: string; kind: "player" | "board"; existingPlayerId?: string }): Player {
+    // Reuse existing player if reconnecting
+    let playerId = args.existingPlayerId ?? "";
+    let player = playerId ? this.state.players[playerId] : undefined;
+
+    if (!player) {
+      playerId = crypto.randomUUID();
+      player = {
+        id: playerId,
+        name: "",
+        avatarDataUrl: null,
+        score: 0,
+        joinedAt: Date.now()
+      };
+      this.state.players[playerId] = player;
+      this.bumpRevision();
     }
 
-    public getState(): ChallengeState {
-        this.expireChallengeIfNeeded();
-        this.finalizeSubmissionIfNeeded();
-        return this.state;
+    // Register session
+    this.sessions.set(args.clientId, {
+      playerId,
+      clientId: args.clientId,
+      kind: args.kind,
+      currentDrawPrompt: null,
+      currentSearchDrawingId: null,
+      usedDrawPrompts: new Set(),
+      usedSearchIds: new Set(),
+      lastTaskMode: null
+    });
+
+    return player;
+  }
+
+  public setPlayerName(playerId: string, name: string): void {
+    const player = this.state.players[playerId];
+    if (!player) return;
+    player.name = name.trim().slice(0, 24);
+    this.bumpRevision();
+  }
+
+  public setPlayerAvatar(playerId: string, avatarDataUrl: string): void {
+    const player = this.state.players[playerId];
+    if (!player) return;
+    player.avatarDataUrl = avatarDataUrl;
+    this.bumpRevision();
+  }
+
+  public removeSession(clientId: string): void {
+    this.sessions.delete(clientId);
+  }
+
+  public getLeaderboard(): Player[] {
+    return Object.values(this.state.players)
+      .filter(p => p.name.length > 0)
+      .sort((a, b) => b.score - a.score);
+  }
+
+  // ──────── Drawing management ────────
+
+  public addDrawing(args: { playerId: string; imageDataUrl: string; prompt: string }): Drawing {
+    const id = crypto.randomUUID();
+
+    // Place at a random position with some margin
+    const drawingSize = 0.08 + Math.random() * 0.04; // 8-12% of field
+    const x = 0.05 + Math.random() * 0.85;
+    const y = 0.05 + Math.random() * 0.85;
+
+    const drawing: Drawing = {
+      id,
+      artistId: args.playerId,
+      prompt: args.prompt,
+      imageDataUrl: args.imageDataUrl,
+      x,
+      y,
+      width: drawingSize,
+      height: drawingSize,
+      placedAt: Date.now(),
+      foundBy: null,
+      foundAt: null
+    };
+
+    this.state.drawings[id] = drawing;
+    this.bumpRevision();
+    return drawing;
+  }
+
+  public checkSearchTap(args: { playerId: string; tappedDrawingId: string; expectedDrawingId: string }): {
+    correct: boolean;
+    drawing: Drawing | null;
+    artist: Player | null;
+  } {
+    const drawing = this.state.drawings[args.tappedDrawingId];
+    if (!drawing) {
+      return { correct: false, drawing: null, artist: null };
     }
 
-    public reset(): void {
-        this.state = {
-            revision: 0,
-            activeChallenge: null,
-            activeSubmission: null
-        };
+    const correct = args.tappedDrawingId === args.expectedDrawingId;
+
+    if (correct && !drawing.foundBy) {
+      // Mark as found
+      drawing.foundBy = args.playerId;
+      drawing.foundAt = Date.now();
+
+      // Award points
+      const searcher = this.state.players[args.playerId];
+      const artist = this.state.players[drawing.artistId];
+
+      if (searcher) searcher.score += 1;
+      if (artist && artist.id !== args.playerId) artist.score += 1;
+
+      this.bumpRevision();
+      return { correct: true, drawing, artist: artist ?? null };
     }
 
-    public startChallenge(args: { text: string; durationMs: number }): void {
-        const now = Date.now();
-        const id = crypto.randomUUID();
+    return { correct, drawing, artist: null };
+  }
 
-        this.state.activeChallenge = {
-            id,
-            text: args.text,
-            createdAt: now,
-            endsAt: now + args.durationMs
-        };
+  // ──────── Task assignment ────────
 
-        // new challenge => clear current submission
-        this.state.activeSubmission = null;
-        this.bumpRevision();
+  public assignTask(clientId: string): PlayerTask | null {
+    const session = this.sessions.get(clientId);
+    if (!session) return null;
+
+    const playerId = session.playerId;
+
+    // Alternate between DRAW and SEARCH, preferring DRAW if no drawings exist
+    const unfoundDrawings = this.getUnfoundDrawingsForPlayer(playerId, session.usedSearchIds);
+
+    let preferSearch = session.lastTaskMode === "DRAW" || session.lastTaskMode === null;
+
+    // Can't search if there's nothing to find
+    if (unfoundDrawings.length === 0) {
+      preferSearch = false;
     }
 
-    public submit(args: { voterId: string; snapshotWorld: unknown, screenshotDataUrl?: string | null  }): { ok: boolean; message?: string } {
-        this.expireChallengeIfNeeded();
-        this.finalizeSubmissionIfNeeded();
+    if (preferSearch) {
+      // Assign a search task
+      const drawing = unfoundDrawings[Math.floor(Math.random() * unfoundDrawings.length)];
+      const artist = this.state.players[drawing.artistId];
 
-        if (!this.state.activeChallenge) {
-            return { ok: false, message: "No active challenge" };
-        }
+      session.currentSearchDrawingId = drawing.id;
+      session.currentDrawPrompt = null;
+      session.usedSearchIds.add(drawing.id);
+      session.lastTaskMode = "SEARCH";
 
-        if (this.state.activeSubmission && this.state.activeSubmission.status === "OPEN") {
-            return { ok: false, message: "Vote already running" };
-        }
-
-        const now = Date.now();
-        const id = crypto.randomUUID();
-
-        this.state.activeSubmission = {
-            id,
-            challengeId: this.state.activeChallenge.id,
-            createdAt: now,
-            endsAt: now + 25_000,
-            snapshotWorld: args.snapshotWorld,
-            screenshotDataUrl: args.screenshotDataUrl ?? null,
-            yesVotes: 0,
-            noVotes: 0,
-            voters: {},
-            status: "OPEN"
-        };
-
-        // auto-vote of submitter? optional: yes by default
-        this.vote({ submissionId: id, voterId: args.voterId, vote: true });
-
-        this.bumpRevision();
-        return { ok: true };
+      return {
+        mode: "SEARCH",
+        prompt: drawing.prompt,
+        drawingId: drawing.id,
+        artistName: artist?.name || "Unbekannt"
+      };
     }
 
-    public vote(args: { submissionId: string; voterId: string; vote: boolean }): { ok: boolean; message?: string } {
-        this.finalizeSubmissionIfNeeded();
+    // Assign a draw task
+    const prompt = this.pickDrawPrompt(session.usedDrawPrompts);
+    session.currentDrawPrompt = prompt;
+    session.currentSearchDrawingId = null;
+    session.usedDrawPrompts.add(prompt);
+    session.lastTaskMode = "DRAW";
 
-        const submission = this.state.activeSubmission;
-        if (!submission || submission.status !== "OPEN") {
-            return { ok: false, message: "No open vote" };
-        }
+    return {
+      mode: "DRAW",
+      prompt
+    };
+  }
 
-        if (submission.id !== args.submissionId) {
-            return { ok: false, message: "Vote not matching active submission" };
-        }
+  private getUnfoundDrawingsForPlayer(playerId: string, usedSearchIds: Set<string>): Drawing[] {
+    return Object.values(this.state.drawings).filter(d =>
+      d.foundBy === null &&
+      d.artistId !== playerId &&
+      !usedSearchIds.has(d.id)
+    );
+  }
 
-        if (submission.voters[args.voterId]) {
-            return { ok: false, message: "Already voted" };
-        }
-
-        submission.voters[args.voterId] = true;
-
-        if (args.vote) {
-            submission.yesVotes = submission.yesVotes + 1;
-        } else {
-            submission.noVotes = submission.noVotes + 1;
-        }
-
-        // early finalize if enough votes
-        const totalVotes = submission.yesVotes + submission.noVotes;
-        if (totalVotes >= 6) {
-            this.finalizeOpenSubmission();
-        }
-
-        this.bumpRevision();
-        return { ok: true };
+  private pickDrawPrompt(usedPrompts: Set<string>): string {
+    // Try to find unused prompt from pool
+    for (let i = this.promptPool.length - 1; i >= 0; i--) {
+      if (!usedPrompts.has(this.promptPool[i])) {
+        return this.promptPool.splice(i, 1)[0];
+      }
     }
 
-    private expireChallengeIfNeeded(): void {
-        if (!this.state.activeChallenge) {
-            return;
-        }
-        if (Date.now() < this.state.activeChallenge.endsAt) {
-            return;
-        }
-        this.state.activeChallenge = null;
-        this.state.activeSubmission = null;
-        this.bumpRevision();
+    // Refill pool if needed
+    this.promptPool = GameStore.shuffle([...DRAW_PROMPTS]);
+
+    for (let i = this.promptPool.length - 1; i >= 0; i--) {
+      if (!usedPrompts.has(this.promptPool[i])) {
+        return this.promptPool.splice(i, 1)[0];
+      }
     }
 
-    private finalizeSubmissionIfNeeded(): void {
-        const submission = this.state.activeSubmission;
-        if (!submission || submission.status !== "OPEN") {
-            return;
-        }
-        if (Date.now() < submission.endsAt) {
-            return;
-        }
-        this.finalizeOpenSubmission();
-    }
+    // Fallback: just pick random from pool
+    return this.promptPool.pop() ?? DRAW_PROMPTS[0];
+  }
 
-    private finalizeOpenSubmission(): void {
-        const submission = this.state.activeSubmission;
-        if (!submission || submission.status !== "OPEN") {
-            return;
-        }
+  // ──────── Reset ────────
 
-        if (submission.yesVotes > submission.noVotes) {
-            submission.status = "ACCEPTED";
-        } else {
-            submission.status = "REJECTED";
-        }
-    }
+  public reset(): void {
+    this.state = GameStore.createEmpty();
+    this.sessions.clear();
+    this.promptPool = GameStore.shuffle([...DRAW_PROMPTS]);
+  }
 
-    private bumpRevision(): void {
-        this.state.revision = this.state.revision + 1;
+  // ──────── Internal ────────
+
+  private bumpRevision(): void {
+    this.state.revision++;
+    this.state.updatedAt = Date.now();
+  }
+
+  private static shuffle<T>(arr: T[]): T[] {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
     }
+    return arr;
+  }
 }
