@@ -136,12 +136,23 @@ export class PlayerComponent implements OnInit, OnDestroy {
     this.playerId = localStorage.getItem("birthday_player_id") ?? null;
     this.wsService.connect();
     this.unsubscribeWs = this.wsService.onMessage((msg) => this.handleMessage(msg));
+    // Send initial join once WS is open (wsService will auto-re-send on reconnect)
     const checkJoin = setInterval(() => {
       if (this.wsService.status() === "connected") {
         this.wsService.send({ type: "join", kind: "player", playerId: this.playerId ?? undefined });
         clearInterval(checkJoin);
       }
     }, 200);
+    // Also try to unlock audio on first touch anywhere in the document
+    const globalUnlock = () => {
+      this.audio.unlockIfNeeded();
+      document.removeEventListener("pointerdown", globalUnlock);
+      document.removeEventListener("touchstart", globalUnlock);
+      document.removeEventListener("click", globalUnlock);
+    };
+    document.addEventListener("pointerdown", globalUnlock, { once: true });
+    document.addEventListener("touchstart", globalUnlock, { once: true });
+    document.addEventListener("click", globalUnlock, { once: true });
   }
 
   public ngOnDestroy(): void {
@@ -183,14 +194,26 @@ export class PlayerComponent implements OnInit, OnDestroy {
         // Sync mode from round phase if player is ready
         if (pid && msg.state.players[pid]?.avatarDataUrl) {
           const phase = msg.state.round.phase;
-          if (phase === "DRAW" && this.session.currentMode() !== "DRAW" && this.session.currentTask()?.mode !== "DRAW") {
-            // Will be set by assign-task
+          const curMode = this.session.currentMode();
+          if (phase === "DRAW") {
+            // If the player is not already in DRAW and doesn't have a DRAW task,
+            // go to IDLE — the assign-task message will switch to DRAW when it arrives.
+            // But if we're stuck in a stale mode, move to IDLE so we're not frozen.
+            if (curMode !== "DRAW" && curMode !== "IDLE" && curMode !== "LOBBY") {
+              this.session.clearTask();
+              this.session.currentMode.set("IDLE");
+            }
           }
-          if (phase === "SEARCH" && this.session.currentMode() !== "SEARCH" && this.session.currentTask()?.mode !== "SEARCH") {
-            // Will be set by assign-task
+          if (phase === "SEARCH") {
+            // Same: if we were in DRAW mode, transition to IDLE.
+            // assign-task will move us to SEARCH if a task is available.
+            if (curMode === "DRAW") {
+              this.session.clearTask();
+              this.session.currentMode.set("IDLE");
+            }
           }
           if (phase === "PAUSED" || phase === "LOBBY") {
-            if (this.session.currentMode() === "DRAW" || this.session.currentMode() === "SEARCH") {
+            if (curMode === "DRAW" || curMode === "SEARCH") {
               this.session.currentMode.set("IDLE");
               this.session.clearTask();
             }
@@ -226,8 +249,8 @@ export class PlayerComponent implements OnInit, OnDestroy {
         break;
 
       case "event":
-        // If we're in DRAW mode but server didn't give us a new task, go to IDLE (limit reached)
-        if (this.session.currentMode() === "DRAW" && !this.session.currentTask()) {
+        // If server moved to a new phase but we have no task, go to IDLE
+        if ((this.session.currentMode() === "DRAW" || this.session.currentMode() === "SEARCH") && !this.session.currentTask()) {
           this.session.currentMode.set("IDLE");
         }
         break;

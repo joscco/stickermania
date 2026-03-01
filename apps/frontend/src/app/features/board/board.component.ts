@@ -100,6 +100,7 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.wsService.connect();
     this.unsubscribeWs = this.wsService.onMessage((msg) => this.handleMessage(msg));
 
+    // Send initial join once WS is open (wsService will auto-re-send on reconnect)
     const checkJoin = setInterval(() => {
       if (this.wsService.status() === "connected") {
         this.wsService.send({ type: "join", kind: "board" });

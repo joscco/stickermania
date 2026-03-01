@@ -59,9 +59,15 @@ gameStore.setOnPhaseChange(() => {
     broadcastState();
     for (const session of gameStore.getAllSessions()) {
       if (session.kind !== "player") continue;
-      const task = gameStore.assignSearchTask(session.clientId);
       const client = clients.get(session.clientId);
-      if (task && client) sendTo(client.ws, { type: "assign-task", task });
+      if (!client) continue;
+      const task = gameStore.assignSearchTask(session.clientId);
+      if (task) {
+        sendTo(client.ws, { type: "assign-task", task });
+      } else {
+        // No drawings available for this player to search — tell them
+        sendTo(client.ws, { type: "event", text: "Keine Zeichnungen zum Suchen vorhanden. Warte auf die nächste Runde… ⏳", createdAt: Date.now() });
+      }
     }
   } else if (round.phase === "PAUSED") {
     broadcast({ type: "event", text: "⏰ Runde beendet! 🏁", createdAt: Date.now() });
@@ -118,8 +124,24 @@ server.on("upgrade", (request, socket, head) => {
   } else { socket.destroy(); }
 });
 
+// ──── Server-side WS keep-alive (ping every 25 s — NAT keepalive only) ────
+// We do NOT terminate unresponsive clients — the client will reconnect on
+// its own. Terminating causes the player entry to be lost.
+const WS_PING_INTERVAL = 25_000;
+
+const wsPingTimer = setInterval(() => {
+  for (const client of wss.clients) {
+    if (client.readyState === WebSocket.OPEN) {
+      client.ping();
+    }
+  }
+}, WS_PING_INTERVAL);
+
+wss.on("close", () => { clearInterval(wsPingTimer); });
+
 wss.on("connection", (ws: WebSocket) => {
   let clientId: string | null = null;
+
 
   ws.on("message", (rawData) => {
     let msg: ClientToServerMessage;
@@ -127,6 +149,21 @@ wss.on("connection", (ws: WebSocket) => {
 
     // ──── join ────
     if (msg.type === "join") {
+      // Clean up any previous session/client entry for this player (reconnect scenario)
+      if (msg.playerId) {
+        for (const [cid, client] of clients.entries()) {
+          if (client.playerId === msg.playerId && client.ws !== ws) {
+            clients.delete(cid);
+            gameStore.removeSession(cid);
+          }
+        }
+      }
+      // Also clean up any previous session tied to THIS ws (double-join on same socket)
+      if (clientId) {
+        clients.delete(clientId);
+        gameStore.removeSession(clientId);
+      }
+
       clientId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const player = gameStore.joinPlayer({ clientId, kind: msg.kind, existingPlayerId: msg.playerId });
       clients.set(clientId, { ws, clientId, kind: msg.kind, playerId: player.id });
@@ -136,8 +173,17 @@ wss.on("connection", (ws: WebSocket) => {
         broadcast({ type: "event", text: `${player.name} ist beigetreten! 🎉`, createdAt: Date.now() });
       const round = gameStore.getRound();
       if (msg.kind === "player" && player.name.length > 0 && player.avatarDataUrl) {
-        if (round.phase === "DRAW") { const t = gameStore.assignDrawTask(clientId); if (t) sendTo(ws, { type: "assign-task", task: t }); }
-        else if (round.phase === "SEARCH") { const t = gameStore.assignSearchTask(clientId); if (t) sendTo(ws, { type: "assign-task", task: t }); }
+        if (round.phase === "DRAW") {
+          const t = gameStore.assignDrawTask(clientId);
+          if (t) sendTo(ws, { type: "assign-task", task: t });
+        } else if (round.phase === "SEARCH") {
+          const t = gameStore.assignSearchTask(clientId);
+          if (t) {
+            sendTo(ws, { type: "assign-task", task: t });
+          } else {
+            sendTo(ws, { type: "event", text: "Keine Zeichnungen zum Suchen vorhanden. Warte… ⏳", createdAt: Date.now() });
+          }
+        }
       }
       saveScheduler.schedule();
       return;
@@ -267,7 +313,11 @@ wss.on("connection", (ws: WebSocket) => {
     if (msg.type === "ping") { sendTo(ws, { type: "pong", t: msg.t, serverTime: Date.now() }); return; }
   });
 
-  ws.on("close", () => { if (clientId) { clients.delete(clientId); gameStore.removeSession(clientId); } });
+  ws.on("close", () => {
+    // Remove from active-clients map, but do NOT remove the session from
+    // gameStore — the player must be able to rejoin and keep their score.
+    if (clientId) { clients.delete(clientId); }
+  });
 });
 
 // ══════════════════════════════════════════════════════
