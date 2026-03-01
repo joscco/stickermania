@@ -43,31 +43,33 @@
       </div>
     </div>
 
-    <!-- Grid wrapper -->
-    <div
-      class="relative mt-3 rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.35)]"
-    >
-      <div class="grid select-none gap-1" [ngStyle]="{ gridTemplateColumns: gridTemplateColumns() }">
-        @for (cell of cells(); track cellKey(cell)) {
-          <div
-            class="grid h-11 w-11 place-items-center rounded-lg border text-xl"
-            [ngClass]="{
-              'bg-black/20': cell.emoji === '',
-              'bg-white/5': cell.emoji !== '',
-              'border-white/10': cell.emoji === '',
-              'border-white/15': cell.emoji !== ''
-            }"
-          >
-            {{ cell.emoji }}
+    <!-- Scene wrapper -->
+    <div class="relative mt-3 rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
+      <!-- Keep aspect ratio-ish: center a 1000x700 virtual scene -->
+      <div class="relative mx-auto w-full max-w-[1000px]">
+        <div class="relative select-none rounded-2xl border border-white/10 bg-black/20" style="aspect-ratio: 10 / 7;">
+          <!-- absolute render layer -->
+          <div class="absolute inset-0">
+            @for (placement of placementsSorted(); track placement.id) {
+              <div
+                class="absolute grid h-12 w-12 place-items-center rounded-xl border border-white/10 bg-black/25 text-2xl"
+                [style.left.%]="placement.x * 100"
+                [style.top.%]="placement.y * 100"
+                [style.zIndex]="placement.zIndex"
+                [style.transform]="'translate(-50%, -50%) rotate(' + placement.rotationDeg + 'deg) scale(' + placement.scale + ')'"
+              >
+                {{ emojiForType(placement.type) }}
+              </div>
+            }
+          </div>
+        </div>
+
+        @if (!store.world()) {
+          <div class="mt-3 text-xs text-slate-400">
+            Waiting for world…
           </div>
         }
       </div>
-
-      @if (!store.world()) {
-        <div class="mt-3 text-xs text-slate-400">
-          Waiting for world…
-        </div>
-      }
     </div>
   </div>
 
@@ -87,8 +89,7 @@
         @if (playerQrDataUrl()) {
           <img class="h-28 w-28 rounded-xl bg-white p-1" [src]="playerQrDataUrl()!" alt="Player QR"/>
         } @else {
-          <div
-            class="h-28 w-28 rounded-xl border border-white/10 bg-black/20 grid place-items-center text-xs text-slate-400">
+          <div class="h-28 w-28 rounded-xl border border-white/10 bg-black/20 grid place-items-center text-xs text-slate-400">
             QR…
           </div>
         }

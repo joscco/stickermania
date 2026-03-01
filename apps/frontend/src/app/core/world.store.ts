@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from "@angular/core";
-import type { ServerToClientMessage, WorldState } from "@birthday/shared";
+import type { WorldState } from "@birthday/shared";
 
 export type ConnectionStatus = "connecting" | "connected" | "disconnected";
 
@@ -28,16 +28,8 @@ export class WorldStore {
     this.lastError.set(message);
   }
 
-  public handleServerMessage(message: ServerToClientMessage): void {
-    if (message.type === "state") {
-      this.world.set(message.state);
-      this.lastError.set(null);
-      return;
-    }
-
-    if (message.type === "error") {
-      this.lastError.set(message.message);
-      return;
-    }
+  public setWorld(world: WorldState): void {
+    this.world.set(world);
+    this.lastError.set(null);
   }
 }

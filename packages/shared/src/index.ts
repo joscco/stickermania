@@ -1,12 +1,12 @@
 export type ObjectType =
-  | "tree"
-  | "flower"
-  | "rock"
-  | "bench"
-  | "pond"
-  | "gnome"
-  | "lamp"
-  | "bush";
+    | "tree"
+    | "flower"
+    | "rock"
+    | "bench"
+    | "pond"
+    | "gnome"
+    | "lamp"
+    | "bush";
 
 export const OBJECT_TYPES: Array<{ type: ObjectType; label: string; emoji: string }> = [
   { type: "tree",   label: "Baum",        emoji: "🌳" },
@@ -21,18 +21,20 @@ export const OBJECT_TYPES: Array<{ type: ObjectType; label: string; emoji: strin
 
 export type CellKey = `${number},${number}`;
 
-export interface PlacedObject {
+export interface StickerPlacement {
   id: string;
   type: ObjectType;
-  level: number; // reserved for later
-  placedAt: number; // epoch ms
+  // normalized 0..1 (scene coordinate system)
+  x: number;
+  y: number;
+  rotationDeg: number;
+  scale: number;
+  zIndex: number;
+  placedAt: number;
 }
 
 export interface WorldState {
-  width: number;
-  height: number;
-  // sparse grid: only cells with objects exist in the map
-  cells: Record<CellKey, PlacedObject>;
+  placements: Record<string, StickerPlacement>;
   revision: number;
   updatedAt: number;
 }

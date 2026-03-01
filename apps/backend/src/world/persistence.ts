@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import type { WorldState } from "@birthday/shared";
+import { sanitizeWorldState } from "./validation.js";
 
 export function loadWorldFromDisk(args: {
     persistPath: string;
@@ -13,7 +14,7 @@ export function loadWorldFromDisk(args: {
         const raw: string = fs.readFileSync(args.persistPath, "utf-8");
         const parsed: unknown = JSON.parse(raw);
 
-        return parsed as WorldState;
+        return sanitizeWorldState({ candidate: parsed, fallback: args.createEmptyWorld() });
     } catch {
         return args.createEmptyWorld();
     }

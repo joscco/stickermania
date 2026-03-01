@@ -14,17 +14,6 @@
 
         <div class="flex items-center gap-2">
           <button
-            class="rounded-xl border px-3 py-2 text-sm transition active:translate-y-px"
-            [ngClass]="{
-              'border-rose-500/40 bg-rose-500/10 hover:bg-rose-500/15': removeMode(),
-              'border-white/15 bg-white/5 hover:bg-white/10': !removeMode()
-            }"
-            (click)="toggleRemoveMode()"
-          >
-            {{ removeMode() ? "Remove" : "Place" }}
-          </button>
-
-          <button
             class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm hover:bg-white/10 active:translate-y-px"
             (click)="zoomOut()"
             aria-label="Zoom out"
@@ -46,28 +35,46 @@
           >
             Center
           </button>
+
+          <button
+            class="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm hover:bg-rose-500/15 active:translate-y-px"
+            (click)="resetWorld()"
+          >
+            Reset
+          </button>
         </div>
       </div>
 
-      <!-- Toolbelt -->
-      <div class="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        @for (entry of objectTypes; track entry.type) {
-          <button
-            class="flex shrink-0 items-center gap-2 rounded-2xl border px-3 py-2 text-left transition-colors"
-            [ngClass]="{
-              'border-cyan-300/60 bg-cyan-300/10': selectedType() === entry.type,
-              'border-white/10 bg-black/20 hover:bg-white/5': selectedType() !== entry.type
-            }"
-            (click)="select(entry.type)"
-          >
-            <span class="text-lg">{{ entry.emoji }}</span>
-            <span class="text-sm font-semibold">{{ entry.label }}</span>
-          </button>
-        }
+      <!-- Hand -->
+      <div class="mt-3 flex items-center justify-between gap-3">
+        <div class="flex gap-2">
+          @for (slot of handStore.hand(); track slot.id) {
+            <button
+              class="flex items-center gap-2 rounded-2xl border px-3 py-2 text-left transition-colors"
+              [ngClass]="{
+                'border-cyan-300/60 bg-cyan-300/10': handStore.getActiveSlot().id === slot.id,
+                'border-white/10 bg-black/20 hover:bg-white/5': handStore.getActiveSlot().id !== slot.id
+              }"
+              (click)="selectHandIndex($index)"
+              title="Select this sticker"
+            >
+              <span class="text-xl">{{ emojiForType(slot.type) }}</span>
+              <span class="text-sm font-semibold">{{ slot.type }}</span>
+            </button>
+          }
+        </div>
+
+        <button
+          class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm hover:bg-white/10 active:translate-y-px"
+          (click)="reshuffleHand()"
+          title="New stickers"
+        >
+          ↻ Hand
+        </button>
       </div>
 
       <div class="mt-2 text-xs text-slate-400">
-        Drag = pan · Pinch / wheel / +/- = zoom · Tap = {{ removeMode() ? "remove" : "place" }}
+        Drag = pan · Pinch / wheel / +/- = zoom · Tap = place (uses active hand slot)
       </div>
     </div>
   </div>
@@ -76,7 +83,7 @@
   <div class="mx-auto w-full max-w-6xl px-4 py-4">
     <div
       #viewport
-      class="relative h-[calc(100dvh-210px)] overflow-hidden rounded-2xl bg-black/20"
+      class="relative h-[calc(100dvh-240px)] overflow-hidden rounded-2xl bg-black/20"
       style="touch-action: none;"
       (pointerdown)="onViewportPointerDown($event)"
       (pointermove)="onViewportPointerMove($event)"
@@ -85,13 +92,27 @@
       (wheel)="onViewportWheel($event)"
     >
       <div class="absolute left-0 top-0 origin-top-left" [style.transform]="contentTransform()">
-        <div class="grid select-none gap-1 p-3" [style.gridTemplateColumns]="gridTemplateColumns()">
-          @for (cell of cells(); track cell.x + '-' + cell.y) {
+        <!-- Virtual scene -->
+        <div
+          class="relative select-none"
+          [style.width.px]="sceneWidthPx * viewportController.scale()"
+          [style.height.px]="sceneHeightPx * viewportController.scale()"
+        >
+          <div class="absolute inset-0 rounded-2xl border border-white/10 bg-white/5"></div>
+
+          @for (placement of placementsSorted(); track placement.id) {
             <div
-              class="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-black/20 text-lg"
-              [ngClass]="{ 'bg-white/5 border-white/15': cell.emoji !== '' }"
+              class="absolute grid place-items-center rounded-xl border border-white/10 bg-black/25"
+              [style.width.px]="40 * viewportController.scale()"
+              [style.height.px]="40 * viewportController.scale()"
+              [style.fontSize.px]="18 * viewportController.scale()"
+              [style.left.%]="placement.x * 100"
+              [style.top.%]="placement.y * 100"
+              [style.zIndex]="placement.zIndex"
+              [style.marginLeft.px]="-20 * viewportController.scale()"
+              [style.marginTop.px]="-20 * viewportController.scale()"
             >
-              {{ cell.emoji }}
+              {{ emojiForType(placement.type) }}
             </div>
           }
         </div>

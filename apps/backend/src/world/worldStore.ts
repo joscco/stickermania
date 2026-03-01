@@ -1,59 +1,66 @@
 import crypto from "node:crypto";
-import type {CellKey, ObjectType, WorldState} from "@birthday/shared";
-import { clampInt, toCellKey } from "@birthday/shared";
+import type { ObjectType, WorldState, StickerPlacement } from "@birthday/shared";
 
 export class WorldStore {
     private worldState: WorldState;
+    private nextZIndex: number;
 
     public constructor(args: { initialWorldState: WorldState }) {
         this.worldState = args.initialWorldState;
+        this.nextZIndex = 1;
     }
 
     public getState(): WorldState {
         return this.worldState;
     }
 
-    public reset(args: { gridWidth: number; gridHeight: number }): void {
+    public reset(): void {
         this.worldState = {
-            width: args.gridWidth,
-            height: args.gridHeight,
-            cells: {},
+            placements: {},
             revision: 0,
             updatedAt: Date.now()
         };
+        this.nextZIndex = 1;
     }
 
-    public place(args: { x: number; y: number; objectType: ObjectType }): void {
-        const x: number = clampInt(args.x, 0, this.worldState.width - 1);
-        const y: number = clampInt(args.y, 0, this.worldState.height - 1);
-        const cellKey: CellKey = toCellKey(x, y);
+    public place(args: { x: number; y: number; objectType: ObjectType; rotationDeg?: number; scale?: number }): StickerPlacement {
+        const clampedX: number = this.clamp01(args.x);
+        const clampedY: number = this.clamp01(args.y);
 
-        this.worldState.cells[cellKey] = {
+        const placement: StickerPlacement = {
             id: crypto.randomUUID(),
             type: args.objectType,
-            level: 1,
+            x: clampedX,
+            y: clampedY,
+            rotationDeg: Number.isFinite(args.rotationDeg) ? Number(args.rotationDeg) : 0,
+            scale: Number.isFinite(args.scale) ? Number(args.scale) : 1,
+            zIndex: this.nextZIndex,
             placedAt: Date.now()
         };
 
+        this.nextZIndex = this.nextZIndex + 1;
+
+        this.worldState.placements[placement.id] = placement;
         this.bumpRevision();
-    }
 
-    public remove(args: { x: number; y: number }): boolean {
-        const x: number = clampInt(args.x, 0, this.worldState.width - 1);
-        const y: number = clampInt(args.y, 0, this.worldState.height - 1);
-        const cellKey: CellKey = toCellKey(x, y);
-
-        if (!this.worldState.cells[cellKey]) {
-            return false;
-        }
-
-        delete this.worldState.cells[cellKey];
-        this.bumpRevision();
-        return true;
+        return placement;
     }
 
     private bumpRevision(): void {
         this.worldState.revision = this.worldState.revision + 1;
         this.worldState.updatedAt = Date.now();
+    }
+
+    private clamp01(value: number): number {
+        if (!Number.isFinite(value)) {
+            return 0;
+        }
+        if (value < 0) {
+            return 0;
+        }
+        if (value > 1) {
+            return 1;
+        }
+        return value;
     }
 }

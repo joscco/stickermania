@@ -1,19 +1,23 @@
 import type { WorldState } from "@birthday/shared";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export function isWorldStateLike(value: unknown): value is WorldState {
-    if (typeof value !== "object" || value === null) {
+    if (!isRecord(value)) {
         return false;
     }
 
-    const maybeState: any = value;
+    const maybeState = value as Record<string, unknown>;
 
-    if (typeof maybeState.width !== "number") {
+    if (!isRecord(maybeState["placements"])) {
         return false;
     }
-    if (typeof maybeState.height !== "number") {
+    if (typeof maybeState["revision"] !== "number") {
         return false;
     }
-    if (typeof maybeState.cells !== "object" || maybeState.cells === null) {
+    if (typeof maybeState["updatedAt"] !== "number") {
         return false;
     }
 
@@ -25,12 +29,10 @@ export function sanitizeWorldState(args: { candidate: unknown; fallback: WorldSt
         return args.fallback;
     }
 
-    const maybeState: any = args.candidate;
+    const maybeState = args.candidate as any;
 
     return {
-        width: maybeState.width,
-        height: maybeState.height,
-        cells: maybeState.cells,
+        placements: maybeState.placements,
         revision: typeof maybeState.revision === "number" ? maybeState.revision : args.fallback.revision,
         updatedAt: typeof maybeState.updatedAt === "number" ? maybeState.updatedAt : Date.now()
     };
