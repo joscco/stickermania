@@ -1,0 +1,175 @@
+@if (isOpen()) {
+  <button
+    type="button"
+    class="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+    (click)="requestClose()"
+    aria-label="Close setup drawer"
+  ></button>
+}
+
+<div
+  class="fixed right-0 top-0 z-50 h-full w-[min(420px,92vw)] border-l border-white/10 bg-slate-950/90 shadow-[0_12px_30px_rgba(0,0,0,0.6)] backdrop-blur
+         transition-transform duration-300 ease-out"
+  [class.translate-x-0]="isOpen()"
+  [class.translate-x-full]="!isOpen()"
+>
+  <div class="flex h-full flex-col">
+    <div class="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+      <div>
+        <div class="text-sm font-semibold text-slate-100">Setup</div>
+        <div class="mt-0.5 text-xs text-slate-400">QR + Links für Gäste</div>
+      </div>
+
+      <button
+        class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm hover:bg-white/10 active:translate-y-px"
+        (click)="requestClose()"
+      >
+        Close
+      </button>
+    </div>
+    <!-- Header -->
+    <div class="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+      <div>
+        <div class="text-sm font-semibold text-slate-100">Setup</div>
+        <div class="mt-0.5 text-xs text-slate-400">QR + Links für Gäste</div>
+      </div>
+      <div class="text-xs text-slate-400">Board-only</div>
+    </div>
+
+    <!-- Content -->
+    <div class="flex-1 overflow-auto px-4 py-4">
+      <!-- Player section -->
+      <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="text-sm font-semibold text-slate-100">Player</div>
+            <div class="mt-0.5 text-xs text-slate-400">Scan → öffnet direkt das Spiel</div>
+          </div>
+
+          <button
+            class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm hover:bg-white/10 active:translate-y-px"
+            (click)="copyPlayerUrl()"
+          >
+            Copy
+          </button>
+        </div>
+
+        <div class="mt-2 break-all rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-slate-200">
+          {{ playerUrl() }}
+        </div>
+
+        @if (copyHint()) {
+          <div class="mt-2 text-xs text-slate-400">{{ copyHint() }}</div>
+        }
+
+        <div class="mt-3 grid place-items-center">
+          @if (playerQrDataUrl()) {
+            <img
+              class="h-[240px] w-[240px] rounded-2xl bg-white p-2"
+              [src]="playerQrDataUrl()!"
+              alt="Player QR"
+            />
+          } @else {
+            <div class="text-xs text-slate-400">QR wird geladen…</div>
+          }
+        </div>
+
+        <p class="mt-2 text-[11px] text-slate-400">
+          Hinweis: Wir nutzen absichtlich <span class="font-semibold">http://</span> im LAN, damit iPhones keine
+          Zertifikatswarnung zeigen.
+        </p>
+      </div>
+
+      <!-- WiFi section -->
+      <div class="mt-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <div class="text-sm font-semibold text-slate-100">WLAN QR</div>
+            <div class="mt-0.5 text-xs text-slate-400">Optional: Scan → WLAN beitreten</div>
+          </div>
+
+          <button
+            class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm hover:bg-white/10 active:translate-y-px"
+            (click)="toggleWifi()"
+          >
+            {{ showWifi() ? "Aus" : "An" }}
+          </button>
+        </div>
+
+        @if (showWifi()) {
+          <div class="mt-3 grid gap-2">
+            <input
+              class="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-300/40"
+              placeholder="SSID (WLAN-Name)"
+              [value]="wifiSsid()"
+              (input)="wifiSsid.set(($any($event.target).value ?? ''))"
+            />
+
+            <div class="grid grid-cols-2 gap-2">
+              <select
+                class="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-300/40"
+                [value]="wifiSecurity()"
+                (change)="wifiSecurity.set(($any($event.target).value ?? 'WPA'))"
+              >
+                <option value="WPA">WPA/WPA2</option>
+                <option value="WEP">WEP</option>
+                <option value="nopass">Kein Passwort</option>
+              </select>
+
+              <label class="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200">
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 accent-cyan-300"
+                  [checked]="wifiHidden()"
+                  (change)="wifiHidden.set(!!$any($event.target).checked)"
+                />
+                Hidden
+              </label>
+            </div>
+
+            <input
+              class="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-300/40"
+              placeholder="Passwort"
+              type="password"
+              [disabled]="wifiSecurity() === 'nopass'"
+              [value]="wifiPassword()"
+              (input)="wifiPassword.set(($any($event.target).value ?? ''))"
+            />
+
+            <div class="flex items-center gap-2">
+              <button
+                class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm hover:bg-white/10 active:translate-y-px"
+                (click)="generateWifiQr()"
+              >
+                QR generieren
+              </button>
+
+              @if (wifiError()) {
+                <span class="text-xs text-rose-300">{{ wifiError() }}</span>
+              }
+            </div>
+
+            @if (wifiQrDataUrl()) {
+              <div class="mt-2 grid place-items-center">
+                <img
+                  class="h-[220px] w-[220px] rounded-2xl bg-white p-2"
+                  [src]="wifiQrDataUrl()!"
+                  alt="WiFi QR"
+                />
+              </div>
+            }
+
+            <p class="mt-2 text-[11px] text-slate-400">
+              Nichts wird gespeichert. Du kannst das Feld leer lassen, wenn du kein WLAN-QR brauchst.
+            </p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t border-white/10 px-4 py-3 text-[11px] text-slate-400">
+      Tipp: Auf dem Beamer lieber geschlossen lassen – den Drawer kurz aufklappen, wenn neue Gäste kommen.
+    </div>
+  </div>
+</div>

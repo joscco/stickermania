@@ -1,13 +1,14 @@
-import { CommonModule } from "@angular/common";
-import { Component, OnDestroy, OnInit, signal } from "@angular/core";
-import {OBJECT_TYPES, toCellKey, type ObjectType, ServerToClientMessage} from "@birthday/shared";
-import { environment } from "../../../environments/environment";
-import { WsService } from "../../core/ws.service";
-import { WorldStore } from "../../core/world.store";
+import {CommonModule} from "@angular/common";
+import {Component, OnDestroy, OnInit, signal} from "@angular/core";
+import {OBJECT_TYPES, toCellKey, type ObjectType, type ServerToClientMessage} from "@birthday/shared";
+import {environment} from "../../../environments/environment";
+import {WsService} from "../../core/ws.service";
+import {WorldStore} from "../../core/world.store";
 import * as QRCode from "qrcode";
-import {PlayerQrCardComponent} from './qr-code/player-qr-card.component';
-import {EventToastsComponent, UiEvent} from './events/event-toasts.component';
-import {AdminOverlayComponent} from './admin/admin.component';
+
+import {EventToastsComponent, type UiEvent} from "./events/event-toasts.component";
+import {AdminOverlayComponent} from "./admin/admin.component";
+import {BoardSetupDrawerComponent} from './setup/board-setup-drawer.component';
 
 interface GridCellVm {
   x: number;
@@ -18,34 +19,48 @@ interface GridCellVm {
 @Component({
   selector: "app-board",
   standalone: true,
-  imports: [CommonModule, PlayerQrCardComponent, AdminOverlayComponent, EventToastsComponent],
-  templateUrl: './board.component.html'
+  imports: [
+    CommonModule,
+    EventToastsComponent,
+    AdminOverlayComponent,
+    BoardSetupDrawerComponent,
+    BoardSetupDrawerComponent
+  ],
+  templateUrl: "./board.component.html"
 })
 export class BoardComponent implements OnInit, OnDestroy {
   public readonly store: WorldStore;
 
+
   public readonly playerUrl = signal<string>("");
   public readonly playerQrDataUrl = signal<string | null>(null);
-
-  public readonly copyHint = signal<string | null>(null);
 
   public readonly showAdminOverlay = signal<boolean>(false);
   public readonly adminErrorText = signal<string | null>(null);
   private adminKey: string | null = null;
 
   public readonly events = signal<UiEvent[]>([]);
+  public readonly wifiQrDataUrl = signal<string | null>(null);
+
+  public readonly showSetupDrawer = signal<boolean>(false);
 
   public constructor(private readonly wsService: WsService, worldStore: WorldStore) {
     this.store = worldStore;
   }
 
+  public onWifiQrGenerated(dataUrl: string): void {
+    const trimmed: string = (dataUrl ?? "").trim();
+    this.wifiQrDataUrl.set(trimmed.length > 0 ? trimmed : null);
+  }
+
   public async ngOnInit(): Promise<void> {
     this.store.setConnecting();
 
-    const host: string = window.location.host;
+    // Player URL/QR: force http to avoid iOS HTTPS warnings
+    const host: string = window.location.host; // e.g. game:3001
     const playerUrl: string = `http://${host}/#/player`;
     this.playerUrl.set(playerUrl);
-    this.playerQrDataUrl.set(await QRCode.toDataURL(playerUrl, { margin: 1, scale: 6 }));
+    this.playerQrDataUrl.set(await QRCode.toDataURL(playerUrl, {margin: 1, scale: 6}));
 
     this.adminKey = this.loadAdminKey();
     this.showAdminOverlay.set(!this.adminKey);
@@ -74,8 +89,17 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.wsService.disconnect();
   }
 
+  public toggleSetupDrawer(): void {
+    this.showSetupDrawer.set(!this.showSetupDrawer());
+  }
+
+  public onSetupDrawerCloseRequested(): void {
+    console.log("onSetupDrawerCloseRequested");
+    this.showSetupDrawer.set(false);
+  }
+
   public resetWorld(): void {
-    this.wsService.send({ type: "reset" });
+    this.wsService.send({type: "reset"});
   }
 
   public canReset(): boolean {
@@ -100,6 +124,7 @@ export class BoardComponent implements OnInit, OnDestroy {
     });
   }
 
+
   private onServerMessage(message: ServerToClientMessage): void {
     this.store.handleServerMessage(message);
 
@@ -109,8 +134,6 @@ export class BoardComponent implements OnInit, OnDestroy {
     }
 
     if (message.type === "error") {
-      // If admin key is wrong, you’ll typically see reset errors later.
-      // But we can also surface generic errors.
       if (String(message.message).includes("admin")) {
         this.adminErrorText.set(message.message);
       }
@@ -120,26 +143,13 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   private pushEvent(text: string, createdAt: number): void {
     const id: string = `${createdAt}-${Math.random().toString(16).slice(2)}`;
+    const next: UiEvent = {id, text, createdAt};
 
-    const next: UiEvent = { id, text, createdAt};
+    this.events.set([next, ...this.events()]);
 
-    // add on top
-    this.events.set([next, ...this.events()].slice(0, 5));
-
-    // next tick -> steady (so transition triggers)
-    queueMicrotask(() => {
-      this.events.set(this.events().map((e) => (e.id === id ? { ...e, phase: "steady" } : e)));
-    });
-
-    // start leaving a bit before removal
-    window.setTimeout(() => {
-      this.events.set(this.events().map((e) => (e.id === id ? { ...e, phase: "leave" } : e)));
-    }, 2800);
-
-    // remove
     window.setTimeout(() => {
       this.events.set(this.events().filter((e) => e.id !== id));
-    }, 3300);
+    }, 3500);
   }
 
   private loadAdminKey(): string | null {
@@ -154,7 +164,7 @@ export class BoardComponent implements OnInit, OnDestroy {
   public gridTemplateColumns(): string {
     const world = this.store.world();
     const width: number = world?.width ?? 30;
-    return `repeat(${width}, 2.75rem)`;
+    return `repeat(${width}, 2.75rem)`; // w-11
   }
 
   public cellKey(cell: GridCellVm): string {
@@ -174,7 +184,7 @@ export class BoardComponent implements OnInit, OnDestroy {
         const key = toCellKey(x, y);
         const placed = world.cells[key];
         const emoji: string = placed ? this.emojiForType(placed.type) : "";
-        result.push({ x, y, emoji });
+        result.push({x, y, emoji});
       }
     }
 
