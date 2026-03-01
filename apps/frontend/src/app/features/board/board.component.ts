@@ -1,5 +1,6 @@
 import { CommonModule } from "@angular/common";
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild, signal, computed } from "@angular/core";
+import { FormsModule } from "@angular/forms";
 import { WebSocketService } from "../../core/websocket.service";
 import { WorldStore } from "../../core/world.store";
 import * as QRCode from "qrcode";
@@ -8,13 +9,14 @@ import { EventToastsComponent, type UiEvent } from "./events/event-toasts.compon
 import { AdminOverlayComponent } from "./admin/admin.component";
 import { BoardSetupDrawerComponent } from "./setup/board-setup-drawer.component";
 import { SceneRendererComponent } from "../../shared/scene-renderer/scene-renderer.component";
-import type { ServerToClientMessage } from "@birthday/shared";
+import type { ServerToClientMessage, RoundPhase } from "@birthday/shared";
 
 @Component({
   selector: "app-board",
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     EventToastsComponent,
     AdminOverlayComponent,
     BoardSetupDrawerComponent,
@@ -34,10 +36,8 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   public readonly events = signal<UiEvent[]>([]);
   public readonly wifiQrDataUrl = signal<string | null>(null);
-
   public readonly showSetupDrawer = signal<boolean>(false);
 
-  // --- autoscale for renderer ---
   @ViewChild("sceneHost", { static: true })
   private sceneHostRef!: ElementRef<HTMLElement>;
 
@@ -51,6 +51,18 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly drawingCount = computed(() => this.store.drawingsList().length);
   public readonly playerCount = computed(() => this.store.leaderboard().length);
 
+  public readonly roundPhase = computed<RoundPhase>(() => this.store.round()?.phase ?? "LOBBY");
+  public readonly roundEndsAt = computed(() => this.store.round()?.endsAt ?? 0);
+  public readonly roundNumber = computed(() => this.store.round()?.roundNumber ?? 0);
+
+  /** Timer countdown display */
+  public readonly timeLeft = signal<string>("");
+  private timerInterval: ReturnType<typeof setInterval> | null = null;
+
+  /** Timer settings (editable) */
+  public drawDurationSec = signal<number>(60);
+  public searchDurationSec = signal<number>(90);
+
   private unsubscribeWs: (() => void) | null = null;
 
   public constructor(
@@ -61,14 +73,12 @@ export class BoardComponent implements OnInit, OnDestroy {
   }
 
   public onWifiQrGenerated(dataUrl: string): void {
-    const trimmed: string = (dataUrl ?? "").trim();
-    this.wifiQrDataUrl.set(trimmed.length > 0 ? trimmed : null);
+    this.wifiQrDataUrl.set((dataUrl ?? "").trim() || null);
   }
 
   public async ngOnInit(): Promise<void> {
     this.store.setConnecting();
 
-    // Player URL/QR
     const host: string = window.location.host;
     const playerUrl: string = `http://${host}/#/player`;
     this.playerUrl.set(playerUrl);
@@ -76,14 +86,12 @@ export class BoardComponent implements OnInit, OnDestroy {
 
     this.adminKey = this.loadAdminKey();
     this.showAdminOverlay.set(!this.adminKey);
-
     this.setupAutoScale();
+    this.startTimerTick();
 
-    // Connect via WebSocket
     this.wsService.connect();
     this.unsubscribeWs = this.wsService.onMessage((msg) => this.handleMessage(msg));
 
-    // Join as board
     const checkJoin = setInterval(() => {
       if (this.wsService.status() === "connected") {
         this.wsService.send({ type: "join", kind: "board" });
@@ -94,9 +102,8 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   public ngOnDestroy(): void {
     if (this.unsubscribeWs) this.unsubscribeWs();
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
-    }
+    if (this.resizeObserver) this.resizeObserver.disconnect();
+    if (this.timerInterval) clearInterval(this.timerInterval);
   }
 
   private handleMessage(msg: ServerToClientMessage): void {
@@ -108,6 +115,11 @@ export class BoardComponent implements OnInit, OnDestroy {
       case "state":
         this.store.setGameState(msg.state);
         this.store.setConnected();
+        // Sync timer settings from server
+        if (msg.state.round) {
+          this.drawDurationSec.set(msg.state.round.drawDurationSec);
+          this.searchDurationSec.set(msg.state.round.searchDurationSec);
+        }
         break;
 
       case "event":
@@ -123,22 +135,55 @@ export class BoardComponent implements OnInit, OnDestroy {
     }
   }
 
-  public toggleSetupDrawer(): void {
-    this.showSetupDrawer.set(!this.showSetupDrawer());
+  // ──────── Round controls ────────
+
+  public startRound(): void {
+    this.wsService.send({ type: "start-round" });
   }
 
-  public onSetupDrawerCloseRequested(): void {
-    this.showSetupDrawer.set(false);
+  public saveTimerSettings(): void {
+    this.wsService.send({
+      type: "set-timer",
+      drawDurationSec: this.drawDurationSec(),
+      searchDurationSec: this.searchDurationSec()
+    });
   }
+
+  private startTimerTick(): void {
+    this.timerInterval = setInterval(() => {
+      const endsAt = this.roundEndsAt();
+      if (endsAt > 0) {
+        const left = Math.max(0, endsAt - Date.now());
+        const sec = Math.ceil(left / 1000);
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        this.timeLeft.set(`${m}:${String(s).padStart(2, "0")}`);
+      } else {
+        this.timeLeft.set("");
+      }
+    }, 500);
+  }
+
+  public get phaseLabel(): string {
+    switch (this.roundPhase()) {
+      case "DRAW": return "🖌 Zeichnen";
+      case "SEARCH": return "🔍 Suchen";
+      case "PAUSED": return "⏸ Pause";
+      default: return "🏠 Lobby";
+    }
+  }
+
+  // ──────── existing methods ────────
+
+  public toggleSetupDrawer(): void { this.showSetupDrawer.set(!this.showSetupDrawer()); }
+  public onSetupDrawerCloseRequested(): void { this.showSetupDrawer.set(false); }
 
   public resetWorld(): void {
     this.wsService.send({ type: "reset" });
     this.pushEvent("Spiel zurückgesetzt! 🔄", Date.now());
   }
 
-  public canReset(): boolean {
-    return (this.adminKey ?? "").trim().length > 0;
-  }
+  public canReset(): boolean { return (this.adminKey ?? "").trim().length > 0; }
 
   public onAdminKeySubmitted(adminKey: string): void {
     this.adminKey = adminKey;
@@ -147,38 +192,29 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.showAdminOverlay.set(false);
   }
 
-  // ---------- autoscale ----------
   private setupAutoScale(): void {
     const hostElement = this.sceneHostRef.nativeElement;
-
     const recompute = () => {
       const hostRect = hostElement.getBoundingClientRect();
       const scaleByWidth = hostRect.width / this.sceneWidthPx;
       const scaleByHeight = hostRect.height / this.sceneHeightPx;
-      const clampedScale = Math.min(2.5, Math.max(0.4, Math.min(scaleByWidth, scaleByHeight)));
-      this.boardScale.set(clampedScale);
+      this.boardScale.set(Math.min(2.5, Math.max(0.4, Math.min(scaleByWidth, scaleByHeight))));
     };
-
     this.resizeObserver = new ResizeObserver(() => recompute());
     this.resizeObserver.observe(hostElement);
-
     recompute();
   }
 
-  // ---------- UI events ----------
   private pushEvent(text: string, createdAt: number): void {
     const id: string = `${createdAt}-${Math.random().toString(16).slice(2)}`;
     const next: UiEvent = { id, text, createdAt };
     this.events.set([next, ...this.events()]);
-    window.setTimeout(() => {
-      this.events.set(this.events().filter((e) => e.id !== id));
-    }, 4000);
+    window.setTimeout(() => { this.events.set(this.events().filter((e) => e.id !== id)); }, 4000);
   }
 
   private loadAdminKey(): string | null {
-    const stored: string | null = localStorage.getItem("birthday_admin_key");
+    const stored = localStorage.getItem("birthday_admin_key");
     if (!stored) return null;
-    const trimmed: string = stored.trim();
-    return trimmed.length > 0 ? trimmed : null;
+    return stored.trim().length > 0 ? stored.trim() : null;
   }
 }

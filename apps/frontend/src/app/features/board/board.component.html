@@ -1,50 +1,48 @@
 <div class="h-screen w-screen overflow-hidden bg-stone-100 text-stone-900 relative flex">
   <app-event-toasts [events]="events()"></app-event-toasts>
 
-  <!-- ══════ Main area: scene fills screen ══════ -->
+  <!-- ══════ Main area ══════ -->
   <div class="flex-1 flex flex-col min-w-0">
-    <!-- Thin top bar -->
+    <!-- Top bar with phase + timer -->
     <div class="flex items-center justify-between gap-3 px-4 py-2 bg-white/60 backdrop-blur border-b border-black/[0.06]">
-      <div class="flex items-center gap-2 text-xs text-stone-400">
+      <div class="flex items-center gap-3">
         <span class="text-sm font-semibold text-stone-800">🎨 Zeichne & Suche</span>
-        <span>{{ store.connectionStatus() }}</span>
-        <span>· {{ drawingCount() }} Zeichnungen · {{ playerCount() }} Spieler</span>
+        <!-- Phase badge -->
+        <span class="text-xs font-medium px-2.5 py-1 rounded-full"
+          [class.bg-emerald-100]="roundPhase() === 'DRAW'" [class.text-emerald-700]="roundPhase() === 'DRAW'"
+          [class.bg-blue-100]="roundPhase() === 'SEARCH'" [class.text-blue-700]="roundPhase() === 'SEARCH'"
+          [class.bg-stone-200]="roundPhase() === 'LOBBY' || roundPhase() === 'PAUSED'"
+          [class.text-stone-600]="roundPhase() === 'LOBBY' || roundPhase() === 'PAUSED'"
+        >{{ phaseLabel }}</span>
+        <!-- Timer -->
+        @if (timeLeft()) {
+          <span class="text-2xl font-mono font-bold text-stone-800 tabular-nums">⏱ {{ timeLeft() }}</span>
+        }
+        @if (roundNumber() > 0) {
+          <span class="text-xs text-stone-400">Runde {{ roundNumber() }}</span>
+        }
       </div>
 
-      <div class="flex items-center gap-2">
-        <button
-          class="rounded-lg border border-black/10 bg-white px-2.5 py-1 text-xs text-stone-500 hover:bg-stone-50 active:translate-y-px"
-          (click)="toggleSetupDrawer()"
-        >
-          Setup
-        </button>
-
+      <div class="flex items-center gap-2 text-xs text-stone-400">
+        <span>{{ drawingCount() }} Zeichnungen · {{ playerCount() }} Spieler</span>
+        <button class="rounded-lg border border-black/10 bg-white px-2.5 py-1 text-xs text-stone-500 hover:bg-stone-50" (click)="toggleSetupDrawer()">Setup</button>
         @if (canReset()) {
-          <button
-            class="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs text-red-600 hover:bg-red-100 active:translate-y-px"
-            (click)="resetWorld()"
-          >
-            Reset
-          </button>
+          <button class="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs text-red-600 hover:bg-red-100" (click)="resetWorld()">Reset</button>
         }
       </div>
     </div>
 
-    <!-- Scene (fills remaining space) -->
+    <!-- Scene -->
     <div class="flex-1 relative p-3">
       <div #sceneHost class="relative h-full w-full flex items-center justify-center">
-        <app-scene-renderer
-          class="block"
+        <app-scene-renderer class="block"
           [gameState]="store.gameState()"
-          [sceneWidthPx]="sceneWidthPx"
-          [sceneHeightPx]="sceneHeightPx"
+          [sceneWidthPx]="sceneWidthPx" [sceneHeightPx]="sceneHeightPx"
           [viewScale]="boardScale()"
         ></app-scene-renderer>
 
         @if (!store.gameState()) {
-          <div class="absolute inset-0 grid place-items-center text-sm text-stone-400">
-            Verbinde…
-          </div>
+          <div class="absolute inset-0 grid place-items-center text-sm text-stone-400">Verbinde…</div>
         }
 
         @if (store.gameState() && drawingCount() === 0) {
@@ -60,54 +58,70 @@
     </div>
   </div>
 
-  <!-- ══════ Right sidebar: Leaderboard + QR ══════ -->
+  <!-- ══════ Right sidebar ══════ -->
   <div class="w-72 shrink-0 border-l border-black/[0.06] bg-white flex flex-col">
+    <!-- Round controls -->
+    <div class="px-4 pt-3 pb-2 border-b border-black/[0.06]">
+      @if (roundPhase() === 'LOBBY' || roundPhase() === 'PAUSED') {
+        <button
+          class="w-full rounded-xl bg-emerald-600 text-white px-4 py-2.5 text-sm font-medium hover:bg-emerald-700 active:translate-y-px"
+          (click)="startRound()"
+        >▶ Runde starten</button>
+        <!-- Timer settings -->
+        <div class="mt-2 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label class="text-[10px] text-stone-400 uppercase">Zeichenzeit</label>
+            <div class="flex items-center gap-1">
+              <input type="number" min="10" max="600" [value]="drawDurationSec()"
+                (input)="drawDurationSec.set(+($any($event.target).value))"
+                class="w-14 rounded border border-black/10 px-1.5 py-0.5 text-xs text-center" />
+              <span class="text-[10px] text-stone-400">Sek</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <label class="text-[10px] text-stone-400 uppercase">Suchzeit</label>
+            <div class="flex items-center gap-1">
+              <input type="number" min="10" max="600" [value]="searchDurationSec()"
+                (input)="searchDurationSec.set(+($any($event.target).value))"
+                class="w-14 rounded border border-black/10 px-1.5 py-0.5 text-xs text-center" />
+              <span class="text-[10px] text-stone-400">Sek</span>
+            </div>
+          </div>
+          <button class="w-full rounded-lg border border-black/10 bg-stone-50 px-2 py-1 text-[10px] text-stone-500 hover:bg-stone-100" (click)="saveTimerSettings()">Timer speichern</button>
+        </div>
+      } @else {
+        <div class="text-center">
+          <div class="text-xs text-stone-400 uppercase mb-1">{{ phaseLabel }}</div>
+          @if (timeLeft()) {
+            <div class="text-3xl font-mono font-bold text-stone-800 tabular-nums">{{ timeLeft() }}</div>
+          }
+        </div>
+      }
+    </div>
+
     <!-- Leaderboard header -->
-    <div class="px-4 pt-4 pb-2">
+    <div class="px-4 pt-3 pb-2">
       <div class="text-xs font-semibold uppercase tracking-wider text-stone-400">🏆 Highscore</div>
     </div>
 
     <!-- Leaderboard -->
     <div class="flex-1 overflow-auto px-3 pb-3">
       @if (leaderboard().length === 0) {
-        <div class="text-xs text-stone-400 py-8 text-center">
-          Noch keine Spieler…
-        </div>
+        <div class="text-xs text-stone-400 py-8 text-center">Noch keine Spieler…</div>
       }
-
       @for (player of leaderboard(); track player.id; let i = $index) {
-        <div
-          class="flex items-center gap-2.5 py-2 px-2.5 rounded-xl mb-1 transition-colors"
-          [class.bg-amber-50]="i === 0"
-          [class.border]="i < 3"
-          [class.border-amber-200]="i === 0"
-          [class.border-stone-200]="i === 1 || i === 2"
+        <div class="flex items-center gap-2.5 py-2 px-2.5 rounded-xl mb-1 transition-colors"
+          [class.bg-amber-50]="i === 0" [class.border]="i < 3"
+          [class.border-amber-200]="i === 0" [class.border-stone-200]="i === 1 || i === 2"
           [class.bg-stone-50]="i === 1 || i === 2"
         >
-          <!-- Rank -->
-          <span class="text-lg w-7 text-center shrink-0">
-            {{ i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.' }}
-          </span>
-
-          <!-- Avatar -->
+          <span class="text-lg w-7 text-center shrink-0">{{ i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.' }}</span>
           @if (player.avatarDataUrl) {
-            <img
-              class="w-9 h-9 rounded-full border border-black/[0.06] shrink-0 bg-white"
-              [src]="player.avatarDataUrl"
-              [alt]="player.name"
-            />
+            <img class="w-9 h-9 rounded-full border border-black/[0.06] shrink-0 bg-white" [src]="player.avatarDataUrl" [alt]="player.name" />
           } @else {
-            <div class="w-9 h-9 rounded-full bg-stone-100 border border-black/[0.06] shrink-0 grid place-items-center text-sm">
-              🎨
-            </div>
+            <div class="w-9 h-9 rounded-full bg-stone-100 border border-black/[0.06] shrink-0 grid place-items-center text-sm">🎨</div>
           }
-
-          <!-- Name + score -->
-          <div class="flex-1 min-w-0">
-            <div class="text-sm font-medium truncate">{{ player.name }}</div>
-          </div>
-
-          <!-- Score -->
+          <div class="flex-1 min-w-0"><div class="text-sm font-medium truncate">{{ player.name }}</div></div>
           <div class="text-right shrink-0">
             <div class="text-lg font-bold text-amber-600">{{ player.score }}</div>
             <div class="text-[10px] text-stone-400">Punkte</div>
@@ -116,7 +130,7 @@
       }
     </div>
 
-    <!-- QR codes at bottom -->
+    <!-- QR codes -->
     <div class="border-t border-black/[0.06] p-3">
       <div class="flex items-center justify-center gap-2">
         @if (wifiQrDataUrl()) {
@@ -125,14 +139,11 @@
             <div class="mt-1 text-xs text-stone-400">WLAN</div>
           </div>
         }
-
         <div class="flex flex-col items-center">
           @if (playerQrDataUrl()) {
             <img class="h-28 w-28 rounded-lg bg-white p-0.5 border border-black/[0.06]" [src]="playerQrDataUrl()!" alt="Player QR"/>
           } @else {
-            <div class="h-28 w-28 rounded-lg border border-black/[0.06] bg-stone-50 grid place-items-center text-[10px] text-stone-400">
-              QR…
-            </div>
+            <div class="h-28 w-28 rounded-lg border border-black/[0.06] bg-stone-50 grid place-items-center text-[10px] text-stone-400">QR…</div>
           }
           <div class="mt-1 text-xs text-stone-400">Mitspielen</div>
         </div>
@@ -140,17 +151,9 @@
     </div>
   </div>
 
-  <app-board-setup-drawer
-    [isOpen]="showSetupDrawer()"
-    [playerUrl]="playerUrl()"
-    [playerQrDataUrl]="playerQrDataUrl()"
-    (onCloseRequested)="onSetupDrawerCloseRequested()"
-    (wifiQrGenerated)="onWifiQrGenerated($event)"
+  <app-board-setup-drawer [isOpen]="showSetupDrawer()" [playerUrl]="playerUrl()" [playerQrDataUrl]="playerQrDataUrl()"
+    (onCloseRequested)="onSetupDrawerCloseRequested()" (wifiQrGenerated)="onWifiQrGenerated($event)"
   ></app-board-setup-drawer>
 
-  <app-admin-overlay
-    [visible]="showAdminOverlay()"
-    [errorText]="adminErrorText()"
-    (submitAdminKey)="onAdminKeySubmitted($event)"
-  ></app-admin-overlay>
+  <app-admin-overlay [visible]="showAdminOverlay()" [errorText]="adminErrorText()" (submitAdminKey)="onAdminKeySubmitted($event)"></app-admin-overlay>
 </div>

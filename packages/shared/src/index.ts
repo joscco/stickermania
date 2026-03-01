@@ -2,6 +2,45 @@
 //  Shared types for the Draw & Search birthday party game
 // ════════════════════════════════════════════════════════════════════
 
+// ──────── Central game config (read from game.config.json) ────────
+
+export interface GameConfig {
+  fieldWidth: number;
+  fieldHeight: number;
+  playerColors: string[];
+  colorsPerPlayer: number;
+  drawPrompts: string[];
+  drawDurationSec: number;
+  searchDurationSec: number;
+  drawingSizeMin: number;
+  drawingSizeMax: number;
+  canvasResolution: number;
+  drawingsPath: string;
+  port: number;
+  adminPassword: string | null;
+}
+
+export function parseGameConfig(raw: unknown): GameConfig {
+  const obj = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
+  return {
+    fieldWidth: typeof obj["fieldWidth"] === "number" ? obj["fieldWidth"] : 1600,
+    fieldHeight: typeof obj["fieldHeight"] === "number" ? obj["fieldHeight"] : 900,
+    playerColors: Array.isArray(obj["playerColors"]) ? obj["playerColors"] as string[] : ["#dc2626", "#2563eb"],
+    colorsPerPlayer: typeof obj["colorsPerPlayer"] === "number" ? obj["colorsPerPlayer"] : 2,
+    drawPrompts: Array.isArray(obj["drawPrompts"]) ? obj["drawPrompts"] as string[] : ["Katze", "Hund", "Sonne"],
+    drawDurationSec: typeof obj["drawDurationSec"] === "number" ? obj["drawDurationSec"] : 60,
+    searchDurationSec: typeof obj["searchDurationSec"] === "number" ? obj["searchDurationSec"] : 90,
+    drawingSizeMin: typeof obj["drawingSizeMin"] === "number" ? obj["drawingSizeMin"] : 0.08,
+    drawingSizeMax: typeof obj["drawingSizeMax"] === "number" ? obj["drawingSizeMax"] : 0.12,
+    canvasResolution: typeof obj["canvasResolution"] === "number" ? obj["canvasResolution"] : 300,
+    drawingsPath: typeof obj["drawingsPath"] === "string" ? obj["drawingsPath"] : "./drawings",
+    port: typeof obj["port"] === "number" ? obj["port"] : 3001,
+    adminPassword: typeof obj["adminPassword"] === "string" ? obj["adminPassword"] : null,
+  };
+}
+
+// ──────── Game entities ────────
+
 export interface Player {
   id: string;
   name: string;
@@ -18,16 +57,28 @@ export interface Drawing {
   /** Normalized 0..1 position on the game field */
   x: number;
   y: number;
-  width: number;   // normalized 0..1
-  height: number;   // normalized 0..1
+  /** Normalized size (fraction of field) */
+  size: number;
   placedAt: number;
-  foundBy: string | null;   // playerId of who found it
+  foundBy: string | null;
   foundAt: number | null;
+}
+
+export type RoundPhase = "LOBBY" | "DRAW" | "SEARCH" | "PAUSED";
+
+export interface RoundState {
+  phase: RoundPhase;
+  /** ms timestamp when current phase ends (0 = no timer) */
+  endsAt: number;
+  drawDurationSec: number;
+  searchDurationSec: number;
+  roundNumber: number;
 }
 
 export interface GameState {
   players: Record<string, Player>;
   drawings: Record<string, Drawing>;
+  round: RoundState;
   revision: number;
   updatedAt: number;
 }
@@ -57,49 +108,27 @@ export type ClientToServerMessage =
   | { type: "set-name"; name: string }
   | { type: "submit-avatar"; avatarDataUrl: string }
   | { type: "submit-drawing"; imageDataUrl: string }
-  | { type: "search-tap"; drawingId: string }
-  | { type: "request-task" }
+  | { type: "search-snapshot"; centerX: number; centerY: number; radius: number }
+  | { type: "start-round" }
+  | { type: "set-timer"; drawDurationSec: number; searchDurationSec: number }
   | { type: "reset" }
   | { type: "ping"; t: number };
 
 export type ServerToClientMessage =
-  | { type: "welcome"; clientId: string; playerId: string; serverTime: number }
+  | { type: "welcome"; clientId: string; playerId: string; serverTime: number; assignedColors: string[] }
   | { type: "state"; state: GameState }
   | { type: "assign-task"; task: PlayerTask }
   | { type: "search-result"; correct: boolean; drawingId: string; message: string }
   | { type: "score-update"; playerId: string; newScore: number; reason: string }
+  | { type: "round-phase"; phase: RoundPhase; endsAt: number }
   | { type: "event"; text: string; createdAt: number }
   | { type: "error"; message: string }
   | { type: "pong"; t: number; serverTime: number };
 
-// ──────── Prompt pool ────────
-
-export const DRAW_PROMPTS: string[] = [
-  "Katze", "Hund", "Sonne", "Haus", "Baum", "Blume", "Auto", "Schiff",
-  "Fisch", "Vogel", "Stern", "Herz", "Mond", "Wolke", "Berg",
-  "Schmetterling", "Regenbogen", "Schneemann", "Apfel", "Banane",
-  "Eis", "Pizza", "Kuchen", "Ballon", "Geschenk", "Rakete", "Roboter",
-  "Drache", "Einhorn", "Krone", "Diamant", "Gitarre", "Fußball",
-  "Fahrrad", "Zug", "Flugzeug", "Anker", "Palme", "Kaktus", "Pilz",
-  "Frosch", "Elefant", "Löwe", "Pinguin", "Schildkröte", "Schnecke",
-  "Spinne", "Biene", "Delfin", "Hai",
-  "Hamburger", "Pommes", "Donut", "Brezel", "Würstchen",
-  "Geist", "Alien", "Hexe", "Pirat", "Ninja",
-  "Leuchtturm", "Vulkan", "Insel", "Wasserfall", "Regenschirm"
-];
-
 // ──────── Helpers ────────
 
 export function clampInt(value: number, min: number, max: number): number {
-  if (!Number.isFinite(value)) {
-    return min;
-  }
-  const roundedValue = Math.floor(value);
-  if (roundedValue < min) {
-    return min;
-  }
-  if (roundedValue > max) {
-    return max;
-  }
-  return roundedValue;
+  if (!Number.isFinite(value)) return min;
+  const v = Math.floor(value);
+  return v < min ? min : v > max ? max : v;
 }

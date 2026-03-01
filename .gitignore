@@ -31,6 +31,7 @@ apps/frontend/.vite/
 
 # Local runtime data
 world-state.json
+drawings/
 
 # Env files
 .env

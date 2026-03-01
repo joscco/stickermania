@@ -1,1 +1,11 @@
 @import "tailwindcss";
+
+/* Prevent blue text-selection highlight while drawing on canvas */
+canvas,
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+

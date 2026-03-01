@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from "@angular/core";
-import type { GameState, Player, Drawing } from "@birthday/shared";
+import type { GameState, Player, Drawing, RoundState } from "@birthday/shared";
 
 export type ConnectionStatus = "connecting" | "connected" | "disconnected";
 
@@ -13,6 +13,7 @@ export class WorldStore {
 
   public readonly players = computed<Record<string, Player>>(() => this.gameState()?.players ?? {});
   public readonly drawings = computed<Record<string, Drawing>>(() => this.gameState()?.drawings ?? {});
+  public readonly round = computed<RoundState | null>(() => this.gameState()?.round ?? null);
 
   public readonly leaderboard = computed<Player[]>(() => {
     const players = Object.values(this.players());

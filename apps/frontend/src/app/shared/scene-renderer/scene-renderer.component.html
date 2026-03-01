@@ -1,36 +1,26 @@
 <div
   class="relative select-none"
-  [style.width.px]="sceneWidthPx * viewScale"
-  [style.height.px]="sceneHeightPx * viewScale"
+  [style.width.px]="sceneWidthPx() * viewScale()"
+  [style.height.px]="sceneHeightPx() * viewScale()"
 >
-  <!-- Background with subtle grid -->
+  <!-- Background -->
   <div class="absolute inset-0 rounded-2xl border border-black/[0.06] bg-stone-50"
     style="background-image: radial-gradient(circle, #d6d3d1 0.8px, transparent 0.8px); background-size: 40px 40px;">
   </div>
 
   @for (drawing of drawingsSorted(); track drawing.id) {
-    <div
-      class="absolute cursor-pointer transition-transform duration-150 hover:scale-110"
-      [class.ring-4]="highlightDrawingId === drawing.id"
-      [class.ring-amber-400]="highlightDrawingId === drawing.id"
-      [class.opacity-50]="drawing.foundBy !== null && highlightDrawingId !== drawing.id"
+    <img
+      class="absolute pointer-events-none"
+      [class.opacity-30]="drawing.foundBy !== null"
       [style.left.%]="drawing.x * 100"
       [style.top.%]="drawing.y * 100"
-      [style.width.px]="drawing.width * sceneWidthPx * viewScale"
-      [style.height.px]="drawing.height * sceneHeightPx * viewScale"
+      [style.width.px]="drawing.size * sceneWidthPx() * viewScale()"
+      [style.height.px]="drawing.size * sceneWidthPx() * viewScale()"
       [style.transform]="'translate(-50%, -50%)'"
       [style.zIndex]="drawing.foundBy ? 1 : 2"
-      (click)="handleDrawingClick(drawing.id)"
-    >
-      <img
-        class="w-full h-full object-contain rounded-xl border border-black/[0.06] bg-white/90 shadow-sm p-1"
-        [src]="drawing.imageDataUrl"
-        [alt]="drawing.prompt"
-        draggable="false"
-      />
-      @if (drawing.foundBy) {
-        <div class="absolute -top-1 -right-1 text-xs bg-emerald-500 text-white rounded-full w-5 h-5 grid place-items-center shadow">✓</div>
-      }
-    </div>
+      [src]="drawing.imageDataUrl"
+      [alt]="drawing.prompt"
+      draggable="false"
+    />
   }
 </div>
