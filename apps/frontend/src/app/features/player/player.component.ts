@@ -3,19 +3,25 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild, computed } from "@
 import { OBJECT_TYPES, type ObjectType, type StickerPlacement } from "@birthday/shared";
 import { ApiService } from "../../core/api.service";
 import { WorldStore } from "../../core/world.store";
+import { ChallengeStore } from "../../core/challenge.store";
 import type { Point, Size } from "./types";
 import { GestureInterpreter } from "./gesture-interpreter";
 import { ViewportController } from "./viewport-controller";
 import { StickerHandStore } from "./sticker-hand.store";
+import { SceneRendererComponent } from "../../shared/scene-renderer/scene-renderer.component";
 
 @Component({
   selector: "app-player",
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SceneRendererComponent],
   templateUrl: "./player.component.html"
 })
 export class PlayerComponent implements OnInit, OnDestroy {
   public readonly store: WorldStore;
+  public readonly challengeStore: ChallengeStore;
+
+  public readonly objectTypes = OBJECT_TYPES;
+
   public readonly sceneWidthPx: number = 1000;
   public readonly sceneHeightPx: number = 700;
 
@@ -26,7 +32,11 @@ export class PlayerComponent implements OnInit, OnDestroy {
   private viewportRef!: ElementRef<HTMLElement>;
 
   private pollingTimerHandle: number | null = null;
+  private challengePollingTimerHandle: number | null = null;
+
   private readonly gesture: GestureInterpreter;
+
+  private readonly voterId: string = this.loadOrCreateVoterId();
 
   public readonly placementsSorted = computed((): StickerPlacement[] => {
     const world = this.store.world();
@@ -39,9 +49,11 @@ export class PlayerComponent implements OnInit, OnDestroy {
   public constructor(
     private readonly apiService: ApiService,
     worldStore: WorldStore,
+    challengeStore: ChallengeStore,
     handStore: StickerHandStore
   ) {
     this.store = worldStore;
+    this.challengeStore = challengeStore;
     this.handStore = handStore;
 
     this.gesture = new GestureInterpreter({
@@ -57,12 +69,93 @@ export class PlayerComponent implements OnInit, OnDestroy {
     });
   }
 
+  private renderWorldToPngDataUrl(args: { world: any; width: number; height: number }): string {
+    const canvas = document.createElement("canvas");
+    canvas.width = args.width;
+    canvas.height = args.height;
+
+    const context = canvas.getContext("2d");
+    if (!context) {
+      return "";
+    }
+
+    // optional background (transparent or a subtle dark)
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    // draw placements (sorted by zIndex)
+    const placements: any[] = Object.values(args.world?.placements ?? {});
+    placements.sort((a, b) => (a?.zIndex ?? 0) - (b?.zIndex ?? 0));
+
+    for (const placement of placements) {
+      const normalizedX = Number(placement?.x);
+      const normalizedY = Number(placement?.y);
+      const rotationDeg = Number(placement?.rotationDeg ?? 0);
+      const stickerScale = Number(placement?.scale ?? 1);
+      const objectType = String(placement?.type ?? "");
+
+      if (!Number.isFinite(normalizedX) || !Number.isFinite(normalizedY)) {
+        continue;
+      }
+
+      const emoji = this.emojiForType(objectType as any);
+
+      const centerX = normalizedX * canvas.width;
+      const centerY = normalizedY * canvas.height;
+
+      const baseSizePx = 40;
+      const fontSizePx = 28;
+
+      context.save();
+      context.translate(centerX, centerY);
+      context.rotate((rotationDeg * Math.PI) / 180);
+      context.scale(stickerScale, stickerScale);
+
+      // simple “sticker tile”
+      context.fillStyle = "rgba(0,0,0,0.25)";
+      context.strokeStyle = "rgba(255,255,255,0.15)";
+      context.lineWidth = 2;
+
+      const half = baseSizePx / 2;
+      // rounded rect (manual)
+      const radius = 10;
+      context.beginPath();
+      context.moveTo(-half + radius, -half);
+      context.lineTo(half - radius, -half);
+      context.quadraticCurveTo(half, -half, half, -half + radius);
+      context.lineTo(half, half - radius);
+      context.quadraticCurveTo(half, half, half - radius, half);
+      context.lineTo(-half + radius, half);
+      context.quadraticCurveTo(-half, half, -half, half - radius);
+      context.lineTo(-half, -half + radius);
+      context.quadraticCurveTo(-half, -half, -half + radius, -half);
+      context.closePath();
+      context.fill();
+      context.stroke();
+
+      // emoji
+      context.font = `${fontSizePx}px system-ui, Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji`;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillStyle = "white";
+      context.fillText(emoji, 0, 2);
+
+      context.restore();
+    }
+
+    return canvas.toDataURL("image/png");
+  }
+
   public ngOnInit(): void {
     this.store.setConnecting();
     this.handStore.ensureInitialized();
 
+    // world polling
     this.pollOnce();
     this.pollingTimerHandle = window.setInterval(() => this.pollOnce(), 1200);
+
+    // challenge polling
+    this.pollChallengeOnce();
+    this.challengePollingTimerHandle = window.setInterval(() => this.pollChallengeOnce(), 900);
 
     window.setTimeout(() => this.centerViewport(), 0);
   }
@@ -72,10 +165,14 @@ export class PlayerComponent implements OnInit, OnDestroy {
       window.clearInterval(this.pollingTimerHandle);
       this.pollingTimerHandle = null;
     }
+    if (this.challengePollingTimerHandle !== null) {
+      window.clearInterval(this.challengePollingTimerHandle);
+      this.challengePollingTimerHandle = null;
+    }
     this.viewportController.stopInertia();
   }
 
-  // ---------- Polling ----------
+  // ---------- Polling (World) ----------
   private async pollOnce(): Promise<void> {
     try {
       const currentRevision: number | null = this.store.revision();
@@ -95,14 +192,55 @@ export class PlayerComponent implements OnInit, OnDestroy {
     }
   }
 
+  // ---------- Polling (Challenge) ----------
+  private async pollChallengeOnce(): Promise<void> {
+    try {
+      const currentRevision: number | null = this.challengeStore.revision();
+      const state = await this.apiService.getChallengeState({ sinceRevision: currentRevision });
+      if (state) {
+        this.challengeStore.setState(state);
+      }
+    } catch {
+      // party mode: ignore
+    }
+  }
+
   public async resetWorld(): Promise<void> {
     await this.apiService.reset();
     await this.pollOnce();
   }
 
-  // ---------- UI (hand) ----------
+  public async submitForVote(): Promise<void> {
+    const world = this.store.world();
+    if (!world) {
+      return;
+    }
+
+    const screenshotDataUrl = this.renderWorldToPngDataUrl({ world, width: 1000, height: 700 });
+
+    await this.apiService.submitSnapshot({
+      voterId: this.voterId,
+      screenshotDataUrl
+    });
+
+    await this.pollChallengeOnce();
+  }
+
+  public async castVote(vote: boolean): Promise<void> {
+    const submission = this.challengeStore.activeSubmission();
+    if (!submission || submission.status !== "OPEN") {
+      return;
+    }
+    await this.apiService.vote({ submissionId: submission.id, voterId: this.voterId, vote });
+    await this.pollChallengeOnce();
+  }
+
+  public voterIdShort(): string {
+    return this.voterId.slice(-6);
+  }
+
+  // ---------- Hand UI ----------
   public selectHandIndex(index: number): void {
-    // optional: allow explicit selection
     this.handStore.selectIndex(index);
   }
 
@@ -111,7 +249,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
   }
 
   public emojiForType(objectType: ObjectType): string {
-    const found = OBJECT_TYPES.find((t) => t.type === objectType);
+    const found = OBJECT_TYPES.find((entry) => entry.type === objectType);
     return found?.emoji ?? "❓";
   }
 
@@ -198,10 +336,9 @@ export class PlayerComponent implements OnInit, OnDestroy {
   private onPinch(centerClient: Point, factor: number, centerDeltaClient: Point): void {
     const viewportElement = this.viewportRef.nativeElement;
     const rect = viewportElement.getBoundingClientRect();
-
     const viewportSize = { width: rect.width, height: rect.height };
 
-    // 2-finger pan: center movement
+    // two-finger pan: center movement
     this.viewportController.panBy({
       deltaX: centerDeltaClient.x,
       deltaY: centerDeltaClient.y,
@@ -209,7 +346,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
       sceneSize: this.sceneSize()
     });
 
-    // 2-finger zoom around center
+    // zoom around pinch center
     const viewportPoint: Point = { x: centerClient.x - rect.left, y: centerClient.y - rect.top };
 
     this.viewportController.zoomAtPoint({
@@ -249,8 +386,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
     }
 
     const activeSlot = this.handStore.getActiveSlot();
-
-    // consume now so UI feels instant; if request fails, we could redraw back later.
     this.handStore.consumeActiveSlotAndRedraw();
 
     this.apiService.place({
@@ -260,5 +395,16 @@ export class PlayerComponent implements OnInit, OnDestroy {
       rotationDeg: 0,
       scale: 1
     }).then(() => this.pollOnce());
+  }
+
+  private loadOrCreateVoterId(): string {
+    const existing = localStorage.getItem("birthday_voter_id");
+    if (existing && existing.trim().length > 0) {
+      return existing;
+    }
+
+    const created = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    localStorage.setItem("birthday_voter_id", created);
+    return created;
   }
 }

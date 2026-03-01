@@ -1,13 +1,16 @@
 import { CommonModule } from "@angular/common";
-import { Component, OnDestroy, OnInit, signal } from "@angular/core";
-import { OBJECT_TYPES, type ObjectType, type StickerPlacement } from "@birthday/shared";
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, signal } from "@angular/core";
+import type { ObjectType, StickerPlacement } from "@birthday/shared";
+import { OBJECT_TYPES } from "@birthday/shared";
 import { ApiService } from "../../core/api.service";
 import { WorldStore } from "../../core/world.store";
+import { ChallengeStore } from "../../core/challenge.store";
 import * as QRCode from "qrcode";
 
 import { EventToastsComponent, type UiEvent } from "./events/event-toasts.component";
 import { AdminOverlayComponent } from "./admin/admin.component";
 import { BoardSetupDrawerComponent } from "./setup/board-setup-drawer.component";
+import { SceneRendererComponent } from "../../shared/scene-renderer/scene-renderer.component";
 
 @Component({
   selector: "app-board",
@@ -16,12 +19,14 @@ import { BoardSetupDrawerComponent } from "./setup/board-setup-drawer.component"
     CommonModule,
     EventToastsComponent,
     AdminOverlayComponent,
-    BoardSetupDrawerComponent
+    BoardSetupDrawerComponent,
+    SceneRendererComponent
   ],
   templateUrl: "./board.component.html"
 })
 export class BoardComponent implements OnInit, OnDestroy {
   public readonly store: WorldStore;
+  public readonly challengeStore: ChallengeStore;
 
   public readonly playerUrl = signal<string>("");
   public readonly playerQrDataUrl = signal<string | null>(null);
@@ -36,9 +41,31 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly showSetupDrawer = signal<boolean>(false);
 
   private pollingTimerHandle: number | null = null;
+  private challengePollingTimerHandle: number | null = null;
 
-  public constructor(private readonly apiService: ApiService, worldStore: WorldStore) {
+  // --- autoscale for renderer ---
+  @ViewChild("sceneHost", { static: true })
+  private sceneHostRef!: ElementRef<HTMLElement>;
+
+  public readonly boardScale = signal<number>(1);
+  private resizeObserver: ResizeObserver | null = null;
+
+  private readonly sceneWidthPx: number = 1000;
+  private readonly sceneHeightPx: number = 700;
+
+  // --- Challenge UI ---
+  public readonly challengeText = signal<string>("Melone als Hut!");
+  public readonly challengeDurationSec = signal<number>(120);
+  public readonly isStartingChallenge = signal<boolean>(false);
+  public readonly lastChallengeError = signal<string | null>(null);
+
+  public constructor(
+    private readonly apiService: ApiService,
+    worldStore: WorldStore,
+    challengeStore: ChallengeStore
+  ) {
     this.store = worldStore;
+    this.challengeStore = challengeStore;
   }
 
   public onWifiQrGenerated(dataUrl: string): void {
@@ -58,15 +85,28 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.adminKey = this.loadAdminKey();
     this.showAdminOverlay.set(!this.adminKey);
 
+    this.setupAutoScale();
+
     // initial load + polling
     this.pollOnce();
     this.pollingTimerHandle = window.setInterval(() => this.pollOnce(), 700);
+
+    this.pollChallengeOnce();
+    this.challengePollingTimerHandle = window.setInterval(() => this.pollChallengeOnce(), 700);
   }
 
   public ngOnDestroy(): void {
     if (this.pollingTimerHandle !== null) {
       window.clearInterval(this.pollingTimerHandle);
       this.pollingTimerHandle = null;
+    }
+    if (this.challengePollingTimerHandle !== null) {
+      window.clearInterval(this.challengePollingTimerHandle);
+      this.challengePollingTimerHandle = null;
+    }
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
     }
   }
 
@@ -95,7 +135,7 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.showAdminOverlay.set(false);
   }
 
-  // ---------- Polling ----------
+  // ---------- Polling (World) ----------
   private async pollOnce(): Promise<void> {
     try {
       const currentRevision: number | null = this.store.revision();
@@ -115,7 +155,70 @@ export class BoardComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ---------- Rendering helpers ----------
+  // ---------- Polling (Challenge) ----------
+  private async pollChallengeOnce(): Promise<void> {
+    try {
+      const currentRevision: number | null = this.challengeStore.revision();
+      const state = await this.apiService.getChallengeState({ sinceRevision: currentRevision });
+      if (state) {
+        this.challengeStore.setState(state);
+      }
+    } catch {
+      // ignore in party mode
+    }
+  }
+
+  // ---------- Challenge actions ----------
+  public async startChallenge(): Promise<void> {
+    this.lastChallengeError.set(null);
+
+    const text = this.challengeText().trim();
+    if (text.length <= 0) {
+      this.lastChallengeError.set("Bitte Challenge-Text eingeben.");
+      return;
+    }
+
+    const durationSec = this.challengeDurationSec();
+    const durationMs = Math.max(10, Number.isFinite(durationSec) ? durationSec : 120) * 1000;
+
+    try {
+      this.isStartingChallenge.set(true);
+      await this.apiService.startChallenge({ text, durationMs });
+      await this.pollChallengeOnce();
+      this.pushEvent("Challenge gestartet", Date.now());
+    } catch {
+      this.lastChallengeError.set("Konnte Challenge nicht starten.");
+    } finally {
+      this.isStartingChallenge.set(false);
+    }
+  }
+
+  public timeLeftLabel(endsAt: number): string {
+    const msLeft = Math.max(0, endsAt - Date.now());
+    const sec = Math.floor(msLeft / 1000);
+    const minutes = Math.floor(sec / 60);
+    const seconds = sec % 60;
+    return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  // ---------- autoscale ----------
+  private setupAutoScale(): void {
+    const hostElement = this.sceneHostRef.nativeElement;
+
+    const recompute = () => {
+      const hostRect = hostElement.getBoundingClientRect();
+      const scaleByWidth = hostRect.width / this.sceneWidthPx;
+      const clampedScale = Math.min(2.5, Math.max(0.4, scaleByWidth));
+      this.boardScale.set(clampedScale);
+    };
+
+    this.resizeObserver = new ResizeObserver(() => recompute());
+    this.resizeObserver.observe(hostElement);
+
+    recompute();
+  }
+
+  // ---------- Rendering helpers (still used) ----------
   public placementsSorted(): StickerPlacement[] {
     const world = this.store.world();
     if (!world) {
@@ -129,7 +232,7 @@ export class BoardComponent implements OnInit, OnDestroy {
     return found?.emoji ?? "❓";
   }
 
-  // ---------- UI events (local only, optional) ----------
+  // ---------- UI events ----------
   private pushEvent(text: string, createdAt: number): void {
     const id: string = `${createdAt}-${Math.random().toString(16).slice(2)}`;
     const next: UiEvent = { id, text, createdAt };
@@ -152,4 +255,6 @@ export class BoardComponent implements OnInit, OnDestroy {
     }
     return trimmed;
   }
+
+  protected readonly Number = Number;
 }
