@@ -1,26 +1,28 @@
 <div
-  class="relative select-none"
+  class="relative select-none overflow-hidden rounded-2xl"
   [style.width.px]="sceneWidthPx() * viewScale()"
   [style.height.px]="sceneHeightPx() * viewScale()"
 >
-  <!-- Background -->
-  <div class="absolute inset-0 rounded-2xl border border-black/[0.06] bg-stone-50"
-    style="background-image: radial-gradient(circle, #d6d3d1 0.8px, transparent 0.8px); background-size: 40px 40px;">
-  </div>
+  <!-- White background -->
+  <div class="absolute inset-0 bg-white"></div>
 
+  <!-- Drawings layer -->
   @for (drawing of drawingsSorted(); track drawing.id) {
     <img
       class="absolute pointer-events-none"
-      [class.opacity-30]="drawing.foundBy !== null"
       [style.left.%]="drawing.x * 100"
       [style.top.%]="drawing.y * 100"
       [style.width.px]="drawing.size * sceneWidthPx() * viewScale()"
       [style.height.px]="drawing.size * sceneWidthPx() * viewScale()"
       [style.transform]="'translate(-50%, -50%)'"
-      [style.zIndex]="drawing.foundBy ? 1 : 2"
       [src]="drawing.imageDataUrl"
       [alt]="drawing.prompt"
       draggable="false"
     />
   }
+
+  <!-- Soft edge vignette overlay ON TOP of drawings -->
+  <div class="absolute inset-0 pointer-events-none rounded-2xl"
+    style="box-shadow: inset 0 0 30px 15px rgba(245,245,244,0.95), inset 0 0 6px 2px rgba(214,211,209,0.4); z-index: 10;">
+  </div>
 </div>

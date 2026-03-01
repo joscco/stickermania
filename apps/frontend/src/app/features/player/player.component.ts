@@ -7,6 +7,7 @@ import { FormsModule } from "@angular/forms";
 import { WebSocketService } from "../../core/websocket.service";
 import { WorldStore } from "../../core/world.store";
 import { GameSessionStore } from "../../core/challenge.store";
+import { AudioService } from "../../core/audio.service";
 import { SceneRendererComponent } from "../../shared/scene-renderer/scene-renderer.component";
 import type { ServerToClientMessage, SearchTask } from "@birthday/shared";
 import { ViewportController } from "./viewport-controller";
@@ -45,14 +46,18 @@ export class PlayerComponent implements OnInit, OnDestroy {
   private drawCanvasInitialized = false;
 
   // Search mode
-  public readonly viewportController = new ViewportController({ minScale: 0.4, maxScale: 3.0 });
-  public readonly sceneWidthPx = 1600;
-  public readonly sceneHeightPx = 900;
+  public readonly viewportController = new ViewportController({ minScale: 0.4, maxScale: 3.0, overscrollFraction: 0.15 });
+  public readonly sceneWidthPx = signal<number>(1000);
+  public readonly sceneHeightPx = signal<number>(1000);
   private gesture: GestureInterpreter;
 
   public readonly searchFeedback = signal<{ text: string; correct: boolean } | null>(null);
   private unsubscribeWs: (() => void) | null = null;
   private playerId: string | null = null;
+
+  /** How many drawings submitted this round (from server) */
+  public readonly drawCount = signal<number>(0);
+  public readonly maxDrawings = signal<number>(3);
 
   public readonly leaderboard = computed(() => this.store.leaderboard());
   public readonly myScore = computed(() => {
@@ -71,6 +76,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly wsService: WebSocketService,
+    private readonly audio: AudioService,
     worldStore: WorldStore,
     sessionStore: GameSessionStore
   ) {
@@ -156,6 +162,10 @@ export class PlayerComponent implements OnInit, OnDestroy {
           this.playerColors.set(msg.assignedColors);
           this.currentColor.set(msg.assignedColors[0]);
         }
+        this.sceneWidthPx.set(msg.fieldWidth ?? 1000);
+        this.sceneHeightPx.set(msg.fieldHeight ?? 1000);
+        this.maxDrawings.set(msg.maxDrawingsPerRound ?? 3);
+        this.viewportController.setOverscrollFraction(msg.searchOverscroll ?? 0.15);
         const existing = this.store.players()[msg.playerId];
         if (existing?.name) this.session.playerName.set(existing.name);
         break;
@@ -184,22 +194,41 @@ export class PlayerComponent implements OnInit, OnDestroy {
               this.session.currentMode.set("IDLE");
               this.session.clearTask();
             }
+            this.drawCount.set(0);
           }
         }
         break;
 
       case "assign-task":
         this.session.setTask(msg.task);
+        // Clear the draw canvas for the new prompt
+        if (msg.task.mode === "DRAW") {
+          if (this.drawCount() === 0) this.audio.playRoundStart();
+          this.drawCanvasInitialized = false;
+          setTimeout(() => this.initDrawCanvas(), 80);
+        }
+        if (msg.task.mode === "SEARCH") {
+          this.audio.playTick();
+        }
         break;
 
       case "search-result":
         this.searchFeedback.set({ text: msg.message, correct: msg.correct });
+        if (msg.correct) { this.audio.playSuccess(); } else { this.audio.playError(); }
         setTimeout(() => this.searchFeedback.set(null), 2500);
         break;
 
       case "score-update":
         if (msg.playerId === this.session.playerId()) {
           this.session.showFeedback(`+1 Punkt! ${msg.reason}`, "success");
+          this.audio.playTick();
+        }
+        break;
+
+      case "event":
+        // If we're in DRAW mode but server didn't give us a new task, go to IDLE (limit reached)
+        if (this.session.currentMode() === "DRAW" && !this.session.currentTask()) {
+          this.session.currentMode.set("IDLE");
         }
         break;
 
@@ -214,6 +243,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
   public submitName(): void {
     const name = this.nameInput().trim();
     if (name.length === 0) return;
+    this.audio.unlockIfNeeded();
     this.wsService.send({ type: "set-name", name });
     this.session.playerName.set(name);
     this.session.currentMode.set("LOBBY");
@@ -228,6 +258,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
   public submitAvatar(): void {
     const canvas = this.avatarCanvasRef?.nativeElement;
     if (!canvas) return;
+    this.audio.unlockIfNeeded();
     this.wsService.send({ type: "submit-avatar", avatarDataUrl: canvas.toDataURL("image/png") });
     this.session.currentMode.set("IDLE");
   }
@@ -258,6 +289,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   public onCanvasPointerDown(event: PointerEvent, canvasType: "draw" | "avatar"): void {
     event.preventDefault();
+    this.audio.unlockIfNeeded();
     const canvas = canvasType === "draw" ? this.drawCanvasRef?.nativeElement : this.avatarCanvasRef?.nativeElement;
     if (!canvas) return;
     (event.target as HTMLElement).setPointerCapture(event.pointerId);
@@ -311,7 +343,10 @@ export class PlayerComponent implements OnInit, OnDestroy {
     const canvas = this.drawCanvasRef?.nativeElement;
     if (!canvas) return;
     this.wsService.send({ type: "submit-drawing", imageDataUrl: canvas.toDataURL("image/png") });
-    // Will get next task via assign-task
+    this.drawCount.set(this.drawCount() + 1);
+    this.audio.playPop();
+    // Clear current task — will get next via assign-task, or go IDLE if limit reached
+    this.session.currentTask.set(null);
   }
 
   // ──────── Search ────────
@@ -323,6 +358,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   public takeSnapshot(): void {
     if (this.session.currentMode() !== "SEARCH" || !this.viewportRef) return;
+    this.audio.playShutter();
     const vpRect = this.viewportRef.nativeElement.getBoundingClientRect();
     const scale = this.viewportController.scale();
     const viewfinderDiameterPx = Math.min(vpRect.width, vpRect.height) * 0.5;
@@ -332,9 +368,9 @@ export class PlayerComponent implements OnInit, OnDestroy {
     });
     this.wsService.send({
       type: "search-snapshot",
-      centerX: contentCenter.x / this.sceneWidthPx,
-      centerY: contentCenter.y / this.sceneHeightPx,
-      radius: (viewfinderRadiusPx / scale) / this.sceneWidthPx
+      centerX: contentCenter.x / this.sceneWidthPx(),
+      centerY: contentCenter.y / this.sceneHeightPx(),
+      radius: (viewfinderRadiusPx / scale) / this.sceneWidthPx()
     });
   }
 
@@ -349,6 +385,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   public onViewportPointerDown(e: PointerEvent): void {
     if (this.session.currentMode() !== "SEARCH") return;
+    this.audio.unlockIfNeeded();
     this.viewportController.stopInertia();
     this.viewportRef.nativeElement.setPointerCapture(e.pointerId);
     this.gesture.onPointerDown(e);
@@ -389,7 +426,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     });
   }
 
-  private sceneSize(): Size { return { width: this.sceneWidthPx, height: this.sceneHeightPx }; }
+  private sceneSize(): Size { return { width: this.sceneWidthPx(), height: this.sceneHeightPx() }; }
   private getViewportSize(): Size {
     if (!this.viewportRef) return { width: 400, height: 400 };
     const rect = this.viewportRef.nativeElement.getBoundingClientRect();

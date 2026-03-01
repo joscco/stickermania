@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild, signal, computed } from "@angular/core";
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, signal, computed, effect } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { WebSocketService } from "../../core/websocket.service";
 import { WorldStore } from "../../core/world.store";
@@ -44,8 +44,8 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly boardScale = signal<number>(1);
   private resizeObserver: ResizeObserver | null = null;
 
-  public readonly sceneWidthPx: number = 1600;
-  public readonly sceneHeightPx: number = 900;
+  public readonly sceneWidthPx = signal<number>(1000);
+  public readonly sceneHeightPx = signal<number>(1000);
 
   public readonly leaderboard = computed(() => this.store.leaderboard());
   public readonly drawingCount = computed(() => this.store.drawingsList().length);
@@ -63,6 +63,7 @@ export class BoardComponent implements OnInit, OnDestroy {
   public drawDurationSec = signal<number>(60);
   public searchDurationSec = signal<number>(90);
 
+  private recomputeScale: (() => void) | null = null;
   private unsubscribeWs: (() => void) | null = null;
 
   public constructor(
@@ -70,6 +71,13 @@ export class BoardComponent implements OnInit, OnDestroy {
     worldStore: WorldStore
   ) {
     this.store = worldStore;
+
+    // Recompute board scale when scene dimensions change
+    effect(() => {
+      this.sceneWidthPx();
+      this.sceneHeightPx();
+      this.recomputeScale?.();
+    });
   }
 
   public onWifiQrGenerated(dataUrl: string): void {
@@ -110,6 +118,8 @@ export class BoardComponent implements OnInit, OnDestroy {
     switch (msg.type) {
       case "welcome":
         this.store.setConnected();
+        if (msg.fieldWidth) this.sceneWidthPx.set(msg.fieldWidth);
+        if (msg.fieldHeight) this.sceneHeightPx.set(msg.fieldHeight);
         break;
 
       case "state":
@@ -196,10 +206,11 @@ export class BoardComponent implements OnInit, OnDestroy {
     const hostElement = this.sceneHostRef.nativeElement;
     const recompute = () => {
       const hostRect = hostElement.getBoundingClientRect();
-      const scaleByWidth = hostRect.width / this.sceneWidthPx;
-      const scaleByHeight = hostRect.height / this.sceneHeightPx;
+      const scaleByWidth = hostRect.width / this.sceneWidthPx();
+      const scaleByHeight = hostRect.height / this.sceneHeightPx();
       this.boardScale.set(Math.min(2.5, Math.max(0.4, Math.min(scaleByWidth, scaleByHeight))));
     };
+    this.recomputeScale = recompute;
     this.resizeObserver = new ResizeObserver(() => recompute());
     this.resizeObserver.observe(hostElement);
     recompute();

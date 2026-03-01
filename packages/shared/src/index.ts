@@ -12,8 +12,12 @@ export interface GameConfig {
   drawPrompts: string[];
   drawDurationSec: number;
   searchDurationSec: number;
-  drawingSizeMin: number;
-  drawingSizeMax: number;
+  /** Fixed drawing size as fraction of field width (e.g. 0.1 = 10%) */
+  drawingSize: number;
+  /** Max drawings per player per round (0 = unlimited) */
+  maxDrawingsPerRound: number;
+  /** How far the player can pan beyond the scene edge in search mode (fraction of scene, e.g. 0.15 = 15%) */
+  searchOverscroll: number;
   canvasResolution: number;
   drawingsPath: string;
   port: number;
@@ -30,8 +34,9 @@ export function parseGameConfig(raw: unknown): GameConfig {
     drawPrompts: Array.isArray(obj["drawPrompts"]) ? obj["drawPrompts"] as string[] : ["Katze", "Hund", "Sonne"],
     drawDurationSec: typeof obj["drawDurationSec"] === "number" ? obj["drawDurationSec"] : 60,
     searchDurationSec: typeof obj["searchDurationSec"] === "number" ? obj["searchDurationSec"] : 90,
-    drawingSizeMin: typeof obj["drawingSizeMin"] === "number" ? obj["drawingSizeMin"] : 0.08,
-    drawingSizeMax: typeof obj["drawingSizeMax"] === "number" ? obj["drawingSizeMax"] : 0.12,
+    drawingSize: typeof obj["drawingSize"] === "number" ? obj["drawingSize"] : 0.1,
+    maxDrawingsPerRound: typeof obj["maxDrawingsPerRound"] === "number" ? obj["maxDrawingsPerRound"] : 3,
+    searchOverscroll: typeof obj["searchOverscroll"] === "number" ? obj["searchOverscroll"] : 0.15,
     canvasResolution: typeof obj["canvasResolution"] === "number" ? obj["canvasResolution"] : 300,
     drawingsPath: typeof obj["drawingsPath"] === "string" ? obj["drawingsPath"] : "./drawings",
     port: typeof obj["port"] === "number" ? obj["port"] : 3001,
@@ -115,7 +120,7 @@ export type ClientToServerMessage =
   | { type: "ping"; t: number };
 
 export type ServerToClientMessage =
-  | { type: "welcome"; clientId: string; playerId: string; serverTime: number; assignedColors: string[] }
+  | { type: "welcome"; clientId: string; playerId: string; serverTime: number; assignedColors: string[]; fieldWidth: number; fieldHeight: number; maxDrawingsPerRound: number; searchOverscroll: number }
   | { type: "state"; state: GameState }
   | { type: "assign-task"; task: PlayerTask }
   | { type: "search-result"; correct: boolean; drawingId: string; message: string }

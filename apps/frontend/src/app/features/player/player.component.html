@@ -5,16 +5,16 @@
     <div class="mx-auto w-full max-w-lg px-3 py-2">
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2">
-          <span class="text-sm font-semibold">🎨 Zeichne & Suche</span>
+          <span class="text-sm font-semibold">Zeichnen & Finden</span>
           @if (session.playerName()) {
             <span class="text-xs text-stone-400">{{ session.playerName() }}</span>
           }
         </div>
         <div class="flex items-center gap-2">
           @if (timeLeft()) {
-            <span class="text-xs font-mono font-bold text-stone-600 bg-stone-200 px-2 py-0.5 rounded-lg">⏱ {{ timeLeft() }}</span>
+            <span class="text-xs font-mono font-bold text-stone-600 bg-stone-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1"><img src="assets/icons/timer.svg" class="w-3 h-3 inline" alt=""/> {{ timeLeft() }}</span>
           }
-          <span class="text-xs font-medium text-amber-600">⭐ {{ myScore() }}</span>
+          <span class="text-xs font-medium text-amber-600 inline-flex items-center gap-0.5"><img src="assets/icons/star.svg" class="w-3 h-3 inline text-amber-600" alt=""/> {{ myScore() }}</span>
           @if (session.currentMode() !== 'LOBBY') {
             <span class="text-[10px] px-2 py-0.5 rounded-full font-medium"
               [class.bg-emerald-100]="session.currentMode() === 'DRAW'"
@@ -24,7 +24,7 @@
               [class.bg-stone-200]="session.currentMode() === 'IDLE'"
               [class.text-stone-500]="session.currentMode() === 'IDLE'"
             >
-              {{ session.currentMode() === 'DRAW' ? '🖌 Zeichnen' : session.currentMode() === 'SEARCH' ? '🔍 Suchen' : '⏳ Warten' }}
+              {{ session.currentMode() === 'DRAW' ? 'Zeichnen' : session.currentMode() === 'SEARCH' ? 'Suchen' : 'Warten' }}
             </span>
           }
         </div>
@@ -40,7 +40,7 @@
       <div class="h-full flex items-center justify-center p-4">
         <div class="w-full max-w-sm">
           <div class="text-center mb-6">
-            <div class="text-4xl mb-2">🎂</div>
+            <img src="assets/icons/cake.svg" class="w-12 h-12 mx-auto mb-2" alt=""/>
             <h1 class="text-xl font-bold">Willkommen!</h1>
             <p class="text-sm text-stone-500 mt-1">Gib deinen Namen ein, um mitzuspielen</p>
           </div>
@@ -66,7 +66,7 @@
       <div class="h-full flex flex-col items-center justify-center p-4">
         <div class="text-center mb-3">
           <h2 class="text-lg font-bold">Zeichne deinen Avatar</h2>
-          <p class="text-xs text-stone-500">{{ session.playerName() }}, mal dich selbst! 🎨</p>
+          <p class="text-xs text-stone-500">{{ session.playerName() }}, mal dich selbst!</p>
         </div>
         <!-- Square canvas, fills phone width -->
         <div class="relative rounded-2xl border-2 border-black/[0.06] overflow-hidden bg-white aspect-square no-select"
@@ -109,7 +109,7 @@
     <!-- ════ IDLE: Waiting for round ════ -->
     @if (session.currentMode() === 'IDLE') {
       <div class="h-full flex flex-col items-center justify-center p-4">
-        <div class="text-4xl mb-3">⏳</div>
+        <img src="assets/icons/hourglass.svg" class="w-12 h-12 mb-3" alt=""/>
         <h2 class="text-lg font-semibold">Warte auf nächste Runde…</h2>
         <p class="text-xs text-stone-500 mt-1">Dein Score: {{ myScore() }} Punkte</p>
         <p class="text-xs text-stone-400 mt-1">Die Runde wird vom Board gestartet.</p>
@@ -136,10 +136,10 @@
       <div class="h-full flex flex-col items-center">
         <!-- Prompt + Timer -->
         <div class="text-center py-2 px-4">
-          <div class="text-xs text-stone-400 uppercase tracking-wider">Zeichne:</div>
+          <div class="text-xs text-stone-400 uppercase tracking-wider">Zeichne ({{ drawCount() + 1 }}/{{ maxDrawings() }}):</div>
           <div class="text-2xl font-bold">{{ session.currentTask()?.prompt }}</div>
           @if (timeLeft()) {
-            <div class="text-xs font-mono text-stone-500 mt-0.5">⏱ {{ timeLeft() }}</div>
+            <div class="text-xs font-mono text-stone-500 mt-0.5 inline-flex items-center gap-1"><img src="assets/icons/timer.svg" class="w-3 h-3" alt=""/> {{ timeLeft() }}</div>
           }
         </div>
 
@@ -157,7 +157,7 @@
         </div>
 
         <!-- Tools: 2 colors + thin/thick + actions -->
-        <div class="px-3 pb-3 space-y-2 w-full max-w-md mx-auto">
+        <div class="px-3 pb-3 space-y-2 w-full max-w-md mx-auto" style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom))">
           <div class="flex items-center justify-center gap-3">
             <!-- 2 color buttons -->
             @for (color of playerColors(); track color) {
@@ -181,8 +181,8 @@
             </div>
           </div>
           <div class="flex gap-2">
-            <button class="flex-1 rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm hover:bg-stone-50" (click)="clearCanvas('draw')">🗑 Löschen</button>
-            <button class="flex-1 rounded-xl bg-emerald-600 text-white px-3 py-2.5 text-sm font-medium hover:bg-emerald-700 active:translate-y-px" (click)="submitDrawing()">✓ Fertig</button>
+            <button class="flex-1 rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm hover:bg-stone-50 inline-flex items-center justify-center gap-1" (click)="clearCanvas('draw')"><img src="assets/icons/trash.svg" class="w-4 h-4" alt=""/> Löschen</button>
+            <button class="flex-1 rounded-xl bg-emerald-600 text-white px-3 py-2.5 text-sm font-medium hover:bg-emerald-700 active:translate-y-px inline-flex items-center justify-center gap-1" (click)="submitDrawing()"><img src="assets/icons/checkmark.svg" class="w-4 h-4 invert" alt=""/> Fertig</button>
           </div>
         </div>
       </div>
@@ -193,9 +193,9 @@
       <div class="h-full flex flex-col relative">
         <div class="text-center py-2 px-4 bg-blue-50 border-b border-blue-100">
           <div class="text-xs text-blue-500 uppercase tracking-wider">Finde auf der Karte:</div>
-          <div class="text-lg font-bold text-blue-800">🔍 {{ currentSearchTask?.prompt }}</div>
+          <div class="text-lg font-bold text-blue-800 inline-flex items-center gap-1"><img src="assets/icons/search.svg" class="w-5 h-5 inline" alt=""/> {{ currentSearchTask?.prompt }}</div>
           @if (timeLeft()) {
-            <div class="text-xs font-mono text-blue-500 mt-0.5">⏱ {{ timeLeft() }}</div>
+            <div class="text-xs font-mono text-blue-500 mt-0.5 inline-flex items-center gap-1"><img src="assets/icons/timer.svg" class="w-3 h-3" alt=""/> {{ timeLeft() }}</div>
           }
         </div>
 
@@ -209,7 +209,7 @@
           <div class="absolute left-0 top-0 origin-top-left" [style.transform]="contentTransform()">
             <app-scene-renderer class="block"
               [gameState]="store.gameState()"
-              [sceneWidthPx]="sceneWidthPx" [sceneHeightPx]="sceneHeightPx"
+              [sceneWidthPx]="sceneWidthPx()" [sceneHeightPx]="sceneHeightPx()"
               [viewScale]="viewportController.scale()"
             ></app-scene-renderer>
           </div>
@@ -227,10 +227,10 @@
         </div>
 
         <!-- Snapshot button -->
-        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-40">
+        <div class="absolute left-1/2 -translate-x-1/2 z-40" style="bottom: max(1.5rem, env(safe-area-inset-bottom))">
           <button class="w-16 h-16 rounded-full bg-white border-4 border-blue-500 shadow-xl grid place-items-center hover:bg-blue-50 active:scale-90 transition-transform"
             (click)="takeSnapshot()">
-            <span class="text-2xl">📸</span>
+            <img src="assets/icons/camera.svg" class="w-8 h-8" alt="Foto"/>
           </button>
         </div>
 

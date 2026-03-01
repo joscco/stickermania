@@ -130,7 +130,7 @@ wss.on("connection", (ws: WebSocket) => {
       clientId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const player = gameStore.joinPlayer({ clientId, kind: msg.kind, existingPlayerId: msg.playerId });
       clients.set(clientId, { ws, clientId, kind: msg.kind, playerId: player.id });
-      sendTo(ws, { type: "welcome", clientId, playerId: player.id, serverTime: Date.now(), assignedColors: gameStore.getPlayerColors(player.id) });
+      sendTo(ws, { type: "welcome", clientId, playerId: player.id, serverTime: Date.now(), assignedColors: gameStore.getPlayerColors(player.id), fieldWidth: gc.fieldWidth, fieldHeight: gc.fieldHeight, maxDrawingsPerRound: gc.maxDrawingsPerRound, searchOverscroll: gc.searchOverscroll });
       sendTo(ws, { type: "state", state: gameStore.getState() });
       if (msg.kind === "player" && player.name.length > 0)
         broadcast({ type: "event", text: `${player.name} ist beigetreten! 🎉`, createdAt: Date.now() });
@@ -196,7 +196,11 @@ wss.on("connection", (ws: WebSocket) => {
 
       if (gameStore.getRound().phase === "DRAW") {
         const next = gameStore.assignDrawTask(clientId);
-        if (next) sendTo(ws, { type: "assign-task", task: next });
+        if (next) {
+          sendTo(ws, { type: "assign-task", task: next });
+        } else {
+          sendTo(ws, { type: "event", text: "Du hast alle Zeichnungen für diese Runde abgegeben! 🎉 Warte auf die Suchphase…", createdAt: Date.now() });
+        }
       }
       return;
     }

@@ -65,7 +65,8 @@ export class GameStore {
     this.sessions.set(args.clientId, {
       playerId, clientId: args.clientId, kind: args.kind,
       currentDrawPrompt: null, currentSearchDrawingId: null,
-      usedDrawPrompts: new Set(), usedSearchIds: new Set(), lastTaskMode: null
+      usedDrawPrompts: new Set(), usedSearchIds: new Set(), lastTaskMode: null,
+      drawCountThisRound: 0
     });
 
     return player;
@@ -104,6 +105,10 @@ export class GameStore {
     this.state.round.phase = "DRAW";
     this.state.round.roundNumber++;
     this.state.round.endsAt = Date.now() + this.state.round.drawDurationSec * 1000;
+    // Reset per-player draw count for this round
+    for (const session of this.sessions.values()) {
+      session.drawCountThisRound = 0;
+    }
     this.bumpRevision();
     this.phaseTimer = setTimeout(() => { this.startSearchPhase(); this.onPhaseChange?.(); }, this.state.round.drawDurationSec * 1000);
   }
@@ -131,7 +136,7 @@ export class GameStore {
 
   public addDrawing(args: { playerId: string; imageDataUrl: string; prompt: string }): Drawing {
     const id = crypto.randomUUID();
-    const size = this.config.drawingSizeMin + Math.random() * (this.config.drawingSizeMax - this.config.drawingSizeMin);
+    const size = this.config.drawingSize;
     const pos = this.poissonPlaceDrawing(size);
 
     const drawing: Drawing = {
@@ -190,9 +195,14 @@ export class GameStore {
   public assignDrawTask(clientId: string): PlayerTask | null {
     const session = this.sessions.get(clientId);
     if (!session) return null;
+    // Check max drawings per round limit
+    if (this.config.maxDrawingsPerRound > 0 && session.drawCountThisRound >= this.config.maxDrawingsPerRound) {
+      return null;
+    }
     const prompt = this.pickDrawPrompt(session.usedDrawPrompts);
     session.currentDrawPrompt = prompt; session.currentSearchDrawingId = null;
     session.usedDrawPrompts.add(prompt); session.lastTaskMode = "DRAW";
+    session.drawCountThisRound++;
     return { mode: "DRAW", prompt };
   }
 

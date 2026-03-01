@@ -19,4 +19,6 @@ export interface PlayerSession {
   usedSearchIds: Set<string>;
   /** Whether the player alternates: last was "DRAW" or "SEARCH" */
   lastTaskMode: "DRAW" | "SEARCH" | null;
+  /** How many drawings this player has submitted in the current round */
+  drawCountThisRound: number;
 }
