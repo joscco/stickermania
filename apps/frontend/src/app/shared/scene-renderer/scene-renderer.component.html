@@ -1,5 +1,6 @@
 <div
   class="relative select-none overflow-hidden rounded-2xl"
+  style="touch-action: none;"
   [style.width.px]="sceneWidthPx() * viewScale()"
   [style.height.px]="sceneHeightPx() * viewScale()"
 >
@@ -21,8 +22,7 @@
     />
   }
 
-  <!-- Soft edge vignette overlay ON TOP of drawings -->
+  <!-- Dotted gray border overlay ON TOP of drawings -->
   <div class="absolute inset-0 pointer-events-none rounded-2xl"
-    style="box-shadow: inset 0 0 30px 15px rgba(245,245,244,0.95), inset 0 0 6px 2px rgba(214,211,209,0.4); z-index: 10;">
-  </div>
+    style="border: 4px dotted #dedede; z-index: 10;"></div>
 </div>

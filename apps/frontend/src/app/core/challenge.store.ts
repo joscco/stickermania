@@ -27,11 +27,6 @@ export class GameSessionStore {
     this.currentMode.set("IDLE");
   }
 
-  public setLobby(): void {
-    this.currentMode.set("LOBBY");
-    this.currentTask.set(null);
-  }
-
   public showFeedback(text: string, type: "success" | "error"): void {
     this.feedback.set({ text, type });
     setTimeout(() => {

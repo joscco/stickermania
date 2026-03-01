@@ -8,20 +8,16 @@ export class ViewportController {
 
   private readonly minScale: number;
   private readonly maxScale: number;
-  /** Overscroll as fraction of scene dimension (e.g. 0.15 = 15%) */
-  private overscrollFraction: number;
+  /** Max pixels the viewport center may go beyond the scene edge. */
+  private readonly overscrollPx: number;
 
   private inertiaRafHandle: number | null = null;
   private panVelocityPxPerMs: Point = { x: 0, y: 0 };
 
-  public constructor(args?: { minScale?: number; maxScale?: number; overscrollFraction?: number }) {
+  public constructor(args?: { minScale?: number; maxScale?: number; overscrollPx?: number }) {
     this.minScale = args?.minScale ?? 0.6;
     this.maxScale = args?.maxScale ?? 2.8;
-    this.overscrollFraction = args?.overscrollFraction ?? 0;
-  }
-
-  public setOverscrollFraction(f: number): void {
-    this.overscrollFraction = f;
+    this.overscrollPx = args?.overscrollPx ?? 200;
   }
 
   public contentTransform(): string {
@@ -170,47 +166,19 @@ export class ViewportController {
     offsetX: number;
     offsetY: number;
   }): { offsetX: number; offsetY: number } {
-    const scaledWidth = args.sceneSize.width * args.scale;
-    const scaledHeight = args.sceneSize.height * args.scale;
-    // Overscroll in pixels = fraction * scaled scene dimension
-    const overX = this.overscrollFraction * scaledWidth;
-    const overY = this.overscrollFraction * scaledHeight;
-
-    let offsetX: number;
-    if (scaledWidth <= args.viewportSize.width) {
-      // Scene fits — allow centering but also free panning with overscroll
-      const center = (args.viewportSize.width - scaledWidth) / 2;
-      const minX = center - overX;
-      const maxX = center + overX;
-      offsetX = this.clampNumber(args.offsetX, minX, maxX);
-    } else {
-      const minX = args.viewportSize.width - scaledWidth - overX;
-      const maxX = overX;
-      offsetX = this.clampNumber(args.offsetX, minX, maxX);
-    }
-
-    let offsetY: number;
-    if (scaledHeight <= args.viewportSize.height) {
-      const center = (args.viewportSize.height - scaledHeight) / 2;
-      const minY = center - overY;
-      const maxY = center + overY;
-      offsetY = this.clampNumber(args.offsetY, minY, maxY);
-    } else {
-      const minY = args.viewportSize.height - scaledHeight - overY;
-      const maxY = overY;
-      offsetY = this.clampNumber(args.offsetY, minY, maxY);
-    }
-
-    return { offsetX, offsetY };
+    return {
+      offsetX: this.clampAxis(args.offsetX, args.viewportSize.width, args.sceneSize.width * args.scale),
+      offsetY: this.clampAxis(args.offsetY, args.viewportSize.height, args.sceneSize.height * args.scale),
+    };
   }
 
-  private clampNumber(value: number, min: number, max: number): number {
-    if (value < min) {
-      return min;
-    }
-    if (value > max) {
-      return max;
-    }
-    return value;
+  private clampAxis(offset: number, viewportDim: number, scaledSceneDim: number): number {
+    // offset = position of content's top-left corner in viewport space.
+    // The viewfinder center sits at viewportDim / 2.
+    // We want the viewfinder center to go at most overscrollPx beyond the scene edges.
+    const half = viewportDim / 2;
+    const max = half + this.overscrollPx;                    // viewfinder may pass left/top edge by overscrollPx
+    const min = half - scaledSceneDim - this.overscrollPx;   // viewfinder may pass right/bottom edge by overscrollPx
+    return Math.min(max, Math.max(min, offset));
   }
 }

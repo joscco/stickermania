@@ -1,6 +1,6 @@
 import { CommonModule } from "@angular/common";
 import {
-  Component, ElementRef, OnDestroy, OnInit, ViewChild,
+  AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild,
   computed, signal, effect
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
@@ -8,11 +8,8 @@ import { WebSocketService } from "../../core/websocket.service";
 import { WorldStore } from "../../core/world.store";
 import { GameSessionStore } from "../../core/challenge.store";
 import { AudioService } from "../../core/audio.service";
-import { SceneRendererComponent } from "../../shared/scene-renderer/scene-renderer.component";
-import type { ServerToClientMessage, SearchTask } from "@birthday/shared";
-import { ViewportController } from "./viewport-controller";
-import { GestureInterpreter } from "./gesture-interpreter";
-import type { Point, Size } from "./types";
+import { SearchComponent } from "./search";
+import type { ServerToClientMessage } from "@birthday/shared";
 
 /** Canvas internal resolution — always square */
 const CANVAS_RES = 300;
@@ -20,16 +17,15 @@ const CANVAS_RES = 300;
 @Component({
   selector: "app-player",
   standalone: true,
-  imports: [CommonModule, FormsModule, SceneRendererComponent],
+  imports: [CommonModule, FormsModule, SearchComponent],
   templateUrl: "./player.component.html"
 })
-export class PlayerComponent implements OnInit, OnDestroy {
+export class PlayerComponent implements OnInit, AfterViewInit, OnDestroy {
   public readonly store: WorldStore;
   public readonly session: GameSessionStore;
 
   @ViewChild("drawCanvas") drawCanvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild("avatarCanvas") avatarCanvasRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild("viewport") viewportRef!: ElementRef<HTMLElement>;
 
   public readonly nameInput = signal<string>("");
 
@@ -45,13 +41,10 @@ export class PlayerComponent implements OnInit, OnDestroy {
   private avatarCanvasInitialized = false;
   private drawCanvasInitialized = false;
 
-  // Search mode
-  public readonly viewportController = new ViewportController({ minScale: 0.4, maxScale: 3.0, overscrollFraction: 0.15 });
+  // Scene dimensions (set from welcome message, passed to SearchComponent)
   public readonly sceneWidthPx = signal<number>(1000);
   public readonly sceneHeightPx = signal<number>(1000);
-  private gesture: GestureInterpreter;
 
-  public readonly searchFeedback = signal<{ text: string; correct: boolean } | null>(null);
   private unsubscribeWs: (() => void) | null = null;
   private playerId: string | null = null;
 
@@ -83,18 +76,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
     this.store = worldStore;
     this.session = sessionStore;
 
-    this.gesture = new GestureInterpreter({
-      callbacks: {
-        onPan: (delta) => this.onPan(delta),
-        onPanEnd: (velocity) => this.onPanEnd(velocity),
-        onPinch: (center, factor, centerDelta) => this.onPinch(center, factor, centerDelta),
-        onTap: () => {},
-        onWheelZoom: (clientPoint, factor) => this.onWheelZoom(clientPoint, factor)
-      },
-      tapMaxDurationMs: 260,
-      tapMoveThresholdPx: 14
-    });
-
     // Auto-initialize canvases based on what mode the player should be in
     effect(() => {
       const mode = this.session.currentMode();
@@ -106,9 +87,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
       if (mode === "DRAW") {
         this.drawCanvasInitialized = false;
         setTimeout(() => this.initDrawCanvas(), 80);
-      }
-      if (mode === "SEARCH") {
-        setTimeout(() => this.centerViewport(), 100);
       }
     });
 
@@ -155,10 +133,11 @@ export class PlayerComponent implements OnInit, OnDestroy {
     document.addEventListener("click", globalUnlock, { once: true });
   }
 
+  public ngAfterViewInit(): void {}
+
   public ngOnDestroy(): void {
     if (this.unsubscribeWs) this.unsubscribeWs();
     if (this.timerInterval) clearInterval(this.timerInterval);
-    this.viewportController.stopInertia();
   }
 
   // ──────── WebSocket ────────
@@ -176,7 +155,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
         this.sceneWidthPx.set(msg.fieldWidth ?? 1000);
         this.sceneHeightPx.set(msg.fieldHeight ?? 1000);
         this.maxDrawings.set(msg.maxDrawingsPerRound ?? 3);
-        this.viewportController.setOverscrollFraction(msg.searchOverscroll ?? 0.15);
         const existing = this.store.players()[msg.playerId];
         if (existing?.name) this.session.playerName.set(existing.name);
         break;
@@ -235,11 +213,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
         }
         break;
 
-      case "search-result":
-        this.searchFeedback.set({ text: msg.message, correct: msg.correct });
-        if (msg.correct) { this.audio.playSuccess(); } else { this.audio.playError(); }
-        setTimeout(() => this.searchFeedback.set(null), 2500);
-        break;
+      // search-result is now handled by SearchStore directly
 
       case "score-update":
         if (msg.playerId === this.session.playerId()) {
@@ -354,105 +328,28 @@ export class PlayerComponent implements OnInit, OnDestroy {
   public onCanvasPointerUp(): void { this.isDrawing = false; this.lastDrawPoint = null; }
 
   public clearCanvas(canvasType: "draw" | "avatar"): void {
+    this.audio.unlockIfNeeded();
+    this.audio.playTick();
     const canvas = canvasType === "draw" ? this.drawCanvasRef?.nativeElement : this.avatarCanvasRef?.nativeElement;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (ctx) { ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, canvas.width, canvas.height); }
   }
 
-  public selectColor(color: string): void { this.currentColor.set(color); }
+  public selectColor(color: string): void {
+    this.audio.unlockIfNeeded();
+    this.audio.playTick();
+    this.currentColor.set(color);
+  }
 
   public submitDrawing(): void {
     const canvas = this.drawCanvasRef?.nativeElement;
     if (!canvas) return;
     this.wsService.send({ type: "submit-drawing", imageDataUrl: canvas.toDataURL("image/png") });
     this.drawCount.set(this.drawCount() + 1);
+    this.audio.unlockIfNeeded();
     this.audio.playPop();
     // Clear current task — will get next via assign-task, or go IDLE if limit reached
     this.session.currentTask.set(null);
-  }
-
-  // ──────── Search ────────
-
-  public get currentSearchTask(): SearchTask | null {
-    const task = this.session.currentTask();
-    return task?.mode === "SEARCH" ? task : null;
-  }
-
-  public takeSnapshot(): void {
-    if (this.session.currentMode() !== "SEARCH" || !this.viewportRef) return;
-    this.audio.playShutter();
-    const vpRect = this.viewportRef.nativeElement.getBoundingClientRect();
-    const scale = this.viewportController.scale();
-    const viewfinderDiameterPx = Math.min(vpRect.width, vpRect.height) * 0.5;
-    const viewfinderRadiusPx = viewfinderDiameterPx / 2;
-    const contentCenter = this.viewportController.viewportToContentPoint({
-      viewportPoint: { x: vpRect.width / 2, y: vpRect.height / 2 }
-    });
-    this.wsService.send({
-      type: "search-snapshot",
-      centerX: contentCenter.x / this.sceneWidthPx(),
-      centerY: contentCenter.y / this.sceneHeightPx(),
-      radius: (viewfinderRadiusPx / scale) / this.sceneWidthPx()
-    });
-  }
-
-  public contentTransform(): string { return this.viewportController.contentTransform(); }
-
-  public centerViewport(): void {
-    if (!this.viewportRef) return;
-    this.viewportController.center({ viewportSize: this.getViewportSize(), sceneSize: this.sceneSize() });
-  }
-
-  // ──────── Gesture bindings ────────
-
-  public onViewportPointerDown(e: PointerEvent): void {
-    if (this.session.currentMode() !== "SEARCH") return;
-    this.audio.unlockIfNeeded();
-    this.viewportController.stopInertia();
-    this.viewportRef.nativeElement.setPointerCapture(e.pointerId);
-    this.gesture.onPointerDown(e);
-  }
-  public onViewportPointerMove(e: PointerEvent): void {
-    if (this.session.currentMode() !== "SEARCH") return;
-    this.gesture.onPointerMove(e);
-  }
-  public onViewportPointerUp(e: PointerEvent): void {
-    if (this.session.currentMode() !== "SEARCH") return;
-    this.gesture.onPointerUp(e);
-  }
-  public onViewportWheel(e: WheelEvent): void {
-    if (this.session.currentMode() !== "SEARCH") return;
-    e.preventDefault();
-    this.viewportController.stopInertia();
-    this.gesture.onWheel(e);
-  }
-
-  private onPan(delta: Point): void {
-    this.viewportController.panBy({ deltaX: delta.x, deltaY: delta.y, viewportSize: this.getViewportSize(), sceneSize: this.sceneSize() });
-  }
-  private onPanEnd(velocity: Point): void {
-    this.viewportController.setPanVelocityPxPerMs(velocity);
-    this.viewportController.startInertia({ viewportSize: this.getViewportSize(), sceneSize: this.sceneSize() });
-  }
-  private onPinch(center: Point, factor: number, centerDelta: Point): void {
-    const rect = this.viewportRef.nativeElement.getBoundingClientRect();
-    const vs = { width: rect.width, height: rect.height };
-    this.viewportController.panBy({ deltaX: centerDelta.x, deltaY: centerDelta.y, viewportSize: vs, sceneSize: this.sceneSize() });
-    this.viewportController.zoomAtPoint({ viewportPoint: { x: center.x - rect.left, y: center.y - rect.top }, factor, viewportSize: vs, sceneSize: this.sceneSize() });
-  }
-  private onWheelZoom(clientPoint: Point, factor: number): void {
-    const rect = this.viewportRef.nativeElement.getBoundingClientRect();
-    this.viewportController.zoomAtPoint({
-      viewportPoint: { x: clientPoint.x - rect.left, y: clientPoint.y - rect.top },
-      factor, viewportSize: { width: rect.width, height: rect.height }, sceneSize: this.sceneSize()
-    });
-  }
-
-  private sceneSize(): Size { return { width: this.sceneWidthPx(), height: this.sceneHeightPx() }; }
-  private getViewportSize(): Size {
-    if (!this.viewportRef) return { width: 400, height: 400 };
-    const rect = this.viewportRef.nativeElement.getBoundingClientRect();
-    return { width: rect.width, height: rect.height };
   }
 }
