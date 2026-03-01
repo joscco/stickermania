@@ -1,8 +1,18 @@
 import { CommonModule } from "@angular/common";
-import {Component, input, output, signal} from "@angular/core";
+import {Component, effect, input, output, signal} from "@angular/core";
 import * as QRCode from "qrcode";
 
 type WifiSecurity = "WPA" | "WEP" | "nopass";
+
+interface LocalConfig {
+  wifi?: {
+    ssid?: string;
+    password?: string;
+    security?: WifiSecurity;
+    hidden?: boolean;
+    showWifiSectionByDefault?: boolean;
+  };
+}
 
 @Component({
   selector: "app-board-setup-drawer",
@@ -56,6 +66,14 @@ export class BoardSetupDrawerComponent {
     }
   }
 
+  private didLoadLocalConfig: boolean = false;
+
+  constructor() {
+    effect(() => {
+      void this.tryLoadLocalConfig();
+    });
+  }
+
   public async generateWifiQr(): Promise<void> {
     this.wifiError.set(null);
 
@@ -76,8 +94,6 @@ export class BoardSetupDrawerComponent {
       return;
     }
 
-    // WIFI QR format (de-facto standard):
-    // WIFI:T:WPA;S:MySSID;P:MyPassword;H:false;;
     const payload: string =
       `WIFI:T:${security};S:${this.escapeWifiValue(ssid)};` +
       `P:${this.escapeWifiValue(security === "nopass" ? "" : password)};` +
@@ -91,6 +107,49 @@ export class BoardSetupDrawerComponent {
       this.wifiError.set("QR konnte nicht generiert werden.");
       this.wifiQrDataUrl.set(null);
       this.wifiQrGenerated.emit("");
+    }
+  }
+
+  private async tryLoadLocalConfig(): Promise<void> {
+    if (this.didLoadLocalConfig) {
+      return;
+    }
+    this.didLoadLocalConfig = true;
+
+    try {
+      const response: Response = await fetch("/assets/wlan-config.json", { cache: "no-store" });
+      if (!response.ok) {
+        return; // missing -> ignore
+      }
+
+      const config: LocalConfig = await response.json();
+      const wifi = config.wifi;
+      if (!wifi) {
+        return;
+      }
+
+      if (typeof wifi.ssid === "string" && wifi.ssid.trim().length > 0) {
+        this.wifiSsid.set(wifi.ssid);
+      }
+      if (typeof wifi.password === "string") {
+        this.wifiPassword.set(wifi.password);
+      }
+      if (wifi.security) {
+        this.wifiSecurity.set(wifi.security);
+      }
+      if (typeof wifi.hidden === "boolean") {
+        this.wifiHidden.set(wifi.hidden);
+      }
+      if (typeof wifi.showWifiSectionByDefault === "boolean") {
+        this.showWifi.set(wifi.showWifiSectionByDefault);
+      }
+
+      // Auto-generate if enabled by default AND values exist
+      if (this.showWifi()) {
+        await this.generateWifiQr();
+      }
+    } catch {
+      // ignore in party mode
     }
   }
 

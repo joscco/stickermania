@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-slate-950 text-slate-100 relative">
+<div class="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 relative">
   <!-- Toasts (board-only) -->
   <app-event-toasts [events]="events()"></app-event-toasts>
 
@@ -29,14 +29,16 @@
             Setup
           </button>
 
-          <button
-            class="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-slate-100 hover:bg-rose-500/15 active:translate-y-px disabled:opacity-40"
-            (click)="resetWorld()"
-            [disabled]="!canReset()"
-            title="Reset requires admin"
-          >
-            Reset
-          </button>
+          @if (canReset()) {
+            <button
+              class="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-slate-100 hover:bg-rose-500/15 active:translate-y-px disabled:opacity-40"
+              (click)="resetWorld()"
+              [disabled]="!canReset()"
+              title="Reset requires admin"
+            >
+              Reset
+            </button>
+          }
         </div>
       </div>
     </div>
@@ -69,37 +71,27 @@
     </div>
   </div>
 
-  <!-- Gemeinsames QR-Code Overlay unten rechts -->
-  <div class="absolute bottom-3 right-3 flex gap-2 items-end">
-    <div class="rounded-2xl border border-white/10 bg-black/35 p-2 backdrop-blur shadow-[0_12px_30px_rgba(0,0,0,0.4)] flex flex-col items-center">
-      <div class="flex flex-col gap-2">
-        <!-- WLAN QR -->
-        @if (wifiQrDataUrl()) {
-          <div class="flex flex-col items-center">
-            <div class="px-1 pb-1 text-[11px] text-slate-200">1. WLAN beitreten</div>
-            <img
-              class="h-28 w-28 rounded-xl bg-white p-1"
-              [src]="wifiQrDataUrl()!"
-              alt="WiFi QR"
-            />
+  <div
+    class="absolute bottom-3 right-3 rounded-2xl border border-white/10 bg-black/35 p-2 shadow-[0_12px_30px_rgba(0,0,0,0.4)] backdrop-blur"
+  >
+    <div class="flex flex-col items-end gap-3">
+      @if (wifiQrDataUrl()) {
+        <div class="flex flex-col items-center">
+          <div class="pb-1 text-[11px] text-slate-200">1. WLAN</div>
+          <img class="h-28 w-28 rounded-xl bg-white p-1" [src]="wifiQrDataUrl()!" alt="WiFi QR"/>
+        </div>
+      }
+
+      <div class="flex flex-col items-center">
+        <div class="pb-1 text-[11px] text-slate-200">2. Mitspielen</div>
+        @if (playerQrDataUrl()) {
+          <img class="h-28 w-28 rounded-xl bg-white p-1" [src]="playerQrDataUrl()!" alt="Player QR"/>
+        } @else {
+          <div
+            class="h-28 w-28 rounded-xl border border-white/10 bg-black/20 grid place-items-center text-xs text-slate-400">
+            QR…
           </div>
         }
-        <!-- Player QR -->
-        <div class="flex flex-col items-center">
-          <div class="px-1 pb-1 text-[11px] text-slate-200">2. Mitspielen</div>
-          <div class="grid place-items-center">
-            @if (playerQrDataUrl()) {
-              <img
-                [src]="playerQrDataUrl()!"
-                alt="Player QR Code"
-                class="h-28 w-28 rounded-xl bg-white p-1"
-              />
-            } @else {
-              <div class="text-xs text-slate-400">QR wird geladen…</div>
-            }
-          </div>
-        </div>
-
       </div>
     </div>
   </div>

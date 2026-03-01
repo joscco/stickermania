@@ -8,14 +8,20 @@
     "packages/*"
   ],
   "scripts": {
+    "dev": "concurrently -n BACK,FRONT -c blue,green \"npm run dev:back\" \"npm run dev:front\"",
     "dev:back": "npm run build -w @birthday/shared && npm run dev -w @birthday/backend",
     "dev:front": "npm run dev -w @birthday/frontend",
+
     "build:all": "npm run build -w @birthday/shared && npm run build -w @birthday/frontend && npm run build -w @birthday/backend",
-    "start:party": "npm run build:all && node apps/backend/dist/index.js --serve-static",
-    "start:party:admin": "npm run build:all && ADMIN_PASSWORD=master node apps/backend/dist/index.js --serve-static"
+
+    "party": "npm run build:all && node apps/backend/dist/index.js --serve-static",
+    "party:admin": "npm run build:all && ADMIN_PASSWORD=\"master\" node apps/backend/dist/index.js --serve-static"
   },
   "dependencies": {
     "gsap": "^3.14.2",
     "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

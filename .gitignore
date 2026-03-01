@@ -35,3 +35,6 @@ world-state.json
 # Env files
 .env
 .env.*.local
+
+# WLAN-Konfiguration
+apps/frontend/public/assets/wlan-config.json

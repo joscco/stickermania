@@ -10,8 +10,8 @@
 <div
   class="fixed right-0 top-0 z-50 h-full w-[min(420px,92vw)] border-l border-white/10 bg-slate-950/90 shadow-[0_12px_30px_rgba(0,0,0,0.6)] backdrop-blur
          transition-transform duration-300 ease-out"
-  [class.translate-x-0]="isOpen()"
   [class.translate-x-full]="!isOpen()"
+  [class.translate-x-0]="isOpen()"
 >
   <div class="flex h-full flex-col">
     <div class="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
@@ -26,14 +26,6 @@
       >
         Close
       </button>
-    </div>
-    <!-- Header -->
-    <div class="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
-      <div>
-        <div class="text-sm font-semibold text-slate-100">Setup</div>
-        <div class="mt-0.5 text-xs text-slate-400">QR + Links für Gäste</div>
-      </div>
-      <div class="text-xs text-slate-400">Board-only</div>
     </div>
 
     <!-- Content -->
