@@ -291,7 +291,7 @@
   "drawDurationSec": 60,
   "searchDurationSec": 60,
   "drawingSize": 0.1,
-  "maxDrawingsPerRound": 3,
+  "maxDrawingsPerRound": 100,
   "searchOverscroll": 0.15,
   "canvasResolution": 400,
   "drawingsPath": "./drawings",

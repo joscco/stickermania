@@ -12,7 +12,7 @@ import { SceneRendererComponent } from "../../shared/scene-renderer/scene-render
 import type { ServerToClientMessage, RoundPhase } from "@birthday/shared";
 
 /** How long an event toast stays visible */
-const EVENT_TOAST_DURATION_MS = 4000;
+const EVENT_TOAST_DURATION_MS = 3000;
 
 @Component({
   selector: "app-board",
@@ -237,8 +237,8 @@ export class BoardComponent implements OnInit, OnDestroy {
       const count = this.drawingCount();
 
       // Circle grows from 60% → 100% of available space over the first ~8 drawings
-      const circleFraction = 1 - 0.4 * Math.exp(-count / 3);
-      const diameter = Math.max(120, Math.round(maxDiameter * circleFraction));
+      const circleFraction = 1 - 0.6 * Math.exp(-count / 3);
+      const diameter = Math.max(100, Math.round(maxDiameter * circleFraction));
       this.sceneWidthPx.set(diameter);
       this.sceneHeightPx.set(diameter);
 

@@ -41,7 +41,6 @@
           [gameState]="store.gameState()"
           [sceneWidthPx]="sceneWidthPx()" [sceneHeightPx]="sceneHeightPx()"
           [viewScale]="boardScale()"
-          [scaleContainer]="false"
         ></app-scene-renderer>
 
         @if (!store.gameState()) {
@@ -52,8 +51,8 @@
           <div class="absolute inset-0 grid place-items-center z-20">
             <div class="text-center">
               <img src="assets/icons/paintbrush.svg" class="w-16 h-16 mx-auto mb-3 opacity-40" alt=""/>
-              <div class="text-lg font-semibold text-stone-400">Warten auf die ersten Zeichnungen...</div>
-              <div class="text-xs text-stone-300 mt-1">Scannt den QR-Code unten rechts zum Mitmachen</div>
+              <div class="text-lg font-semibold text-stone-400">Warten auf die Zeichnungen...</div>
+              <div class="text-xs text-stone-300 mt-1">Scannt den QR-Code zum Mitmachen</div>
             </div>
           </div>
         }
@@ -118,7 +117,17 @@
           [class.border-amber-200]="i === 0" [class.border-stone-200]="i === 1 || i === 2"
           [class.bg-stone-50]="i === 1 || i === 2"
         >
-          <span class="text-lg w-7 text-center shrink-0">{{ i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.' }}</span>
+          <span class="w-7 text-center shrink-0 flex items-center justify-center">
+            @if (player.score > 0 && i === 0) {
+              <img src="assets/icons/medal-gold.svg" class="w-7 h-7" alt="Gold"/>
+            } @else if (player.score > 0 && i === 1) {
+              <img src="assets/icons/medal-silver.svg" class="w-7 h-7" alt="Silber"/>
+            } @else if (player.score > 0 && i === 2) {
+              <img src="assets/icons/medal-bronze.svg" class="w-7 h-7" alt="Bronze"/>
+            } @else {
+              <span class="text-sm text-stone-400 font-medium">{{ i + 1 }}.</span>
+            }
+          </span>
           @if (player.avatarDataUrl) {
             <img class="w-9 h-9 rounded-full border border-black/[0.06] shrink-0 bg-white" [src]="player.avatarDataUrl" [alt]="player.name" />
           } @else {
