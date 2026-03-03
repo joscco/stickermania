@@ -38,6 +38,9 @@ export function sanitizeGameState(args: { candidate: unknown; fallback: GameStat
         players: maybeState.players ?? {},
         drawings: maybeState.drawings ?? {},
         round: maybeState.round ?? { phase: "LOBBY", endsAt: 0, drawDurationSec: 60, searchDurationSec: 90, roundNumber: 0 },
+        promptAssignments: maybeState.promptAssignments ?? {},
+        effectiveFieldWidth: typeof maybeState.effectiveFieldWidth === "number" ? maybeState.effectiveFieldWidth : 1000,
+        effectiveFieldHeight: typeof maybeState.effectiveFieldHeight === "number" ? maybeState.effectiveFieldHeight : 1000,
         revision: typeof maybeState.revision === "number" ? maybeState.revision : args.fallback.revision,
         updatedAt: typeof maybeState.updatedAt === "number" ? maybeState.updatedAt : Date.now()
     };

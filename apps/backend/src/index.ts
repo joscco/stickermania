@@ -89,8 +89,9 @@ function resolveFrontendDistRootAbsolutePath(): string {
 
 const server = http.createServer((request, response) => {
   if (request.url?.startsWith("/api/info") && request.method === "GET") {
+    const state = gameStore.getState();
     response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-    response.end(JSON.stringify({ baseUrl: `http://${request.headers.host ?? ""}`, fieldWidth: gc.fieldWidth, fieldHeight: gc.fieldHeight }));
+    response.end(JSON.stringify({ baseUrl: `http://${request.headers.host ?? ""}`, fieldWidth: state.effectiveFieldWidth, fieldHeight: state.effectiveFieldHeight }));
     return;
   }
   if (request.url?.startsWith("/api/state") && request.method === "GET") {
@@ -167,17 +168,21 @@ wss.on("connection", (ws: WebSocket) => {
       clientId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const player = gameStore.joinPlayer({ clientId, kind: msg.kind, existingPlayerId: msg.playerId });
       clients.set(clientId, { ws, clientId, kind: msg.kind, playerId: player.id });
-      sendTo(ws, { type: "welcome", clientId, playerId: player.id, serverTime: Date.now(), assignedColors: gameStore.getPlayerColors(player.id), fieldWidth: gc.fieldWidth, fieldHeight: gc.fieldHeight, maxDrawingsPerRound: gc.maxDrawingsPerRound, searchOverscroll: gc.searchOverscroll });
+      sendTo(ws, { type: "welcome", clientId, playerId: player.id, serverTime: Date.now(), assignedColors: gameStore.getPlayerColors(player.id), fieldWidth: 1000, fieldHeight: 1000, maxDrawingsPerRound: gc.maxDrawingsPerRound, searchOverscroll: gc.searchOverscroll, initialZoom: 1 });
       sendTo(ws, { type: "state", state: gameStore.getState() });
       if (msg.kind === "player" && player.name.length > 0)
         broadcast({ type: "event", text: `${player.name} ist beigetreten! 🎉`, createdAt: Date.now() });
       const round = gameStore.getRound();
       if (msg.kind === "player" && player.name.length > 0 && player.avatarDataUrl) {
         if (round.phase === "DRAW") {
-          const t = gameStore.assignDrawTask(clientId);
+          // On reconnect, return the current (persisted) draw task, or assign the first one
+          let t = gameStore.getCurrentDrawTaskForPlayer(player.id);
+          if (!t) t = gameStore.assignDrawTask(clientId);
           if (t) sendTo(ws, { type: "assign-task", task: t });
         } else if (round.phase === "SEARCH") {
-          const t = gameStore.assignSearchTask(clientId);
+          // On reconnect, return the current (persisted) search task, or assign the first one
+          let t = gameStore.getCurrentSearchTaskForPlayer(player.id);
+          if (!t) t = gameStore.assignSearchTask(clientId);
           if (t) {
             sendTo(ws, { type: "assign-task", task: t });
           } else {
@@ -222,12 +227,14 @@ wss.on("connection", (ws: WebSocket) => {
     if (msg.type === "submit-drawing") {
       const round = gameStore.getRound();
       if (round.phase !== "DRAW") { sendTo(ws, { type: "error", message: "Gerade keine Zeichenphase" }); return; }
-      const prompt = session.currentDrawPrompt;
+      // Use persisted activeDrawPrompt as the source of truth (survives reconnects)
+      const prompt = gameStore.getActiveDrawPrompt(session.playerId);
       if (!prompt) { sendTo(ws, { type: "error", message: "Kein aktiver Zeichen-Auftrag" }); return; }
       if (!msg.imageDataUrl || msg.imageDataUrl.length > 500_000) { sendTo(ws, { type: "error", message: "Zeichnung zu groß" }); return; }
 
       const drawing = gameStore.addDrawing({ playerId: session.playerId, imageDataUrl: msg.imageDataUrl, prompt });
       session.currentDrawPrompt = null;
+      gameStore.clearActiveDrawPrompt(session.playerId);
       saveScheduler.schedule();
 
       const player = gameStore.getState().players[session.playerId];
@@ -255,13 +262,16 @@ wss.on("connection", (ws: WebSocket) => {
     if (msg.type === "search-snapshot") {
       const round = gameStore.getRound();
       if (round.phase !== "SEARCH") { sendTo(ws, { type: "error", message: "Gerade keine Suchphase" }); return; }
-      const expectedDrawingId = session.currentSearchDrawingId;
+      // Use persisted activeSearchDrawingId as the source of truth
+      const expectedDrawingId = gameStore.getActiveSearchDrawingId(session.playerId) ?? session.currentSearchDrawingId;
       if (!expectedDrawingId) { sendTo(ws, { type: "error", message: "Kein aktiver Such-Auftrag" }); return; }
       const result = gameStore.checkSearchSnapshot({
         playerId: session.playerId, centerX: msg.centerX, centerY: msg.centerY, radius: msg.radius, expectedDrawingId
       });
       if (result.correct) {
-        session.currentSearchDrawingId = null; saveScheduler.schedule();
+        session.currentSearchDrawingId = null;
+        gameStore.clearActiveSearchTask(session.playerId);
+        saveScheduler.schedule();
         const player = gameStore.getState().players[session.playerId];
         const playerName = player?.name || "Jemand";
         const artistName = result.artist?.name || "Jemand";

@@ -44,8 +44,8 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly boardScale = signal<number>(1);
   private resizeObserver: ResizeObserver | null = null;
 
-  public readonly sceneWidthPx = signal<number>(1000);
-  public readonly sceneHeightPx = signal<number>(1000);
+  public readonly sceneWidthPx = signal<number>(600);
+  public readonly sceneHeightPx = signal<number>(600);
 
   public readonly leaderboard = computed(() => this.store.leaderboard());
   public readonly drawingCount = computed(() => this.store.drawingsList().length);
@@ -119,8 +119,6 @@ export class BoardComponent implements OnInit, OnDestroy {
     switch (msg.type) {
       case "welcome":
         this.store.setConnected();
-        if (msg.fieldWidth) this.sceneWidthPx.set(msg.fieldWidth);
-        if (msg.fieldHeight) this.sceneHeightPx.set(msg.fieldHeight);
         break;
 
       case "state":
@@ -207,9 +205,12 @@ export class BoardComponent implements OnInit, OnDestroy {
     const hostElement = this.sceneHostRef.nativeElement;
     const recompute = () => {
       const hostRect = hostElement.getBoundingClientRect();
-      const scaleByWidth = hostRect.width / this.sceneWidthPx();
-      const scaleByHeight = hostRect.height / this.sceneHeightPx();
-      this.boardScale.set(Math.min(2.5, Math.max(0.4, Math.min(scaleByWidth, scaleByHeight))));
+      // The scene fills the container as a circle — use min dimension as the diameter
+      const diameter = Math.min(hostRect.width, hostRect.height);
+      this.sceneWidthPx.set(diameter);
+      this.sceneHeightPx.set(diameter);
+      // Scale is always 1 since the scene IS the container size
+      this.boardScale.set(1);
     };
     this.recomputeScale = recompute;
     this.resizeObserver = new ResizeObserver(() => recompute());

@@ -152,8 +152,6 @@ export class PlayerComponent implements OnInit, AfterViewInit, OnDestroy {
           this.playerColors.set(msg.assignedColors);
           this.currentColor.set(msg.assignedColors[0]);
         }
-        this.sceneWidthPx.set(msg.fieldWidth ?? 1000);
-        this.sceneHeightPx.set(msg.fieldHeight ?? 1000);
         this.maxDrawings.set(msg.maxDrawingsPerRound ?? 3);
         const existing = this.store.players()[msg.playerId];
         if (existing?.name) this.session.playerName.set(existing.name);
@@ -204,7 +202,10 @@ export class PlayerComponent implements OnInit, AfterViewInit, OnDestroy {
         this.session.setTask(msg.task);
         // Clear the draw canvas for the new prompt
         if (msg.task.mode === "DRAW") {
-          if (this.drawCount() === 0) this.audio.playRoundStart();
+          // Use drawIndex from backend to keep counter correct across reconnects
+          this.drawCount.set(msg.task.drawIndex);
+          this.maxDrawings.set(msg.task.drawTotal);
+          if (msg.task.drawIndex === 0) this.audio.playRoundStart();
           this.drawCanvasInitialized = false;
           setTimeout(() => this.initDrawCanvas(), 80);
         }
@@ -346,7 +347,6 @@ export class PlayerComponent implements OnInit, AfterViewInit, OnDestroy {
     const canvas = this.drawCanvasRef?.nativeElement;
     if (!canvas) return;
     this.wsService.send({ type: "submit-drawing", imageDataUrl: canvas.toDataURL("image/png") });
-    this.drawCount.set(this.drawCount() + 1);
     this.audio.unlockIfNeeded();
     this.audio.playPop();
     // Clear current task — will get next via assign-task, or go IDLE if limit reached

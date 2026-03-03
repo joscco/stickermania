@@ -80,10 +80,29 @@ export interface RoundState {
   roundNumber: number;
 }
 
+/** Pre-assigned prompts for a single player in a round */
+export interface PlayerPromptAssignment {
+  drawPrompts: string[];
+  /** Index of the next draw prompt to hand out (prompts before this index are done) */
+  drawPromptIndex: number;
+  /** The currently active draw prompt (null = none active / was submitted) */
+  activeDrawPrompt: string | null;
+  searchTasks: Array<{ drawingId: string; prompt: string; artistName: string }>;
+  /** Index of the next search task to hand out */
+  searchTaskIndex: number;
+  /** The currently active search drawingId (null = none active / was found) */
+  activeSearchDrawingId: string | null;
+}
+
 export interface GameState {
   players: Record<string, Player>;
   drawings: Record<string, Drawing>;
   round: RoundState;
+  /** Pre-assigned prompts per playerId – persisted across reconnects */
+  promptAssignments: Record<string, PlayerPromptAssignment>;
+  /** Effective field dimensions (computed from drawing count) */
+  effectiveFieldWidth: number;
+  effectiveFieldHeight: number;
   revision: number;
   updatedAt: number;
 }
@@ -93,6 +112,10 @@ export type PlayerMode = "LOBBY" | "DRAW" | "SEARCH" | "IDLE";
 export interface DrawTask {
   mode: "DRAW";
   prompt: string;
+  /** 0-based index of this prompt in the player's assigned list (e.g. 0 = first drawing, 1 = second) */
+  drawIndex: number;
+  /** Total number of draw prompts assigned this round */
+  drawTotal: number;
 }
 
 export interface SearchTask {
@@ -120,7 +143,7 @@ export type ClientToServerMessage =
   | { type: "ping"; t: number };
 
 export type ServerToClientMessage =
-  | { type: "welcome"; clientId: string; playerId: string; serverTime: number; assignedColors: string[]; fieldWidth: number; fieldHeight: number; maxDrawingsPerRound: number; searchOverscroll: number }
+  | { type: "welcome"; clientId: string; playerId: string; serverTime: number; assignedColors: string[]; fieldWidth: number; fieldHeight: number; maxDrawingsPerRound: number; searchOverscroll: number; initialZoom: number }
   | { type: "state"; state: GameState }
   | { type: "assign-task"; task: PlayerTask }
   | { type: "search-result"; correct: boolean; drawingId: string; message: string }

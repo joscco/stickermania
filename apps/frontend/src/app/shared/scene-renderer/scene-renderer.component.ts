@@ -12,6 +12,11 @@ export class SceneRendererComponent {
   public readonly sceneHeightPx = input<number>(900);
   public readonly viewScale = input<number>(1);
 
+  /** The scene is circular, so we use the larger dimension to ensure all content fits */
+  public readonly sceneSizePx = computed<number>(() => {
+    return Math.max(this.sceneWidthPx(), this.sceneHeightPx());
+  });
+
   public readonly drawingsSorted = computed<Drawing[]>(() => {
     const state = this.gameState();
     if (!state) return [];
