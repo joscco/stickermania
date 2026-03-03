@@ -1,12 +1,8 @@
 <div
-  class="relative select-none overflow-hidden"
-  style="touch-action: none; border-radius: 50%;"
+  class="relative select-none overflow-hidden rounded-full touch-none"
   [style.width.px]="sceneSizePx() * viewScale()"
   [style.height.px]="sceneSizePx() * viewScale()"
 >
-  <!-- Subtle radial gradient background -->
-  <div class="absolute inset-0" style="background: radial-gradient(circle, #ffffff 0%, #f5f5f4 70%, #e7e5e4 100%);"></div>
-
   <!-- Drawings layer -->
   @for (drawing of drawingsSorted(); track drawing.id) {
     <img
@@ -23,6 +19,6 @@
   }
 
   <!-- Circular border overlay ON TOP of drawings -->
-  <div class="absolute inset-0 pointer-events-none"
-    style="border: 3px solid #d6d3d1; border-radius: 50%; z-index: 10;"></div>
+  <div class="absolute inset-0 pointer-events-none rounded-full border-4 border-dotted border-neutral-200 z-10">
+  </div>
 </div>

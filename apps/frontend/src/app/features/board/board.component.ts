@@ -175,10 +175,19 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   public get phaseLabel(): string {
     switch (this.roundPhase()) {
-      case "DRAW": return "🖌 Zeichnen";
-      case "SEARCH": return "🔍 Suchen";
-      case "PAUSED": return "⏸ Pause";
-      default: return "🏠 Lobby";
+      case "DRAW": return "Zeichnen";
+      case "SEARCH": return "Suchen";
+      case "PAUSED": return "Pause";
+      default: return "Lobby";
+    }
+  }
+
+  public get phaseIcon(): string {
+    switch (this.roundPhase()) {
+      case "DRAW": return "assets/icons/paintbrush.svg";
+      case "SEARCH": return "assets/icons/search.svg";
+      case "PAUSED": return "assets/icons/pause.svg";
+      default: return "assets/icons/home.svg";
     }
   }
 

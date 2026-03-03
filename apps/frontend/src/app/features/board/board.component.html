@@ -1,6 +1,4 @@
-<div class="h-screen w-screen overflow-hidden bg-stone-100 text-stone-900 relative flex">
-  <app-event-toasts [events]="events()"></app-event-toasts>
-
+<div class="h-screen w-screen overflow-hidden bg-white text-stone-900 relative flex">
   <!-- ══════ Main area ══════ -->
   <div class="flex-1 flex flex-col min-w-0">
     <!-- Top bar with phase + timer -->
@@ -13,7 +11,10 @@
           [class.bg-blue-100]="roundPhase() === 'SEARCH'" [class.text-blue-700]="roundPhase() === 'SEARCH'"
           [class.bg-stone-200]="roundPhase() === 'LOBBY' || roundPhase() === 'PAUSED'"
           [class.text-stone-600]="roundPhase() === 'LOBBY' || roundPhase() === 'PAUSED'"
-        >{{ phaseLabel }}</span>
+        >
+          <img [src]="phaseIcon" class="w-3.5 h-3.5 inline" alt=""/>
+          {{ phaseLabel }}
+        </span>
         <!-- Timer -->
         @if (timeLeft()) {
           <span class="text-2xl font-mono font-bold text-stone-800 tabular-nums inline-flex items-center gap-1"><img src="assets/icons/timer.svg" class="w-6 h-6" alt=""/> {{ timeLeft() }}</span>
@@ -34,6 +35,7 @@
 
     <!-- Scene -->
     <div class="flex-1 relative p-3">
+      <app-event-toasts [events]="events()"></app-event-toasts>
       <div #sceneHost class="relative h-full w-full flex items-center justify-center">
         <app-scene-renderer class="block"
           [gameState]="store.gameState()"
@@ -49,8 +51,8 @@
           <div class="absolute inset-0 grid place-items-center">
             <div class="text-center">
               <img src="assets/icons/paintbrush.svg" class="w-16 h-16 mx-auto mb-3 opacity-40" alt=""/>
-              <div class="text-lg font-semibold text-stone-400">Warte auf die ersten Zeichnungen…</div>
-              <div class="text-xs text-stone-300 mt-1">Spieler scannen den QR-Code zum Mitmachen</div>
+              <div class="text-lg font-semibold text-stone-400">Warten auf die ersten Zeichnungen...</div>
+              <div class="text-xs text-stone-300 mt-1">Scannt den QR-Code unten rechts zum Mitmachen</div>
             </div>
           </div>
         }
@@ -91,7 +93,7 @@
         </div>
       } @else {
         <div class="text-center">
-          <div class="text-xs text-stone-400 uppercase mb-1">{{ phaseLabel }}</div>
+          <div class="text-xs text-stone-400 uppercase mb-1 inline-flex items-center gap-1"><img [src]="phaseIcon" class="w-3.5 h-3.5" alt=""/> {{ phaseLabel }}</div>
           @if (timeLeft()) {
             <div class="text-3xl font-mono font-bold text-stone-800 tabular-nums">{{ timeLeft() }}</div>
           }
