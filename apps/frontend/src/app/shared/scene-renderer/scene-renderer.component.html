@@ -1,7 +1,7 @@
 <div
   class="relative select-none overflow-hidden rounded-full touch-none transition-[width,height] duration-700 ease-out"
-  [style.width.px]="containerPx()"
-  [style.height.px]="containerPx()"
+  [style.width.px]="containerSizePx()"
+  [style.height.px]="containerSizePx()"
 >
   <!-- Drawings layer -->
   @for (drawing of drawingsSorted(); track drawing.id) {
@@ -9,8 +9,8 @@
       class="absolute pointer-events-none transition-all duration-700 ease-out"
       [style.left.%]="drawing.x * 100"
       [style.top.%]="drawing.y * 100"
-      [style.width.px]="drawing.size * containerPx() * drawingScale()"
-      [style.height.px]="drawing.size * containerPx() * drawingScale()"
+      [style.width.px]="drawing.size * containerSizePx() * drawingScale()"
+      [style.height.px]="drawing.size * containerSizePx() * drawingScale()"
       [style.transform]="'translate(-50%, -50%)'"
       [src]="drawing.imageDataUrl"
       [alt]="drawing.prompt"

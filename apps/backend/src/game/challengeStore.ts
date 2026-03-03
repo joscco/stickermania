@@ -4,9 +4,9 @@ import type { PlayerSession } from "./gameTypes.js";
 
 export class GameStore {
   private state: GameState;
-  private sessions: Map<string, PlayerSession> = new Map();
+  private readonly sessions = new Map<string, PlayerSession>();
   private promptPool: string[];
-  private playerColors: Map<string, string[]> = new Map();
+  private readonly playerColors = new Map<string, string[]>();
   private phaseTimer: ReturnType<typeof setTimeout> | null = null;
   private onPhaseChange: (() => void) | null = null;
   private readonly config: GameConfig;
@@ -17,7 +17,6 @@ export class GameStore {
     if (!this.state.round) {
       (this.state as any).round = GameStore.defaultRound(this.config);
     }
-    // Migrate older persisted states
     if (!this.state.promptAssignments) {
       this.state.promptAssignments = {};
     }
@@ -26,20 +25,30 @@ export class GameStore {
 
   public static createEmpty(config: GameConfig): GameState {
     return {
-      players: {}, drawings: {},
+      players: {},
+      drawings: {},
       round: GameStore.defaultRound(config),
       promptAssignments: {},
       effectiveFieldWidth: 1000,
       effectiveFieldHeight: 1000,
-      revision: 0, updatedAt: Date.now()
+      revision: 0,
+      updatedAt: Date.now(),
     };
   }
 
   private static defaultRound(config: GameConfig): RoundState {
-    return { phase: "LOBBY", endsAt: 0, drawDurationSec: config.drawDurationSec, searchDurationSec: config.searchDurationSec, roundNumber: 0 };
+    return {
+      phase: "LOBBY",
+      endsAt: 0,
+      drawDurationSec: config.drawDurationSec,
+      searchDurationSec: config.searchDurationSec,
+      roundNumber: 0,
+    };
   }
 
-  public setOnPhaseChange(cb: () => void): void { this.onPhaseChange = cb; }
+  public setOnPhaseChange(callback: () => void): void {
+    this.onPhaseChange = callback;
+  }
 
   // ──────── State access ────────
 
@@ -47,17 +56,27 @@ export class GameStore {
   public getRound(): RoundState { return this.state.round; }
   public getConfig(): GameConfig { return this.config; }
 
-  public getSession(clientId: string): PlayerSession | undefined { return this.sessions.get(clientId); }
-  public getAllSessions(): PlayerSession[] { return Array.from(this.sessions.values()); }
+  public getSession(clientId: string): PlayerSession | undefined {
+    return this.sessions.get(clientId);
+  }
+
+  public getAllSessions(): PlayerSession[] {
+    return Array.from(this.sessions.values());
+  }
+
+  public removeSession(clientId: string): void {
+    this.sessions.delete(clientId);
+  }
 
   public getPlayerColors(playerId: string): string[] {
-    let colors = this.playerColors.get(playerId);
-    if (!colors) {
-      const shuffled = GameStore.shuffle([...this.config.playerColors]);
-      colors = shuffled.slice(0, this.config.colorsPerPlayer);
-      this.playerColors.set(playerId, colors);
+    const existing = this.playerColors.get(playerId);
+    if (existing) {
+      return existing;
     }
-    return colors;
+    const shuffled = GameStore.shuffle([...this.config.playerColors]);
+    const assigned = shuffled.slice(0, this.config.colorsPerPlayer);
+    this.playerColors.set(playerId, assigned);
+    return assigned;
   }
 
   // ──────── Player management ────────
@@ -74,10 +93,15 @@ export class GameStore {
     }
 
     this.sessions.set(args.clientId, {
-      playerId, clientId: args.clientId, kind: args.kind,
-      currentDrawPrompt: null, currentSearchDrawingId: null,
-      usedDrawPrompts: new Set(), usedSearchIds: new Set(), lastTaskMode: null,
-      drawCountThisRound: 0
+      playerId,
+      clientId: args.clientId,
+      kind: args.kind,
+      currentDrawPrompt: null,
+      currentSearchDrawingId: null,
+      usedDrawPrompts: new Set(),
+      usedSearchIds: new Set(),
+      lastTaskMode: null,
+      drawCountThisRound: 0,
     });
 
     return player;
@@ -85,29 +109,33 @@ export class GameStore {
 
   public setPlayerName(playerId: string, name: string): void {
     const player = this.state.players[playerId];
-    if (!player) return;
+    if (!player) {
+      return;
+    }
     player.name = name.trim().slice(0, 24);
     this.bumpRevision();
   }
 
   public setPlayerAvatar(playerId: string, avatarDataUrl: string): void {
     const player = this.state.players[playerId];
-    if (!player) return;
+    if (!player) {
+      return;
+    }
     player.avatarDataUrl = avatarDataUrl;
     this.bumpRevision();
   }
 
-  public removeSession(clientId: string): void { this.sessions.delete(clientId); }
-
   public getLeaderboard(): Player[] {
-    return Object.values(this.state.players).filter(p => p.name.length > 0).sort((a, b) => b.score - a.score);
+    return Object.values(this.state.players)
+      .filter((player) => player.name.length > 0)
+      .sort((a, b) => b.score - a.score);
   }
 
   // ──────── Round management ────────
 
-  public setTimerConfig(drawSec: number, searchSec: number): void {
-    this.state.round.drawDurationSec = Math.max(10, Math.min(600, drawSec));
-    this.state.round.searchDurationSec = Math.max(10, Math.min(600, searchSec));
+  public setTimerConfig(drawDurationSec: number, searchDurationSec: number): void {
+    this.state.round.drawDurationSec = Math.max(10, Math.min(600, drawDurationSec));
+    this.state.round.searchDurationSec = Math.max(10, Math.min(600, searchDurationSec));
     this.bumpRevision();
   }
 
@@ -116,49 +144,66 @@ export class GameStore {
     this.state.round.phase = "DRAW";
     this.state.round.roundNumber++;
     this.state.round.endsAt = Date.now() + this.state.round.drawDurationSec * 1000;
-    // Reset per-player draw count for this round
+
     for (const session of this.sessions.values()) {
       session.drawCountThisRound = 0;
     }
-    // Batch-assign draw prompts for all active players
     this.batchAssignDrawPrompts();
     this.bumpRevision();
-    this.phaseTimer = setTimeout(() => { this.startSearchPhase(); this.onPhaseChange?.(); }, this.state.round.drawDurationSec * 1000);
+
+    this.phaseTimer = setTimeout(() => {
+      this.startSearchPhase();
+      this.onPhaseChange?.();
+    }, this.state.round.drawDurationSec * 1000);
   }
 
   public startSearchPhase(): void {
     this.clearPhaseTimer();
     this.state.round.phase = "SEARCH";
     this.state.round.endsAt = Date.now() + this.state.round.searchDurationSec * 1000;
-    // Batch-assign search tasks for all active players
+
     this.batchAssignSearchTasks();
     this.bumpRevision();
-    this.phaseTimer = setTimeout(() => { this.endRound(); this.onPhaseChange?.(); }, this.state.round.searchDurationSec * 1000);
+
+    this.phaseTimer = setTimeout(() => {
+      this.endRound();
+      this.onPhaseChange?.();
+    }, this.state.round.searchDurationSec * 1000);
   }
 
   private endRound(): void {
     this.clearPhaseTimer();
     this.state.round.phase = "PAUSED";
     this.state.round.endsAt = 0;
-    // Clear prompt assignments for the ended round
     this.state.promptAssignments = {};
     this.bumpRevision();
   }
 
   private clearPhaseTimer(): void {
-    if (this.phaseTimer) { clearTimeout(this.phaseTimer); this.phaseTimer = null; }
+    if (this.phaseTimer) {
+      clearTimeout(this.phaseTimer);
+      this.phaseTimer = null;
+    }
   }
 
   // ──────── Drawing management ────────
 
   public addDrawing(args: { playerId: string; imageDataUrl: string; prompt: string }): Drawing {
     const id = crypto.randomUUID();
-    const size = this.config.drawingSize;
-    const pos = this.poissonPlaceDrawing(size);
+    const drawingSize = this.config.drawingSize;
+    const position = this.findBestPlacement(drawingSize);
 
     const drawing: Drawing = {
-      id, artistId: args.playerId, prompt: args.prompt, imageDataUrl: args.imageDataUrl,
-      x: pos.x, y: pos.y, size, placedAt: Date.now(), foundBy: null, foundAt: null
+      id,
+      artistId: args.playerId,
+      prompt: args.prompt,
+      imageDataUrl: args.imageDataUrl,
+      x: position.x,
+      y: position.y,
+      size: drawingSize,
+      placedAt: Date.now(),
+      foundBy: null,
+      foundAt: null,
     };
 
     this.state.drawings[id] = drawing;
@@ -170,70 +215,106 @@ export class GameStore {
    * Place drawings in a circular cluster centered on the field.
    * Uses Poisson-disk-like sampling within a circular area that grows with the number of drawings.
    */
-  private poissonPlaceDrawing(size: number): { x: number; y: number } {
-    const existing = Object.values(this.state.drawings);
-    const margin = size / 2 + 0.03;
+  private findBestPlacement(drawingSize: number): { x: number; y: number } {
+    const existingDrawings = Object.values(this.state.drawings);
+    const margin = drawingSize / 2 + 0.03;
 
-    if (existing.length === 0) {
-      // First drawing goes near center with a bit of randomness
+    if (existingDrawings.length === 0) {
       return {
         x: 0.5 + (Math.random() - 0.5) * 0.1,
-        y: 0.5 + (Math.random() - 0.5) * 0.1
+        y: 0.5 + (Math.random() - 0.5) * 0.1,
       };
     }
 
-    // Circular radius grows with drawing count, capped so we stay within bounds
     const maxRadius = 0.5 - margin;
     const baseRadius = 0.12;
-    const radiusGrowth = 0.025; // per existing drawing
-    const circleRadius = Math.min(maxRadius, baseRadius + existing.length * radiusGrowth);
+    const radiusGrowthPerDrawing = 0.025;
+    const circleRadius = Math.min(maxRadius, baseRadius + existingDrawings.length * radiusGrowthPerDrawing);
 
+    const CANDIDATE_ATTEMPTS = 40;
     let bestCandidate = { x: 0.5, y: 0.5 };
-    let bestMinDist = -1;
+    let bestMinDistance = -1;
 
-    for (let i = 0; i < 40; i++) {
-      // Generate random point within circle centered at (0.5, 0.5)
+    for (let attempt = 0; attempt < CANDIDATE_ATTEMPTS; attempt++) {
       const angle = Math.random() * 2 * Math.PI;
-      const r = circleRadius * Math.sqrt(Math.random()); // sqrt for uniform distribution within circle
-      const cx = 0.5 + r * Math.cos(angle);
-      const cy = 0.5 + r * Math.sin(angle);
+      const radius = circleRadius * Math.sqrt(Math.random());
+      const candidateX = 0.5 + radius * Math.cos(angle);
+      const candidateY = 0.5 + radius * Math.sin(angle);
 
-      // Clamp to valid range
-      if (cx < margin || cx > 1 - margin || cy < margin || cy > 1 - margin) continue;
-
-      let minDist = Infinity;
-      for (const d of existing) {
-        const dist = Math.sqrt((cx - d.x) ** 2 + (cy - d.y) ** 2);
-        if (dist < minDist) minDist = dist;
+      if (candidateX < margin || candidateX > 1 - margin || candidateY < margin || candidateY > 1 - margin) {
+        continue;
       }
-      if (minDist > bestMinDist) {
-        bestMinDist = minDist;
-        bestCandidate = { x: cx, y: cy };
+
+      let minDistToExisting = Infinity;
+      for (const drawing of existingDrawings) {
+        const distance = Math.sqrt((candidateX - drawing.x) ** 2 + (candidateY - drawing.y) ** 2);
+        if (distance < minDistToExisting) {
+          minDistToExisting = distance;
+        }
+      }
+
+      if (minDistToExisting > bestMinDistance) {
+        bestMinDistance = minDistToExisting;
+        bestCandidate = { x: candidateX, y: candidateY };
       }
     }
     return bestCandidate;
   }
 
   public checkSearchSnapshot(args: {
-    playerId: string; centerX: number; centerY: number; radius: number; expectedDrawingId: string;
+    playerId: string;
+    centerX: number;
+    centerY: number;
+    radius: number;
+    expectedDrawingId: string;
   }): { correct: boolean; drawing: Drawing | null; artist: Player | null } {
     const drawing = this.state.drawings[args.expectedDrawingId];
-    if (!drawing) return { correct: false, drawing: null, artist: null };
-    const dist = Math.sqrt((args.centerX - drawing.x) ** 2 + (args.centerY - drawing.y) ** 2);
-    const correct = dist <= args.radius + drawing.size / 2;
-    if (correct && !drawing.foundBy) {
-      drawing.foundBy = args.playerId; drawing.foundAt = Date.now();
+    if (!drawing) {
+      return { correct: false, drawing: null, artist: null };
+    }
+
+    const distanceToDrawing = Math.sqrt((args.centerX - drawing.x) ** 2 + (args.centerY - drawing.y) ** 2);
+    const isWithinRange = distanceToDrawing <= args.radius + drawing.size / 2;
+
+    if (isWithinRange && !drawing.foundBy) {
+      drawing.foundBy = args.playerId;
+      drawing.foundAt = Date.now();
+
       const searcher = this.state.players[args.playerId];
       const artist = this.state.players[drawing.artistId];
-      if (searcher) searcher.score += 1;
-      if (artist && artist.id !== args.playerId) artist.score += 1;
+      if (searcher) {
+        searcher.score += 1;
+      }
+      if (artist && artist.id !== args.playerId) {
+        artist.score += 1;
+      }
       this.bumpRevision();
       return { correct: true, drawing, artist: artist ?? null };
     }
+
     return { correct: false, drawing: null, artist: null };
   }
 
   // ──────── Task assignment ────────
+
+  /** Check if a player session belongs to a ready player (has name + avatar) */
+  private isReadyPlayer(session: PlayerSession): boolean {
+    if (session.kind !== "player") {
+      return false;
+    }
+    const player = this.state.players[session.playerId];
+    return !!player && !!player.name && !!player.avatarDataUrl;
+  }
+
+  /** Find the session for a given playerId */
+  private findSessionByPlayerId(playerId: string): PlayerSession | undefined {
+    for (const session of this.sessions.values()) {
+      if (session.playerId === playerId) {
+        return session;
+      }
+    }
+    return undefined;
+  }
 
   /**
    * Batch-assign draw prompts for all active player sessions at round start.
@@ -241,14 +322,15 @@ export class GameStore {
    */
   private batchAssignDrawPrompts(): void {
     this.state.promptAssignments = {};
-    for (const session of this.sessions.values()) {
-      if (session.kind !== "player") continue;
-      const player = this.state.players[session.playerId];
-      if (!player || !player.name || !player.avatarDataUrl) continue;
 
-      const maxDraw = this.config.maxDrawingsPerRound > 0 ? this.config.maxDrawingsPerRound : 3;
+    for (const session of this.sessions.values()) {
+      if (!this.isReadyPlayer(session)) {
+        continue;
+      }
+
+      const maxDrawCount = this.config.maxDrawingsPerRound > 0 ? this.config.maxDrawingsPerRound : 3;
       const prompts: string[] = [];
-      for (let i = 0; i < maxDraw; i++) {
+      for (let i = 0; i < maxDrawCount; i++) {
         const prompt = this.pickDrawPrompt(session.usedDrawPrompts);
         session.usedDrawPrompts.add(prompt);
         prompts.push(prompt);
@@ -260,7 +342,7 @@ export class GameStore {
         activeDrawPrompt: null,
         searchTasks: [],
         searchTaskIndex: 0,
-        activeSearchDrawingId: null
+        activeSearchDrawingId: null,
       };
     }
   }
@@ -270,20 +352,21 @@ export class GameStore {
    */
   private batchAssignSearchTasks(): void {
     for (const session of this.sessions.values()) {
-      if (session.kind !== "player") continue;
-      const player = this.state.players[session.playerId];
-      if (!player || !player.name || !player.avatarDataUrl) continue;
+      if (!this.isReadyPlayer(session)) {
+        continue;
+      }
 
       const assignment = this.state.promptAssignments[session.playerId];
-      if (!assignment) continue;
+      if (!assignment) {
+        continue;
+      }
 
-      // Find all unfound drawings not by this player
-      const unfound = this.getUnfoundDrawingsForPlayer(session.playerId, session.usedSearchIds);
-      const shuffled = GameStore.shuffle([...unfound]);
+      const unfoundDrawings = this.getUnfoundDrawingsForPlayer(session.playerId, session.usedSearchIds);
+      const shuffled = GameStore.shuffle([...unfoundDrawings]);
 
-      assignment.searchTasks = shuffled.map(d => {
-        const artist = this.state.players[d.artistId];
-        return { drawingId: d.id, prompt: d.prompt, artistName: artist?.name || "Unbekannt" };
+      assignment.searchTasks = shuffled.map((drawing) => {
+        const artist = this.state.players[drawing.artistId];
+        return { drawingId: drawing.id, prompt: drawing.prompt, artistName: artist?.name || "Unbekannt" };
       });
       assignment.searchTaskIndex = 0;
       assignment.activeSearchDrawingId = null;
@@ -292,13 +375,12 @@ export class GameStore {
 
   public assignDrawTask(clientId: string): PlayerTask | null {
     const session = this.sessions.get(clientId);
-    if (!session) return null;
+    if (!session) {
+      return null;
+    }
 
     const assignment = this.state.promptAssignments[session.playerId];
-    if (!assignment) return null;
-
-    // Check if there are remaining draw prompts
-    if (assignment.drawPromptIndex >= assignment.drawPrompts.length) {
+    if (!assignment || assignment.drawPromptIndex >= assignment.drawPrompts.length) {
       return null;
     }
 
@@ -311,24 +393,29 @@ export class GameStore {
     session.currentSearchDrawingId = null;
     session.lastTaskMode = "DRAW";
     session.drawCountThisRound++;
+
     return { mode: "DRAW", prompt, drawIndex, drawTotal: assignment.drawPrompts.length };
   }
 
   public assignSearchTask(clientId: string): PlayerTask | null {
     const session = this.sessions.get(clientId);
-    if (!session) return null;
+    if (!session) {
+      return null;
+    }
 
     const assignment = this.state.promptAssignments[session.playerId];
-    if (!assignment) return null;
+    if (!assignment) {
+      return null;
+    }
 
-    // Skip over tasks for drawings that have already been found
+    // Skip already-found drawings
     while (assignment.searchTaskIndex < assignment.searchTasks.length) {
-      const task = assignment.searchTasks[assignment.searchTaskIndex];
-      const drawing = this.state.drawings[task.drawingId];
+      const candidate = assignment.searchTasks[assignment.searchTaskIndex];
+      const drawing = this.state.drawings[candidate.drawingId];
       if (drawing && !drawing.foundBy) {
-        break; // This one is still valid
+        break;
       }
-      assignment.searchTaskIndex++; // Skip found drawings
+      assignment.searchTaskIndex++;
     }
 
     if (assignment.searchTaskIndex >= assignment.searchTasks.length) {
@@ -343,98 +430,102 @@ export class GameStore {
     session.currentDrawPrompt = null;
     session.usedSearchIds.add(task.drawingId);
     session.lastTaskMode = "SEARCH";
+
     return { mode: "SEARCH", prompt: task.prompt, drawingId: task.drawingId, artistName: task.artistName };
   }
 
   /**
    * Get the current draw task for a reconnecting player without advancing the index.
-   * Uses the persisted `activeDrawPrompt` — if null, the player has no active task.
-   * Also updates the session state so the submit-drawing handler works.
+   * Also syncs the session state so the submit-drawing handler works.
    */
   public getCurrentDrawTaskForPlayer(playerId: string): PlayerTask | null {
     const assignment = this.state.promptAssignments[playerId];
-    if (!assignment) return null;
-    if (!assignment.activeDrawPrompt) return null; // No active task (was submitted or never assigned)
+    if (!assignment?.activeDrawPrompt) {
+      return null;
+    }
 
     const prompt = assignment.activeDrawPrompt;
-    const drawIndex = assignment.drawPromptIndex - 1; // The active prompt was the last one assigned
+    const drawIndex = Math.max(0, assignment.drawPromptIndex - 1);
 
-    // Update session state so submit-drawing handler finds the active prompt
-    for (const session of this.sessions.values()) {
-      if (session.playerId === playerId) {
-        session.currentDrawPrompt = prompt;
-        session.currentSearchDrawingId = null;
-        break;
-      }
+    const session = this.findSessionByPlayerId(playerId);
+    if (session) {
+      session.currentDrawPrompt = prompt;
+      session.currentSearchDrawingId = null;
     }
-    return { mode: "DRAW", prompt, drawIndex: Math.max(0, drawIndex), drawTotal: assignment.drawPrompts.length };
+
+    return { mode: "DRAW", prompt, drawIndex, drawTotal: assignment.drawPrompts.length };
   }
 
   /**
    * Get the current search task for a reconnecting player without advancing the index.
-   * Uses the persisted `activeSearchDrawingId` — if null, the player has no active task.
-   * Also updates the session state so the search-snapshot handler works.
+   * Also syncs the session state so the search-snapshot handler works.
    */
   public getCurrentSearchTaskForPlayer(playerId: string): PlayerTask | null {
     const assignment = this.state.promptAssignments[playerId];
-    if (!assignment) return null;
-    if (!assignment.activeSearchDrawingId) return null; // No active task
+    if (!assignment?.activeSearchDrawingId) {
+      return null;
+    }
 
     const drawingId = assignment.activeSearchDrawingId;
     const drawing = this.state.drawings[drawingId];
     if (!drawing || drawing.foundBy) {
-      // The drawing was already found — clear the active task
       assignment.activeSearchDrawingId = null;
       return null;
     }
 
     const artist = this.state.players[drawing.artistId];
-    // Update session state so search-snapshot handler finds the active drawingId
-    for (const session of this.sessions.values()) {
-      if (session.playerId === playerId) {
-        session.currentSearchDrawingId = drawingId;
-        session.currentDrawPrompt = null;
-        break;
-      }
+    const session = this.findSessionByPlayerId(playerId);
+    if (session) {
+      session.currentSearchDrawingId = drawingId;
+      session.currentDrawPrompt = null;
     }
+
     return { mode: "SEARCH", prompt: drawing.prompt, drawingId, artistName: artist?.name || "Unbekannt" };
   }
 
   private getUnfoundDrawingsForPlayer(playerId: string, usedSearchIds: Set<string>): Drawing[] {
-    return Object.values(this.state.drawings).filter(d =>
-      d.foundBy === null && d.artistId !== playerId && !usedSearchIds.has(d.id)
+    return Object.values(this.state.drawings).filter(
+      (drawing) => !drawing.foundBy && drawing.artistId !== playerId && !usedSearchIds.has(drawing.id)
     );
   }
 
-  /** Clear the active draw prompt after submission — persisted so reconnects know there's no active task */
+  // ──────── Prompt assignment state access ────────
+
   public clearActiveDrawPrompt(playerId: string): void {
     const assignment = this.state.promptAssignments[playerId];
-    if (assignment) assignment.activeDrawPrompt = null;
+    if (assignment) {
+      assignment.activeDrawPrompt = null;
+    }
   }
 
-  /** Clear the active search task after a correct snapshot — persisted so reconnects know there's no active task */
   public clearActiveSearchTask(playerId: string): void {
     const assignment = this.state.promptAssignments[playerId];
-    if (assignment) assignment.activeSearchDrawingId = null;
+    if (assignment) {
+      assignment.activeSearchDrawingId = null;
+    }
   }
 
-  /** Get the persisted active draw prompt for a player (source of truth) */
   public getActiveDrawPrompt(playerId: string): string | null {
     return this.state.promptAssignments[playerId]?.activeDrawPrompt ?? null;
   }
 
-  /** Get the persisted active search drawing ID for a player (source of truth) */
   public getActiveSearchDrawingId(playerId: string): string | null {
     return this.state.promptAssignments[playerId]?.activeSearchDrawingId ?? null;
   }
 
   private pickDrawPrompt(usedPrompts: Set<string>): string {
+    // Try to find an unused prompt from the pool
     for (let i = this.promptPool.length - 1; i >= 0; i--) {
-      if (!usedPrompts.has(this.promptPool[i])) return this.promptPool.splice(i, 1)[0];
+      if (!usedPrompts.has(this.promptPool[i])) {
+        return this.promptPool.splice(i, 1)[0];
+      }
     }
+    // Pool exhausted — reshuffle and try again
     this.promptPool = GameStore.shuffle([...this.config.drawPrompts]);
     for (let i = this.promptPool.length - 1; i >= 0; i--) {
-      if (!usedPrompts.has(this.promptPool[i])) return this.promptPool.splice(i, 1)[0];
+      if (!usedPrompts.has(this.promptPool[i])) {
+        return this.promptPool.splice(i, 1)[0];
+      }
     }
     return this.promptPool.pop() ?? this.config.drawPrompts[0] ?? "?";
   }
@@ -451,7 +542,10 @@ export class GameStore {
 
   // ──────── Internal ────────
 
-  private bumpRevision(): void { this.state.revision++; this.state.updatedAt = Date.now(); }
+  private bumpRevision(): void {
+    this.state.revision++;
+    this.state.updatedAt = Date.now();
+  }
 
   public static shuffle<T>(arr: T[]): T[] {
     for (let i = arr.length - 1; i > 0; i--) {

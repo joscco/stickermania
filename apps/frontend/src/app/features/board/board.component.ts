@@ -11,6 +11,9 @@ import { BoardSetupDrawerComponent } from "./setup/board-setup-drawer.component"
 import { SceneRendererComponent } from "../../shared/scene-renderer/scene-renderer.component";
 import type { ServerToClientMessage, RoundPhase } from "@birthday/shared";
 
+/** How long an event toast stays visible */
+const EVENT_TOAST_DURATION_MS = 4000;
+
 @Component({
   selector: "app-board",
   standalone: true,
@@ -20,9 +23,9 @@ import type { ServerToClientMessage, RoundPhase } from "@birthday/shared";
     EventToastsComponent,
     AdminOverlayComponent,
     BoardSetupDrawerComponent,
-    SceneRendererComponent
+    SceneRendererComponent,
   ],
-  templateUrl: "./board.component.html"
+  templateUrl: "./board.component.html",
 })
 export class BoardComponent implements OnInit, OnDestroy {
   public readonly store: WorldStore;
@@ -68,13 +71,16 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   public constructor(
     private readonly wsService: WebSocketService,
-    worldStore: WorldStore
+    worldStore: WorldStore,
   ) {
     this.store = worldStore;
 
-    // Recompute board size when drawing count or container changes
+    // Load admin key early so the overlay state is correct on first render
+    this.adminKey = this.loadAdminKey();
+    this.showAdminOverlay = signal<boolean>(!this.adminKey);
+
+    // Recompute board size whenever drawing count changes
     effect(() => {
-      // Track drawingCount so the effect re-runs when drawings change
       this.drawingCount();
       this.recomputeScale?.();
     });
@@ -87,33 +93,38 @@ export class BoardComponent implements OnInit, OnDestroy {
   public async ngOnInit(): Promise<void> {
     this.store.setConnecting();
 
-    const host: string = window.location.host;
-    const playerUrl: string = `http://${host}/#/player`;
-    this.playerUrl.set(playerUrl);
-    this.playerQrDataUrl.set(await QRCode.toDataURL(playerUrl, { margin: 1, scale: 6 }));
+    const host = window.location.host;
+    const playerPageUrl = `http://${host}/#/player`;
+    this.playerUrl.set(playerPageUrl);
+    this.playerQrDataUrl.set(await QRCode.toDataURL(playerPageUrl, { margin: 1, scale: 6 }));
 
-    this.adminKey = this.loadAdminKey();
-    this.showAdminOverlay.set(!this.adminKey);
     this.setupAutoScale();
     this.startTimerTick();
 
     this.wsService.connect();
     this.unsubscribeWs = this.wsService.onMessage((msg) => this.handleMessage(msg));
 
-    // Send initial join once WS is open (wsService will auto-re-send on reconnect)
-    const checkJoin = setInterval(() => {
+    const joinCheckInterval = setInterval(() => {
       if (this.wsService.status() === "connected") {
         this.wsService.send({ type: "join", kind: "board" });
-        clearInterval(checkJoin);
+        clearInterval(joinCheckInterval);
       }
     }, 200);
   }
 
   public ngOnDestroy(): void {
-    if (this.unsubscribeWs) this.unsubscribeWs();
-    if (this.resizeObserver) this.resizeObserver.disconnect();
-    if (this.timerInterval) clearInterval(this.timerInterval);
+    if (this.unsubscribeWs) {
+      this.unsubscribeWs();
+    }
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+    }
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
   }
+
+  // ──────── WebSocket ────────
 
   private handleMessage(msg: ServerToClientMessage): void {
     switch (msg.type) {
@@ -124,7 +135,6 @@ export class BoardComponent implements OnInit, OnDestroy {
       case "state":
         this.store.setGameState(msg.state);
         this.store.setConnected();
-        // Sync timer settings from server
         if (msg.state.round) {
           this.drawDurationSec.set(msg.state.round.drawDurationSec);
           this.searchDurationSec.set(msg.state.round.searchDurationSec);
@@ -136,9 +146,8 @@ export class BoardComponent implements OnInit, OnDestroy {
         break;
 
       case "score-update": {
-        const player = this.store.players()[msg.playerId];
-        const name = player?.name || "Jemand";
-        this.pushEvent(`⭐ ${name} ${msg.reason} (${msg.newScore} Punkte)`, Date.now());
+        const playerName = this.store.players()[msg.playerId]?.name || "Jemand";
+        this.pushEvent(`⭐ ${playerName} ${msg.reason} (${msg.newScore} Punkte)`, Date.now());
         break;
       }
     }
@@ -154,7 +163,7 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.wsService.send({
       type: "set-timer",
       drawDurationSec: this.drawDurationSec(),
-      searchDurationSec: this.searchDurationSec()
+      searchDurationSec: this.searchDurationSec(),
     });
   }
 
@@ -162,11 +171,11 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.timerInterval = setInterval(() => {
       const endsAt = this.roundEndsAt();
       if (endsAt > 0) {
-        const left = Math.max(0, endsAt - Date.now());
-        const sec = Math.ceil(left / 1000);
-        const m = Math.floor(sec / 60);
-        const s = sec % 60;
-        this.timeLeft.set(`${m}:${String(s).padStart(2, "0")}`);
+        const remainingMs = Math.max(0, endsAt - Date.now());
+        const totalSeconds = Math.ceil(remainingMs / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        this.timeLeft.set(`${minutes}:${String(seconds).padStart(2, "0")}`);
       } else {
         this.timeLeft.set("");
       }
@@ -191,17 +200,24 @@ export class BoardComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ──────── existing methods ────────
+  // ──────── Setup / Admin ────────
 
-  public toggleSetupDrawer(): void { this.showSetupDrawer.set(!this.showSetupDrawer()); }
-  public onSetupDrawerCloseRequested(): void { this.showSetupDrawer.set(false); }
+  public toggleSetupDrawer(): void {
+    this.showSetupDrawer.set(!this.showSetupDrawer());
+  }
+
+  public onSetupDrawerCloseRequested(): void {
+    this.showSetupDrawer.set(false);
+  }
 
   public resetWorld(): void {
     this.wsService.send({ type: "reset" });
     this.pushEvent("Spiel zurückgesetzt! 🔄", Date.now());
   }
 
-  public canReset(): boolean { return (this.adminKey ?? "").trim().length > 0; }
+  public canReset(): boolean {
+    return (this.adminKey ?? "").trim().length > 0;
+  }
 
   public onAdminKeySubmitted(adminKey: string): void {
     this.adminKey = adminKey;
@@ -210,43 +226,49 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.showAdminOverlay.set(false);
   }
 
+  // ──────── Auto-scale ────────
+
   private setupAutoScale(): void {
     const hostElement = this.sceneHostRef.nativeElement;
+
     const recompute = () => {
       const hostRect = hostElement.getBoundingClientRect();
       const maxDiameter = Math.min(hostRect.width, hostRect.height);
       const count = this.drawingCount();
 
-      // 1) Circle grows from 60% → 100% of available space over the first ~8 drawings
-      //    circleFraction = 1 - 0.4 * e^(-count / 3)
-      //    0 → 60%,  3 → ~79%,  6 → ~95%,  10+ → ~100%
+      // Circle grows from 60% → 100% of available space over the first ~8 drawings
       const circleFraction = 1 - 0.4 * Math.exp(-count / 3);
       const diameter = Math.max(120, Math.round(maxDiameter * circleFraction));
       this.sceneWidthPx.set(diameter);
       this.sceneHeightPx.set(diameter);
 
-      // 2) Drawings shrink within the circle as more arrive (zoom-out effect)
-      //    drawingScale = 0.35 + 0.65 * e^(-count / 10)
-      //    0 → 1.0,  5 → ~0.74,  15 → ~0.49,  30+ → ~0.35
-      const scale = 0.35 + 0.65 * Math.exp(-count / 10);
-      this.boardScale.set(scale);
+      // Drawings shrink within the circle as more arrive (zoom-out effect)
+      const drawingScale = 0.35 + 0.65 * Math.exp(-count / 10);
+      this.boardScale.set(drawingScale);
     };
+
     this.recomputeScale = recompute;
     this.resizeObserver = new ResizeObserver(() => recompute());
     this.resizeObserver.observe(hostElement);
     recompute();
   }
 
+  // ──────── Events ────────
+
   private pushEvent(text: string, createdAt: number): void {
-    const id: string = `${createdAt}-${Math.random().toString(16).slice(2)}`;
-    const next: UiEvent = { id, text, createdAt };
-    this.events.set([next, ...this.events()]);
-    window.setTimeout(() => { this.events.set(this.events().filter((e) => e.id !== id)); }, 4000);
+    const id = `${createdAt}-${Math.random().toString(16).slice(2)}`;
+    const event: UiEvent = { id, text, createdAt };
+    this.events.set([event, ...this.events()]);
+    setTimeout(() => {
+      this.events.set(this.events().filter((e) => e.id !== id));
+    }, EVENT_TOAST_DURATION_MS);
   }
 
   private loadAdminKey(): string | null {
     const stored = localStorage.getItem("birthday_admin_key");
-    if (!stored) return null;
-    return stored.trim().length > 0 ? stored.trim() : null;
+    if (!stored || stored.trim().length === 0) {
+      return null;
+    }
+    return stored.trim();
   }
 }

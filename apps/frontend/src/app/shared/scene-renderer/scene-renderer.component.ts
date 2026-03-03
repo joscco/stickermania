@@ -4,34 +4,46 @@ import type { GameState, Drawing } from "@birthday/shared";
 @Component({
   selector: "app-scene-renderer",
   standalone: true,
-  templateUrl: "./scene-renderer.component.html"
+  templateUrl: "./scene-renderer.component.html",
 })
 export class SceneRendererComponent {
   public readonly gameState = input.required<GameState | null>();
-  public readonly sceneWidthPx = input<number>(1600);
-  public readonly sceneHeightPx = input<number>(900);
+  public readonly sceneWidthPx = input<number>(1000);
+  public readonly sceneHeightPx = input<number>(1000);
   public readonly viewScale = input<number>(1);
 
-  /** The scene is circular, so we use the larger dimension to ensure all content fits */
-  public readonly sceneSizePx = computed<number>(() => {
-    return Math.max(this.sceneWidthPx(), this.sceneHeightPx());
-  });
+  /**
+   * If true (default), viewScale resizes the entire container (used by search viewport).
+   * If false, the container stays at sceneSizePx and viewScale only shrinks the drawings (used by board).
+   */
+  public readonly scaleContainer = input<boolean>(true);
 
-  /** Effective container pixel size */
-  public readonly containerPx = computed<number>(() => {
-    return this.sceneSizePx() * this.viewScale();
-  });
+  /** The scene is circular — use the larger dimension to ensure all content fits. */
+  public readonly sceneSizePx = computed(() =>
+    Math.max(this.sceneWidthPx(), this.sceneHeightPx())
+  );
 
-  /** Scale factor applied to drawing sizes within the container */
-  public readonly drawingScale = computed<number>(() => {
-    // When scaleContainer is true, viewScale is baked into containerPx → drawings scale = 1
-    // When scaleContainer is false, container is fixed → drawings need viewScale
-    return 1;
-  });
+  /** Effective pixel size of the outer container. */
+  public readonly containerSizePx = computed(() =>
+    this.scaleContainer()
+      ? this.sceneSizePx() * this.viewScale()
+      : this.sceneSizePx()
+  );
+
+  /**
+   * Scale factor applied to drawing dimensions within the container.
+   * - scaleContainer=true  → viewScale is already in containerSizePx, so drawings scale at 1×.
+   * - scaleContainer=false → container is fixed, so viewScale shrinks the drawings.
+   */
+  public readonly drawingScale = computed(() =>
+    this.scaleContainer() ? 1 : this.viewScale()
+  );
 
   public readonly drawingsSorted = computed<Drawing[]>(() => {
     const state = this.gameState();
-    if (!state) return [];
+    if (!state) {
+      return [];
+    }
     return Object.values(state.drawings).sort((a, b) => a.placedAt - b.placedAt);
   });
 }

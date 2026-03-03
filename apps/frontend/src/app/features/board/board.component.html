@@ -41,6 +41,7 @@
           [gameState]="store.gameState()"
           [sceneWidthPx]="sceneWidthPx()" [sceneHeightPx]="sceneHeightPx()"
           [viewScale]="boardScale()"
+          [scaleContainer]="false"
         ></app-scene-renderer>
 
         @if (!store.gameState()) {
