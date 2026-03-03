@@ -9,6 +9,12 @@ export class WorldStore {
   public readonly gameState = signal<GameState | null>(null);
   public readonly lastError = signal<string | null>(null);
 
+  // ── Field & image config (received via welcome message) ───────────
+  public readonly imageSizePx = signal<number>(160);
+  public readonly fieldBaseSize = signal<number>(400);
+  public readonly fieldGrowthPerDrawing = signal<number>(100);
+  public readonly fieldMaxSize = signal<number>(6000);
+
   public readonly revision = computed(() => this.gameState()?.revision ?? null);
 
   public readonly players = computed<Record<string, Player>>(() => this.gameState()?.players ?? {});
@@ -48,4 +54,15 @@ export class WorldStore {
     this.lastError.set(null);
   }
 
+  public setFieldConfig(args: {
+    imageSizePx: number;
+    fieldBaseSize: number;
+    fieldGrowthPerDrawing: number;
+    fieldMaxSize: number;
+  }): void {
+    this.imageSizePx.set(args.imageSizePx);
+    this.fieldBaseSize.set(args.fieldBaseSize);
+    this.fieldGrowthPerDrawing.set(args.fieldGrowthPerDrawing);
+    this.fieldMaxSize.set(args.fieldMaxSize);
+  }
 }

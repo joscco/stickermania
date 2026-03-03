@@ -293,6 +293,10 @@
   "maxDrawingsPerRound": 100,
   "searchOverscroll": 0.15,
   "canvasResolution": 400,
+  "imageSizePx": 200,
+  "fieldBaseSize": 400,
+  "fieldGrowthPerDrawing": 100,
+  "fieldMaxSize": 6000,
   "drawingsPath": "./drawings",
   "port": 3001,
   "adminPassword": null

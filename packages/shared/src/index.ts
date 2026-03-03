@@ -18,6 +18,16 @@ export interface GameConfig {
   drawingsPath: string;
   port: number;
   adminPassword: string | null;
+
+  // ── Field & image sizing ──────────────────────────────────────────
+  /** Logical image size in the field coordinate system (px). */
+  imageSizePx: number;
+  /** Base field diameter at 0 drawings (px). */
+  fieldBaseSize: number;
+  /** How many field-px the diameter grows per drawing. */
+  fieldGrowthPerDrawing: number;
+  /** Maximum field diameter (px). */
+  fieldMaxSize: number;
 }
 
 export function parseGameConfig(raw: unknown): GameConfig {
@@ -34,6 +44,10 @@ export function parseGameConfig(raw: unknown): GameConfig {
     drawingsPath: typeof obj["drawingsPath"] === "string" ? obj["drawingsPath"] : "./drawings",
     port: typeof obj["port"] === "number" ? obj["port"] : 3001,
     adminPassword: typeof obj["adminPassword"] === "string" ? obj["adminPassword"] : null,
+    imageSizePx: typeof obj["imageSizePx"] === "number" ? obj["imageSizePx"] : 160,
+    fieldBaseSize: typeof obj["fieldBaseSize"] === "number" ? obj["fieldBaseSize"] : 400,
+    fieldGrowthPerDrawing: typeof obj["fieldGrowthPerDrawing"] === "number" ? obj["fieldGrowthPerDrawing"] : 100,
+    fieldMaxSize: typeof obj["fieldMaxSize"] === "number" ? obj["fieldMaxSize"] : 6000,
   };
 }
 
@@ -134,7 +148,7 @@ export type ClientToServerMessage =
   | { type: "ping"; t: number };
 
 export type ServerToClientMessage =
-  | { type: "welcome"; clientId: string; playerId: string; serverTime: number; assignedColors: string[]; fieldWidth: number; fieldHeight: number; maxDrawingsPerRound: number; searchOverscroll: number; initialZoom: number }
+  | { type: "welcome"; clientId: string; playerId: string; serverTime: number; assignedColors: string[]; fieldWidth: number; fieldHeight: number; maxDrawingsPerRound: number; searchOverscroll: number; initialZoom: number; imageSizePx: number; fieldBaseSize: number; fieldGrowthPerDrawing: number; fieldMaxSize: number }
   | { type: "state"; state: GameState }
   | { type: "assign-task"; task: PlayerTask }
   | { type: "search-result"; correct: boolean; drawingId: string; message: string }

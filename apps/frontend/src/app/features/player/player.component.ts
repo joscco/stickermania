@@ -148,6 +148,12 @@ export class PlayerComponent implements OnInit, OnDestroy {
           this.currentColor.set(msg.assignedColors[0]);
         }
         this.maxDrawings.set(msg.maxDrawingsPerRound ?? 3);
+        this.store.setFieldConfig({
+          imageSizePx: msg.imageSizePx,
+          fieldBaseSize: msg.fieldBaseSize,
+          fieldGrowthPerDrawing: msg.fieldGrowthPerDrawing,
+          fieldMaxSize: msg.fieldMaxSize,
+        });
         {
           const existingPlayer = this.store.players()[msg.playerId];
           if (existingPlayer?.name) {

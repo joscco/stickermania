@@ -250,6 +250,10 @@ wss.on("connection", (ws: WebSocket) => {
         maxDrawingsPerRound: gameConfig.maxDrawingsPerRound,
         searchOverscroll: gameConfig.searchOverscroll,
         initialZoom: 1,
+        imageSizePx: gameConfig.imageSizePx,
+        fieldBaseSize: gameConfig.fieldBaseSize,
+        fieldGrowthPerDrawing: gameConfig.fieldGrowthPerDrawing,
+        fieldMaxSize: gameConfig.fieldMaxSize,
       });
       sendTo(ws, { type: "state", state: gameStore.getState() });
 

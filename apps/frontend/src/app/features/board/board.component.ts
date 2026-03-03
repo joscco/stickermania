@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, OnDestroy, OnInit, ViewChild, signal, computed, effect } from "@angular/core";
+import { Component, OnDestroy, OnInit, signal, computed } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { WebSocketService } from "../../core/websocket.service";
 import { WorldStore } from "../../core/world.store";
@@ -41,9 +41,6 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly wifiQrDataUrl = signal<string | null>(null);
   public readonly showSetupDrawer = signal<boolean>(false);
 
-  @ViewChild("boardScene")
-  private boardSceneRef!: BoardSceneComponent;
-
 
   public readonly leaderboard = computed(() => this.store.leaderboard());
   public readonly drawingCount = computed(() => this.store.drawingsList().length);
@@ -72,12 +69,6 @@ export class BoardComponent implements OnInit, OnDestroy {
     // Load admin key early so the overlay state is correct on first render
     this.adminKey = this.loadAdminKey();
     this.showAdminOverlay = signal<boolean>(!this.adminKey);
-
-    // Recompute board scene size whenever drawing count changes
-    effect(() => {
-      this.drawingCount();
-      this.boardSceneRef?.recomputeSize();
-    });
   }
 
   public onWifiQrGenerated(dataUrl: string): void {
@@ -120,6 +111,12 @@ export class BoardComponent implements OnInit, OnDestroy {
     switch (msg.type) {
       case "welcome":
         this.store.setConnected();
+        this.store.setFieldConfig({
+          imageSizePx: msg.imageSizePx,
+          fieldBaseSize: msg.fieldBaseSize,
+          fieldGrowthPerDrawing: msg.fieldGrowthPerDrawing,
+          fieldMaxSize: msg.fieldMaxSize,
+        });
         break;
 
       case "state":

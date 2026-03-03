@@ -31,8 +31,8 @@ export class GameStore {
       drawings: {},
       round: GameStore.defaultRound(config),
       promptAssignments: {},
-      effectiveFieldWidth: 400,
-      effectiveFieldHeight: 400,
+      effectiveFieldWidth: config.fieldBaseSize,
+      effectiveFieldHeight: config.fieldBaseSize,
       revision: 0,
       updatedAt: Date.now(),
     };
@@ -200,15 +200,9 @@ export class GameStore {
 
   // ──────── Drawing management ────────
 
-  /**
-   * Fixed logical image size in pixels.
-   * Must match the frontend constant (BoardSceneComponent.IMAGE_SIZE_IN_PX).
-   */
-  private static readonly IMAGE_SIZE_PX = 400;
-
   /** The relative size of an image in normalized 0..1 coords at the current field size. */
   public getRelativeImageSize(): number {
-    return GameStore.IMAGE_SIZE_PX / this.state.effectiveFieldWidth;
+    return this.config.imageSizePx / this.state.effectiveFieldWidth;
   }
 
   public addDrawing(args: { playerId: string; imageDataUrl: string; prompt: string }): Drawing {
@@ -244,8 +238,10 @@ export class GameStore {
    */
   private recalcEffectiveFieldSize(count?: number): void {
     const n = count ?? Object.keys(this.state.drawings).length;
-    // Base size 400, grows by ~60 per drawing, capped at 2000
-    const size = Math.min(2000, Math.round(400 + n * 60));
+    const size = Math.min(
+      this.config.fieldMaxSize,
+      Math.round(this.config.fieldBaseSize + n * this.config.fieldGrowthPerDrawing),
+    );
     this.state.effectiveFieldWidth = size;
     this.state.effectiveFieldHeight = size;
   }
@@ -253,61 +249,54 @@ export class GameStore {
   /**
    * Place a new drawing using Poisson-disk-like sampling.
    *
-   * All coordinates are normalized 0..1.
+   * All coordinates are normalized 0..1 within the circular field.
    * The image occupies `relSize × relSize` in normalized space where
    * `relSize = IMAGE_SIZE_PX / effectiveFieldWidth`.
-   * The placement radius grows with the number of drawings so that
-   * density stays roughly constant.
+   *
+   * The placement always uses the full available circle so new drawings
+   * spread across the entire field instead of clustering in the centre.
    */
   private findBestPlacement(): { x: number; y: number } {
     const existingDrawings = Object.values(this.state.drawings);
     const relSize = this.getRelativeImageSize();
-    // Half-image + small gap so drawings don't touch
     const halfImg = relSize / 2;
-    const gap = 0.02;
+    const gap = 0.01;
     const margin = halfImg + gap;
 
+    // Place first drawing near the centre with a small random offset
     if (existingDrawings.length === 0) {
       return {
-        x: 0.5 + (Math.random() - 0.5) * 0.05,
-        y: 0.5 + (Math.random() - 0.5) * 0.05,
+        x: 0.5 + (Math.random() - 0.5) * relSize * 0.3,
+        y: 0.5 + (Math.random() - 0.5) * relSize * 0.3,
       };
     }
 
-    // The placement circle grows so there is always room for new images.
-    // At the current relSize, each image "consumes" roughly relSize² of area.
-    // We want the circle area to be proportional to count × relSize².
-    const count = existingDrawings.length;
+    // Use the full inscribed circle of the 0..1 square minus margin
     const maxRadius = 0.5 - margin;
-    // Base radius = just big enough for the first image; grows with sqrt(count)
-    const baseRadius = relSize * 0.8;
-    const circleRadius = Math.min(maxRadius, baseRadius + relSize * 0.6 * Math.sqrt(count));
 
-    // Minimum distance between centres to avoid overlap
-    const minSeparation = relSize * 0.85;
-
-    const CANDIDATE_ATTEMPTS = 60;
+    const CANDIDATE_ATTEMPTS = 80;
     let bestCandidate = { x: 0.5, y: 0.5 };
     let bestMinDistance = -1;
 
     for (let attempt = 0; attempt < CANDIDATE_ATTEMPTS; attempt++) {
       const angle = Math.random() * 2 * Math.PI;
-      const r = circleRadius * Math.sqrt(Math.random());
+      const r = maxRadius * Math.sqrt(Math.random());
       const cx = 0.5 + r * Math.cos(angle);
       const cy = 0.5 + r * Math.sin(angle);
 
-      // Stay inside the field with enough room for the image
+      // Stay inside the square with room for the image
       if (cx < margin || cx > 1 - margin || cy < margin || cy > 1 - margin) {
         continue;
       }
 
+      // Find distance to nearest existing drawing
       let minDist = Infinity;
       for (const d of existingDrawings) {
         const dist = Math.sqrt((cx - d.x) ** 2 + (cy - d.y) ** 2);
         if (dist < minDist) minDist = dist;
       }
 
-      // Prefer candidates that maximize distance to nearest neighbour
+      // Prefer the candidate that is farthest from any existing drawing
       if (minDist > bestMinDistance) {
         bestMinDistance = minDist;
         bestCandidate = { x: cx, y: cy };
