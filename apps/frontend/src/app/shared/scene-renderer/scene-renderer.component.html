@@ -1,16 +1,16 @@
 <div
-  class="relative select-none overflow-hidden rounded-full touch-none"
-  [style.width.px]="sceneSizePx() * viewScale()"
-  [style.height.px]="sceneSizePx() * viewScale()"
+  class="relative select-none overflow-hidden rounded-full touch-none transition-[width,height] duration-700 ease-out"
+  [style.width.px]="containerPx()"
+  [style.height.px]="containerPx()"
 >
   <!-- Drawings layer -->
   @for (drawing of drawingsSorted(); track drawing.id) {
     <img
-      class="absolute pointer-events-none"
+      class="absolute pointer-events-none transition-all duration-700 ease-out"
       [style.left.%]="drawing.x * 100"
       [style.top.%]="drawing.y * 100"
-      [style.width.px]="drawing.size * sceneSizePx() * viewScale()"
-      [style.height.px]="drawing.size * sceneSizePx() * viewScale()"
+      [style.width.px]="drawing.size * containerPx() * drawingScale()"
+      [style.height.px]="drawing.size * containerPx() * drawingScale()"
       [style.transform]="'translate(-50%, -50%)'"
       [src]="drawing.imageDataUrl"
       [alt]="drawing.prompt"

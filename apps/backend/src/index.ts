@@ -239,7 +239,7 @@ wss.on("connection", (ws: WebSocket) => {
 
       const player = gameStore.getState().players[session.playerId];
       const playerName = player?.name || "Jemand";
-      broadcast({ type: "event", text: `${playerName} hat "${prompt}" gezeichnet! 🎨`, createdAt: Date.now() });
+      broadcast({ type: "event", text: `${playerName} hat etwas gezeichnet! 🎨`, createdAt: Date.now() });
       broadcastState();
 
       // Save drawing to disk
@@ -275,12 +275,11 @@ wss.on("connection", (ws: WebSocket) => {
         const player = gameStore.getState().players[session.playerId];
         const playerName = player?.name || "Jemand";
         const artistName = result.artist?.name || "Jemand";
-        const drawingPrompt = result.drawing?.prompt || "?";
         sendTo(ws, { type: "search-result", correct: true, drawingId: expectedDrawingId, message: "Richtig! 🎉 +1 Punkt" });
-        if (player) broadcast({ type: "score-update", playerId: player.id, newScore: player.score, reason: `hat "${drawingPrompt}" gefunden` });
+        if (player) broadcast({ type: "score-update", playerId: player.id, newScore: player.score, reason: `hat eine Zeichnung gefunden` });
         if (result.artist && result.artist.id !== session.playerId)
-          broadcast({ type: "score-update", playerId: result.artist.id, newScore: result.artist.score, reason: `Zeichnung "${drawingPrompt}" wurde gefunden` });
-        broadcast({ type: "event", text: `${playerName} hat "${drawingPrompt}" von ${artistName} gefunden! 🔍✅`, createdAt: Date.now() });
+          broadcast({ type: "score-update", playerId: result.artist.id, newScore: result.artist.score, reason: `Zeichnung wurde gefunden` });
+        broadcast({ type: "event", text: `${playerName} hat eine Zeichnung von ${artistName} gefunden! 🔍✅`, createdAt: Date.now() });
         broadcastState();
         if (gameStore.getRound().phase === "SEARCH") {
           const next = gameStore.assignSearchTask(clientId);

@@ -17,6 +17,18 @@ export class SceneRendererComponent {
     return Math.max(this.sceneWidthPx(), this.sceneHeightPx());
   });
 
+  /** Effective container pixel size */
+  public readonly containerPx = computed<number>(() => {
+    return this.sceneSizePx() * this.viewScale();
+  });
+
+  /** Scale factor applied to drawing sizes within the container */
+  public readonly drawingScale = computed<number>(() => {
+    // When scaleContainer is true, viewScale is baked into containerPx → drawings scale = 1
+    // When scaleContainer is false, container is fixed → drawings need viewScale
+    return 1;
+  });
+
   public readonly drawingsSorted = computed<Drawing[]>(() => {
     const state = this.gameState();
     if (!state) return [];

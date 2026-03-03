@@ -60,6 +60,7 @@ export class PlayerComponent implements OnInit, AfterViewInit, OnDestroy {
   });
 
   public readonly roundEndsAt = computed(() => this.store.round()?.endsAt ?? 0);
+  public readonly roundPhase = computed(() => this.store.round()?.phase ?? "LOBBY");
 
   /** Timer countdown display */
   public readonly timeLeft = signal<string>("");

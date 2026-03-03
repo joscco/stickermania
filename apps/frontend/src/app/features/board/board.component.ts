@@ -72,10 +72,10 @@ export class BoardComponent implements OnInit, OnDestroy {
   ) {
     this.store = worldStore;
 
-    // Recompute board scale when scene dimensions change
+    // Recompute board size when drawing count or container changes
     effect(() => {
-      this.sceneWidthPx();
-      this.sceneHeightPx();
+      // Track drawingCount so the effect re-runs when drawings change
+      this.drawingCount();
       this.recomputeScale?.();
     });
   }
@@ -214,12 +214,22 @@ export class BoardComponent implements OnInit, OnDestroy {
     const hostElement = this.sceneHostRef.nativeElement;
     const recompute = () => {
       const hostRect = hostElement.getBoundingClientRect();
-      // The scene fills the container as a circle — use min dimension as the diameter
-      const diameter = Math.min(hostRect.width, hostRect.height);
+      const maxDiameter = Math.min(hostRect.width, hostRect.height);
+      const count = this.drawingCount();
+
+      // 1) Circle grows from 60% → 100% of available space over the first ~8 drawings
+      //    circleFraction = 1 - 0.4 * e^(-count / 3)
+      //    0 → 60%,  3 → ~79%,  6 → ~95%,  10+ → ~100%
+      const circleFraction = 1 - 0.4 * Math.exp(-count / 3);
+      const diameter = Math.max(120, Math.round(maxDiameter * circleFraction));
       this.sceneWidthPx.set(diameter);
       this.sceneHeightPx.set(diameter);
-      // Scale is always 1 since the scene IS the container size
-      this.boardScale.set(1);
+
+      // 2) Drawings shrink within the circle as more arrive (zoom-out effect)
+      //    drawingScale = 0.35 + 0.65 * e^(-count / 10)
+      //    0 → 1.0,  5 → ~0.74,  15 → ~0.49,  30+ → ~0.35
+      const scale = 0.35 + 0.65 * Math.exp(-count / 10);
+      this.boardScale.set(scale);
     };
     this.recomputeScale = recompute;
     this.resizeObserver = new ResizeObserver(() => recompute());
