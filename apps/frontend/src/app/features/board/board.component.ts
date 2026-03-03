@@ -50,6 +50,7 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly sceneWidthPx = signal<number>(600);
   public readonly sceneHeightPx = signal<number>(600);
 
+
   public readonly leaderboard = computed(() => this.store.leaderboard());
   public readonly drawingCount = computed(() => this.store.drawingsList().length);
   public readonly playerCount = computed(() => this.store.leaderboard().length);
@@ -234,17 +235,17 @@ export class BoardComponent implements OnInit, OnDestroy {
     const recompute = () => {
       const hostRect = hostElement.getBoundingClientRect();
       const maxDiameter = Math.min(hostRect.width, hostRect.height);
-      const count = this.drawingCount();
 
-      // Circle grows from 60% → 100% of available space over the first ~8 drawings
-      const circleFraction = 1 - 0.6 * Math.exp(-count / 3);
-      const diameter = Math.max(100, Math.round(maxDiameter * circleFraction));
-      this.sceneWidthPx.set(diameter);
-      this.sceneHeightPx.set(diameter);
+      // The effective field size from the server grows with the number of drawings.
+      const efw = this.store.gameState()?.effectiveFieldWidth ?? 400;
 
-      // Drawings shrink within the circle as more arrive (zoom-out effect)
-      const drawingScale = 0.35 + 0.65 * Math.exp(-count / 10);
-      this.boardScale.set(drawingScale);
+      // The scene uses the effective field size as its logical pixel dimension.
+      this.sceneWidthPx.set(efw);
+      this.sceneHeightPx.set(efw);
+
+      // When the field is small (few drawings) the circle is small on screen.
+      // When the field grows beyond the available space, scale it down to fit.
+      this.boardScale.set(Math.min(1, maxDiameter / efw));
     };
 
     this.recomputeScale = recompute;

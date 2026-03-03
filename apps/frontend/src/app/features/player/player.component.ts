@@ -37,8 +37,8 @@ export class PlayerComponent implements OnInit, OnDestroy {
   private avatarCanvasInitialized = false;
   private drawCanvasInitialized = false;
 
-  public readonly sceneWidthPx = signal<number>(1000);
-  public readonly sceneHeightPx = signal<number>(1000);
+  public readonly sceneWidthPx = computed<number>(() => this.store.gameState()?.effectiveFieldWidth ?? 400);
+  public readonly sceneHeightPx = computed<number>(() => this.store.gameState()?.effectiveFieldHeight ?? 400);
 
   private unsubscribeWs: (() => void) | null = null;
   private playerId: string | null = null;

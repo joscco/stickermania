@@ -21,6 +21,8 @@ export class GameStore {
       this.state.promptAssignments = {};
     }
     this.promptPool = GameStore.shuffle([...this.config.drawPrompts]);
+    // Recalculate field size based on existing drawings (e.g. after loading saved state)
+    this.recalcEffectiveFieldSize();
   }
 
   public static createEmpty(config: GameConfig): GameState {
@@ -29,8 +31,8 @@ export class GameStore {
       drawings: {},
       round: GameStore.defaultRound(config),
       promptAssignments: {},
-      effectiveFieldWidth: 1000,
-      effectiveFieldHeight: 1000,
+      effectiveFieldWidth: 400,
+      effectiveFieldHeight: 400,
       revision: 0,
       updatedAt: Date.now(),
     };
@@ -66,6 +68,16 @@ export class GameStore {
 
   public removeSession(clientId: string): void {
     this.sessions.delete(clientId);
+  }
+
+  /** Remove sessions whose clientId is not in the given set of active client IDs. */
+  public purgeDisconnectedSessions(activeClientIds: Set<string>): void {
+    for (const [clientId, session] of this.sessions) {
+      if (!activeClientIds.has(clientId)) {
+        console.log(`[purge] Removing stale session ${clientId} (player ${session.playerId})`);
+        this.sessions.delete(clientId);
+      }
+    }
   }
 
   public getPlayerColors(playerId: string): string[] {
@@ -207,8 +219,21 @@ export class GameStore {
     };
 
     this.state.drawings[id] = drawing;
+    this.recalcEffectiveFieldSize();
     this.bumpRevision();
     return drawing;
+  }
+
+  /**
+   * Recalculate the effective field dimensions based on the number of drawings.
+   * Starts small so that a few drawings feel big, then grows as more arrive.
+   */
+  private recalcEffectiveFieldSize(): void {
+    const count = Object.keys(this.state.drawings).length;
+    // Base size 400, grows by ~60 per drawing, capped at 2000
+    const size = Math.min(2000, Math.round(400 + count * 60));
+    this.state.effectiveFieldWidth = size;
+    this.state.effectiveFieldHeight = size;
   }
 
   /**
@@ -323,10 +348,15 @@ export class GameStore {
   private batchAssignDrawPrompts(): void {
     this.state.promptAssignments = {};
 
+    const processedPlayerIds = new Set<string>();
     for (const session of this.sessions.values()) {
       if (!this.isReadyPlayer(session)) {
         continue;
       }
+      if (processedPlayerIds.has(session.playerId)) {
+        continue;
+      }
+      processedPlayerIds.add(session.playerId);
 
       const maxDrawCount = this.config.maxDrawingsPerRound > 0 ? this.config.maxDrawingsPerRound : 3;
       const prompts: string[] = [];
@@ -351,10 +381,15 @@ export class GameStore {
    * Batch-assign search tasks for all active player sessions at search phase start.
    */
   private batchAssignSearchTasks(): void {
+    const processedPlayerIds = new Set<string>();
     for (const session of this.sessions.values()) {
       if (!this.isReadyPlayer(session)) {
         continue;
       }
+      if (processedPlayerIds.has(session.playerId)) {
+        continue;
+      }
+      processedPlayerIds.add(session.playerId);
 
       const assignment = this.state.promptAssignments[session.playerId];
       if (!assignment) {
@@ -376,6 +411,7 @@ export class GameStore {
   public assignDrawTask(clientId: string): PlayerTask | null {
     const session = this.sessions.get(clientId);
     if (!session) {
+      console.log(`[assignDrawTask] No session for clientId ${clientId}`);
       return null;
     }
 
@@ -393,6 +429,8 @@ export class GameStore {
     session.currentSearchDrawingId = null;
     session.lastTaskMode = "DRAW";
     session.drawCountThisRound++;
+
+    console.log(`[assignDrawTask] player=${session.playerId.slice(0, 8)} clientId=${clientId.slice(0, 12)} drawIndex=${drawIndex}/${assignment.drawPrompts.length} prompt="${prompt.slice(0, 30)}"`);
 
     return { mode: "DRAW", prompt, drawIndex, drawTotal: assignment.drawPrompts.length };
   }

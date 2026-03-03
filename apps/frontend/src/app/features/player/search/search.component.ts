@@ -95,6 +95,7 @@ export class SearchComponent implements AfterViewInit, OnDestroy {
     height: this.sceneHeightPx(),
   }));
 
+
   // ─── Lifecycle ─────────────────────────────────────────────────────
 
   public ngAfterViewInit(): void {
@@ -122,7 +123,7 @@ export class SearchComponent implements AfterViewInit, OnDestroy {
   /** Center the scene in the viewport. Can be called from outside via ViewChild. */
   public centerViewport(): void {
     if (!this.viewportRef) return;
-    this.viewportCtrl.center({
+    this.viewportCtrl.fitAndCenter({
       viewportSize: this.getViewportSize(),
       sceneSize: this.sceneSize(),
     });

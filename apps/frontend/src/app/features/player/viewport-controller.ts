@@ -24,6 +24,20 @@ export class ViewportController {
     return `translate(${this.offsetX()}px, ${this.offsetY()}px)`;
   }
 
+  /**
+   * Calculate and set the scale so the entire scene fits in the viewport
+   * (with a small margin), then center it.
+   */
+  public fitAndCenter(args: { viewportSize: Size; sceneSize: Size }): void {
+    const margin = 0.9; // 90% of viewport to leave a small border
+    const fitScale = Math.min(
+      (args.viewportSize.width * margin) / args.sceneSize.width,
+      (args.viewportSize.height * margin) / args.sceneSize.height,
+    );
+    this.scale.set(this.clampScale(fitScale));
+    this.center(args);
+  }
+
   public stopInertia(): void {
     if (this.inertiaRafHandle === null) {
       return;

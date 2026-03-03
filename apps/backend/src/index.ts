@@ -245,8 +245,8 @@ wss.on("connection", (ws: WebSocket) => {
         playerId: player.id,
         serverTime: Date.now(),
         assignedColors: gameStore.getPlayerColors(player.id),
-        fieldWidth: 1000,
-        fieldHeight: 1000,
+        fieldWidth: gameStore.getState().effectiveFieldWidth,
+        fieldHeight: gameStore.getState().effectiveFieldHeight,
         maxDrawingsPerRound: gameConfig.maxDrawingsPerRound,
         searchOverscroll: gameConfig.searchOverscroll,
         initialZoom: 1,
@@ -403,20 +403,37 @@ wss.on("connection", (ws: WebSocket) => {
 
     // ──── start-round ────
     if (msg.type === "start-round") {
+      // Purge stale sessions whose WebSocket is no longer active
+      gameStore.purgeDisconnectedSessions(new Set(clients.keys()));
+
       gameStore.startDrawPhase();
       saveScheduler.schedule();
 
+      // Deduplicate by playerId so that multiple sessions for the same player
+      // (e.g. two browser tabs, or a stale + fresh session) don't consume extra prompts.
+      const assignedPlayerIds = new Set<string>();
+
       for (const playerSession of gameStore.getAllSessions()) {
         if (playerSession.kind !== "player") {
+          continue;
+        }
+        if (assignedPlayerIds.has(playerSession.playerId)) {
           continue;
         }
         const player = gameStore.getState().players[playerSession.playerId];
         if (!player || !player.name || !player.avatarDataUrl) {
           continue;
         }
-        const task = gameStore.assignDrawTask(playerSession.clientId);
+        // Only assign if this session still has an active WebSocket connection.
+        // Otherwise a stale/disconnected session would consume a prompt index
+        // and the real client would start at drawIndex 1 instead of 0.
         const client = clients.get(playerSession.clientId);
-        if (task && client) {
+        if (!client) {
+          continue;
+        }
+        assignedPlayerIds.add(playerSession.playerId);
+        const task = gameStore.assignDrawTask(playerSession.clientId);
+        if (task) {
           sendTo(client.ws, { type: "assign-task", task });
         }
       }
