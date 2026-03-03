@@ -8,19 +8,12 @@ import type { GameState, Drawing } from "@birthday/shared";
 })
 export class SceneRendererComponent {
   public readonly gameState = input.required<GameState | null>();
-  public readonly sceneWidthPx = input<number>(1000);
-  public readonly sceneHeightPx = input<number>(1000);
-  public readonly viewScale = input<number>(1);
 
-  /** The scene is circular — use the larger dimension to ensure all content fits. */
-  public readonly sceneSizePx = computed(() =>
-    Math.max(this.sceneWidthPx(), this.sceneHeightPx())
-  );
+  /** Pixel size of the circular container on screen. */
+  public readonly containerSizePx = input.required<number>();
 
-  /** Effective pixel size of the outer container. */
-  public readonly containerSizePx = computed(() =>
-    this.sceneSizePx() * this.viewScale()
-  );
+  /** Pixel size of each drawing on screen. */
+  public readonly imageSizePx = input.required<number>();
 
   public readonly drawingsSorted = computed<Drawing[]>(() => {
     const state = this.gameState();

@@ -36,27 +36,7 @@
     <!-- Scene -->
     <div class="flex-1 relative p-3">
       <app-event-toasts [events]="events()"></app-event-toasts>
-      <div #sceneHost class="relative h-full w-full flex items-center justify-center">
-        <app-scene-renderer class="block"
-          [gameState]="store.gameState()"
-          [sceneWidthPx]="sceneWidthPx()" [sceneHeightPx]="sceneHeightPx()"
-          [viewScale]="boardScale()"
-        ></app-scene-renderer>
-
-        @if (!store.gameState()) {
-          <div class="absolute inset-0 grid place-items-center text-sm text-stone-400">Verbinde…</div>
-        }
-
-        @if (store.gameState() && drawingCount() === 0) {
-          <div class="absolute inset-0 grid place-items-center z-20">
-            <div class="text-center">
-              <img src="assets/icons/paintbrush.svg" class="w-16 h-16 mx-auto mb-3 opacity-40" alt=""/>
-              <div class="text-lg font-semibold text-stone-400">Warten auf die Zeichnungen...</div>
-              <div class="text-xs text-stone-300 mt-1">Scannt den QR-Code zum Mitmachen</div>
-            </div>
-          </div>
-        }
-      </div>
+      <app-board-scene #boardScene class="block h-full w-full"></app-board-scene>
     </div>
   </div>
 

@@ -5,15 +5,11 @@
 // ──────── Central game config (read from game.config.json) ────────
 
 export interface GameConfig {
-  fieldWidth: number;
-  fieldHeight: number;
   playerColors: string[];
   colorsPerPlayer: number;
   drawPrompts: string[];
   drawDurationSec: number;
   searchDurationSec: number;
-  /** Fixed drawing size as fraction of field width (e.g. 0.1 = 10%) */
-  drawingSize: number;
   /** Max drawings per player per round (0 = unlimited) */
   maxDrawingsPerRound: number;
   /** How far the player can pan beyond the scene edge in search mode (fraction of scene, e.g. 0.15 = 15%) */
@@ -27,14 +23,11 @@ export interface GameConfig {
 export function parseGameConfig(raw: unknown): GameConfig {
   const obj = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
   return {
-    fieldWidth: typeof obj["fieldWidth"] === "number" ? obj["fieldWidth"] : 1600,
-    fieldHeight: typeof obj["fieldHeight"] === "number" ? obj["fieldHeight"] : 900,
     playerColors: Array.isArray(obj["playerColors"]) ? obj["playerColors"] as string[] : ["#dc2626", "#2563eb"],
     colorsPerPlayer: typeof obj["colorsPerPlayer"] === "number" ? obj["colorsPerPlayer"] : 2,
     drawPrompts: Array.isArray(obj["drawPrompts"]) ? obj["drawPrompts"] as string[] : ["Katze", "Hund", "Sonne"],
     drawDurationSec: typeof obj["drawDurationSec"] === "number" ? obj["drawDurationSec"] : 60,
     searchDurationSec: typeof obj["searchDurationSec"] === "number" ? obj["searchDurationSec"] : 90,
-    drawingSize: typeof obj["drawingSize"] === "number" ? obj["drawingSize"] : 0.1,
     maxDrawingsPerRound: typeof obj["maxDrawingsPerRound"] === "number" ? obj["maxDrawingsPerRound"] : 3,
     searchOverscroll: typeof obj["searchOverscroll"] === "number" ? obj["searchOverscroll"] : 0.15,
     canvasResolution: typeof obj["canvasResolution"] === "number" ? obj["canvasResolution"] : 300,
@@ -62,8 +55,6 @@ export interface Drawing {
   /** Normalized 0..1 position on the game field */
   x: number;
   y: number;
-  /** Normalized size (fraction of field) */
-  size: number;
   placedAt: number;
   foundBy: string | null;
   foundAt: number | null;

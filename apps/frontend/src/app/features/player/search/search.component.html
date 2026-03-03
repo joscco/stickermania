@@ -38,9 +38,8 @@
       <app-scene-renderer
         class="block"
         [gameState]="world.gameState()"
-        [sceneWidthPx]="sceneWidthPx()"
-        [sceneHeightPx]="sceneHeightPx()"
-        [viewScale]="viewportCtrl.scale()"
+        [containerSizePx]="searchContainerSizePx()"
+        [imageSizePx]="searchImageSizePx()"
       ></app-scene-renderer>
     </div>
 

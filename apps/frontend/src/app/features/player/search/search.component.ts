@@ -90,10 +90,23 @@ export class SearchComponent implements AfterViewInit, OnDestroy {
 
   // ─── Computed ──────────────────────────────────────────────────────
 
+  /** Fixed logical image size in pixels – must match backend GameStore.IMAGE_SIZE_PX. */
+  private static readonly IMAGE_SIZE_PX = 400;
+
   private readonly sceneSize = computed<Size>(() => ({
     width: this.sceneWidthPx(),
     height: this.sceneHeightPx(),
   }));
+
+  /** Pixel size of the circular scene container (logical field × zoom). */
+  public readonly searchContainerSizePx = computed(() =>
+    this.sceneWidthPx() * this.viewportCtrl.scale(),
+  );
+
+  /** Pixel size of each drawing on screen (fixed logical size × zoom). */
+  public readonly searchImageSizePx = computed(() =>
+    SearchComponent.IMAGE_SIZE_PX * this.viewportCtrl.scale(),
+  );
 
 
   // ─── Lifecycle ─────────────────────────────────────────────────────

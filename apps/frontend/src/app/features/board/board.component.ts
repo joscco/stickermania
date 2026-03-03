@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild, signal, computed, effect } from "@angular/core";
+import { Component, OnDestroy, OnInit, ViewChild, signal, computed, effect } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { WebSocketService } from "../../core/websocket.service";
 import { WorldStore } from "../../core/world.store";
@@ -8,7 +8,7 @@ import * as QRCode from "qrcode";
 import { EventToastsComponent, type UiEvent } from "./events/event-toasts.component";
 import { AdminOverlayComponent } from "./admin/admin.component";
 import { BoardSetupDrawerComponent } from "./setup/board-setup-drawer.component";
-import { SceneRendererComponent } from "../../shared/scene-renderer/scene-renderer.component";
+import { BoardSceneComponent } from "./scene/board-scene.component";
 import type { ServerToClientMessage, RoundPhase } from "@birthday/shared";
 
 /** How long an event toast stays visible */
@@ -23,7 +23,7 @@ const EVENT_TOAST_DURATION_MS = 3000;
     EventToastsComponent,
     AdminOverlayComponent,
     BoardSetupDrawerComponent,
-    SceneRendererComponent,
+    BoardSceneComponent,
   ],
   templateUrl: "./board.component.html",
 })
@@ -41,14 +41,8 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly wifiQrDataUrl = signal<string | null>(null);
   public readonly showSetupDrawer = signal<boolean>(false);
 
-  @ViewChild("sceneHost", { static: true })
-  private sceneHostRef!: ElementRef<HTMLElement>;
-
-  public readonly boardScale = signal<number>(1);
-  private resizeObserver: ResizeObserver | null = null;
-
-  public readonly sceneWidthPx = signal<number>(600);
-  public readonly sceneHeightPx = signal<number>(600);
+  @ViewChild("boardScene")
+  private boardSceneRef!: BoardSceneComponent;
 
 
   public readonly leaderboard = computed(() => this.store.leaderboard());
@@ -67,7 +61,6 @@ export class BoardComponent implements OnInit, OnDestroy {
   public drawDurationSec = signal<number>(60);
   public searchDurationSec = signal<number>(90);
 
-  private recomputeScale: (() => void) | null = null;
   private unsubscribeWs: (() => void) | null = null;
 
   public constructor(
@@ -80,10 +73,10 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.adminKey = this.loadAdminKey();
     this.showAdminOverlay = signal<boolean>(!this.adminKey);
 
-    // Recompute board size whenever drawing count changes
+    // Recompute board scene size whenever drawing count changes
     effect(() => {
       this.drawingCount();
-      this.recomputeScale?.();
+      this.boardSceneRef?.recomputeSize();
     });
   }
 
@@ -99,7 +92,6 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.playerUrl.set(playerPageUrl);
     this.playerQrDataUrl.set(await QRCode.toDataURL(playerPageUrl, { margin: 1, scale: 6 }));
 
-    this.setupAutoScale();
     this.startTimerTick();
 
     this.wsService.connect();
@@ -116,9 +108,6 @@ export class BoardComponent implements OnInit, OnDestroy {
   public ngOnDestroy(): void {
     if (this.unsubscribeWs) {
       this.unsubscribeWs();
-    }
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
     }
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
@@ -227,32 +216,6 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.showAdminOverlay.set(false);
   }
 
-  // ──────── Auto-scale ────────
-
-  private setupAutoScale(): void {
-    const hostElement = this.sceneHostRef.nativeElement;
-
-    const recompute = () => {
-      const hostRect = hostElement.getBoundingClientRect();
-      const maxDiameter = Math.min(hostRect.width, hostRect.height);
-
-      // The effective field size from the server grows with the number of drawings.
-      const efw = this.store.gameState()?.effectiveFieldWidth ?? 400;
-
-      // The scene uses the effective field size as its logical pixel dimension.
-      this.sceneWidthPx.set(efw);
-      this.sceneHeightPx.set(efw);
-
-      // When the field is small (few drawings) the circle is small on screen.
-      // When the field grows beyond the available space, scale it down to fit.
-      this.boardScale.set(Math.min(1, maxDiameter / efw));
-    };
-
-    this.recomputeScale = recompute;
-    this.resizeObserver = new ResizeObserver(() => recompute());
-    this.resizeObserver.observe(hostElement);
-    recompute();
-  }
 
   // ──────── Events ────────
 

@@ -7,10 +7,10 @@
   @for (drawing of drawingsSorted(); track drawing.id) {
     <img
       class="absolute pointer-events-none transition-all duration-700 ease-out"
-      [style.left.%]="drawing.x * 100"
-      [style.top.%]="drawing.y * 100"
-      [style.width.px]="drawing.size * containerSizePx()"
-      [style.height.px]="drawing.size * containerSizePx()"
+      [style.left.px]="drawing.x * containerSizePx()"
+      [style.top.px]="drawing.y * containerSizePx()"
+      [style.width.px]="imageSizePx()"
+      [style.height.px]="imageSizePx()"
       [style.transform]="'translate(-50%, -50%)'"
       [src]="drawing.imageDataUrl"
       [alt]="drawing.prompt"

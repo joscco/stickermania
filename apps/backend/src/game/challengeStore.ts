@@ -200,10 +200,26 @@ export class GameStore {
 
   // ──────── Drawing management ────────
 
+  /**
+   * Fixed logical image size in pixels.
+   * Must match the frontend constant (BoardSceneComponent.IMAGE_SIZE_IN_PX).
+   */
+  private static readonly IMAGE_SIZE_PX = 400;
+
+  /** The relative size of an image in normalized 0..1 coords at the current field size. */
+  public getRelativeImageSize(): number {
+    return GameStore.IMAGE_SIZE_PX / this.state.effectiveFieldWidth;
+  }
+
   public addDrawing(args: { playerId: string; imageDataUrl: string; prompt: string }): Drawing {
     const id = crypto.randomUUID();
-    const drawingSize = this.config.drawingSize;
-    const position = this.findBestPlacement(drawingSize);
+
+    // Recalc field size BEFORE placement so the new drawing is accounted for.
+    // We temporarily bump the count by +1 for the calc.
+    const countAfter = Object.keys(this.state.drawings).length + 1;
+    this.recalcEffectiveFieldSize(countAfter);
+
+    const position = this.findBestPlacement();
 
     const drawing: Drawing = {
       id,
@@ -212,77 +228,92 @@ export class GameStore {
       imageDataUrl: args.imageDataUrl,
       x: position.x,
       y: position.y,
-      size: drawingSize,
       placedAt: Date.now(),
       foundBy: null,
       foundAt: null,
     };
 
     this.state.drawings[id] = drawing;
-    this.recalcEffectiveFieldSize();
     this.bumpRevision();
     return drawing;
   }
 
   /**
-   * Recalculate the effective field dimensions based on the number of drawings.
-   * Starts small so that a few drawings feel big, then grows as more arrive.
+   * Recalculate the effective field dimensions.
+   * @param count  Number of drawings (defaults to current count).
    */
-  private recalcEffectiveFieldSize(): void {
-    const count = Object.keys(this.state.drawings).length;
+  private recalcEffectiveFieldSize(count?: number): void {
+    const n = count ?? Object.keys(this.state.drawings).length;
     // Base size 400, grows by ~60 per drawing, capped at 2000
-    const size = Math.min(2000, Math.round(400 + count * 60));
+    const size = Math.min(2000, Math.round(400 + n * 60));
     this.state.effectiveFieldWidth = size;
     this.state.effectiveFieldHeight = size;
   }
 
   /**
-   * Place drawings in a circular cluster centered on the field.
-   * Uses Poisson-disk-like sampling within a circular area that grows with the number of drawings.
+   * Place a new drawing using Poisson-disk-like sampling.
+   *
+   * All coordinates are normalized 0..1.
+   * The image occupies `relSize × relSize` in normalized space where
+   * `relSize = IMAGE_SIZE_PX / effectiveFieldWidth`.
+   * The placement radius grows with the number of drawings so that
+   * density stays roughly constant.
    */
-  private findBestPlacement(drawingSize: number): { x: number; y: number } {
+  private findBestPlacement(): { x: number; y: number } {
     const existingDrawings = Object.values(this.state.drawings);
-    const margin = drawingSize / 2 + 0.03;
+    const relSize = this.getRelativeImageSize();
+    // Half-image + small gap so drawings don't touch
+    const halfImg = relSize / 2;
+    const gap = 0.02;
+    const margin = halfImg + gap;
 
     if (existingDrawings.length === 0) {
       return {
-        x: 0.5 + (Math.random() - 0.5) * 0.1,
-        y: 0.5 + (Math.random() - 0.5) * 0.1,
+        x: 0.5 + (Math.random() - 0.5) * 0.05,
+        y: 0.5 + (Math.random() - 0.5) * 0.05,
       };
     }
 
+    // The placement circle grows so there is always room for new images.
+    // At the current relSize, each image "consumes" roughly relSize² of area.
+    // We want the circle area to be proportional to count × relSize².
+    const count = existingDrawings.length;
     const maxRadius = 0.5 - margin;
-    const baseRadius = 0.12;
-    const radiusGrowthPerDrawing = 0.025;
-    const circleRadius = Math.min(maxRadius, baseRadius + existingDrawings.length * radiusGrowthPerDrawing);
+    // Base radius = just big enough for the first image; grows with sqrt(count)
+    const baseRadius = relSize * 0.8;
+    const circleRadius = Math.min(maxRadius, baseRadius + relSize * 0.6 * Math.sqrt(count));
 
-    const CANDIDATE_ATTEMPTS = 40;
+    // Minimum distance between centres to avoid overlap
+    const minSeparation = relSize * 0.85;
+
+    const CANDIDATE_ATTEMPTS = 60;
     let bestCandidate = { x: 0.5, y: 0.5 };
     let bestMinDistance = -1;
 
     for (let attempt = 0; attempt < CANDIDATE_ATTEMPTS; attempt++) {
       const angle = Math.random() * 2 * Math.PI;
-      const radius = circleRadius * Math.sqrt(Math.random());
-      const candidateX = 0.5 + radius * Math.cos(angle);
-      const candidateY = 0.5 + radius * Math.sin(angle);
+      const r = circleRadius * Math.sqrt(Math.random());
+      const cx = 0.5 + r * Math.cos(angle);
+      const cy = 0.5 + r * Math.sin(angle);
 
-      if (candidateX < margin || candidateX > 1 - margin || candidateY < margin || candidateY > 1 - margin) {
+      // Stay inside the field with enough room for the image
+      if (cx < margin || cx > 1 - margin || cy < margin || cy > 1 - margin) {
         continue;
       }
 
-      let minDistToExisting = Infinity;
-      for (const drawing of existingDrawings) {
-        const distance = Math.sqrt((candidateX - drawing.x) ** 2 + (candidateY - drawing.y) ** 2);
-        if (distance < minDistToExisting) {
-          minDistToExisting = distance;
-        }
+      let minDist = Infinity;
+      for (const d of existingDrawings) {
+        const dist = Math.sqrt((cx - d.x) ** 2 + (cy - d.y) ** 2);
+        if (dist < minDist) minDist = dist;
       }
 
-      if (minDistToExisting > bestMinDistance) {
-        bestMinDistance = minDistToExisting;
-        bestCandidate = { x: candidateX, y: candidateY };
+      // Prefer candidates that maximize distance to nearest neighbour
+      if (minDist > bestMinDistance) {
+        bestMinDistance = minDist;
+        bestCandidate = { x: cx, y: cy };
       }
     }
+
     return bestCandidate;
   }
 
@@ -299,7 +330,8 @@ export class GameStore {
     }
 
     const distanceToDrawing = Math.sqrt((args.centerX - drawing.x) ** 2 + (args.centerY - drawing.y) ** 2);
-    const isWithinRange = distanceToDrawing <= args.radius + drawing.size / 2;
+    const halfImage = this.getRelativeImageSize() / 2;
+    const isWithinRange = distanceToDrawing <= args.radius + halfImage;
 
     if (isWithinRange && !drawing.foundBy) {
       drawing.foundBy = args.playerId;
