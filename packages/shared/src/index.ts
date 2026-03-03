@@ -148,7 +148,7 @@ export type ClientToServerMessage =
   | { type: "ping"; t: number };
 
 export type ServerToClientMessage =
-  | { type: "welcome"; clientId: string; playerId: string; serverTime: number; assignedColors: string[]; fieldWidth: number; fieldHeight: number; maxDrawingsPerRound: number; searchOverscroll: number; initialZoom: number; imageSizePx: number; fieldBaseSize: number; fieldGrowthPerDrawing: number; fieldMaxSize: number }
+  | { type: "welcome"; clientId: string; playerId: string; serverTime: number; serverSessionId: string; assignedColors: string[]; fieldWidth: number; fieldHeight: number; maxDrawingsPerRound: number; searchOverscroll: number; initialZoom: number; imageSizePx: number; fieldBaseSize: number; fieldGrowthPerDrawing: number; fieldMaxSize: number }
   | { type: "state"; state: GameState }
   | { type: "assign-task"; task: PlayerTask }
   | { type: "search-result"; correct: boolean; drawingId: string; message: string }

@@ -27,6 +27,9 @@ const initialGameState: GameState = loadGameFromDisk({
 
 const gameStore = new GameStore({ config: gameConfig, initial: initialGameState });
 
+/** Unique ID for this server process — changes on every restart. */
+const serverSessionId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
 const saveScheduler = new SaveScheduler({
   debounceMs: 400,
   saveFn: () => {
@@ -244,6 +247,7 @@ wss.on("connection", (ws: WebSocket) => {
         clientId,
         playerId: player.id,
         serverTime: Date.now(),
+        serverSessionId,
         assignedColors: gameStore.getPlayerColors(player.id),
         fieldWidth: gameStore.getState().effectiveFieldWidth,
         fieldHeight: gameStore.getState().effectiveFieldHeight,
@@ -261,7 +265,7 @@ wss.on("connection", (ws: WebSocket) => {
         broadcast({ type: "event", text: `${player.name} ist beigetreten! 🎉`, createdAt: Date.now() });
       }
 
-      const isReadyPlayer = msg.kind === "player" && player.name.length > 0 && !!player.avatarDataUrl;
+      const isReadyPlayer = msg.kind === "player" && player.name.length > 0;
       if (isReadyPlayer) {
         restoreOrAssignTask(ws, clientId, player.id);
       }
@@ -425,7 +429,7 @@ wss.on("connection", (ws: WebSocket) => {
           continue;
         }
         const player = gameStore.getState().players[playerSession.playerId];
-        if (!player || !player.name || !player.avatarDataUrl) {
+        if (!player || !player.name) {
           continue;
         }
         // Only assign if this session still has an active WebSocket connection.

@@ -349,7 +349,8 @@ export class GameStore {
       return false;
     }
     const player = this.state.players[session.playerId];
-    return !!player && !!player.name && !!player.avatarDataUrl;
+    // A name is required; avatar is optional — players can draw without one.
+    return !!player && !!player.name;
   }
 
   /** Find the session for a given playerId */

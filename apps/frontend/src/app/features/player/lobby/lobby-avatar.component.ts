@@ -1,0 +1,89 @@
+import {
+  Component, ElementRef, ViewChild, AfterViewInit,
+  input, output, signal,
+} from "@angular/core";
+import { CanvasPainter } from "../shared/canvas-painter";
+
+@Component({
+  selector: "app-lobby-avatar",
+  standalone: true,
+  template: `
+    <div class="h-full flex flex-col items-center justify-center p-4">
+      <div class="text-center mb-3">
+        <h2 class="text-lg font-bold">Zeichne deinen Avatar</h2>
+        <p class="text-xs text-stone-500">{{ playerName() }}, mal dich selbst!</p>
+      </div>
+      <div class="relative rounded-2xl border-2 border-black/[0.06] overflow-hidden bg-white aspect-square no-select"
+        style="width: min(92vw, calc(100dvh - 260px));">
+        <canvas #canvas class="w-full h-full" style="touch-action: none;"
+          (pointerdown)="painter.pointerDown($event)"
+          (pointermove)="painter.pointerMove($event)"
+          (pointerup)="painter.pointerUp()"
+          (pointercancel)="painter.pointerUp()"
+        ></canvas>
+      </div>
+      <div class="flex gap-1.5 mt-3 flex-wrap justify-center">
+        @for (color of colors(); track color) {
+          <button class="w-8 h-8 rounded-full border-2 border-transparent transition-transform"
+            [style.background]="color"
+            [class.border-stone-900]="currentColor() === color"
+            [class.scale-110]="currentColor() === color"
+            (click)="selectColor(color)"></button>
+        }
+      </div>
+      <div class="flex items-center gap-3 mt-2">
+        <button class="rounded-lg px-3 py-1 text-sm border transition-colors"
+          [class.bg-stone-900]="brushThin()" [class.text-white]="brushThin()"
+          [class.bg-white]="!brushThin()" [class.text-stone-600]="!brushThin()"
+          (click)="brushThin.set(true)">Dünn</button>
+        <button class="rounded-lg px-3 py-1 text-sm border transition-colors"
+          [class.bg-stone-900]="!brushThin()" [class.text-white]="!brushThin()"
+          [class.bg-white]="brushThin()" [class.text-stone-600]="brushThin()"
+          (click)="brushThin.set(false)">Dick</button>
+      </div>
+      <div class="flex gap-2 mt-3">
+        <button class="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm hover:bg-stone-50" (click)="clear()">Löschen</button>
+        <button class="rounded-xl bg-stone-900 text-white px-6 py-2 text-sm font-medium hover:bg-stone-800 active:translate-y-px" (click)="submit()">Fertig ✓</button>
+      </div>
+      <button class="mt-2 text-xs text-stone-400 hover:text-stone-600 underline" (click)="skipped.emit()">Überspringen</button>
+    </div>
+  `,
+})
+export class LobbyAvatarComponent implements AfterViewInit {
+  public readonly playerName = input.required<string>();
+  public readonly colors = input.required<string[]>();
+
+  public readonly avatarSubmitted = output<string>();
+  public readonly skipped = output<void>();
+
+  @ViewChild("canvas") canvasRef!: ElementRef<HTMLCanvasElement>;
+
+  public readonly currentColor = signal("#dc2626");
+  public readonly brushThin = signal(true);
+
+  public readonly painter = new CanvasPainter(
+    () => this.canvasRef?.nativeElement,
+    () => this.currentColor(),
+    () => this.brushThin() ? 3 : 10,
+  );
+
+  public ngAfterViewInit(): void {
+    setTimeout(() => this.painter.init(), 50);
+  }
+
+  public selectColor(color: string): void {
+    this.currentColor.set(color);
+  }
+
+  public clear(): void {
+    this.painter.clear();
+  }
+
+  public submit(): void {
+    const dataUrl = this.painter.toDataURL();
+    if (dataUrl) {
+      this.avatarSubmitted.emit(dataUrl);
+    }
+  }
+}
+

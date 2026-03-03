@@ -13,7 +13,7 @@ export class BoardSceneComponent {
   public readonly store = inject(WorldStore);
 
   /** On-screen circle diameter range in CSS pixels (display-only, not from config) */
-  private static readonly MIN_CIRCLE_PX = 350;
+  private static readonly MIN_CIRCLE_PX = 400;
   private static readonly MAX_CIRCLE_PX = 700;
 
   /** Logical field size in px – read directly from the backend game state. */

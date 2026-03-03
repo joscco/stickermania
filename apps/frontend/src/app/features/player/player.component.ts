@@ -1,41 +1,38 @@
 import { CommonModule } from "@angular/common";
-import {
-  Component, ElementRef, OnDestroy, OnInit, ViewChild,
-  computed, signal, effect
-} from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { Component, OnDestroy, OnInit, computed, signal, effect } from "@angular/core";
 import { WebSocketService } from "../../core/websocket.service";
 import { WorldStore } from "../../core/world.store";
 import { GameSessionStore } from "../../core/challenge.store";
 import { AudioService } from "../../core/audio.service";
 import { SearchComponent } from "./search";
+import { LobbyNameComponent } from "./lobby/lobby-name.component";
+import { LobbyAvatarComponent } from "./lobby/lobby-avatar.component";
+import { LobbyReadyComponent } from "./lobby/lobby-ready.component";
+import { DrawComponent } from "./draw/draw.component";
+import { IdleWaitingComponent } from "./idle/idle-waiting.component";
+import { IdleSearchWaitingComponent } from "./idle/idle-search-waiting.component";
 import type { ServerToClientMessage } from "@birthday/shared";
-
-/** Canvas internal resolution — always square */
-const CANVAS_RESOLUTION = 300;
 
 @Component({
   selector: "app-player",
   standalone: true,
-  imports: [CommonModule, FormsModule, SearchComponent],
+  imports: [
+    CommonModule,
+    SearchComponent,
+    LobbyNameComponent,
+    LobbyAvatarComponent,
+    LobbyReadyComponent,
+    DrawComponent,
+    IdleWaitingComponent,
+    IdleSearchWaitingComponent,
+  ],
   templateUrl: "./player.component.html",
 })
 export class PlayerComponent implements OnInit, OnDestroy {
   public readonly store: WorldStore;
   public readonly session: GameSessionStore;
 
-  @ViewChild("drawCanvas") drawCanvasRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild("avatarCanvas") avatarCanvasRef!: ElementRef<HTMLCanvasElement>;
-
-  public readonly nameInput = signal<string>("");
-  public readonly currentColor = signal<string>("#dc2626");
-  public readonly brushThin = signal<boolean>(true);
   public readonly playerColors = signal<string[]>(["#dc2626", "#2563eb"]);
-
-  private isDrawing = false;
-  private lastDrawPoint: { x: number; y: number } | null = null;
-  private avatarCanvasInitialized = false;
-  private drawCanvasInitialized = false;
 
   public readonly sceneWidthPx = computed<number>(() => this.store.gameState()?.effectiveFieldWidth ?? 400);
   public readonly sceneHeightPx = computed<number>(() => this.store.gameState()?.effectiveFieldHeight ?? 400);
@@ -49,9 +46,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
   public readonly leaderboard = computed(() => this.store.leaderboard());
   public readonly myScore = computed(() => {
     const playerIdValue = this.session.playerId();
-    if (!playerIdValue) {
-      return 0;
-    }
+    if (!playerIdValue) return 0;
     return this.store.players()[playerIdValue]?.score ?? 0;
   });
 
@@ -61,10 +56,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
   public readonly timeLeft = signal<string>("");
   private timerInterval: ReturnType<typeof setInterval> | null = null;
 
-  public get brushSize(): number {
-    return this.brushThin() ? 3 : 10;
-  }
-
   constructor(
     private readonly wsService: WebSocketService,
     private readonly audio: AudioService,
@@ -73,20 +64,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
   ) {
     this.store = worldStore;
     this.session = sessionStore;
-
-    // Auto-initialize canvases when mode changes
-    effect(() => {
-      const mode = this.session.currentMode();
-      const hasName = this.session.playerName().length > 0;
-      if (mode === "LOBBY" && hasName) {
-        this.avatarCanvasInitialized = false;
-        setTimeout(() => this.initAvatarCanvas(), 80);
-      }
-      if (mode === "DRAW") {
-        this.drawCanvasInitialized = false;
-        setTimeout(() => this.initDrawCanvas(), 80);
-      }
-    });
 
     // Keep timer display updated
     effect(() => {
@@ -127,25 +104,67 @@ export class PlayerComponent implements OnInit, OnDestroy {
   }
 
   public ngOnDestroy(): void {
-    if (this.unsubscribeWs) {
-      this.unsubscribeWs();
-    }
-    if (this.timerInterval) {
-      clearInterval(this.timerInterval);
-    }
+    if (this.unsubscribeWs) this.unsubscribeWs();
+    if (this.timerInterval) clearInterval(this.timerInterval);
+  }
+
+  // ──────── Computed getters for template ────────
+
+  public get isNameSet(): boolean {
+    return this.session.playerName().length > 0;
+  }
+
+  public get hasAvatar(): boolean {
+    const playerIdValue = this.session.playerId();
+    return playerIdValue ? !!this.store.players()[playerIdValue]?.avatarDataUrl : false;
+  }
+
+  // ──────── Sub-component event handlers ────────
+
+  public onNameSubmitted(name: string): void {
+    this.audio.unlockIfNeeded();
+    this.wsService.send({ type: "set-name", name });
+    this.session.playerName.set(name);
+    this.session.currentMode.set("LOBBY");
+  }
+
+  public onAvatarSubmitted(dataUrl: string): void {
+    this.audio.unlockIfNeeded();
+    this.wsService.send({ type: "submit-avatar", avatarDataUrl: dataUrl });
+    this.session.currentMode.set("IDLE");
+  }
+
+  public onAvatarSkipped(): void {
+    this.audio.unlockIfNeeded();
+    this.session.currentMode.set("IDLE");
+  }
+
+  public onDrawingSubmitted(dataUrl: string): void {
+    this.wsService.send({ type: "submit-drawing", imageDataUrl: dataUrl });
+    this.audio.unlockIfNeeded();
+    this.audio.playPop();
+    this.session.currentTask.set(null);
   }
 
   // ──────── WebSocket ────────
 
   private handleMessage(msg: ServerToClientMessage): void {
     switch (msg.type) {
-      case "welcome":
+      case "welcome": {
+        const storedServerSession = localStorage.getItem("birthday_server_session");
+        if (storedServerSession && storedServerSession !== msg.serverSessionId) {
+          localStorage.removeItem("birthday_player_id");
+          localStorage.setItem("birthday_server_session", msg.serverSessionId);
+          window.location.reload();
+          return;
+        }
+        localStorage.setItem("birthday_server_session", msg.serverSessionId);
+
         this.session.setJoined({ playerId: msg.playerId, clientId: msg.clientId });
         this.playerId = msg.playerId;
         localStorage.setItem("birthday_player_id", msg.playerId);
         if (msg.assignedColors && msg.assignedColors.length >= 2) {
           this.playerColors.set(msg.assignedColors);
-          this.currentColor.set(msg.assignedColors[0]);
         }
         this.maxDrawings.set(msg.maxDrawingsPerRound ?? 3);
         this.store.setFieldConfig({
@@ -154,17 +173,20 @@ export class PlayerComponent implements OnInit, OnDestroy {
           fieldGrowthPerDrawing: msg.fieldGrowthPerDrawing,
           fieldMaxSize: msg.fieldMaxSize,
         });
-        {
-          const existingPlayer = this.store.players()[msg.playerId];
-          if (existingPlayer?.name) {
-            this.session.playerName.set(existingPlayer.name);
-          }
-        }
         break;
+      }
 
       case "state":
         this.store.setGameState(msg.state);
         this.store.setConnected();
+        {
+          const pid = this.session.playerId();
+          if (pid && !msg.state.players[pid]) {
+            localStorage.removeItem("birthday_player_id");
+            window.location.reload();
+            return;
+          }
+        }
         this.syncPlayerModeFromState(msg.state);
         break;
 
@@ -176,8 +198,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
           if (msg.task.drawIndex === 0) {
             this.audio.playRoundStart();
           }
-          this.drawCanvasInitialized = false;
-          setTimeout(() => this.initDrawCanvas(), 80);
         }
         if (msg.task.mode === "SEARCH") {
           this.audio.playTick();
@@ -205,30 +225,31 @@ export class PlayerComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Sync local player mode based on the latest game state from the server */
   private syncPlayerModeFromState(state: import("@birthday/shared").GameState): void {
     const playerIdValue = this.session.playerId();
-    if (!playerIdValue) {
-      return;
-    }
+    if (!playerIdValue) return;
     const player = state.players[playerIdValue];
-    if (!player) {
+    if (!player) return;
+
+    if (!player.name) {
+      this.session.playerName.set("");
+      this.session.currentTask.set(null);
+      this.session.currentMode.set("LOBBY");
+      this.drawCount.set(0);
       return;
     }
 
-    if (player.name) {
-      this.session.playerName.set(player.name);
-      if (this.session.currentMode() === "LOBBY" && player.avatarDataUrl) {
-        this.session.currentMode.set("IDLE");
-      }
-    }
-
-    if (!player.avatarDataUrl) {
-      return;
-    }
+    this.session.playerName.set(player.name);
 
     const phase = state.round.phase;
     const currentMode = this.session.currentMode();
+
+    if (currentMode === "LOBBY" && player.name) {
+      if (phase === "DRAW" || phase === "SEARCH") {
+        this.session.currentMode.set("IDLE");
+      }
+      return;
+    }
 
     if (phase === "DRAW" && currentMode !== "DRAW" && currentMode !== "IDLE" && currentMode !== "LOBBY") {
       this.session.clearTask();
@@ -257,170 +278,5 @@ export class PlayerComponent implements OnInit, OnDestroy {
     document.addEventListener("pointerdown", unlock, { once: true });
     document.addEventListener("touchstart", unlock, { once: true });
     document.addEventListener("click", unlock, { once: true });
-  }
-
-  // ──────── Lobby ────────
-
-  public submitName(): void {
-    const name = this.nameInput().trim();
-    if (name.length === 0) {
-      return;
-    }
-    this.audio.unlockIfNeeded();
-    this.wsService.send({ type: "set-name", name });
-    this.session.playerName.set(name);
-    this.session.currentMode.set("LOBBY");
-  }
-
-  public get isNameSet(): boolean {
-    return this.session.playerName().length > 0;
-  }
-
-  public get hasAvatar(): boolean {
-    const playerIdValue = this.session.playerId();
-    return playerIdValue ? !!this.store.players()[playerIdValue]?.avatarDataUrl : false;
-  }
-
-  public submitAvatar(): void {
-    const canvas = this.avatarCanvasRef?.nativeElement;
-    if (!canvas) {
-      return;
-    }
-    this.audio.unlockIfNeeded();
-    this.wsService.send({ type: "submit-avatar", avatarDataUrl: canvas.toDataURL("image/png") });
-    this.session.currentMode.set("IDLE");
-  }
-
-  // ──────── Canvas ────────
-
-  /** Shared canvas initialization — sets size and fills white */
-  private initCanvas(canvasRef: ElementRef<HTMLCanvasElement> | undefined): boolean {
-    const canvas = canvasRef?.nativeElement;
-    if (!canvas) {
-      return false;
-    }
-    canvas.width = CANVAS_RESOLUTION;
-    canvas.height = CANVAS_RESOLUTION;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, CANVAS_RESOLUTION, CANVAS_RESOLUTION);
-    }
-    return true;
-  }
-
-  public initAvatarCanvas(): void {
-    if (this.avatarCanvasInitialized) {
-      return;
-    }
-    if (this.initCanvas(this.avatarCanvasRef)) {
-      this.avatarCanvasInitialized = true;
-    }
-  }
-
-  public initDrawCanvas(): void {
-    if (this.drawCanvasInitialized) {
-      return;
-    }
-    if (this.initCanvas(this.drawCanvasRef)) {
-      this.drawCanvasInitialized = true;
-    }
-  }
-
-  private getCanvasForType(canvasType: "draw" | "avatar"): HTMLCanvasElement | undefined {
-    return canvasType === "draw"
-      ? this.drawCanvasRef?.nativeElement
-      : this.avatarCanvasRef?.nativeElement;
-  }
-
-  public onCanvasPointerDown(event: PointerEvent, canvasType: "draw" | "avatar"): void {
-    event.preventDefault();
-    this.audio.unlockIfNeeded();
-    const canvas = this.getCanvasForType(canvasType);
-    if (!canvas) {
-      return;
-    }
-    (event.target as HTMLElement).setPointerCapture(event.pointerId);
-    this.isDrawing = true;
-
-    const rect = canvas.getBoundingClientRect();
-    const scale = CANVAS_RESOLUTION / rect.width;
-    this.lastDrawPoint = {
-      x: (event.clientX - rect.left) * scale,
-      y: (event.clientY - rect.top) * scale,
-    };
-
-    const ctx = canvas.getContext("2d");
-    if (ctx && this.lastDrawPoint) {
-      ctx.fillStyle = this.currentColor();
-      ctx.beginPath();
-      ctx.arc(this.lastDrawPoint.x, this.lastDrawPoint.y, this.brushSize / 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  public onCanvasPointerMove(event: PointerEvent, canvasType: "draw" | "avatar"): void {
-    if (!this.isDrawing || !this.lastDrawPoint) {
-      return;
-    }
-    event.preventDefault();
-    const canvas = this.getCanvasForType(canvasType);
-    if (!canvas) {
-      return;
-    }
-    const rect = canvas.getBoundingClientRect();
-    const scale = CANVAS_RESOLUTION / rect.width;
-    const currentX = (event.clientX - rect.left) * scale;
-    const currentY = (event.clientY - rect.top) * scale;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      return;
-    }
-    ctx.strokeStyle = this.currentColor();
-    ctx.lineWidth = this.brushSize;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.beginPath();
-    ctx.moveTo(this.lastDrawPoint.x, this.lastDrawPoint.y);
-    ctx.lineTo(currentX, currentY);
-    ctx.stroke();
-    this.lastDrawPoint = { x: currentX, y: currentY };
-  }
-
-  public onCanvasPointerUp(): void {
-    this.isDrawing = false;
-    this.lastDrawPoint = null;
-  }
-
-  public clearCanvas(canvasType: "draw" | "avatar"): void {
-    this.audio.unlockIfNeeded();
-    this.audio.playTick();
-    const canvas = this.getCanvasForType(canvasType);
-    if (!canvas) {
-      return;
-    }
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-  }
-
-  public selectColor(color: string): void {
-    this.audio.unlockIfNeeded();
-    this.audio.playTick();
-    this.currentColor.set(color);
-  }
-
-  public submitDrawing(): void {
-    const canvas = this.drawCanvasRef?.nativeElement;
-    if (!canvas) {
-      return;
-    }
-    this.wsService.send({ type: "submit-drawing", imageDataUrl: canvas.toDataURL("image/png") });
-    this.audio.unlockIfNeeded();
-    this.audio.playPop();
-    this.session.currentTask.set(null);
   }
 }
