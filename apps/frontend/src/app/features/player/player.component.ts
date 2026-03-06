@@ -12,6 +12,8 @@ import { DrawComponent } from "./draw/draw.component";
 import { IdleWaitingComponent } from "./idle/idle-waiting.component";
 import { IdleSearchWaitingComponent } from "./idle/idle-search-waiting.component";
 import type { ServerToClientMessage } from "@birthday/shared";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ApiService } from "../../core/api.service";
 
 @Component({
   selector: "app-player",
@@ -39,6 +41,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   private unsubscribeWs: (() => void) | null = null;
   private playerId: string | null = null;
+  private sessionId: string | null = null;
 
   public readonly drawCount = signal<number>(0);
   public readonly maxDrawings = signal<number>(3);
@@ -58,6 +61,9 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly wsService: WebSocketService,
+    private readonly apiService: ApiService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
     private readonly audio: AudioService,
     worldStore: WorldStore,
     sessionStore: GameSessionStore,
@@ -88,19 +94,44 @@ export class PlayerComponent implements OnInit, OnDestroy {
     });
   }
 
-  public ngOnInit(): void {
+  public async ngOnInit(): Promise<void> {
     this.playerId = localStorage.getItem("birthday_player_id") ?? null;
-    this.wsService.connect();
-    this.unsubscribeWs = this.wsService.onMessage((msg) => this.handleMessage(msg));
 
-    const joinCheckInterval = setInterval(() => {
-      if (this.wsService.status() === "connected") {
-        this.wsService.send({ type: "join", kind: "player", playerId: this.playerId ?? undefined });
-        clearInterval(joinCheckInterval);
-      }
-    }, 200);
+    const sessionCode = this.resolveSessionCode();
 
-    this.registerGlobalAudioUnlock();
+    if (!sessionCode) {
+      await this.router.navigate(["/join"]);
+      return;
+    }
+
+    try {
+      const resolvedSession = await this.apiService.resolveSessionByCode(sessionCode);
+
+      this.sessionId = resolvedSession.sessionId;
+      this.session.setSession(this.sessionId);
+
+      localStorage.setItem("birthday_last_session_code", resolvedSession.sessionCode);
+
+      this.wsService.connect();
+      this.unsubscribeWs = this.wsService.onMessage((msg) => this.handleMessage(msg));
+
+      const joinCheckInterval = setInterval(() => {
+        if (this.wsService.status() === "connected" && this.sessionId) {
+          this.wsService.send({
+            type: "join",
+            kind: "player",
+            sessionId: this.sessionId,
+            playerId: this.playerId ?? undefined,
+          });
+          clearInterval(joinCheckInterval);
+        }
+      }, 200);
+
+      this.registerGlobalAudioUnlock();
+    } catch {
+      this.session.showFeedback("Session wurde nicht gefunden oder ist abgelaufen.", "error");
+      await this.router.navigate(["/join"]);
+    }
   }
 
   public ngOnDestroy(): void {
@@ -116,7 +147,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   public get hasAvatar(): boolean {
     const playerIdValue = this.session.playerId();
-    return playerIdValue ? !!this.store.players()[playerIdValue]?.avatarDataUrl : false;
+    return playerIdValue ? !!this.store.players()[playerIdValue]?.avatarUrl : false;
   }
 
   // ──────── Sub-component event handlers ────────
@@ -160,7 +191,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
         }
         localStorage.setItem("birthday_server_session", msg.serverSessionId);
 
-        this.session.setJoined({ playerId: msg.playerId, clientId: msg.clientId });
+        this.session.setJoined({ sessionId: msg.sessionId, playerId: msg.playerId, clientId: msg.clientId });
         this.playerId = msg.playerId;
         localStorage.setItem("birthday_player_id", msg.playerId);
         if (msg.assignedColors && msg.assignedColors.length >= 2) {
@@ -264,6 +295,20 @@ export class PlayerComponent implements OnInit, OnDestroy {
       this.session.clearTask();
       this.drawCount.set(0);
     }
+  }
+
+  private resolveSessionCode(): string | null {
+    const fromQuery = this.route.snapshot.queryParamMap.get("session");
+    if (fromQuery && fromQuery.trim().length > 0) {
+      return fromQuery.trim().toUpperCase();
+    }
+
+    const fromStorage = localStorage.getItem("birthday_last_session_code");
+    if (fromStorage && fromStorage.trim().length > 0) {
+      return fromStorage.trim().toUpperCase();
+    }
+
+    return null;
   }
 
   // ──────── Audio ────────

@@ -1,10 +1,57 @@
-<div class="h-screen w-screen overflow-hidden bg-white text-stone-900 relative flex">
+@if (!isBoardReady()) {
+  <div class="min-h-dvh bg-stone-100 flex items-center justify-center px-4">
+    <div class="w-full max-w-xl rounded-3xl bg-white border border-black/5 shadow-sm p-8 text-center">
+      <div class="text-3xl font-bold text-stone-900">Zeichnen & Finden</div>
+      <p class="mt-3 text-sm text-stone-500">
+        Starte eine neue Session oder öffne eine bestehende.
+      </p>
+
+      @if (bootErrorText()) {
+        <div class="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
+          {{ bootErrorText() }}
+        </div>
+      }
+
+      <button
+        class="mt-6 rounded-2xl bg-emerald-600 text-white px-6 py-3 text-sm font-medium hover:bg-emerald-700"
+        [disabled]="isCreatingSession()"
+        (click)="createNewSession()"
+      >
+        {{ isCreatingSession() ? "Session wird erstellt..." : "Neue Session starten" }}
+      </button>
+
+      <div class="mt-8 border-t border-black/5 pt-6">
+        <div class="text-sm font-medium text-stone-700">Bestehende Session öffnen</div>
+
+        <div class="mt-3 flex gap-2 justify-center">
+          <input
+            class="w-40 rounded-xl border border-black/10 px-4 py-3 text-center uppercase tracking-[0.2em]"
+            maxlength="5"
+            [value]="existingSessionCodeInput()"
+            (input)="onExistingSessionCodeInput($any($event.target).value)"
+            (keydown.enter)="openExistingSession()"
+            placeholder="ABCDE"
+          />
+          <button
+            class="rounded-xl border border-black/10 bg-white px-4 py-3 text-sm hover:bg-stone-50"
+            (click)="openExistingSession()"
+          >
+            Öffnen
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="h-screen w-screen overflow-hidden bg-white text-stone-900 relative flex">
   <!-- ══════ Main area ══════ -->
   <div class="flex-1 flex flex-col min-w-0">
     <!-- Top bar with phase + timer -->
     <div class="flex items-center justify-between gap-3 px-4 py-2 bg-white/60 border-b border-black/[0.06]">
       <div class="flex items-center gap-3">
-        <span class="text-sm font-semibold text-stone-800 inline-flex items-center gap-1"><img src="assets/icons/paintbrush.svg" class="w-4 h-4" alt=""/> Zeichnen & Suchen</span>
+        <span class="text-sm font-semibold text-stone-800 inline-flex items-center gap-1">
+          <img src="assets/icons/paintbrush.svg" class="w-4 h-4" alt=""/> Zeichnen & Suchen
+        </span>
         <!-- Phase badge -->
         <span class="text-xs font-medium px-2.5 py-1 rounded-full"
           [class.bg-emerald-100]="roundPhase() === 'DRAW'" [class.text-emerald-700]="roundPhase() === 'DRAW'"
@@ -108,9 +155,9 @@
               <span class="text-sm text-stone-400 font-medium">{{ i + 1 }}.</span>
             }
           </span>
-          @if (player.avatarDataUrl) {
+          @if (player.avatarUrl) {
             <div class="relative shrink-0">
-              <img class="w-9 h-9 rounded-full border border-black/[0.06] bg-white" [src]="player.avatarDataUrl" [alt]="player.name" />
+              <img class="w-9 h-9 rounded-full border border-black/[0.06] bg-white" [src]="player.avatarUrl" [alt]="player.name" />
               <img src="assets/icons/checkmark.svg" class="absolute -bottom-0.5 -right-0.5 w-4 h-4 drop-shadow-sm" alt="Bereit"/>
             </div>
           } @else {
@@ -127,6 +174,12 @@
       }
     </div>
 
+    <div class="mb-3 text-center">
+      <div class="text-[10px] uppercase tracking-wider text-stone-400">Session-Code</div>
+      <div class="text-3xl font-bold tracking-[0.2em] text-stone-900">
+        {{ sessionCode() }}
+      </div>
+    </div>
     <!-- QR codes -->
     <div class="border-t border-black/[0.06] p-3">
       <div class="flex items-center justify-center gap-2">
@@ -154,3 +207,4 @@
 
   <app-admin-overlay [visible]="showAdminOverlay()" [errorText]="adminErrorText()" (submitAdminKey)="onAdminKeySubmitted($event)"></app-admin-overlay>
 </div>
+}

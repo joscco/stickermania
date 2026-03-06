@@ -1,8 +1,4 @@
-// ════════════════════════════════════════════════════════════════════
-//  Shared types for the Draw & Search birthday party game
-// ════════════════════════════════════════════════════════════════════
-
-// ──────── Central game config (read from game.config.json) ────────
+// Shared types for the Draw & Search birthday party game
 
 export interface GameConfig {
   playerColors: string[];
@@ -10,32 +6,25 @@ export interface GameConfig {
   drawPrompts: string[];
   drawDurationSec: number;
   searchDurationSec: number;
-  /** Max drawings per player per round (0 = unlimited) */
   maxDrawingsPerRound: number;
-  /** How far the player can pan beyond the scene edge in search mode (fraction of scene, e.g. 0.15 = 15%) */
   searchOverscroll: number;
   canvasResolution: number;
   drawingsPath: string;
   port: number;
   adminPassword: string | null;
-
-  // ── Field & image sizing ──────────────────────────────────────────
-  /** Logical image size in the field coordinate system (px). */
   imageSizePx: number;
-  /** Base field diameter at 0 drawings (px). */
   fieldBaseSize: number;
-  /** How many field-px the diameter grows per drawing. */
   fieldGrowthPerDrawing: number;
-  /** Maximum field diameter (px). */
   fieldMaxSize: number;
+  sessionTtlHours: number;
 }
 
 export function parseGameConfig(raw: unknown): GameConfig {
   const obj = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
   return {
-    playerColors: Array.isArray(obj["playerColors"]) ? obj["playerColors"] as string[] : ["#dc2626", "#2563eb"],
+    playerColors: Array.isArray(obj["playerColors"]) ? (obj["playerColors"] as string[]) : ["#dc2626", "#2563eb"],
     colorsPerPlayer: typeof obj["colorsPerPlayer"] === "number" ? obj["colorsPerPlayer"] : 2,
-    drawPrompts: Array.isArray(obj["drawPrompts"]) ? obj["drawPrompts"] as string[] : ["Katze", "Hund", "Sonne"],
+    drawPrompts: Array.isArray(obj["drawPrompts"]) ? (obj["drawPrompts"] as string[]) : ["Katze", "Hund", "Sonne"],
     drawDurationSec: typeof obj["drawDurationSec"] === "number" ? obj["drawDurationSec"] : 60,
     searchDurationSec: typeof obj["searchDurationSec"] === "number" ? obj["searchDurationSec"] : 90,
     maxDrawingsPerRound: typeof obj["maxDrawingsPerRound"] === "number" ? obj["maxDrawingsPerRound"] : 3,
@@ -48,15 +37,15 @@ export function parseGameConfig(raw: unknown): GameConfig {
     fieldBaseSize: typeof obj["fieldBaseSize"] === "number" ? obj["fieldBaseSize"] : 400,
     fieldGrowthPerDrawing: typeof obj["fieldGrowthPerDrawing"] === "number" ? obj["fieldGrowthPerDrawing"] : 100,
     fieldMaxSize: typeof obj["fieldMaxSize"] === "number" ? obj["fieldMaxSize"] : 6000,
+    sessionTtlHours: typeof obj["sessionTtlHours"] === "number" ? obj["sessionTtlHours"] : 24,
   };
 }
-
-// ──────── Game entities ────────
 
 export interface Player {
   id: string;
   name: string;
-  avatarDataUrl: string | null;
+  avatarUrl: string | null;
+  avatarAssetPath: string | null;
   score: number;
   joinedAt: number;
 }
@@ -65,8 +54,8 @@ export interface Drawing {
   id: string;
   artistId: string;
   prompt: string;
-  imageDataUrl: string;
-  /** Normalized 0..1 position on the game field */
+  imageUrl: string;
+  imageAssetPath: string;
   x: number;
   y: number;
   placedAt: number;
@@ -78,38 +67,53 @@ export type RoundPhase = "LOBBY" | "DRAW" | "SEARCH" | "PAUSED";
 
 export interface RoundState {
   phase: RoundPhase;
-  /** ms timestamp when current phase ends (0 = no timer) */
   endsAt: number;
   drawDurationSec: number;
   searchDurationSec: number;
   roundNumber: number;
 }
 
-/** Pre-assigned prompts for a single player in a round */
 export interface PlayerPromptAssignment {
   drawPrompts: string[];
-  /** Index of the next draw prompt to hand out (prompts before this index are done) */
   drawPromptIndex: number;
-  /** The currently active draw prompt (null = none active / was submitted) */
   activeDrawPrompt: string | null;
   searchTasks: Array<{ drawingId: string; prompt: string; artistName: string }>;
-  /** Index of the next search task to hand out */
   searchTaskIndex: number;
-  /** The currently active search drawingId (null = none active / was found) */
   activeSearchDrawingId: string | null;
 }
 
 export interface GameState {
+  sessionId: string;
+  sessionCode: string;
   players: Record<string, Player>;
   drawings: Record<string, Drawing>;
   round: RoundState;
-  /** Pre-assigned prompts per playerId – persisted across reconnects */
   promptAssignments: Record<string, PlayerPromptAssignment>;
-  /** Effective field dimensions (computed from drawing count) */
   effectiveFieldWidth: number;
   effectiveFieldHeight: number;
   revision: number;
   updatedAt: number;
+  createdAt: number;
+  expiresAt: number;
+}
+
+export interface SessionInfo {
+  sessionId: string;
+  sessionCode: string;
+  playerJoinUrl: string;
+  boardUrl: string;
+  createdAt: number;
+  expiresAt: number;
+}
+
+export interface GameSession {
+  id: string;
+  code: string;
+  status: "LOBBY" | "DRAW" | "SEARCH" | "FINISHED";
+  createdAt: number;
+  updatedAt: number;
+  expiresAt: number;
+  revision: number;
 }
 
 export type PlayerMode = "LOBBY" | "DRAW" | "SEARCH" | "IDLE";
@@ -117,9 +121,7 @@ export type PlayerMode = "LOBBY" | "DRAW" | "SEARCH" | "IDLE";
 export interface DrawTask {
   mode: "DRAW";
   prompt: string;
-  /** 0-based index of this prompt in the player's assigned list (e.g. 0 = first drawing, 1 = second) */
   drawIndex: number;
-  /** Total number of draw prompts assigned this round */
   drawTotal: number;
 }
 
@@ -132,12 +134,10 @@ export interface SearchTask {
 
 export type PlayerTask = DrawTask | SearchTask;
 
-// ──────── WebSocket Protocol ────────
-
 export type ClientKind = "player" | "board";
 
 export type ClientToServerMessage =
-  | { type: "join"; kind: ClientKind; playerId?: string }
+  | { type: "join"; kind: ClientKind; sessionId: string; playerId?: string }
   | { type: "set-name"; name: string }
   | { type: "submit-avatar"; avatarDataUrl: string }
   | { type: "submit-drawing"; imageDataUrl: string }
@@ -148,7 +148,7 @@ export type ClientToServerMessage =
   | { type: "ping"; t: number };
 
 export type ServerToClientMessage =
-  | { type: "welcome"; clientId: string; playerId: string; serverTime: number; serverSessionId: string; assignedColors: string[]; fieldWidth: number; fieldHeight: number; maxDrawingsPerRound: number; searchOverscroll: number; initialZoom: number; imageSizePx: number; fieldBaseSize: number; fieldGrowthPerDrawing: number; fieldMaxSize: number }
+  | { type: "welcome"; clientId: string; playerId: string; sessionId: string; serverTime: number; serverSessionId: string; assignedColors: string[]; fieldWidth: number; fieldHeight: number; maxDrawingsPerRound: number; searchOverscroll: number; initialZoom: number; imageSizePx: number; fieldBaseSize: number; fieldGrowthPerDrawing: number; fieldMaxSize: number }
   | { type: "state"; state: GameState }
   | { type: "assign-task"; task: PlayerTask }
   | { type: "search-result"; correct: boolean; drawingId: string; message: string }
@@ -158,10 +158,10 @@ export type ServerToClientMessage =
   | { type: "error"; message: string }
   | { type: "pong"; t: number; serverTime: number };
 
-// ──────── Helpers ────────
-
 export function clampInt(value: number, min: number, max: number): number {
-  if (!Number.isFinite(value)) return min;
-  const v = Math.floor(value);
-  return v < min ? min : v > max ? max : v;
+  if (!Number.isFinite(value)) {
+    return min;
+  }
+  const flooredValue = Math.floor(value);
+  return flooredValue < min ? min : flooredValue > max ? max : flooredValue;
 }

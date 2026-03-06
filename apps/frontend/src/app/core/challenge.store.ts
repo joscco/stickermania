@@ -3,16 +3,20 @@ import type { PlayerMode, PlayerTask } from "@birthday/shared";
 
 @Injectable({ providedIn: "root" })
 export class GameSessionStore {
+  public readonly sessionId = signal<string | null>(null);
   public readonly playerId = signal<string | null>(null);
   public readonly clientId = signal<string | null>(null);
   public readonly playerName = signal<string>("");
   public readonly currentMode = signal<PlayerMode>("LOBBY");
   public readonly currentTask = signal<PlayerTask | null>(null);
-
-  /** Toast-like feedback messages */
   public readonly feedback = signal<{ text: string; type: "success" | "error" } | null>(null);
 
-  public setJoined(args: { playerId: string; clientId: string }): void {
+  public setSession(sessionId: string): void {
+    this.sessionId.set(sessionId);
+  }
+
+  public setJoined(args: { sessionId: string; playerId: string; clientId: string }): void {
+    this.sessionId.set(args.sessionId);
     this.playerId.set(args.playerId);
     this.clientId.set(args.clientId);
   }

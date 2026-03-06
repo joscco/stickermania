@@ -2,6 +2,7 @@ import { CommonModule } from "@angular/common";
 import { Component, OnDestroy, OnInit, signal, computed } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { WebSocketService } from "../../core/websocket.service";
+import { ApiService } from "../../core/api.service";
 import { WorldStore } from "../../core/world.store";
 import * as QRCode from "qrcode";
 
@@ -10,6 +11,9 @@ import { AdminOverlayComponent } from "./admin/admin.component";
 import { BoardSetupDrawerComponent } from "./setup/board-setup-drawer.component";
 import { BoardSceneComponent } from "./scene/board-scene.component";
 import type { ServerToClientMessage, RoundPhase } from "@birthday/shared";
+import { ActivatedRoute, Router } from "@angular/router";
+import {Subscription} from 'rxjs';
+
 
 /** How long an event toast stays visible */
 const EVENT_TOAST_DURATION_MS = 3000;
@@ -29,6 +33,7 @@ const EVENT_TOAST_DURATION_MS = 3000;
 })
 export class BoardComponent implements OnInit, OnDestroy {
   public readonly store: WorldStore;
+  private routeSubscription: Subscription | null = null;
 
   public readonly playerUrl = signal<string>("");
   public readonly playerQrDataUrl = signal<string | null>(null);
@@ -59,14 +64,24 @@ export class BoardComponent implements OnInit, OnDestroy {
   public searchDurationSec = signal<number>(90);
 
   private unsubscribeWs: (() => void) | null = null;
+  private sessionId: string | null = null;
+
+  public readonly isBootstrapping = signal<boolean>(true);
+  public readonly isCreatingSession = signal<boolean>(false);
+  public readonly existingSessionCodeInput = signal<string>("");
+  public readonly sessionCode = signal<string | null>(null);
+  public readonly isBoardReady = signal<boolean>(false);
+  public readonly bootErrorText = signal<string | null>(null);
 
   public constructor(
     private readonly wsService: WebSocketService,
+    private readonly apiService: ApiService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
     worldStore: WorldStore,
   ) {
     this.store = worldStore;
 
-    // Load admin key early so the overlay state is correct on first render
     this.adminKey = this.loadAdminKey();
     this.showAdminOverlay = signal<boolean>(!this.adminKey);
   }
@@ -75,34 +90,119 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.wifiQrDataUrl.set((dataUrl ?? "").trim() || null);
   }
 
-  public async ngOnInit(): Promise<void> {
+  public ngOnInit(): void {
     this.store.setConnecting();
 
-    const host = window.location.host;
-    const playerPageUrl = `http://${host}/#/player`;
-    this.playerUrl.set(playerPageUrl);
-    this.playerQrDataUrl.set(await QRCode.toDataURL(playerPageUrl, { margin: 1, scale: 6 }));
+    this.routeSubscription = this.route.paramMap.subscribe(async (paramMap) => {
+      const routeSessionCode = paramMap.get("sessionCode");
 
-    this.startTimerTick();
+      this.cleanupBoardRuntime();
 
-    this.wsService.connect();
-    this.unsubscribeWs = this.wsService.onMessage((msg) => this.handleMessage(msg));
-
-    const joinCheckInterval = setInterval(() => {
-      if (this.wsService.status() === "connected") {
-        this.wsService.send({ type: "join", kind: "board" });
-        clearInterval(joinCheckInterval);
+      if (!routeSessionCode) {
+        this.sessionId = null;
+        this.sessionCode.set(null);
+        this.playerUrl.set("");
+        this.playerQrDataUrl.set(null);
+        this.isBootstrapping.set(false);
+        this.isBoardReady.set(false);
+        this.bootErrorText.set(null);
+        return;
       }
-    }, 200);
+
+      await this.bootstrapBoardSession(routeSessionCode);
+    });
+  }
+
+  public async createNewSession(): Promise<void> {
+    this.isCreatingSession.set(true);
+    this.bootErrorText.set(null);
+
+    try {
+      const createdSession = await this.apiService.createSession();
+      await this.router.navigate(["/board", createdSession.sessionCode]);
+    } catch {
+      this.bootErrorText.set("Session konnte nicht erstellt werden.");
+    } finally {
+      this.isCreatingSession.set(false);
+    }
+  }
+
+  public onExistingSessionCodeInput(rawValue: string): void {
+    const normalizedValue = rawValue
+      .toUpperCase()
+      .replace(/[^A-Z2-9]/g, "")
+      .slice(0, 5);
+
+    this.existingSessionCodeInput.set(normalizedValue);
+  }
+
+  public async openExistingSession(): Promise<void> {
+    const sessionCode = this.existingSessionCodeInput();
+
+    if (sessionCode.length < 4) {
+      return;
+    }
+
+    await this.router.navigate(["/board", sessionCode]);
+  }
+
+  private async bootstrapBoardSession(sessionCode: string): Promise<void> {
+    this.isBootstrapping.set(true);
+    this.bootErrorText.set(null);
+
+    try {
+      const resolvedSession = await this.apiService.resolveSessionByCode(sessionCode.toUpperCase());
+
+      this.sessionId = resolvedSession.sessionId;
+      this.sessionCode.set(resolvedSession.sessionCode);
+
+      const playerPageUrl = `${window.location.origin}/#/join/${encodeURIComponent(resolvedSession.sessionCode)}`;
+      this.playerUrl.set(playerPageUrl);
+      this.playerQrDataUrl.set(await QRCode.toDataURL(playerPageUrl, { margin: 1, scale: 6 }));
+
+      this.startTimerTick();
+
+      this.wsService.connect();
+      this.unsubscribeWs = this.wsService.onMessage((msg) => this.handleMessage(msg));
+
+      const joinCheckInterval = setInterval(() => {
+        if (this.wsService.status() === "connected" && this.sessionId) {
+          this.wsService.send({ type: "join", kind: "board", sessionId: this.sessionId });
+          clearInterval(joinCheckInterval);
+        }
+      }, 200);
+
+      this.isBoardReady.set(true);
+    } catch {
+      this.bootErrorText.set("Session wurde nicht gefunden oder ist abgelaufen.");
+      this.isBoardReady.set(false);
+    } finally {
+      this.isBootstrapping.set(false);
+    }
   }
 
   public ngOnDestroy(): void {
+    if (this.routeSubscription) {
+      this.routeSubscription.unsubscribe();
+      this.routeSubscription = null;
+    }
+    this.cleanupBoardRuntime();
+  }
+
+  private cleanupBoardRuntime(): void {
     if (this.unsubscribeWs) {
       this.unsubscribeWs();
+      this.unsubscribeWs = null;
     }
+
+    this.wsService.disconnect();
+
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
+      this.timerInterval = null;
     }
+
+    this.isBoardReady.set(false);
   }
 
   // ──────── WebSocket ────────
@@ -155,6 +255,11 @@ export class BoardComponent implements OnInit, OnDestroy {
   }
 
   private startTimerTick(): void {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+
     this.timerInterval = setInterval(() => {
       const endsAt = this.roundEndsAt();
       if (endsAt > 0) {
@@ -198,7 +303,9 @@ export class BoardComponent implements OnInit, OnDestroy {
   }
 
   public resetWorld(): void {
-    this.wsService.send({ type: "reset" });
+    if (this.sessionId) {
+      this.wsService.send({ type: "reset" });
+    }
     this.pushEvent("Spiel zurückgesetzt! 🔄", Date.now());
   }
 
@@ -212,7 +319,6 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.adminErrorText.set(null);
     this.showAdminOverlay.set(false);
   }
-
 
   // ──────── Events ────────
 

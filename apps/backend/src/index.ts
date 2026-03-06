@@ -1,67 +1,32 @@
-import http from "node:http";
-import path from "node:path";
-import os from "node:os";
 import fs from "node:fs";
-import { WebSocketServer, WebSocket } from "ws";
+import http from "node:http";
+import os from "node:os";
+import path from "node:path";
+import mime from "mime";
+import { WebSocket, WebSocketServer } from "ws";
+import type { ClientToServerMessage, GameState, ServerToClientMessage } from "@birthday/shared";
 import { loadBackendConfig } from "./config.js";
+import { SessionService } from "./app/sessionService.js";
+import { FileSessionRepository } from "./infra/local/fileSessionRepository.js";
+import { LocalAssetRepository } from "./infra/local/localAssetRepository.js";
 import { serveStatic } from "./http/static.js";
-import { GameStore } from "./game/challengeStore.js";
-import { SaveScheduler } from "./game/saveScheduler.js";
-import { loadGameFromDisk, saveGameToDisk } from "./world/persistence.js";
-import { saveDrawingToDisk, saveAvatarToDisk } from "./world/drawingSaver.js";
-import type { ClientToServerMessage, ServerToClientMessage, GameState } from "@birthday/shared";
-
-// ══════════════════════════════════════════════════════
-//  Bootstrap
-// ══════════════════════════════════════════════════════
 
 const backendConfig = loadBackendConfig({ argv: process.argv, cwd: process.cwd() });
-const gameConfig = backendConfig.gameConfig;
-
-const drawingsBasePath = path.resolve(process.cwd(), gameConfig.drawingsPath);
-
-const initialGameState: GameState = loadGameFromDisk({
-  persistPath: backendConfig.persistPath,
-  createEmpty: () => GameStore.createEmpty(gameConfig),
-});
-
-const gameStore = new GameStore({ config: gameConfig, initial: initialGameState });
-
-/** Unique ID for this server process — changes on every restart. */
 const serverSessionId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-const saveScheduler = new SaveScheduler({
-  debounceMs: 400,
-  saveFn: () => {
-    saveGameToDisk({ persistPath: backendConfig.persistPath, state: gameStore.getState() });
-  },
-});
-
-// ══════════════════════════════════════════════════════
-//  Track connected clients
-// ══════════════════════════════════════════════════════
+const sessionRepository = new FileSessionRepository(backendConfig.sessionsPath);
+const assetRepository = new LocalAssetRepository(backendConfig.dataRoot);
+const sessionService = new SessionService(backendConfig.gameConfig, sessionRepository, assetRepository);
 
 interface ConnectedClient {
   ws: WebSocket;
   clientId: string;
+  sessionId: string;
   kind: "player" | "board";
   playerId: string;
 }
 
 const clients = new Map<string, ConnectedClient>();
-
-function broadcast(message: ServerToClientMessage): void {
-  const json = JSON.stringify(message);
-  for (const client of clients.values()) {
-    if (client.ws.readyState === WebSocket.OPEN) {
-      client.ws.send(json);
-    }
-  }
-}
-
-function broadcastState(): void {
-  broadcast({ type: "state", state: gameStore.getState() });
-}
 
 function sendTo(ws: WebSocket, message: ServerToClientMessage): void {
   if (ws.readyState === WebSocket.OPEN) {
@@ -69,40 +34,26 @@ function sendTo(ws: WebSocket, message: ServerToClientMessage): void {
   }
 }
 
-// ──────── Round phase change handler ────────
-
-gameStore.setOnPhaseChange(() => {
-  const round = gameStore.getRound();
-  saveScheduler.schedule();
-
-  if (round.phase === "SEARCH") {
-    broadcast({ type: "event", text: "⏰ Zeichenzeit vorbei! Jetzt suchen! 🔍", createdAt: Date.now() });
-    broadcastState();
-
-    for (const session of gameStore.getAllSessions()) {
-      if (session.kind !== "player") {
-        continue;
-      }
-      const client = clients.get(session.clientId);
-      if (!client) {
-        continue;
-      }
-      const task = gameStore.assignSearchTask(session.clientId);
-      if (task) {
-        sendTo(client.ws, { type: "assign-task", task });
-      } else {
-        sendTo(client.ws, { type: "event", text: "Keine Zeichnungen zum Suchen vorhanden. Warte auf die nächste Runde… ⏳", createdAt: Date.now() });
-      }
+function broadcastToSession(sessionId: string, message: ServerToClientMessage): void {
+  const payload = JSON.stringify(message);
+  for (const client of clients.values()) {
+    if (client.sessionId === sessionId && client.ws.readyState === WebSocket.OPEN) {
+      client.ws.send(payload);
     }
-  } else if (round.phase === "PAUSED") {
-    broadcast({ type: "event", text: "⏰ Runde beendet! 🏁", createdAt: Date.now() });
-    broadcastState();
   }
-});
+}
 
-// ══════════════════════════════════════════════════════
-//  HTTP server
-// ══════════════════════════════════════════════════════
+function broadcastState(sessionId: string, state?: GameState | null): void {
+  const resolvedState = state ?? sessionService.getRuntimeState(sessionId);
+  if (!resolvedState) {
+    return;
+  }
+  broadcastToSession(sessionId, { type: "state", state: resolvedState });
+}
+
+function buildBaseUrl(request: http.IncomingMessage): string {
+  return `${request.headers["x-forwarded-proto"] ?? "http"}://${request.headers.host ?? `localhost:${backendConfig.gameConfig.port}`}`;
+}
 
 function resolveFrontendDistPath(): string {
   const withoutBrowser = path.resolve(process.cwd(), "apps/frontend/dist/frontend");
@@ -116,19 +67,110 @@ function resolveFrontendDistPath(): string {
   return withoutBrowser;
 }
 
+async function readJsonBody<T>(request: http.IncomingMessage): Promise<T | null> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of request) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  if (chunks.length === 0) {
+    return null;
+  }
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf-8")) as T;
+  } catch {
+    return null;
+  }
+}
+
+function serveAsset(response: http.ServerResponse, assetRelativePath: string): void {
+  const filePath = path.resolve(backendConfig.dataRoot, "assets", assetRelativePath);
+  const expectedPrefix = path.resolve(backendConfig.dataRoot, "assets");
+  if (!filePath.startsWith(expectedPrefix)) {
+    response.writeHead(403);
+    response.end("Forbidden");
+    return;
+  }
+  try {
+    const content = fs.readFileSync(filePath);
+    response.writeHead(200, { "Content-Type": mime.getType(filePath) ?? "application/octet-stream" });
+    response.end(content);
+  } catch {
+    response.writeHead(404);
+    response.end("Not found");
+  }
+}
+
+sessionService.setOnSessionStateChanged(async (sessionId, state) => {
+  const phase = state.round.phase;
+  if (phase === "SEARCH") {
+    broadcastToSession(sessionId, { type: "event", text: "⏰ Zeichenzeit vorbei! Jetzt suchen! 🔍", createdAt: Date.now() });
+  }
+  if (phase === "PAUSED") {
+    broadcastToSession(sessionId, { type: "event", text: "⏰ Runde beendet! 🏁", createdAt: Date.now() });
+  }
+  broadcastState(sessionId, state);
+
+  if (phase === "SEARCH") {
+    for (const client of clients.values()) {
+      if (client.sessionId !== sessionId || client.kind !== "player") {
+        continue;
+      }
+      const restoredTask = sessionService.restoreTaskForPlayer(sessionId, client.playerId, "SEARCH")
+          ?? sessionService.getAssignedTask(sessionId, client.clientId, "SEARCH");
+      if (restoredTask) {
+        sendTo(client.ws, { type: "assign-task", task: restoredTask });
+      }
+    }
+  }
+});
+
 const JSON_HEADER = { "Content-Type": "application/json; charset=utf-8" };
 
-const server = http.createServer((request, response) => {
-  if (request.url?.startsWith("/api/info") && request.method === "GET") {
-    response.writeHead(200, JSON_HEADER);
-    response.end(JSON.stringify({ baseUrl: `http://${request.headers.host ?? ""}` }));
+const server = http.createServer(async (request, response) => {
+  const requestUrl = new URL(request.url ?? "/", buildBaseUrl(request));
+
+  if (requestUrl.pathname === "/api/sessions" && request.method === "POST") {
+    const createdSession = await sessionService.createSession({ baseUrl: buildBaseUrl(request) });
+    response.writeHead(201, JSON_HEADER);
+    response.end(JSON.stringify(createdSession));
     return;
   }
 
-  if (request.url?.startsWith("/api/state") && request.method === "GET") {
-    const url = new URL(request.url, `http://${request.headers.host}`);
-    const sinceRevision = Number(url.searchParams.get("sinceRevision") ?? -1);
-    const state = gameStore.getState();
+  if (requestUrl.pathname.startsWith("/api/assets/") && request.method === "GET") {
+    serveAsset(response, requestUrl.pathname.replace(/^\/api\/assets\//u, ""));
+    return;
+  }
+
+  const byCodeMatch = requestUrl.pathname.match(/^\/api\/sessions\/by-code\/([^/]+)$/u);
+  if (byCodeMatch && request.method === "GET") {
+    const sessionCode = decodeURIComponent(byCodeMatch[1]).trim().toUpperCase();
+    const state = await sessionService.loadStateByCode(sessionCode);
+
+    if (!state) {
+      response.writeHead(404, JSON_HEADER);
+      response.end(JSON.stringify({ message: "Session not found" }));
+      return;
+    }
+
+    response.writeHead(200, JSON_HEADER);
+    response.end(JSON.stringify({
+      sessionId: state.sessionId,
+      sessionCode: state.sessionCode,
+      createdAt: state.createdAt,
+      expiresAt: state.expiresAt,
+    }));
+    return;
+  }
+
+  const stateMatch = requestUrl.pathname.match(/^\/api\/sessions\/([^/]+)\/state$/u);
+  if (stateMatch && request.method === "GET") {
+    const state = await sessionService.loadState(stateMatch[1]);
+    if (!state) {
+      response.writeHead(404, JSON_HEADER);
+      response.end(JSON.stringify({ message: "Session not found" }));
+      return;
+    }
+    const sinceRevision = Number(requestUrl.searchParams.get("sinceRevision") ?? -1);
     if (Number.isFinite(sinceRevision) && sinceRevision >= 0 && sinceRevision === state.revision) {
       response.writeHead(204);
       response.end();
@@ -139,12 +181,23 @@ const server = http.createServer((request, response) => {
     return;
   }
 
-  if (request.url?.startsWith("/api/reset") && request.method === "POST") {
-    gameStore.reset();
-    saveScheduler.schedule();
-    broadcastState();
+  const resetMatch = requestUrl.pathname.match(/^\/api\/sessions\/([^/]+)\/reset$/u);
+  if (resetMatch && request.method === "POST") {
+    const state = await sessionService.reset(resetMatch[1]);
+    if (!state) {
+      response.writeHead(404, JSON_HEADER);
+      response.end(JSON.stringify({ message: "Session not found" }));
+      return;
+    }
+    broadcastState(resetMatch[1], state);
     response.writeHead(200, JSON_HEADER);
     response.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/info" && request.method === "GET") {
+    response.writeHead(200, JSON_HEADER);
+    response.end(JSON.stringify({ baseUrl: buildBaseUrl(request) }));
     return;
   }
 
@@ -157,10 +210,6 @@ const server = http.createServer((request, response) => {
   response.end("Birthday Draw & Search Backend running.");
 });
 
-// ══════════════════════════════════════════════════════
-//  WebSocket server
-// ══════════════════════════════════════════════════════
-
 const wss = new WebSocketServer({ noServer: true });
 server.on("upgrade", (request, socket, head) => {
   if (request.url === "/ws" || request.url?.startsWith("/ws?")) {
@@ -170,42 +219,49 @@ server.on("upgrade", (request, socket, head) => {
   }
 });
 
-// Server-side WS keep-alive (ping every 25s — NAT keepalive only).
-// We do NOT terminate unresponsive clients — the client will reconnect on its own.
-const WS_PING_INTERVAL_MS = 25_000;
 const wsPingTimer = setInterval(() => {
   for (const client of wss.clients) {
     if (client.readyState === WebSocket.OPEN) {
       client.ping();
     }
   }
-}, WS_PING_INTERVAL_MS);
+}, 25_000);
 
 wss.on("close", () => clearInterval(wsPingTimer));
 
-// ──────── Helpers for message handlers ────────
+function activeClientIdsForSession(sessionId: string): Set<string> {
+  const activeIds = new Set<string>();
+  for (const client of clients.values()) {
+    if (client.sessionId === sessionId) {
+      activeIds.add(client.clientId);
+    }
+  }
+  return activeIds;
+}
 
-/** Remove stale client/session entries for a reconnecting player */
-function cleanUpStaleSessionsForPlayer(playerId: string, currentWs: WebSocket): void {
+function cleanUpStaleSessionsForPlayer(sessionId: string, playerId: string, currentWs: WebSocket): void {
   for (const [existingClientId, client] of clients.entries()) {
-    if (client.playerId === playerId && client.ws !== currentWs) {
+    if (client.sessionId === sessionId && client.playerId === playerId && client.ws !== currentWs) {
       clients.delete(existingClientId);
-      gameStore.removeSession(existingClientId);
+      sessionService.removeConnectionSession(sessionId, existingClientId);
     }
   }
 }
 
-/** Try to restore or assign a task for a reconnecting player during an active round */
-function restoreOrAssignTask(ws: WebSocket, clientId: string, playerId: string): void {
-  const round = gameStore.getRound();
-
+function restoreOrAssignTask(ws: WebSocket, sessionId: string, clientId: string, playerId: string): void {
+  const round = sessionService.getRound(sessionId);
+  if (!round) {
+    return;
+  }
   if (round.phase === "DRAW") {
-    const task = gameStore.getCurrentDrawTaskForPlayer(playerId) ?? gameStore.assignDrawTask(clientId);
+    const task = sessionService.restoreTaskForPlayer(sessionId, playerId, "DRAW")
+        ?? sessionService.getAssignedTask(sessionId, clientId, "DRAW");
     if (task) {
       sendTo(ws, { type: "assign-task", task });
     }
   } else if (round.phase === "SEARCH") {
-    const task = gameStore.getCurrentSearchTaskForPlayer(playerId) ?? gameStore.assignSearchTask(clientId);
+    const task = sessionService.restoreTaskForPlayer(sessionId, playerId, "SEARCH")
+        ?? sessionService.getAssignedTask(sessionId, clientId, "SEARCH");
     if (task) {
       sendTo(ws, { type: "assign-task", task });
     } else {
@@ -214,194 +270,190 @@ function restoreOrAssignTask(ws: WebSocket, clientId: string, playerId: string):
   }
 }
 
-// ──────── WebSocket connection handler ────────
-
 wss.on("connection", (ws: WebSocket) => {
   let clientId: string | null = null;
+  let sessionId: string | null = null;
 
-  ws.on("message", (rawData) => {
-    let msg: ClientToServerMessage;
+  ws.on("message", async (rawData) => {
+    let message: ClientToServerMessage;
     try {
-      msg = JSON.parse(String(rawData));
+      message = JSON.parse(String(rawData));
     } catch {
       sendTo(ws, { type: "error", message: "Invalid JSON" });
       return;
     }
 
-    // ──── join ────
-    if (msg.type === "join") {
-      if (msg.playerId) {
-        cleanUpStaleSessionsForPlayer(msg.playerId, ws);
+    if (message.type === "join") {
+      sessionId = message.sessionId;
+      if (message.playerId) {
+        cleanUpStaleSessionsForPlayer(sessionId, message.playerId, ws);
       }
       if (clientId) {
         clients.delete(clientId);
-        gameStore.removeSession(clientId);
+        sessionService.removeConnectionSession(sessionId, clientId);
       }
 
       clientId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      const player = gameStore.joinPlayer({ clientId, kind: msg.kind, existingPlayerId: msg.playerId });
-      clients.set(clientId, { ws, clientId, kind: msg.kind, playerId: player.id });
+      const player = await sessionService.join({
+        sessionId,
+        clientId,
+        kind: message.kind,
+        existingPlayerId: message.playerId,
+      });
+      const state = await sessionService.loadState(sessionId);
+      if (!player || !state) {
+        sendTo(ws, { type: "error", message: "Session nicht gefunden" });
+        return;
+      }
 
+      clients.set(clientId, { ws, clientId, sessionId, kind: message.kind, playerId: player.id });
       sendTo(ws, {
         type: "welcome",
         clientId,
         playerId: player.id,
+        sessionId,
         serverTime: Date.now(),
         serverSessionId,
-        assignedColors: gameStore.getPlayerColors(player.id),
-        fieldWidth: gameStore.getState().effectiveFieldWidth,
-        fieldHeight: gameStore.getState().effectiveFieldHeight,
-        maxDrawingsPerRound: gameConfig.maxDrawingsPerRound,
-        searchOverscroll: gameConfig.searchOverscroll,
+        assignedColors: sessionService.getPlayerColors(sessionId, player.id),
+        fieldWidth: state.effectiveFieldWidth,
+        fieldHeight: state.effectiveFieldHeight,
+        maxDrawingsPerRound: backendConfig.gameConfig.maxDrawingsPerRound,
+        searchOverscroll: backendConfig.gameConfig.searchOverscroll,
         initialZoom: 1,
-        imageSizePx: gameConfig.imageSizePx,
-        fieldBaseSize: gameConfig.fieldBaseSize,
-        fieldGrowthPerDrawing: gameConfig.fieldGrowthPerDrawing,
-        fieldMaxSize: gameConfig.fieldMaxSize,
+        imageSizePx: backendConfig.gameConfig.imageSizePx,
+        fieldBaseSize: backendConfig.gameConfig.fieldBaseSize,
+        fieldGrowthPerDrawing: backendConfig.gameConfig.fieldGrowthPerDrawing,
+        fieldMaxSize: backendConfig.gameConfig.fieldMaxSize,
       });
-      sendTo(ws, { type: "state", state: gameStore.getState() });
+      sendTo(ws, { type: "state", state });
 
-      if (msg.kind === "player" && player.name.length > 0) {
-        broadcast({ type: "event", text: `${player.name} ist beigetreten! 🎉`, createdAt: Date.now() });
+      if (message.kind === "player" && player.name.length > 0) {
+        broadcastToSession(sessionId, { type: "event", text: `${player.name} ist beigetreten! 🎉`, createdAt: Date.now() });
       }
 
-      const isReadyPlayer = msg.kind === "player" && player.name.length > 0;
-      if (isReadyPlayer) {
-        restoreOrAssignTask(ws, clientId, player.id);
+      if (message.kind === "player" && player.name.length > 0) {
+        restoreOrAssignTask(ws, sessionId, clientId, player.id);
       }
-
-      saveScheduler.schedule();
       return;
     }
 
-    // ──── Guard: must be joined ────
-    if (!clientId) {
+    if (!clientId || !sessionId) {
       sendTo(ws, { type: "error", message: "Not joined yet" });
       return;
     }
-    const session = gameStore.getSession(clientId);
-    if (!session) {
+
+    const runtimeSession = sessionService.getSessionRuntime(sessionId, clientId);
+    if (!runtimeSession) {
       sendTo(ws, { type: "error", message: "Session not found" });
       return;
     }
 
-    // ──── set-name ────
-    if (msg.type === "set-name") {
-      const name = (msg.name ?? "").trim().slice(0, 24);
-      if (name.length === 0) {
-        sendTo(ws, { type: "error", message: "Name darf nicht leer sein" });
+    if (message.type === "set-name") {
+      const state = await sessionService.setPlayerName(sessionId, runtimeSession.playerId, message.name);
+      if (!state) {
+        sendTo(ws, { type: "error", message: "Session not found" });
         return;
       }
-      gameStore.setPlayerName(session.playerId, name);
-      saveScheduler.schedule();
-      broadcastState();
-      broadcast({ type: "event", text: `${name} ist beigetreten! 🎉`, createdAt: Date.now() });
+      broadcastState(sessionId, state);
+      broadcastToSession(sessionId, { type: "event", text: `${message.name.trim().slice(0, 24)} ist beigetreten! 🎉`, createdAt: Date.now() });
       return;
     }
 
-    // ──── submit-avatar ────
-    if (msg.type === "submit-avatar") {
-      if (!msg.avatarDataUrl || msg.avatarDataUrl.length > 200_000) {
+    if (message.type === "submit-avatar") {
+      if (!message.avatarDataUrl || message.avatarDataUrl.length > 200_000) {
         sendTo(ws, { type: "error", message: "Avatar too large" });
         return;
       }
-      gameStore.setPlayerAvatar(session.playerId, msg.avatarDataUrl);
-      saveScheduler.schedule();
-      broadcastState();
-
-      const player = gameStore.getState().players[session.playerId];
-      if (player?.name) {
-        saveAvatarToDisk({ basePath: drawingsBasePath, playerName: player.name, imageDataUrl: msg.avatarDataUrl })
-          .then((savedPath) => console.log(`[save] avatar → ${savedPath}`))
-          .catch((error) => console.error(`[save] avatar error:`, error));
+      const state = await sessionService.saveAvatar(sessionId, runtimeSession.playerId, message.avatarDataUrl);
+      if (!state) {
+        sendTo(ws, { type: "error", message: "Spieler nicht gefunden" });
+        return;
       }
+      broadcastState(sessionId, state);
       return;
     }
 
-    // ──── submit-drawing ────
-    if (msg.type === "submit-drawing") {
-      if (gameStore.getRound().phase !== "DRAW") {
+    if (message.type === "submit-drawing") {
+      const round = sessionService.getRound(sessionId);
+      if (round?.phase !== "DRAW") {
         sendTo(ws, { type: "error", message: "Gerade keine Zeichenphase" });
         return;
       }
-      const activePrompt = gameStore.getActiveDrawPrompt(session.playerId);
+      const activePrompt = sessionService.getActiveDrawPrompt(sessionId, runtimeSession.playerId);
       if (!activePrompt) {
         sendTo(ws, { type: "error", message: "Kein aktiver Zeichen-Auftrag" });
         return;
       }
-      if (!msg.imageDataUrl || msg.imageDataUrl.length > 500_000) {
+      if (!message.imageDataUrl || message.imageDataUrl.length > 500_000) {
         sendTo(ws, { type: "error", message: "Zeichnung zu groß" });
         return;
       }
+      const result = await sessionService.submitDrawing({
+        sessionId,
+        playerId: runtimeSession.playerId,
+        prompt: activePrompt,
+        imageDataUrl: message.imageDataUrl,
+      });
+      if (!result) {
+        sendTo(ws, { type: "error", message: "Zeichnung konnte nicht gespeichert werden" });
+        return;
+      }
+      broadcastToSession(sessionId, { type: "event", text: `${result.playerName} hat etwas gezeichnet! 🎨`, createdAt: Date.now() });
+      broadcastState(sessionId, result.state);
 
-      const drawing = gameStore.addDrawing({ playerId: session.playerId, imageDataUrl: msg.imageDataUrl, prompt: activePrompt });
-      session.currentDrawPrompt = null;
-      gameStore.clearActiveDrawPrompt(session.playerId);
-      saveScheduler.schedule();
-
-      const playerName = gameStore.getState().players[session.playerId]?.name || "Jemand";
-      broadcast({ type: "event", text: `${playerName} hat etwas gezeichnet! 🎨`, createdAt: Date.now() });
-      broadcastState();
-
-      saveDrawingToDisk({ basePath: drawingsBasePath, playerName, prompt: activePrompt, drawingId: drawing.id, imageDataUrl: msg.imageDataUrl })
-        .then((savedPath) => console.log(`[save] drawing → ${savedPath}`))
-        .catch((error) => console.error(`[save] drawing error:`, error));
-
-      if (gameStore.getRound().phase === "DRAW") {
-        const nextTask = gameStore.assignDrawTask(clientId);
-        if (nextTask) {
-          sendTo(ws, { type: "assign-task", task: nextTask });
-        } else {
-          sendTo(ws, { type: "event", text: "Du hast alle Zeichnungen für diese Runde abgegeben! 🎉 Warte auf die Suchphase…", createdAt: Date.now() });
-        }
+      const nextTask = sessionService.getAssignedTask(sessionId, clientId, "DRAW");
+      if (nextTask) {
+        sendTo(ws, { type: "assign-task", task: nextTask });
+      } else {
+        sendTo(ws, {
+          type: "event",
+          text: "Du hast alle Zeichnungen für diese Runde abgegeben! 🎉 Warte auf die Suchphase…",
+          createdAt: Date.now(),
+        });
       }
       return;
     }
 
-    // ──── search-snapshot ────
-    if (msg.type === "search-snapshot") {
-      if (gameStore.getRound().phase !== "SEARCH") {
+    if (message.type === "search-snapshot") {
+      const round = sessionService.getRound(sessionId);
+      if (round?.phase !== "SEARCH") {
         sendTo(ws, { type: "error", message: "Gerade keine Suchphase" });
         return;
       }
-      const targetDrawingId = gameStore.getActiveSearchDrawingId(session.playerId) ?? session.currentSearchDrawingId;
+      const targetDrawingId = sessionService.getActiveSearchDrawingId(sessionId, runtimeSession.playerId) ?? runtimeSession.currentSearchDrawingId;
       if (!targetDrawingId) {
         sendTo(ws, { type: "error", message: "Kein aktiver Such-Auftrag" });
         return;
       }
-
-      const result = gameStore.checkSearchSnapshot({
-        playerId: session.playerId,
-        centerX: msg.centerX,
-        centerY: msg.centerY,
-        radius: msg.radius,
+      const result = await sessionService.checkSearchSnapshot({
+        sessionId,
+        playerId: runtimeSession.playerId,
+        centerX: message.centerX,
+        centerY: message.centerY,
+        radius: message.radius,
         expectedDrawingId: targetDrawingId,
       });
-
+      if (!result) {
+        sendTo(ws, { type: "error", message: "Schnappschuss konnte nicht geprüft werden" });
+        return;
+      }
       if (result.correct) {
-        session.currentSearchDrawingId = null;
-        gameStore.clearActiveSearchTask(session.playerId);
-        saveScheduler.schedule();
-
-        const playerName = gameStore.getState().players[session.playerId]?.name || "Jemand";
-        const artistName = result.artist?.name || "Jemand";
         sendTo(ws, { type: "search-result", correct: true, drawingId: targetDrawingId, message: "Richtig! 🎉 +1 Punkt" });
-
-        const player = gameStore.getState().players[session.playerId];
+        const player = result.state.players[runtimeSession.playerId];
         if (player) {
-          broadcast({ type: "score-update", playerId: player.id, newScore: player.score, reason: "hat eine Zeichnung gefunden" });
+          broadcastToSession(sessionId, { type: "score-update", playerId: player.id, newScore: player.score, reason: "hat eine Zeichnung gefunden" });
         }
-        if (result.artist && result.artist.id !== session.playerId) {
-          broadcast({ type: "score-update", playerId: result.artist.id, newScore: result.artist.score, reason: "Zeichnung wurde gefunden" });
+        if (result.artist && result.artist.id !== runtimeSession.playerId) {
+          broadcastToSession(sessionId, { type: "score-update", playerId: result.artist.id, newScore: result.artist.score, reason: "Zeichnung wurde gefunden" });
         }
-        broadcast({ type: "event", text: `${playerName} hat eine Zeichnung von ${artistName} gefunden! 🔍✅`, createdAt: Date.now() });
-        broadcastState();
+        const playerName = player?.name || "Jemand";
+        const artistName = result.artist?.name || "Jemand";
+        broadcastToSession(sessionId, { type: "event", text: `${playerName} hat eine Zeichnung von ${artistName} gefunden! 🔍✅`, createdAt: Date.now() });
+        broadcastState(sessionId, result.state);
 
-        if (gameStore.getRound().phase === "SEARCH") {
-          const nextTask = gameStore.assignSearchTask(clientId);
-          if (nextTask) {
-            sendTo(ws, { type: "assign-task", task: nextTask });
-          }
+        const nextTask = sessionService.getAssignedTask(sessionId, clientId, "SEARCH");
+        if (nextTask) {
+          sendTo(ws, { type: "assign-task", task: nextTask });
         }
       } else {
         sendTo(ws, { type: "search-result", correct: false, drawingId: targetDrawingId, message: "Nicht getroffen! Versuch es nochmal. ❌" });
@@ -409,86 +461,69 @@ wss.on("connection", (ws: WebSocket) => {
       return;
     }
 
-    // ──── start-round ────
-    if (msg.type === "start-round") {
-      // Purge stale sessions whose WebSocket is no longer active
-      gameStore.purgeDisconnectedSessions(new Set(clients.keys()));
+    if (message.type === "start-round") {
+      sessionService.purgeDisconnectedSessions(sessionId, activeClientIdsForSession(sessionId));
+      const state = await sessionService.startRound(sessionId);
+      if (!state) {
+        sendTo(ws, { type: "error", message: "Session not found" });
+        return;
+      }
 
-      gameStore.startDrawPhase();
-      saveScheduler.schedule();
-
-      // Deduplicate by playerId so that multiple sessions for the same player
-      // (e.g. two browser tabs, or a stale + fresh session) don't consume extra prompts.
       const assignedPlayerIds = new Set<string>();
-
-      for (const playerSession of gameStore.getAllSessions()) {
-        if (playerSession.kind !== "player") {
+      for (const connectionSession of sessionService.getAllConnectionSessions(sessionId)) {
+        if (connectionSession.kind !== "player" || assignedPlayerIds.has(connectionSession.playerId)) {
           continue;
         }
-        if (assignedPlayerIds.has(playerSession.playerId)) {
-          continue;
-        }
-        const player = gameStore.getState().players[playerSession.playerId];
+        const player = state.players[connectionSession.playerId];
         if (!player || !player.name) {
           continue;
         }
-        // Only assign if this session still has an active WebSocket connection.
-        // Otherwise a stale/disconnected session would consume a prompt index
-        // and the real client would start at drawIndex 1 instead of 0.
-        const client = clients.get(playerSession.clientId);
+        const client = clients.get(connectionSession.clientId);
         if (!client) {
           continue;
         }
-        assignedPlayerIds.add(playerSession.playerId);
-        const task = gameStore.assignDrawTask(playerSession.clientId);
+        assignedPlayerIds.add(connectionSession.playerId);
+        const task = sessionService.getAssignedTask(sessionId, connectionSession.clientId, "DRAW");
         if (task) {
           sendTo(client.ws, { type: "assign-task", task });
         }
       }
 
-      broadcast({ type: "event", text: `🎨 Runde ${gameStore.getRound().roundNumber} startet! Zeichnet!`, createdAt: Date.now() });
-      broadcastState();
+      broadcastToSession(sessionId, { type: "event", text: `🎨 Runde ${state.round.roundNumber} startet! Zeichnet!`, createdAt: Date.now() });
+      broadcastState(sessionId, state);
       return;
     }
 
-    // ──── set-timer ────
-    if (msg.type === "set-timer") {
-      gameStore.setTimerConfig(msg.drawDurationSec, msg.searchDurationSec);
-      saveScheduler.schedule();
-      broadcastState();
+    if (message.type === "set-timer") {
+      const state = await sessionService.setTimerConfig(sessionId, message.drawDurationSec, message.searchDurationSec);
+      if (state) {
+        broadcastState(sessionId, state);
+      }
       return;
     }
 
-    // ──── reset ────
-    if (msg.type === "reset") {
-      gameStore.reset();
-      saveScheduler.schedule();
-      broadcastState();
-      broadcast({ type: "event", text: "Spiel wurde zurückgesetzt! 🔄", createdAt: Date.now() });
+    if (message.type === "reset") {
+      const state = await sessionService.reset(sessionId);
+      if (state) {
+        broadcastState(sessionId, state);
+        broadcastToSession(sessionId, { type: "event", text: "Spiel wurde zurückgesetzt! 🔄", createdAt: Date.now() });
+      }
       return;
     }
 
-    // ──── ping ────
-    if (msg.type === "ping") {
-      sendTo(ws, { type: "pong", t: msg.t, serverTime: Date.now() });
-      return;
+    if (message.type === "ping") {
+      sendTo(ws, { type: "pong", t: message.t, serverTime: Date.now() });
     }
   });
 
   ws.on("close", () => {
-    // Remove from active-clients map, but do NOT remove the session from
-    // gameStore — the player must be able to rejoin and keep their score.
-    if (clientId) {
+    if (clientId && sessionId) {
       clients.delete(clientId);
     }
   });
 });
 
-// ══════════════════════════════════════════════════════
-//  Start
-// ══════════════════════════════════════════════════════
-
-server.listen(gameConfig.port, "0.0.0.0", () => {
+server.listen(backendConfig.gameConfig.port, "0.0.0.0", () => {
   const mdnsHost = `${os.hostname()}.local`;
   const lanIps: string[] = [];
   for (const [, entries] of Object.entries(os.networkInterfaces())) {
@@ -500,19 +535,24 @@ server.listen(gameConfig.port, "0.0.0.0", () => {
   }
 
   console.log(`[backend] 🎨 Draw & Search game`);
-  console.log(`[backend] listening on port ${gameConfig.port}`);
-  console.log(`[backend] persist: ${backendConfig.persistPath}`);
-  console.log(`[backend] drawings saved to: ${drawingsBasePath}`);
+  console.log(`[backend] listening on port ${backendConfig.gameConfig.port}`);
+  console.log(`[backend] sessions stored in: ${backendConfig.sessionsPath}`);
+  console.log(`[backend] assets stored in: ${backendConfig.assetsPath}`);
   if (backendConfig.shouldServeStatic) {
     console.log(`[backend] serving static frontend`);
   }
-  console.log(`\nOpen (mDNS):\n  http://${mdnsHost}:${gameConfig.port}/#/player\n  http://${mdnsHost}:${gameConfig.port}/#/board`);
+  console.log(`\nOpen board to create a session:\n  http://${mdnsHost}:${backendConfig.gameConfig.port}/#/board`);
   if (lanIps.length > 0) {
     console.log(`\nOpen (LAN IPv4):`);
-    for (const ip of lanIps) {
-      console.log(`  http://${ip}:${gameConfig.port}/#/player`);
-      console.log(`  http://${ip}:${gameConfig.port}/#/board`);
+    for (const ipAddress of lanIps) {
+      console.log(`  http://${ipAddress}:${backendConfig.gameConfig.port}/#/board`);
+      console.log(`  http://${ipAddress}:${backendConfig.gameConfig.port}/#/player`);
     }
   }
 });
 
+setInterval(() => {
+  sessionService.cleanupExpiredSessions(Date.now()).catch((error) => {
+    console.error("[cleanup] failed", error);
+  });
+}, 15 * 60 * 1000);

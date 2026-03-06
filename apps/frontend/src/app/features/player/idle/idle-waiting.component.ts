@@ -16,8 +16,8 @@ import type { Player } from "@birthday/shared";
           @for (player of leaderboard().slice(0, 5); track player.id; let i = $index) {
             <div class="flex items-center gap-2 py-1.5 px-2 rounded-lg" [class.bg-amber-50]="i === 0">
               <span class="text-sm w-5 text-center">{{ i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1) + '.' }}</span>
-              @if (player.avatarDataUrl) {
-                <img class="w-6 h-6 rounded-full border border-black/[0.06]" [src]="player.avatarDataUrl" [alt]="player.name" />
+              @if (player.avatarUrl) {
+                <img class="w-6 h-6 rounded-full border border-black/[0.06]" [src]="player.avatarUrl" [alt]="player.name" />
               }
               <span class="text-sm flex-1 truncate">{{ player.name }}</span>
               <span class="text-xs font-medium text-amber-600">{{ player.score }}</span>
