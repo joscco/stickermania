@@ -14,32 +14,32 @@ import { CanvasPainter } from "../shared/canvas-painter";
         <p class="text-xs text-stone-500">{{ playerName() }}, mal dich selbst!</p>
       </div>
       <div class="relative rounded-2xl border-2 border-black/[0.06] overflow-hidden bg-white aspect-square no-select"
-        style="width: min(92vw, calc(100dvh - 260px));">
+           style="width: min(92vw, calc(100dvh - 260px));">
         <canvas #canvas class="w-full h-full" style="touch-action: none;"
-          (pointerdown)="painter.pointerDown($event)"
-          (pointermove)="painter.pointerMove($event)"
-          (pointerup)="painter.pointerUp()"
-          (pointercancel)="painter.pointerUp()"
+                (pointerdown)="painter.pointerDown($event)"
+                (pointermove)="painter.pointerMove($event)"
+                (pointerup)="painter.pointerUp()"
+                (pointercancel)="painter.pointerUp()"
         ></canvas>
       </div>
       <div class="flex gap-1.5 mt-3 flex-wrap justify-center">
         @for (color of colors(); track color) {
           <button class="w-8 h-8 rounded-full border-2 border-transparent transition-transform"
-            [style.background]="color"
-            [class.border-stone-900]="currentColor() === color"
-            [class.scale-110]="currentColor() === color"
-            (click)="selectColor(color)"></button>
+                  [style.background]="color"
+                  [class.border-stone-900]="currentColor() === color"
+                  [class.scale-110]="currentColor() === color"
+                  (click)="selectColor(color)"></button>
         }
       </div>
       <div class="flex items-center gap-3 mt-2">
         <button class="rounded-lg px-3 py-1 text-sm border transition-colors"
-          [class.bg-stone-900]="brushThin()" [class.text-white]="brushThin()"
-          [class.bg-white]="!brushThin()" [class.text-stone-600]="!brushThin()"
-          (click)="brushThin.set(true)">Dünn</button>
+                [class.bg-stone-900]="brushThin()" [class.text-white]="brushThin()"
+                [class.bg-white]="!brushThin()" [class.text-stone-600]="!brushThin()"
+                (click)="brushThin.set(true)">Dünn</button>
         <button class="rounded-lg px-3 py-1 text-sm border transition-colors"
-          [class.bg-stone-900]="!brushThin()" [class.text-white]="!brushThin()"
-          [class.bg-white]="brushThin()" [class.text-stone-600]="brushThin()"
-          (click)="brushThin.set(false)">Dick</button>
+                [class.bg-stone-900]="!brushThin()" [class.text-white]="!brushThin()"
+                [class.bg-white]="brushThin()" [class.text-stone-600]="brushThin()"
+                (click)="brushThin.set(false)">Dick</button>
       </div>
       <div class="flex gap-2 mt-3">
         <button class="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm hover:bg-stone-50" (click)="clear()">Löschen</button>

@@ -1,80 +1,71 @@
 import { CommonModule } from "@angular/common";
-import { Component, OnDestroy, OnInit, signal, computed } from "@angular/core";
-import { FormsModule } from "@angular/forms";
-import { WebSocketService } from "../../core/websocket.service";
-import { ApiService } from "../../core/api.service";
-import { WorldStore } from "../../core/world.store";
-import * as QRCode from "qrcode";
-
-import { EventToastsComponent, type UiEvent } from "./events/event-toasts.component";
-import { AdminOverlayComponent } from "./admin/admin.component";
-import { BoardSetupDrawerComponent } from "./setup/board-setup-drawer.component";
-import { BoardSceneComponent } from "./scene/board-scene.component";
-import type { ServerToClientMessage, RoundPhase } from "@birthday/shared";
+import { Component, OnDestroy, OnInit, computed, signal } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
-import {Subscription} from 'rxjs';
-import { environment } from "../../../environments/environment";
+import type {
+  DrawSearchServerEvent,
+  GameModeId,
+  GardenModeState,
+  GardenServerEvent,
+  ServerToClientMessage,
+  TeamGraffitiModeState,
+  TeamGraffitiServerEvent,
+} from "@birthday/shared";
+import * as QRCode from "qrcode";
+import { Subscription } from "rxjs";
+import { ApiService } from "../../core/api.service";
+import { WebSocketService } from "../../core/websocket.service";
+import { WorldStore } from "../../core/world.store";
+import { EventToastsComponent, type UiEvent } from "./events/event-toasts.component";
+import { BoardSceneComponent } from "./scene/board-scene.component";
 
-
-/** How long an event toast stays visible */
 const EVENT_TOAST_DURATION_MS = 3000;
 
 @Component({
   selector: "app-board",
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    EventToastsComponent,
-    AdminOverlayComponent,
-    BoardSetupDrawerComponent,
-    BoardSceneComponent,
-  ],
+  imports: [CommonModule, EventToastsComponent, BoardSceneComponent],
   templateUrl: "./board.component.html",
 })
 export class BoardComponent implements OnInit, OnDestroy {
-  public readonly store: WorldStore;
-  private routeSubscription: Subscription | null = null;
-
-  public readonly isPartyMode = environment.appMode === "party";
+  public readonly worldStore: WorldStore;
 
   public readonly playerUrl = signal<string>("");
   public readonly playerQrDataUrl = signal<string | null>(null);
-
-  public readonly showAdminOverlay = signal<boolean>(false);
-  public readonly adminErrorText = signal<string | null>(null);
-  private adminKey: string | null = null;
-
   public readonly events = signal<UiEvent[]>([]);
-  public readonly wifiQrDataUrl = signal<string | null>(null);
-  public readonly showSetupDrawer = signal<boolean>(false);
-
-
-  public readonly leaderboard = computed(() => this.store.leaderboard());
-  public readonly drawingCount = computed(() => this.store.drawingsList().length);
-  public readonly playerCount = computed(() => this.store.leaderboard().length);
-
-  public readonly roundPhase = computed<RoundPhase>(() => this.store.round()?.phase ?? "LOBBY");
-  public readonly roundEndsAt = computed(() => this.store.round()?.endsAt ?? 0);
-  public readonly roundNumber = computed(() => this.store.round()?.roundNumber ?? 0);
-
-  /** Timer countdown display */
+  public readonly existingSessionCodeInput = signal<string>("");
+  public readonly isCreatingSession = signal<boolean>(false);
+  public readonly isBoardReady = signal<boolean>(false);
+  public readonly isBootstrapping = signal<boolean>(true);
+  public readonly bootErrorText = signal<string | null>(null);
+  public readonly sessionCode = signal<string | null>(null);
   public readonly timeLeft = signal<string>("");
+  public readonly drawDurationSec = signal<number>(60);
+  public readonly searchDurationSec = signal<number>(90);
+
+  private sessionId: string | null = null;
+  private routeSubscription: Subscription | null = null;
+  private unsubscribeWs: (() => void) | null = null;
   private timerInterval: ReturnType<typeof setInterval> | null = null;
 
-  /** Timer settings (editable) */
-  public drawDurationSec = signal<number>(60);
-  public searchDurationSec = signal<number>(90);
+  public readonly activeMode = computed<GameModeId>(() => this.worldStore.activeMode());
+  public readonly leaderboard = computed(() => this.worldStore.leaderboard());
+  public readonly playerCount = computed(() => this.leaderboard().length);
+  public readonly drawingCount = computed(() => this.worldStore.drawingsList().length);
+  public readonly roundPhase = computed(() => this.worldStore.round()?.phase ?? "LOBBY");
+  public readonly roundNumber = computed(() => this.worldStore.round()?.roundNumber ?? 0);
+  public readonly roundEndsAt = computed(() => {
+    if (this.activeMode() === "draw-search") {
+      return this.worldStore.round()?.endsAt ?? 0;
+    }
 
-  private unsubscribeWs: (() => void) | null = null;
-  private sessionId: string | null = null;
+    if (this.activeMode() === "team-graffiti") {
+      return this.worldStore.teamGraffitiModeState()?.roundEndsAt ?? 0;
+    }
 
-  public readonly isBootstrapping = signal<boolean>(true);
-  public readonly isCreatingSession = signal<boolean>(false);
-  public readonly existingSessionCodeInput = signal<string>("");
-  public readonly sessionCode = signal<string | null>(null);
-  public readonly isBoardReady = signal<boolean>(false);
-  public readonly bootErrorText = signal<string | null>(null);
+    return 0;
+  });
+  public readonly gardenModeState = computed<GardenModeState | null>(() => this.worldStore.gardenModeState());
+  public readonly teamGraffitiModeState = computed<TeamGraffitiModeState | null>(() => this.worldStore.teamGraffitiModeState());
 
   public constructor(
     private readonly wsService: WebSocketService,
@@ -83,18 +74,11 @@ export class BoardComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     worldStore: WorldStore,
   ) {
-    this.store = worldStore;
-
-    this.adminKey = this.loadAdminKey();
-    this.showAdminOverlay = signal<boolean>(!this.adminKey);
-  }
-
-  public onWifiQrGenerated(dataUrl: string): void {
-    this.wifiQrDataUrl.set((dataUrl ?? "").trim() || null);
+    this.worldStore = worldStore;
   }
 
   public ngOnInit(): void {
-    this.store.setConnecting();
+    this.worldStore.setConnecting();
 
     this.routeSubscription = this.route.paramMap.subscribe(async (paramMap) => {
       const routeSessionCode = paramMap.get("sessionCode");
@@ -116,6 +100,15 @@ export class BoardComponent implements OnInit, OnDestroy {
     });
   }
 
+  public ngOnDestroy(): void {
+    if (this.routeSubscription) {
+      this.routeSubscription.unsubscribe();
+      this.routeSubscription = null;
+    }
+
+    this.cleanupBoardRuntime();
+  }
+
   public async createNewSession(): Promise<void> {
     this.isCreatingSession.set(true);
     this.bootErrorText.set(null);
@@ -131,11 +124,7 @@ export class BoardComponent implements OnInit, OnDestroy {
   }
 
   public onExistingSessionCodeInput(rawValue: string): void {
-    const normalizedValue = rawValue
-      .toUpperCase()
-      .replace(/[^A-Z2-9]/g, "")
-      .slice(0, 5);
-
+    const normalizedValue = rawValue.toUpperCase().replace(/[^A-Z2-9]/g, "").slice(0, 5);
     this.existingSessionCodeInput.set(normalizedValue);
   }
 
@@ -149,6 +138,69 @@ export class BoardComponent implements OnInit, OnDestroy {
     await this.router.navigate(["/board", sessionCode]);
   }
 
+  public selectMode(mode: GameModeId): void {
+    this.wsService.send({ type: "select-mode", mode });
+  }
+
+  public startMode(): void {
+    this.wsService.send({ type: "start-mode" });
+  }
+
+  public saveDrawSearchTimerSettings(): void {
+    this.wsService.send({
+      type: "game-action",
+      mode: "draw-search",
+      action: {
+        type: "set-timer",
+        drawDurationSec: this.drawDurationSec(),
+        searchDurationSec: this.searchDurationSec(),
+      },
+    });
+  }
+
+  public resetSession(): void {
+    this.wsService.send({ type: "reset-session" });
+    this.pushEvent("Spiel zurückgesetzt. 🔄", Date.now());
+  }
+
+  public async deleteSession(): Promise<void> {
+    if (!this.sessionId) {
+      return;
+    }
+
+    if (!confirm("Session wirklich löschen? Alle Spieler werden getrennt und alle Daten gehen verloren.")) {
+      return;
+    }
+
+    try {
+      await this.apiService.deleteSession(this.sessionId);
+      this.cleanupBoardRuntime();
+      await this.router.navigate(["/board"]);
+    } catch {
+      this.pushEvent("Session konnte nicht gelöscht werden. ❌", Date.now());
+    }
+  }
+
+  public teamScores(): Array<{ id: string; score: number }> {
+    const modeState = this.teamGraffitiModeState();
+
+    if (!modeState) {
+      return [];
+    }
+
+    return Object.entries(modeState.teams).map(([teamId, entry]) => ({ id: teamId, score: entry.score }));
+  }
+
+  public activeTagsByBuilding(buildingId: string): Array<TeamGraffitiModeState["activeTags"][string]> {
+    const modeState = this.teamGraffitiModeState();
+
+    if (!modeState) {
+      return [];
+    }
+
+    return Object.values(modeState.activeTags).filter((tag) => tag.buildingId === buildingId);
+  }
+
   private async bootstrapBoardSession(sessionCode: string): Promise<void> {
     this.isBootstrapping.set(true);
     this.bootErrorText.set(null);
@@ -159,14 +211,13 @@ export class BoardComponent implements OnInit, OnDestroy {
       this.sessionId = resolvedSession.sessionId;
       this.sessionCode.set(resolvedSession.sessionCode);
 
-      const playerPageUrl = `${window.location.origin}/#/player?session=${encodeURIComponent(resolvedSession.sessionCode)}`;
+      const playerPageUrl = `${window.location.origin}/#/join/${encodeURIComponent(resolvedSession.sessionCode)}`;
       this.playerUrl.set(playerPageUrl);
       this.playerQrDataUrl.set(await QRCode.toDataURL(playerPageUrl, { margin: 1, scale: 6 }));
 
       this.startTimerTick();
-
       this.wsService.connect();
-      this.unsubscribeWs = this.wsService.onMessage((msg) => this.handleMessage(msg));
+      this.unsubscribeWs = this.wsService.onMessage((message) => this.handleMessage(message));
 
       const joinCheckInterval = setInterval(() => {
         if (this.wsService.status() === "connected" && this.sessionId) {
@@ -184,14 +235,6 @@ export class BoardComponent implements OnInit, OnDestroy {
     }
   }
 
-  public ngOnDestroy(): void {
-    if (this.routeSubscription) {
-      this.routeSubscription.unsubscribe();
-      this.routeSubscription = null;
-    }
-    this.cleanupBoardRuntime();
-  }
-
   private cleanupBoardRuntime(): void {
     if (this.unsubscribeWs) {
       this.unsubscribeWs();
@@ -199,6 +242,7 @@ export class BoardComponent implements OnInit, OnDestroy {
     }
 
     this.wsService.disconnect();
+    this.worldStore.clearSessionState();
 
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
@@ -208,53 +252,132 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.isBoardReady.set(false);
   }
 
-  // ──────── WebSocket ────────
-
-  private handleMessage(msg: ServerToClientMessage): void {
-    switch (msg.type) {
-      case "welcome":
-        this.store.setConnected();
-        this.store.setFieldConfig({
-          imageSizePx: msg.imageSizePx,
-          fieldBaseSize: msg.fieldBaseSize,
-          fieldGrowthPerDrawing: msg.fieldGrowthPerDrawing,
-          fieldMaxSize: msg.fieldMaxSize,
-        });
+  private handleMessage(message: ServerToClientMessage): void {
+    switch (message.type) {
+      case "welcome": {
+        this.worldStore.setConnected();
         break;
+      }
 
-      case "state":
-        this.store.setGameState(msg.state);
-        this.store.setConnected();
-        if (msg.state.round) {
-          this.drawDurationSec.set(msg.state.round.drawDurationSec);
-          this.searchDurationSec.set(msg.state.round.searchDurationSec);
+      case "session-state": {
+        this.worldStore.setSessionState(message.state);
+        this.worldStore.setConnected();
+
+        if (message.state.activeMode === "draw-search") {
+          const drawSearchModeState = message.state.modeState as any;
+          this.drawDurationSec.set(drawSearchModeState.round?.drawDurationSec ?? 60);
+          this.searchDurationSec.set(drawSearchModeState.round?.searchDurationSec ?? 90);
         }
         break;
+      }
 
-      case "event":
-        this.pushEvent(msg.text, msg.createdAt);
+      case "session-event": {
+        this.pushEvent(message.text, message.createdAt);
         break;
+      }
 
-      case "score-update": {
-        const playerName = this.store.players()[msg.playerId]?.name || "Jemand";
-        this.pushEvent(`⭐ ${playerName} ${msg.reason} (${msg.newScore} Punkte)`, Date.now());
+      case "game-event": {
+        if (message.mode === "draw-search") {
+          this.handleDrawSearchEvent(message.event);
+        } else if (message.mode === "garden-coop") {
+          this.handleGardenEvent(message.event);
+        } else if (message.mode === "team-graffiti") {
+          this.handleTeamGraffitiEvent(message.event);
+        }
+        break;
+      }
+
+      case "error": {
+        this.pushEvent(message.message, Date.now());
         break;
       }
     }
   }
 
-  // ──────── Round controls ────────
+  private handleDrawSearchEvent(event: DrawSearchServerEvent): void {
+    switch (event.type) {
+      case "score-update": {
+        const playerName = this.worldStore.players()[event.playerId]?.name || "Jemand";
+        this.pushEvent(`⭐ ${playerName} ${event.reason} (${event.newScore} Punkte)`, Date.now());
+        break;
+      }
 
-  public startRound(): void {
-    this.wsService.send({ type: "start-round" });
+      case "round-phase": {
+        this.pushEvent(event.phase === "DRAW" ? "Zeichenphase gestartet." : event.phase === "SEARCH" ? "Suchphase gestartet." : "Runde pausiert.", Date.now());
+        break;
+      }
+
+      case "draw-search-config": {
+        this.worldStore.setFieldConfig({
+          imageSizePx: event.imageSizePx,
+          fieldBaseSize: event.fieldBaseSize,
+          fieldGrowthPerDrawing: event.fieldGrowthPerDrawing,
+          fieldMaxSize: event.fieldMaxSize,
+          maxDrawingsPerRound: event.maxDrawingsPerRound,
+          searchOverscroll: event.searchOverscroll,
+        });
+        break;
+      }
+
+      case "assign-task":
+      case "search-result": {
+        break;
+      }
+    }
   }
 
-  public saveTimerSettings(): void {
-    this.wsService.send({
-      type: "set-timer",
-      drawDurationSec: this.drawDurationSec(),
-      searchDurationSec: this.searchDurationSec(),
-    });
+  private handleGardenEvent(event: GardenServerEvent): void {
+    switch (event.type) {
+      case "garden-level-up": {
+        this.pushEvent(`🌱 Garten-Level ${event.newLevel} erreicht.`, Date.now());
+        break;
+      }
+
+      case "garden-plot-ready": {
+        this.pushEvent(`🧺 Plot ${event.plotId} ist erntereif.`, Date.now());
+        break;
+      }
+
+      case "garden-plot-needs-water": {
+        this.pushEvent(`💧 Plot ${event.plotId} braucht Wasser.`, Date.now());
+        break;
+      }
+
+      case "garden-pest-spawned": {
+        this.pushEvent(`🐛 Ungeziefer auf ${event.plotId}.`, Date.now());
+        break;
+      }
+
+      case "garden-order-fulfilled": {
+        this.pushEvent(`📦 Auftrag erfüllt (+${event.experienceGained} XP).`, Date.now());
+        break;
+      }
+    }
+  }
+
+  private handleTeamGraffitiEvent(event: TeamGraffitiServerEvent): void {
+    switch (event.type) {
+      case "team-assigned": {
+        const playerName = this.worldStore.players()[event.playerId]?.name || "Jemand";
+        this.pushEvent(`${playerName} ist jetzt Team ${event.teamId}.`, Date.now());
+        break;
+      }
+
+      case "tag-placed": {
+        this.pushEvent(`🎨 Neues Tag auf ${event.buildingId}.`, Date.now());
+        break;
+      }
+
+      case "tag-removed": {
+        this.pushEvent(`🧽 Tag entfernt (+${event.scoreAwarded} Punkte).`, Date.now());
+        break;
+      }
+
+      case "team-score-updated": {
+        this.pushEvent(`🏁 Team ${event.teamId} hat jetzt ${event.newScore} Punkte.`, Date.now());
+        break;
+      }
+    }
   }
 
   private startTimerTick(): void {
@@ -265,93 +388,28 @@ export class BoardComponent implements OnInit, OnDestroy {
 
     this.timerInterval = setInterval(() => {
       const endsAt = this.roundEndsAt();
-      if (endsAt > 0) {
-        const remainingMs = Math.max(0, endsAt - Date.now());
-        const totalSeconds = Math.ceil(remainingMs / 1000);
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-        this.timeLeft.set(`${minutes}:${String(seconds).padStart(2, "0")}`);
-      } else {
+
+      if (endsAt <= 0) {
         this.timeLeft.set("");
+        return;
       }
+
+      const remainingMilliseconds = Math.max(0, endsAt - Date.now());
+      const totalSeconds = Math.ceil(remainingMilliseconds / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      this.timeLeft.set(`${minutes}:${String(seconds).padStart(2, "0")}`);
     }, 500);
   }
 
-  public get phaseLabel(): string {
-    switch (this.roundPhase()) {
-      case "DRAW": return "Zeichnen";
-      case "SEARCH": return "Suchen";
-      case "PAUSED": return "Pause";
-      default: return "Lobby";
-    }
-  }
-
-  public get phaseIcon(): string {
-    switch (this.roundPhase()) {
-      case "DRAW": return "assets/icons/paintbrush.svg";
-      case "SEARCH": return "assets/icons/search.svg";
-      case "PAUSED": return "assets/icons/pause.svg";
-      default: return "assets/icons/home.svg";
-    }
-  }
-
-  // ──────── Setup / Admin ────────
-
-  public toggleSetupDrawer(): void {
-    this.showSetupDrawer.set(!this.showSetupDrawer());
-  }
-
-  public onSetupDrawerCloseRequested(): void {
-    this.showSetupDrawer.set(false);
-  }
-
-  public resetWorld(): void {
-    if (this.sessionId) {
-      this.wsService.send({ type: "reset" });
-    }
-    this.pushEvent("Spiel zurückgesetzt! 🔄", Date.now());
-  }
-
-  public async deleteSession(): Promise<void> {
-    if (!this.sessionId) return;
-    if (!confirm("Session wirklich löschen? Alle Spieler werden getrennt und alle Daten gehen verloren.")) return;
-
-    try {
-      await this.apiService.deleteSession(this.sessionId);
-      this.cleanupBoardRuntime();
-      await this.router.navigate(["/board"]);
-    } catch {
-      this.pushEvent("Session konnte nicht gelöscht werden. ❌", Date.now());
-    }
-  }
-
-  public canReset(): boolean {
-    return (this.adminKey ?? "").trim().length > 0;
-  }
-
-  public onAdminKeySubmitted(adminKey: string): void {
-    this.adminKey = adminKey;
-    localStorage.setItem("birthday_admin_key", adminKey);
-    this.adminErrorText.set(null);
-    this.showAdminOverlay.set(false);
-  }
-
-  // ──────── Events ────────
-
   private pushEvent(text: string, createdAt: number): void {
-    const id = `${createdAt}-${Math.random().toString(16).slice(2)}`;
-    const event: UiEvent = { id, text, createdAt };
-    this.events.set([event, ...this.events()]);
-    setTimeout(() => {
-      this.events.set(this.events().filter((e) => e.id !== id));
-    }, EVENT_TOAST_DURATION_MS);
-  }
+    const eventId = `${createdAt}-${Math.random().toString(16).slice(2)}`;
+    const uiEvent: UiEvent = { id: eventId, text, createdAt };
 
-  private loadAdminKey(): string | null {
-    const stored = localStorage.getItem("birthday_admin_key");
-    if (!stored || stored.trim().length === 0) {
-      return null;
-    }
-    return stored.trim();
+    this.events.set([uiEvent, ...this.events()]);
+
+    setTimeout(() => {
+      this.events.set(this.events().filter((event) => event.id !== eventId));
+    }, EVENT_TOAST_DURATION_MS);
   }
 }

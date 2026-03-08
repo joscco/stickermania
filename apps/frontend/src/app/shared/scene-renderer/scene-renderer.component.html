@@ -1,14 +1,13 @@
 <div
-  class="relative select-none overflow-hidden rounded-full touch-none transition-[width,height] duration-700 ease-out"
-  [style.width.px]="containerSizePx()"
-  [style.height.px]="containerSizePx()"
+  class="relative select-none overflow-hidden rounded-[2rem] bg-stone-50 touch-none transition-[width,height] duration-700 ease-out border border-black/5"
+  [style.width.px]="containerWidthPx()"
+  [style.height.px]="containerHeightPx()"
 >
-  <!-- Drawings layer -->
   @for (drawing of drawingsSorted(); track drawing.id) {
     <img
       class="absolute pointer-events-none transition-all duration-700 ease-out"
-      [style.left.px]="drawing.x * containerSizePx()"
-      [style.top.px]="drawing.y * containerSizePx()"
+      [style.left.px]="drawing.x"
+      [style.top.px]="drawing.y"
       [style.width.px]="imageSizePx()"
       [style.height.px]="imageSizePx()"
       [style.transform]="'translate(-50%, -50%)'"
@@ -18,7 +17,5 @@
     />
   }
 
-  <!-- Circular border overlay ON TOP of drawings -->
-  <div class="absolute inset-0 pointer-events-none rounded-full border-4 border-dotted border-neutral-200 z-10">
-  </div>
+  <div class="absolute inset-0 pointer-events-none rounded-[2rem] border-4 border-dotted border-neutral-200 z-10"></div>
 </div>

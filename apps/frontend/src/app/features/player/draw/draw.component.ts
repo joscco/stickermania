@@ -23,37 +23,37 @@ import { CanvasPainter } from "../shared/canvas-painter";
       <!-- Square canvas fills available space -->
       <div class="flex-1 flex items-center justify-center px-2 w-full min-h-0">
         <div class="relative rounded-2xl border-2 border-black/[0.06] overflow-hidden bg-white aspect-square no-select"
-          style="width: min(95vw, calc(100dvh - 260px));">
+             style="width: min(95vw, calc(100dvh - 260px));">
           <canvas #drawCanvas class="w-full h-full" style="touch-action: none;"
-            (pointerdown)="painter.pointerDown($event)"
-            (pointermove)="painter.pointerMove($event)"
-            (pointerup)="painter.pointerUp()"
-            (pointercancel)="painter.pointerUp()"
+                  (pointerdown)="painter.pointerDown($event)"
+                  (pointermove)="painter.pointerMove($event)"
+                  (pointerup)="painter.pointerUp()"
+                  (pointercancel)="painter.pointerUp()"
           ></canvas>
         </div>
       </div>
 
       <!-- Tools: safe-area padding at bottom for Safari toolbar -->
       <div class="px-3 pt-2 space-y-2 w-full max-w-md mx-auto"
-        style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom));">
+           style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom));">
         <div class="flex items-center justify-center gap-3">
           @for (color of colors(); track color) {
             <button class="w-10 h-10 rounded-full border-3 transition-transform"
-              [style.background]="color"
-              [class.border-stone-900]="currentColor() === color"
-              [class.scale-110]="currentColor() === color"
-              [class.border-transparent]="currentColor() !== color"
-              [class.ring-2]="currentColor() === color"
-              [class.ring-stone-400]="currentColor() === color"
-              (click)="selectColor(color)"></button>
+                    [style.background]="color"
+                    [class.border-stone-900]="currentColor() === color"
+                    [class.scale-110]="currentColor() === color"
+                    [class.border-transparent]="currentColor() !== color"
+                    [class.ring-2]="currentColor() === color"
+                    [class.ring-stone-400]="currentColor() === color"
+                    (click)="selectColor(color)"></button>
           }
           <div class="flex bg-stone-200 rounded-lg overflow-hidden ml-3">
             <button class="px-3 py-1.5 text-xs font-medium transition-colors"
-              [class.bg-stone-900]="brushThin()" [class.text-white]="brushThin()"
-              (click)="brushThin.set(true)">Dünn</button>
+                    [class.bg-stone-900]="brushThin()" [class.text-white]="brushThin()"
+                    (click)="brushThin.set(true)">Dünn</button>
             <button class="px-3 py-1.5 text-xs font-medium transition-colors"
-              [class.bg-stone-900]="!brushThin()" [class.text-white]="!brushThin()"
-              (click)="brushThin.set(false)">Dick</button>
+                    [class.bg-stone-900]="!brushThin()" [class.text-white]="!brushThin()"
+                    (click)="brushThin.set(false)">Dick</button>
           </div>
         </div>
         <div class="flex gap-2">

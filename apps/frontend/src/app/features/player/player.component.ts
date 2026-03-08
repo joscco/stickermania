@@ -1,19 +1,29 @@
 import { CommonModule } from "@angular/common";
-import { Component, OnDestroy, OnInit, computed, signal, effect } from "@angular/core";
+import { Component, OnDestroy, OnInit, computed, effect, signal } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import type {
+  DrawSearchModeState,
+  DrawSearchPlayerTask,
+  DrawSearchServerEvent,
+  GameModeId,
+  GardenModeState,
+  GardenServerEvent,
+  ServerToClientMessage,
+  TeamGraffitiModeState,
+  TeamGraffitiServerEvent,
+} from "@birthday/shared";
+import { AudioService } from "../../core/audio.service";
+import { GameSessionStore } from "../../core/challenge.store";
+import { ApiService } from "../../core/api.service";
 import { WebSocketService } from "../../core/websocket.service";
 import { WorldStore } from "../../core/world.store";
-import { GameSessionStore } from "../../core/challenge.store";
-import { AudioService } from "../../core/audio.service";
-import { SearchComponent } from "./search";
-import { LobbyNameComponent } from "./lobby/lobby-name.component";
-import { LobbyAvatarComponent } from "./lobby/lobby-avatar.component";
-import { LobbyReadyComponent } from "./lobby/lobby-ready.component";
 import { DrawComponent } from "./draw/draw.component";
-import { IdleWaitingComponent } from "./idle/idle-waiting.component";
 import { IdleSearchWaitingComponent } from "./idle/idle-search-waiting.component";
-import type { ServerToClientMessage } from "@birthday/shared";
-import { ActivatedRoute, Router } from "@angular/router";
-import { ApiService } from "../../core/api.service";
+import { IdleWaitingComponent } from "./idle/idle-waiting.component";
+import { LobbyAvatarComponent } from "./lobby/lobby-avatar.component";
+import { LobbyNameComponent } from "./lobby/lobby-name.component";
+import { LobbyReadyComponent } from "./lobby/lobby-ready.component";
+import { SearchComponent } from "./search";
 
 @Component({
   selector: "app-player",
@@ -31,66 +41,89 @@ import { ApiService } from "../../core/api.service";
   templateUrl: "./player.component.html",
 })
 export class PlayerComponent implements OnInit, OnDestroy {
-  public readonly store: WorldStore;
-  public readonly session: GameSessionStore;
+  public readonly worldStore: WorldStore;
+  public readonly sessionStore: GameSessionStore;
 
   public readonly playerColors = signal<string[]>(["#dc2626", "#2563eb"]);
-
-  public readonly sceneWidthPx = computed<number>(() => this.store.gameState()?.effectiveFieldWidth ?? 400);
-  public readonly sceneHeightPx = computed<number>(() => this.store.gameState()?.effectiveFieldHeight ?? 400);
+  public readonly drawCount = signal<number>(0);
+  public readonly maxDrawings = signal<number>(3);
+  public readonly timeLeft = signal<string>("");
 
   private unsubscribeWs: (() => void) | null = null;
   private playerId: string | null = null;
   private sessionId: string | null = null;
-
-  public readonly drawCount = signal<number>(0);
-  public readonly maxDrawings = signal<number>(3);
-
-  public readonly leaderboard = computed(() => this.store.leaderboard());
-  public readonly myScore = computed(() => {
-    const playerIdValue = this.session.playerId();
-    if (!playerIdValue) return 0;
-    return this.store.players()[playerIdValue]?.score ?? 0;
-  });
-
-  public readonly roundEndsAt = computed(() => this.store.round()?.endsAt ?? 0);
-  public readonly roundPhase = computed(() => this.store.round()?.phase ?? "LOBBY");
-
-  public readonly timeLeft = signal<string>("");
   private timerInterval: ReturnType<typeof setInterval> | null = null;
 
-  constructor(
+  public readonly activeMode = computed<GameModeId>(() => this.worldStore.activeMode());
+  public readonly drawSearchModeState = computed<DrawSearchModeState | null>(() => this.worldStore.drawSearchModeState());
+  public readonly gardenModeState = computed<GardenModeState | null>(() => this.worldStore.gardenModeState());
+  public readonly teamGraffitiModeState = computed<TeamGraffitiModeState | null>(() => this.worldStore.teamGraffitiModeState());
+  public readonly leaderboard = computed(() => this.worldStore.leaderboard());
+  public readonly roundPhase = computed(() => this.worldStore.round()?.phase ?? "LOBBY");
+  public readonly roundEndsAt = computed(() => {
+    if (this.activeMode() === "draw-search") {
+      return this.worldStore.round()?.endsAt ?? 0;
+    }
+
+    if (this.activeMode() === "team-graffiti") {
+      return this.teamGraffitiModeState()?.roundEndsAt ?? 0;
+    }
+
+    return 0;
+  });
+
+  public readonly myPlayer = computed(() => {
+    const playerId = this.sessionStore.playerId();
+
+    if (!playerId) {
+      return null;
+    }
+
+    return this.worldStore.players()[playerId] ?? null;
+  });
+
+  public readonly myScore = computed(() => this.myPlayer()?.score ?? 0);
+  public readonly sceneWidthPx = computed<number>(() => this.drawSearchModeState()?.effectiveFieldWidth ?? 400);
+  public readonly sceneHeightPx = computed<number>(() => this.drawSearchModeState()?.effectiveFieldHeight ?? 400);
+  public readonly isNameSet = computed(() => this.sessionStore.playerName().trim().length > 0);
+  public readonly hasAvatar = computed(() => !!this.myPlayer()?.avatarUrl);
+  public readonly currentTeamId = computed(() => this.myPlayer()?.teamId ?? null);
+
+  public constructor(
     private readonly wsService: WebSocketService,
     private readonly apiService: ApiService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    private readonly audio: AudioService,
+    private readonly audioService: AudioService,
     worldStore: WorldStore,
     sessionStore: GameSessionStore,
   ) {
-    this.store = worldStore;
-    this.session = sessionStore;
+    this.worldStore = worldStore;
+    this.sessionStore = sessionStore;
 
-    // Keep timer display updated
     effect(() => {
       const endsAt = this.roundEndsAt();
+
       if (this.timerInterval) {
         clearInterval(this.timerInterval);
         this.timerInterval = null;
       }
-      if (endsAt > 0) {
-        const tick = () => {
-          const remainingMs = Math.max(0, endsAt - Date.now());
-          const totalSeconds = Math.ceil(remainingMs / 1000);
-          const minutes = Math.floor(totalSeconds / 60);
-          const seconds = totalSeconds % 60;
-          this.timeLeft.set(`${minutes}:${String(seconds).padStart(2, "0")}`);
-        };
-        tick();
-        this.timerInterval = setInterval(tick, 500);
-      } else {
+
+      if (endsAt <= 0) {
         this.timeLeft.set("");
+        return;
       }
+
+      const updateCountdown = () => {
+        const remainingMilliseconds = Math.max(0, endsAt - Date.now());
+        const totalSeconds = Math.ceil(remainingMilliseconds / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        this.timeLeft.set(`${minutes}:${String(seconds).padStart(2, "0")}`);
+      };
+
+      updateCountdown();
+      this.timerInterval = setInterval(updateCountdown, 500);
     });
   }
 
@@ -106,14 +139,13 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
     try {
       const resolvedSession = await this.apiService.resolveSessionByCode(sessionCode);
-
       this.sessionId = resolvedSession.sessionId;
-      this.session.setSession(this.sessionId);
+      this.sessionStore.setSession(this.sessionId);
 
       localStorage.setItem("birthday_last_session_code", resolvedSession.sessionCode);
 
       this.wsService.connect();
-      this.unsubscribeWs = this.wsService.onMessage((msg) => this.handleMessage(msg));
+      this.unsubscribeWs = this.wsService.onMessage((message) => this.handleMessage(message));
 
       const joinCheckInterval = setInterval(() => {
         if (this.wsService.status() === "connected" && this.sessionId) {
@@ -129,199 +161,410 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
       this.registerGlobalAudioUnlock();
     } catch {
-      this.session.showFeedback("Session wurde nicht gefunden oder ist abgelaufen.", "error");
+      this.sessionStore.showFeedback("Session wurde nicht gefunden oder ist abgelaufen.", "error");
       await this.router.navigate(["/join"]);
     }
   }
 
   public ngOnDestroy(): void {
-    if (this.unsubscribeWs) this.unsubscribeWs();
-    if (this.timerInterval) clearInterval(this.timerInterval);
+    if (this.unsubscribeWs) {
+      this.unsubscribeWs();
+    }
+
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
   }
-
-  // ──────── Computed getters for template ────────
-
-  public get isNameSet(): boolean {
-    return this.session.playerName().length > 0;
-  }
-
-  public get hasAvatar(): boolean {
-    const playerIdValue = this.session.playerId();
-    return playerIdValue ? !!this.store.players()[playerIdValue]?.avatarUrl : false;
-  }
-
-  // ──────── Sub-component event handlers ────────
 
   public onNameSubmitted(name: string): void {
-    this.audio.unlockIfNeeded();
+    this.audioService.unlockIfNeeded();
     this.wsService.send({ type: "set-name", name });
-    this.session.playerName.set(name);
-    this.session.currentMode.set("LOBBY");
+    this.sessionStore.playerName.set(name);
   }
 
   public onAvatarSubmitted(dataUrl: string): void {
-    this.audio.unlockIfNeeded();
+    this.audioService.unlockIfNeeded();
     this.wsService.send({ type: "submit-avatar", avatarDataUrl: dataUrl });
-    this.session.currentMode.set("IDLE");
+    this.sessionStore.clearTask();
   }
 
   public onAvatarSkipped(): void {
-    this.audio.unlockIfNeeded();
-    this.session.currentMode.set("IDLE");
+    this.audioService.unlockIfNeeded();
+    this.sessionStore.clearTask();
   }
 
   public onDrawingSubmitted(dataUrl: string): void {
-    this.wsService.send({ type: "submit-drawing", imageDataUrl: dataUrl });
-    this.audio.unlockIfNeeded();
-    this.audio.playPop();
-    this.session.currentTask.set(null);
+    this.wsService.send({
+      type: "game-action",
+      mode: "draw-search",
+      action: { type: "submit-drawing", imageDataUrl: dataUrl },
+    });
+    this.audioService.unlockIfNeeded();
+    this.audioService.playPop();
+    this.sessionStore.clearTask();
   }
 
-  // ──────── WebSocket ────────
+  public plantSeed(plotId: string, plantId: string): void {
+    this.wsService.send({
+      type: "game-action",
+      mode: "garden-coop",
+      action: { type: "plant-seed", plotId, plantId },
+    });
+  }
 
-  private handleMessage(msg: ServerToClientMessage): void {
-    switch (msg.type) {
+  public waterPlant(plotId: string): void {
+    this.wsService.send({
+      type: "game-action",
+      mode: "garden-coop",
+      action: { type: "water-plant", plotId },
+    });
+  }
+
+  public harvestPlant(plotId: string): void {
+    this.wsService.send({
+      type: "game-action",
+      mode: "garden-coop",
+      action: { type: "harvest-plant", plotId },
+    });
+  }
+
+  public clearPest(plotId: string): void {
+    this.wsService.send({
+      type: "game-action",
+      mode: "garden-coop",
+      action: { type: "clear-pest", plotId },
+    });
+  }
+
+  public assignTeam(teamId: "RED" | "BLUE"): void {
+    const playerId = this.sessionStore.playerId();
+
+    if (!playerId) {
+      return;
+    }
+
+    this.wsService.send({
+      type: "game-action",
+      mode: "team-graffiti",
+      action: { type: "assign-team", playerId, teamId },
+    });
+  }
+
+  public placeTag(buildingId: string): void {
+    this.wsService.send({
+      type: "game-action",
+      mode: "team-graffiti",
+      action: { type: "place-tag", buildingId },
+    });
+  }
+
+  public wipeTag(tagId: string): void {
+    this.wsService.send({
+      type: "game-action",
+      mode: "team-graffiti",
+      action: { type: "wipe-tag", tagId, progressDelta: 35 },
+    });
+  }
+
+  public trackById(index: number, item: { id: string }): string {
+    return item.id;
+  }
+
+  public gardenInventoryEntries(): Array<{ plantId: string; seeds: number; harvestedGoods: number; name: string }> {
+    const modeState = this.gardenModeState();
+
+    if (!modeState) {
+      return [];
+    }
+
+    return Object.values(modeState.inventory)
+      .map((inventoryItem) => ({
+        plantId: inventoryItem.plantId,
+        seeds: inventoryItem.seeds,
+        harvestedGoods: inventoryItem.harvestedGoods,
+        name: modeState.plantDefinitions[inventoryItem.plantId]?.name ?? inventoryItem.plantId,
+      }))
+      .sort((leftItem, rightItem) => leftItem.name.localeCompare(rightItem.name));
+  }
+
+  public gardenPlots(): Array<GardenModeState["plots"][string]> {
+    const modeState = this.gardenModeState();
+    return modeState ? Object.values(modeState.plots) : [];
+  }
+
+  public availablePlantIds(): string[] {
+    return this.gardenModeState()?.unlockedPlantIds ?? [];
+  }
+
+  public plantName(plantId: string | null): string {
+    if (!plantId) {
+      return "";
+    }
+
+    return this.gardenModeState()?.plantDefinitions[plantId]?.name ?? plantId;
+  }
+
+  public availableTagsToWipe(): Array<TeamGraffitiModeState["activeTags"][string]> {
+    const modeState = this.teamGraffitiModeState();
+    const currentTeamId = this.currentTeamId();
+
+    if (!modeState || !currentTeamId) {
+      return [];
+    }
+
+    return Object.values(modeState.activeTags).filter((tag) => tag.teamId !== currentTeamId);
+  }
+
+  public teamBuildings(): Array<TeamGraffitiModeState["buildings"][string]> {
+    const modeState = this.teamGraffitiModeState();
+    return modeState ? Object.values(modeState.buildings) : [];
+  }
+
+  public tagsOnBuilding(buildingId: string): Array<TeamGraffitiModeState["activeTags"][string]> {
+    const modeState = this.teamGraffitiModeState();
+
+    if (!modeState) {
+      return [];
+    }
+
+    return Object.values(modeState.activeTags).filter((tag) => tag.buildingId === buildingId);
+  }
+
+  private handleMessage(message: ServerToClientMessage): void {
+    switch (message.type) {
       case "welcome": {
         const storedServerSession = localStorage.getItem("birthday_server_session");
-        if (storedServerSession && storedServerSession !== msg.serverSessionId) {
+
+        if (storedServerSession && storedServerSession !== message.serverSessionId) {
           localStorage.removeItem("birthday_player_id");
-          localStorage.setItem("birthday_server_session", msg.serverSessionId);
+          localStorage.setItem("birthday_server_session", message.serverSessionId);
           window.location.reload();
           return;
         }
-        localStorage.setItem("birthday_server_session", msg.serverSessionId);
 
-        this.session.setJoined({ sessionId: msg.sessionId, playerId: msg.playerId, clientId: msg.clientId });
-        this.playerId = msg.playerId;
-        localStorage.setItem("birthday_player_id", msg.playerId);
-        if (msg.assignedColors && msg.assignedColors.length >= 2) {
-          this.playerColors.set(msg.assignedColors);
+        localStorage.setItem("birthday_server_session", message.serverSessionId);
+        this.sessionStore.setJoined({ sessionId: message.sessionId, playerId: message.playerId, clientId: message.clientId });
+        this.playerId = message.playerId;
+        localStorage.setItem("birthday_player_id", message.playerId);
+
+        if (message.assignedColors.length >= 2) {
+          this.playerColors.set(message.assignedColors);
         }
-        this.maxDrawings.set(msg.maxDrawingsPerRound ?? 3);
-        this.store.setFieldConfig({
-          imageSizePx: msg.imageSizePx,
-          fieldBaseSize: msg.fieldBaseSize,
-          fieldGrowthPerDrawing: msg.fieldGrowthPerDrawing,
-          fieldMaxSize: msg.fieldMaxSize,
+
+        break;
+      }
+
+      case "session-state": {
+        this.worldStore.setSessionState(message.state);
+        this.worldStore.setConnected();
+        this.syncPlayerModeFromState();
+        break;
+      }
+
+      case "game-event": {
+        if (message.mode === "draw-search") {
+          this.handleDrawSearchEvent(message.event);
+        } else if (message.mode === "garden-coop") {
+          this.handleGardenEvent(message.event);
+        } else if (message.mode === "team-graffiti") {
+          this.handleTeamGraffitiEvent(message.event);
+        }
+        break;
+      }
+
+      case "session-event": {
+        break;
+      }
+
+      case "error": {
+        this.sessionStore.showFeedback(message.message, "error");
+        break;
+      }
+    }
+  }
+
+  private handleDrawSearchEvent(event: DrawSearchServerEvent): void {
+    switch (event.type) {
+      case "assign-task": {
+        this.sessionStore.setTask(event.task as DrawSearchPlayerTask);
+
+        if (event.task.mode === "DRAW") {
+          this.drawCount.set(event.task.drawIndex);
+          this.maxDrawings.set(event.task.drawTotal);
+
+          if (event.task.drawIndex === 0) {
+            this.audioService.playRoundStart();
+          }
+        }
+
+        if (event.task.mode === "SEARCH") {
+          this.audioService.playTick();
+        }
+        break;
+      }
+
+      case "score-update": {
+        if (event.playerId === this.sessionStore.playerId()) {
+          this.sessionStore.showFeedback(`+1 Punkt! ${event.reason}`, "success");
+          this.audioService.playTick();
+        }
+        break;
+      }
+
+      case "round-phase": {
+        if (event.phase === "PAUSED") {
+          this.sessionStore.clearTask();
+        }
+        break;
+      }
+
+      case "draw-search-config": {
+        this.maxDrawings.set(event.maxDrawingsPerRound);
+        this.worldStore.setFieldConfig({
+          imageSizePx: event.imageSizePx,
+          fieldBaseSize: event.fieldBaseSize,
+          fieldGrowthPerDrawing: event.fieldGrowthPerDrawing,
+          fieldMaxSize: event.fieldMaxSize,
+          maxDrawingsPerRound: event.maxDrawingsPerRound,
+          searchOverscroll: event.searchOverscroll,
         });
         break;
       }
 
-      case "state":
-        this.store.setGameState(msg.state);
-        this.store.setConnected();
-        {
-          const pid = this.session.playerId();
-          if (pid && !msg.state.players[pid]) {
-            localStorage.removeItem("birthday_player_id");
-            window.location.reload();
-            return;
-          }
-        }
-        this.syncPlayerModeFromState(msg.state);
-        break;
-
-      case "assign-task":
-        this.session.setTask(msg.task);
-        if (msg.task.mode === "DRAW") {
-          this.drawCount.set(msg.task.drawIndex);
-          this.maxDrawings.set(msg.task.drawTotal);
-          if (msg.task.drawIndex === 0) {
-            this.audio.playRoundStart();
-          }
-        }
-        if (msg.task.mode === "SEARCH") {
-          this.audio.playTick();
-        }
-        break;
-
-      case "score-update":
-        if (msg.playerId === this.session.playerId()) {
-          this.session.showFeedback(`+1 Punkt! ${msg.reason}`, "success");
-          this.audio.playTick();
-        }
-        break;
-
-      case "event": {
-        const currentMode = this.session.currentMode();
-        if ((currentMode === "DRAW" || currentMode === "SEARCH") && !this.session.currentTask()) {
-          this.session.currentMode.set("IDLE");
-        }
+      case "search-result": {
         break;
       }
-
-      case "error":
-        this.session.showFeedback(msg.message, "error");
-        break;
     }
   }
 
-  private syncPlayerModeFromState(state: import("@birthday/shared").GameState): void {
-    const playerIdValue = this.session.playerId();
-    if (!playerIdValue) return;
-    const player = state.players[playerIdValue];
-    if (!player) return;
-
-    if (!player.name) {
-      this.session.playerName.set("");
-      this.session.currentTask.set(null);
-      this.session.currentMode.set("LOBBY");
-      this.drawCount.set(0);
-      return;
-    }
-
-    this.session.playerName.set(player.name);
-
-    const phase = state.round.phase;
-    const currentMode = this.session.currentMode();
-
-    if (currentMode === "LOBBY" && player.name) {
-      if (phase === "DRAW" || phase === "SEARCH") {
-        this.session.currentMode.set("IDLE");
+  private handleGardenEvent(event: GardenServerEvent): void {
+    switch (event.type) {
+      case "garden-level-up": {
+        this.sessionStore.showFeedback(`Level ${event.newLevel} erreicht!`, "success");
+        this.audioService.playSuccess();
+        break;
       }
+
+      case "garden-plot-ready": {
+        this.sessionStore.showFeedback(`${this.plantName(event.plantId)} ist erntereif.`, "success");
+        break;
+      }
+
+      case "garden-plot-needs-water": {
+        this.sessionStore.showFeedback(`${this.plantName(event.plantId)} braucht Wasser.`, "error");
+        break;
+      }
+
+      case "garden-pest-spawned": {
+        this.sessionStore.showFeedback(`Ungeziefer bei ${this.plantName(event.plantId)}.`, "error");
+        break;
+      }
+
+      case "garden-order-fulfilled": {
+        this.sessionStore.showFeedback(`Auftrag erfüllt (+${event.experienceGained} XP).`, "success");
+        break;
+      }
+    }
+  }
+
+  private handleTeamGraffitiEvent(event: TeamGraffitiServerEvent): void {
+    switch (event.type) {
+      case "team-assigned": {
+        if (event.playerId === this.sessionStore.playerId()) {
+          this.sessionStore.showFeedback(`Du bist jetzt Team ${event.teamId}.`, "success");
+        }
+        break;
+      }
+
+      case "tag-placed": {
+        break;
+      }
+
+      case "tag-removed": {
+        if (event.removedByPlayerId === this.sessionStore.playerId()) {
+          this.sessionStore.showFeedback(`Tag entfernt. ${event.scoreAwarded} Punkte gesichert!`, "success");
+        }
+        break;
+      }
+
+      case "team-score-updated": {
+        if (event.teamId === this.currentTeamId()) {
+          this.audioService.playTick();
+        }
+        break;
+      }
+    }
+  }
+
+  private syncPlayerModeFromState(): void {
+    const playerId = this.sessionStore.playerId();
+    const sessionState = this.worldStore.sessionState();
+
+    if (!playerId || !sessionState) {
       return;
     }
 
-    if (phase === "DRAW" && currentMode !== "DRAW" && currentMode !== "IDLE" && currentMode !== "LOBBY") {
-      this.session.clearTask();
-      this.session.currentMode.set("IDLE");
+    const player = sessionState.players[playerId];
+
+    if (!player) {
+      localStorage.removeItem("birthday_player_id");
+      window.location.reload();
+      return;
     }
-    if (phase === "SEARCH" && currentMode === "DRAW") {
-      this.session.clearTask();
-      this.session.currentMode.set("IDLE");
+
+    if (player.name.trim().length > 0) {
+      this.sessionStore.playerName.set(player.name);
     }
-    if ((phase === "PAUSED" || phase === "LOBBY") && (currentMode === "DRAW" || currentMode === "SEARCH")) {
-      this.session.currentMode.set("IDLE");
-      this.session.clearTask();
-      this.drawCount.set(0);
+
+    if (this.sessionStore.playerName().trim().length === 0 || !player.avatarUrl) {
+      this.sessionStore.currentMode.set("LOBBY");
+      return;
+    }
+
+    switch (sessionState.activeMode) {
+      case "draw-search": {
+        const currentTask = this.sessionStore.currentTask();
+
+        if (currentTask?.mode === "DRAW" || currentTask?.mode === "SEARCH") {
+          this.sessionStore.currentMode.set(currentTask.mode);
+          return;
+        }
+
+        this.sessionStore.currentMode.set("IDLE");
+        return;
+      }
+
+      case "garden-coop": {
+        this.sessionStore.currentMode.set("GARDEN");
+        return;
+      }
+
+      case "team-graffiti": {
+        this.sessionStore.currentMode.set("TEAM_GRAFFITI");
+        return;
+      }
     }
   }
 
   private resolveSessionCode(): string | null {
-    const fromQuery = this.route.snapshot.queryParamMap.get("session");
-    if (fromQuery && fromQuery.trim().length > 0) {
-      return fromQuery.trim().toUpperCase();
+    const routeSessionCode = this.route.snapshot.queryParamMap.get("session");
+
+    if (routeSessionCode && routeSessionCode.trim().length > 0) {
+      return routeSessionCode.trim().toUpperCase();
     }
 
-    const fromStorage = localStorage.getItem("birthday_last_session_code");
-    if (fromStorage && fromStorage.trim().length > 0) {
-      return fromStorage.trim().toUpperCase();
-    }
-
-    return null;
+    const storedSessionCode = localStorage.getItem("birthday_last_session_code");
+    return storedSessionCode?.trim().toUpperCase() ?? null;
   }
 
-  // ──────── Audio ────────
-
   private registerGlobalAudioUnlock(): void {
-    const unlock = () => {
-      this.audio.unlockIfNeeded();
-      document.removeEventListener("pointerdown", unlock);
-      document.removeEventListener("touchstart", unlock);
-      document.removeEventListener("click", unlock);
+    const unlockAudio = () => {
+      this.audioService.unlockIfNeeded();
+      window.removeEventListener("pointerdown", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
     };
-    document.addEventListener("pointerdown", unlock, { once: true });
-    document.addEventListener("touchstart", unlock, { once: true });
-    document.addEventListener("click", unlock, { once: true });
+
+    window.addEventListener("pointerdown", unlockAudio, { once: true });
+    window.addEventListener("keydown", unlockAudio, { once: true });
   }
 }

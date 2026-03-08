@@ -1,91 +1,165 @@
-<div class="h-dvh overflow-hidden bg-stone-100 text-stone-900 overscroll-none flex flex-col no-select"
-  style="padding-bottom: env(safe-area-inset-bottom);">
-
-  <!-- Top bar -->
+<div class="h-dvh overflow-hidden bg-stone-100 text-stone-900 overscroll-none flex flex-col no-select" style="padding-bottom: env(safe-area-inset-bottom);">
   <div class="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-black/[0.06]">
     <div class="mx-auto w-full max-w-lg px-3 py-2">
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2">
-          <span class="text-sm font-semibold">Zeichnen & Finden</span>
-          @if (session.playerName()) {
-            <span class="text-xs text-stone-400">{{ session.playerName() }}</span>
+          <span class="text-sm font-semibold">{{ activeMode() === 'draw-search' ? 'Zeichnen & Finden' : activeMode() === 'garden-coop' ? 'Gemeinschaftsgarten' : 'Team-Graffiti' }}</span>
+          @if (sessionStore.playerName()) {
+            <span class="text-xs text-stone-400">{{ sessionStore.playerName() }}</span>
           }
         </div>
         <div class="flex items-center gap-2">
           @if (timeLeft()) {
             <span class="text-xs font-mono font-bold text-stone-600 bg-stone-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1"><img src="assets/icons/timer.svg" class="w-3 h-3 inline" alt=""/> {{ timeLeft() }}</span>
           }
-          <span class="text-xs font-medium text-amber-600 inline-flex items-center gap-0.5"><img src="assets/icons/star.svg" class="w-3 h-3 inline text-amber-600" alt=""/> {{ myScore() }}</span>
-          @if (session.currentMode() !== 'LOBBY') {
-            <span class="text-[10px] px-2 py-0.5 rounded-full font-medium"
-              [class.bg-emerald-100]="session.currentMode() === 'DRAW'"
-              [class.text-emerald-700]="session.currentMode() === 'DRAW'"
-              [class.bg-blue-100]="session.currentMode() === 'SEARCH'"
-              [class.text-blue-700]="session.currentMode() === 'SEARCH'"
-              [class.bg-stone-200]="session.currentMode() === 'IDLE'"
-              [class.text-stone-500]="session.currentMode() === 'IDLE'"
-            >
-              {{ session.currentMode() === 'DRAW' ? 'Zeichnen' : session.currentMode() === 'SEARCH' ? 'Suchen' : 'Warten' }}
-            </span>
-          }
+          <span class="text-xs font-medium text-amber-600 inline-flex items-center gap-0.5"><img src="assets/icons/star.svg" class="w-3 h-3 inline" alt=""/> {{ myScore() }}</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Main content area -->
   <div class="flex-1 overflow-hidden">
+    @if (!isNameSet()) {
+      <app-lobby-name (nameSubmitted)="onNameSubmitted($event)" />
+    } @else if (!hasAvatar()) {
+    <app-lobby-avatar
+      [playerName]="sessionStore.playerName()"
+      [colors]="playerColors()"
+      (avatarSubmitted)="onAvatarSubmitted($event)"
+      (skipped)="onAvatarSkipped()"
+    />
+  } @else {
+    @switch (activeMode()) {
+      @case ('draw-search') {
+        @if (roundPhase() === 'LOBBY' || roundPhase() === 'PAUSED') {
+          <app-lobby-ready [playerName]="sessionStore.playerName()" />
+        } @else {
+          @switch (sessionStore.currentMode()) {
+            @case ('DRAW') {
+              @if (sessionStore.currentTask(); as task) {
+                <app-draw
+                  [prompt]="task.prompt"
+                  [drawIndex]="drawCount()"
+                  [drawTotal]="maxDrawings()"
+                  [colors]="playerColors()"
+                  [timeLeft]="timeLeft()"
+                  (drawingSubmitted)="onDrawingSubmitted($event)"
+                />
+              }
+            }
+            @case ('SEARCH') {
+              <app-search
+                [sceneWidthPx]="sceneWidthPx()"
+                [sceneHeightPx]="sceneHeightPx()"
+                [timeLeft]="timeLeft()"
+              />
+            }
+            @default {
+              @if (roundPhase() === 'SEARCH') {
+                <app-idle-search-waiting [timeLeft]="timeLeft()" />
+              } @else {
+                <app-idle-waiting [myScore]="myScore()" [leaderboard]="leaderboard()" />
+              }
+            }
+          }
+        }
+      }
+      @case ('garden-coop') {
+        <div class="h-full overflow-auto p-4 space-y-4">
+          <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
+            <div class="text-xs uppercase tracking-wider text-emerald-600">Fortschritt</div>
+            <div class="mt-1 text-2xl font-bold">Level {{ gardenModeState()?.level ?? 1 }}</div>
+            <div class="text-sm text-stone-500">{{ gardenModeState()?.experiencePoints ?? 0 }} XP</div>
+          </div>
 
-    @switch (session.currentMode()) {
-      @case ('LOBBY') {
-        @if (!isNameSet) {
-          <app-lobby-name (nameSubmitted)="onNameSubmitted($event)" />
-        } @else if (!hasAvatar) {
-          <app-lobby-avatar
-            [playerName]="session.playerName()"
-            [colors]="playerColors()"
-            (avatarSubmitted)="onAvatarSubmitted($event)"
-            (skipped)="onAvatarSkipped()"
-          />
-        } @else {
-          <app-lobby-ready [playerName]="session.playerName()" />
-        }
+          <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
+            <div class="text-sm font-semibold">Inventar</div>
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              @for (entry of gardenInventoryEntries(); track entry.plantId) {
+                <div class="rounded-2xl bg-stone-50 px-3 py-2 text-sm">
+                  <div class="font-medium text-stone-800">{{ entry.name }}</div>
+                  <div class="text-xs text-stone-500">Samen: {{ entry.seeds }} · Ernte: {{ entry.harvestedGoods }}</div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            @for (plot of gardenPlots(); track plot.id) {
+              <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <div class="text-sm font-semibold">{{ plot.id }}</div>
+                    <div class="text-xs text-stone-500">{{ plot.status }} @if (plot.plantId) { · {{ plantName(plot.plantId) }} }</div>
+                  </div>
+                  @if (plot.status === 'EMPTY') {
+                    <div class="flex flex-wrap gap-2 justify-end">
+                      @for (plantId of availablePlantIds(); track plantId) {
+                        <button class="rounded-xl bg-emerald-600 text-white px-3 py-2 text-sm" (click)="plantSeed(plot.id, plantId)">{{ plantName(plantId) }} pflanzen</button>
+                      }
+                    </div>
+                  } @else if (plot.status === 'GROWING') {
+                  <button class="rounded-xl bg-blue-600 text-white px-3 py-2 text-sm" (click)="waterPlant(plot.id)">Gießen</button>
+                } @else if (plot.status === 'READY') {
+                  <button class="rounded-xl bg-amber-500 text-white px-3 py-2 text-sm" (click)="harvestPlant(plot.id)">Ernten</button>
+                } @else if (plot.status === 'PAUSED_BY_PEST') {
+                  <button class="rounded-xl bg-rose-500 text-white px-3 py-2 text-sm" (click)="clearPest(plot.id)">Ungeziefer wegklicken</button>
+                }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
       }
-      @case ('DRAW') {
-        @if (session.currentTask(); as task) {
-          <app-draw
-            [prompt]="task.prompt"
-            [drawIndex]="drawCount()"
-            [drawTotal]="maxDrawings()"
-            [colors]="playerColors()"
-            [timeLeft]="timeLeft()"
-            (drawingSubmitted)="onDrawingSubmitted($event)"
-          />
-        }
-      }
-      @case ('SEARCH') {
-        <app-search
-          [sceneWidthPx]="sceneWidthPx()"
-          [sceneHeightPx]="sceneHeightPx()"
-          [timeLeft]="timeLeft()"
-        />
-      }
-      @case ('IDLE') {
-        @if (roundPhase() === 'SEARCH') {
-          <app-idle-search-waiting [timeLeft]="timeLeft()" />
-        } @else {
-          <app-idle-waiting [myScore]="myScore()" [leaderboard]="leaderboard()" />
-        }
+      @case ('team-graffiti') {
+        <div class="h-full overflow-auto p-4 space-y-4">
+          <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
+            <div class="text-sm font-semibold">Dein Team</div>
+            @if (!currentTeamId()) {
+              <div class="mt-3 flex gap-3">
+                <button class="flex-1 rounded-2xl bg-red-500 text-white px-4 py-3 font-medium" (click)="assignTeam('RED')">Rot</button>
+                <button class="flex-1 rounded-2xl bg-blue-500 text-white px-4 py-3 font-medium" (click)="assignTeam('BLUE')">Blau</button>
+              </div>
+            } @else {
+            <div class="mt-2 text-lg font-bold">{{ currentTeamId() === 'RED' ? 'Team Rot' : 'Team Blau' }}</div>
+          }
+          </div>
+
+          <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
+            <div class="text-sm font-semibold">Tag setzen</div>
+            <div class="mt-3 grid grid-cols-1 gap-3">
+              @for (building of teamBuildings(); track building.id) {
+                <button class="rounded-2xl border border-black/10 bg-stone-50 px-4 py-3 text-left" (click)="placeTag(building.id)">
+                  <div class="font-medium text-stone-800">{{ building.name }}</div>
+                  <div class="text-xs text-stone-500">{{ tagsOnBuilding(building.id).length }} aktive Tags</div>
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
+            <div class="text-sm font-semibold">Gegnerische Tags entfernen</div>
+            <div class="mt-3 space-y-2">
+              @for (tag of availableTagsToWipe(); track tag.id) {
+                <button class="w-full rounded-2xl bg-stone-900 text-white px-4 py-3 text-left" (click)="wipeTag(tag.id)">
+                  {{ tag.teamId }} auf {{ tag.buildingId }} · {{ tag.wipeProgress }}%
+                </button>
+              } @empty {
+              <div class="text-sm text-stone-500">Gerade nichts zu entfernen.</div>
+            }
+            </div>
+          </div>
+        </div>
       }
     }
+  }
   </div>
 
-  <!-- Feedback toast -->
-  @if (session.feedback()) {
+  @if (sessionStore.feedback()) {
     <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 rounded-xl px-4 py-2 text-sm font-medium shadow-lg text-white"
-      [class.bg-emerald-500]="session.feedback()!.type === 'success'"
-      [class.bg-red-500]="session.feedback()!.type === 'error'">
-      {{ session.feedback()!.text }}
+         [class.bg-emerald-500]="sessionStore.feedback()!.type === 'success'"
+         [class.bg-red-500]="sessionStore.feedback()!.type === 'error'">
+      {{ sessionStore.feedback()!.text }}
     </div>
   }
 </div>

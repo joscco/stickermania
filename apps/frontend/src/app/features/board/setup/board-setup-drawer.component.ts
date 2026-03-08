@@ -37,7 +37,6 @@ export class BoardSetupDrawerComponent {
 
   public readonly isPartyMode = environment.appMode === "party";
 
-  // WiFi form (not persisted)
   public readonly showWifi = signal<boolean>(false);
   public readonly wifiSsid = signal<string>("");
   public readonly wifiPassword = signal<string>("");

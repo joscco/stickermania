@@ -14,7 +14,6 @@ export interface WlanConfig {
 
 export interface BackendConfig {
     gameConfig: GameConfig;
-    shouldServeStatic: boolean;
     dataRoot: string;
     sessionsPath: string;
     assetsPath: string;
@@ -52,7 +51,6 @@ export function loadBackendConfig(args: { argv: string[]; cwd: string }): Backen
     const dataRoot = path.resolve(process.env.DATA_ROOT ?? path.resolve(args.cwd, ".data"));
     const sessionsPath = path.resolve(dataRoot, "sessions");
     const assetsPath = path.resolve(dataRoot, "assets");
-    const shouldServeStatic = args.argv.includes("--serve-static");
 
-    return { gameConfig, shouldServeStatic, dataRoot, sessionsPath, assetsPath, wlanConfig };
+    return { gameConfig, dataRoot, sessionsPath, assetsPath, wlanConfig };
 }

@@ -8,12 +8,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n BACK,FRONT -c blue,green \"npm run dev:back\" \"npm run dev:front\"",
-    "dev:back": "npm run _build:shared && npm run dev -w @birthday/backend",
-    "dev:front": "npm run dev -w @birthday/frontend",
-
-    "party": "npm run _build:party && node apps/backend/dist/index.js --serve-static",
-    "cloud": "npm run _build:cloud && PORT=8080 node apps/backend/dist/index.js --serve-static",
+    "party": "npm run _build:party && node apps/backend/dist/index.js",
+    "cloud": "npm run _build:cloud && PORT=8080 node apps/backend/dist/index.js",
 
     "_build:shared": "npm run build -w @birthday/shared",
     "_build:party": "npm run _build:shared && npm run build -w @birthday/frontend && npm run build -w @birthday/backend",

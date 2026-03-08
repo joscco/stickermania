@@ -29,4 +29,4 @@ COPY --from=build /app/packages/shared/dist ./packages/shared/dist
 COPY game.config.json ./game.config.json
 
 EXPOSE 8080
-CMD ["node", "apps/backend/dist/index.js", "--serve-static"]
+CMD ["node", "apps/backend/dist/index.js"]

@@ -1,7 +1,7 @@
-import {Component, computed, inject} from "@angular/core";
-import {CommonModule} from "@angular/common";
-import {WorldStore} from "../../../core/world.store";
-import {SceneRendererComponent} from "../../../shared/scene-renderer/scene-renderer.component";
+import { CommonModule } from "@angular/common";
+import { Component, computed, inject } from "@angular/core";
+import { WorldStore } from "../../../core/world.store";
+import { SceneRendererComponent } from "../../../shared/scene-renderer/scene-renderer.component";
 
 @Component({
   selector: "app-board-scene",
@@ -10,36 +10,45 @@ import {SceneRendererComponent} from "../../../shared/scene-renderer/scene-rende
   templateUrl: "./board-scene.component.html",
 })
 export class BoardSceneComponent {
-  public readonly store = inject(WorldStore);
+  public readonly worldStore = inject(WorldStore);
 
-  /** On-screen circle diameter range in CSS pixels (display-only, not from config) */
-  private static readonly MIN_CIRCLE_PX = 400;
-  private static readonly MAX_CIRCLE_PX = 700;
+  private static readonly MIN_SCENE_WIDTH_PX = 500;
+  private static readonly MAX_SCENE_WIDTH_PX = 900;
+  private static readonly MIN_SCENE_HEIGHT_PX = 360;
+  private static readonly MAX_SCENE_HEIGHT_PX = 640;
 
-  /** Logical field size in px – read directly from the backend game state. */
-  public readonly fieldWidthPixel = computed(() =>
-    this.store.gameState()?.effectiveFieldWidth ?? this.store.fieldBaseSize(),
-  );
+  public readonly modeState = computed(() => this.worldStore.drawSearchModeState());
 
-  /** Map the logical field size to an on-screen circle diameter. */
-  public readonly effectiveFieldWidthPixel = computed(() => {
-    const efw = this.fieldWidthPixel();
-    const baseSize = this.store.fieldBaseSize();
-    const maxSize = this.store.fieldMaxSize();
-    const t = Math.min(1, Math.max(0,
-      (efw - baseSize) / (maxSize - baseSize),
-    ));
-    return BoardSceneComponent.MIN_CIRCLE_PX +
-      t * (BoardSceneComponent.MAX_CIRCLE_PX - BoardSceneComponent.MIN_CIRCLE_PX);
+  public readonly logicalFieldWidth = computed(() => this.modeState()?.effectiveFieldWidth ?? this.worldStore.fieldBaseSize());
+  public readonly logicalFieldHeight = computed(() => this.modeState()?.effectiveFieldHeight ?? this.worldStore.fieldBaseSize());
+
+  public readonly displayFieldWidth = computed(() => {
+    const logicalFieldWidth = this.logicalFieldWidth();
+    const baseFieldSize = this.worldStore.fieldBaseSize();
+    const maxFieldSize = this.worldStore.fieldMaxSize();
+    const interpolation = Math.min(1, Math.max(0, (logicalFieldWidth - baseFieldSize) / Math.max(1, maxFieldSize - baseFieldSize)));
+
+    return BoardSceneComponent.MIN_SCENE_WIDTH_PX + interpolation * (BoardSceneComponent.MAX_SCENE_WIDTH_PX - BoardSceneComponent.MIN_SCENE_WIDTH_PX);
   });
 
-  /** Image size on screen = imageSizePx scaled by the ratio (screen circle / logical field). */
-  public readonly imageSizeInPixel = computed(() =>
-    this.store.imageSizePx() * this.effectiveFieldWidthPixel() / this.fieldWidthPixel(),
-  );
+  public readonly displayFieldHeight = computed(() => {
+    const logicalFieldHeight = this.logicalFieldHeight();
+    const baseFieldSize = this.worldStore.fieldBaseSize();
+    const maxFieldSize = this.worldStore.fieldMaxSize();
+    const interpolation = Math.min(1, Math.max(0, (logicalFieldHeight - baseFieldSize) / Math.max(1, maxFieldSize - baseFieldSize)));
 
-  public readonly drawingCount = computed(() =>
-    Object.keys(this.store.gameState()?.drawings ?? {}).length,
-  );
+    return BoardSceneComponent.MIN_SCENE_HEIGHT_PX + interpolation * (BoardSceneComponent.MAX_SCENE_HEIGHT_PX - BoardSceneComponent.MIN_SCENE_HEIGHT_PX);
+  });
+
+  public readonly imageSizeInPixel = computed(() => {
+    const logicalFieldWidth = this.logicalFieldWidth();
+
+    if (logicalFieldWidth <= 0) {
+      return this.worldStore.imageSizePx();
+    }
+
+    return this.worldStore.imageSizePx() * this.displayFieldWidth() / logicalFieldWidth;
+  });
+
+  public readonly drawingCount = computed(() => Object.keys(this.modeState()?.drawings ?? {}).length);
 }
-

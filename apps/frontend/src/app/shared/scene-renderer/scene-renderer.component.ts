@@ -1,5 +1,5 @@
 import { Component, computed, input } from "@angular/core";
-import type { GameState, Drawing } from "@birthday/shared";
+import type { DrawSearchDrawing, DrawSearchModeState } from "@birthday/shared";
 
 @Component({
   selector: "app-scene-renderer",
@@ -7,19 +7,18 @@ import type { GameState, Drawing } from "@birthday/shared";
   templateUrl: "./scene-renderer.component.html",
 })
 export class SceneRendererComponent {
-  public readonly gameState = input.required<GameState | null>();
-
-  /** Pixel size of the circular container on screen. */
-  public readonly containerSizePx = input.required<number>();
-
-  /** Pixel size of each drawing on screen. */
+  public readonly modeState = input.required<DrawSearchModeState | null>();
+  public readonly containerWidthPx = input.required<number>();
+  public readonly containerHeightPx = input.required<number>();
   public readonly imageSizePx = input.required<number>();
 
-  public readonly drawingsSorted = computed<Drawing[]>(() => {
-    const state = this.gameState();
-    if (!state) {
+  public readonly drawingsSorted = computed<DrawSearchDrawing[]>(() => {
+    const modeState = this.modeState();
+
+    if (!modeState) {
       return [];
     }
-    return Object.values(state.drawings).sort((a, b) => a.placedAt - b.placedAt);
+
+    return Object.values(modeState.drawings).sort((leftDrawing, rightDrawing) => leftDrawing.placedAt - rightDrawing.placedAt);
   });
 }

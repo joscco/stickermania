@@ -1,5 +1,7 @@
 import { Injectable, signal } from "@angular/core";
-import type { PlayerMode, PlayerTask } from "@birthday/shared";
+import type { DrawSearchPlayerTask } from "@birthday/shared";
+
+export type PlayerUiMode = "LOBBY" | "DRAW" | "SEARCH" | "IDLE" | "GARDEN" | "TEAM_GRAFFITI";
 
 @Injectable({ providedIn: "root" })
 export class GameSessionStore {
@@ -7,8 +9,8 @@ export class GameSessionStore {
   public readonly playerId = signal<string | null>(null);
   public readonly clientId = signal<string | null>(null);
   public readonly playerName = signal<string>("");
-  public readonly currentMode = signal<PlayerMode>("LOBBY");
-  public readonly currentTask = signal<PlayerTask | null>(null);
+  public readonly currentMode = signal<PlayerUiMode>("LOBBY");
+  public readonly currentTask = signal<DrawSearchPlayerTask | null>(null);
   public readonly feedback = signal<{ text: string; type: "success" | "error" } | null>(null);
 
   public setSession(sessionId: string): void {
@@ -21,14 +23,14 @@ export class GameSessionStore {
     this.clientId.set(args.clientId);
   }
 
-  public setTask(task: PlayerTask): void {
+  public setTask(task: DrawSearchPlayerTask): void {
     this.currentTask.set(task);
     this.currentMode.set(task.mode);
   }
 
-  public clearTask(): void {
+  public clearTask(nextMode: PlayerUiMode = "IDLE"): void {
     this.currentTask.set(null);
-    this.currentMode.set("IDLE");
+    this.currentMode.set(nextMode);
   }
 
   public showFeedback(text: string, type: "success" | "error"): void {

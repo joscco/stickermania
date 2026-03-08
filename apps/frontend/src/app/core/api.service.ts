@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
-import type { GameState, SessionInfo } from "@birthday/shared";
+import type { SessionInfo, SessionState } from "@birthday/shared";
 import { firstValueFrom } from "rxjs";
 
 export interface ResolvedSessionInfo {
@@ -20,16 +20,15 @@ export class ApiService {
 
   public resolveSessionByCode(sessionCode: string): Promise<ResolvedSessionInfo> {
     return firstValueFrom(
-      this.httpClient.get<ResolvedSessionInfo>(
-        `/api/sessions/by-code/${encodeURIComponent(sessionCode)}`,
-      ),
+      this.httpClient.get<ResolvedSessionInfo>(`/api/sessions/by-code/${encodeURIComponent(sessionCode)}`),
     );
   }
 
-  public getState(args: { sessionId: string; sinceRevision: number | null }): Promise<GameState | null> {
+  public getState(args: { sessionId: string; sinceRevision: number | null }): Promise<SessionState | null> {
     const sinceRevision = args.sinceRevision ?? -1;
+
     return firstValueFrom(
-      this.httpClient.get<GameState>(
+      this.httpClient.get<SessionState>(
         `/api/sessions/${encodeURIComponent(args.sessionId)}/state?sinceRevision=${encodeURIComponent(String(sinceRevision))}`,
         { observe: "response" },
       ),
@@ -37,6 +36,7 @@ export class ApiService {
       if (response.status === 204) {
         return null;
       }
+
       return response.body ?? null;
     });
   }
