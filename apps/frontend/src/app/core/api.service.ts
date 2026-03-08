@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
-import type { SessionInfo, SessionState } from "@birthday/shared";
+import type { GameModeId, SessionInfo, SessionState } from "@birthday/shared";
 import { firstValueFrom } from "rxjs";
 
 export interface ResolvedSessionInfo {
@@ -10,12 +10,25 @@ export interface ResolvedSessionInfo {
   expiresAt: number;
 }
 
+export interface SessionSummary {
+  sessionId: string;
+  sessionCode: string;
+  activeMode: GameModeId;
+  playerCount: number;
+  createdAt: number;
+  expiresAt: number;
+}
+
 @Injectable({ providedIn: "root" })
 export class ApiService {
   public constructor(private readonly httpClient: HttpClient) {}
 
-  public createSession(): Promise<SessionInfo> {
-    return firstValueFrom(this.httpClient.post<SessionInfo>("/api/sessions", {}));
+  public listSessions(): Promise<SessionSummary[]> {
+    return firstValueFrom(this.httpClient.get<SessionSummary[]>("/api/sessions"));
+  }
+
+  public createSession(mode: GameModeId = "draw-search"): Promise<SessionInfo> {
+    return firstValueFrom(this.httpClient.post<SessionInfo>("/api/sessions", { mode }));
   }
 
   public resolveSessionByCode(sessionCode: string): Promise<ResolvedSessionInfo> {

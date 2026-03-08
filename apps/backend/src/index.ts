@@ -53,11 +53,47 @@ function serveAsset(response: http.ServerResponse, assetRelativePath: string): v
 
 const JSON_HEADER = {"Content-Type": "application/json; charset=utf-8"};
 
+function readJsonBody(request: http.IncomingMessage): Promise<Record<string, unknown> | null> {
+    return new Promise((resolve) => {
+        const chunks: Buffer[] = [];
+        request.on("data", (chunk: Buffer) => chunks.push(chunk));
+        request.on("end", () => {
+            try {
+                const raw = Buffer.concat(chunks).toString("utf-8");
+                const parsed = raw.length > 0 ? JSON.parse(raw) : null;
+                resolve(typeof parsed === "object" && parsed !== null ? parsed as Record<string, unknown> : null);
+            } catch {
+                resolve(null);
+            }
+        });
+        request.on("error", () => resolve(null));
+    });
+}
+
 const server = http.createServer(async (request, response) => {
     const requestUrl = new URL(request.url ?? "/", buildBaseUrl(request));
 
+    if (requestUrl.pathname === "/api/sessions" && request.method === "GET") {
+        const sessions = await sessionService.listSessions();
+        const summaries = sessions.map((s) => ({
+            sessionId: s.sessionId,
+            sessionCode: s.sessionCode,
+            activeMode: s.activeMode,
+            playerCount: Object.keys(s.players).length,
+            createdAt: s.createdAt,
+            expiresAt: s.expiresAt,
+        }));
+        response.writeHead(200, JSON_HEADER);
+        response.end(JSON.stringify(summaries));
+        return;
+    }
+
     if (requestUrl.pathname === "/api/sessions" && request.method === "POST") {
-        const createdSession = await sessionService.createSession({baseUrl: buildBaseUrl(request)});
+        const body = await readJsonBody(request);
+        const mode = (typeof body?.mode === "string" && ["draw-search", "garden-coop", "team-graffiti"].includes(body.mode))
+            ? body.mode as "draw-search" | "garden-coop" | "team-graffiti"
+            : "draw-search";
+        const createdSession = await sessionService.createSession({baseUrl: buildBaseUrl(request), initialMode: mode});
         response.writeHead(201, JSON_HEADER);
         response.end(JSON.stringify(createdSession));
         return;

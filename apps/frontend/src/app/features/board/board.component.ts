@@ -14,6 +14,7 @@ import { ApiService } from "../../core/api.service";
 import { WebSocketService } from "../../core/websocket.service";
 import { WorldStore } from "../../core/world.store";
 import { EventToastsComponent, type UiEvent } from "./events/event-toasts.component";
+import { BoardLobbyComponent } from "./lobby/board-lobby.component";
 import { BoardSceneComponent } from "./scene/board-scene.component";
 import { GardenSceneComponent } from "./scene/garden-scene.component";
 import { GraffitiSceneComponent } from "./scene/graffiti-scene.component";
@@ -25,7 +26,7 @@ const EVENT_TOAST_DURATION_MS = 3000;
 @Component({
   selector: "app-board",
   standalone: true,
-  imports: [CommonModule, EventToastsComponent, BoardSceneComponent, GardenSceneComponent, GraffitiSceneComponent, BoardSidebarComponent, BoardSetupDrawerComponent],
+  imports: [CommonModule, EventToastsComponent, BoardLobbyComponent, BoardSceneComponent, GardenSceneComponent, GraffitiSceneComponent, BoardSidebarComponent, BoardSetupDrawerComponent],
   templateUrl: "./board.component.html",
 })
 export class BoardComponent implements OnInit, OnDestroy {
@@ -36,8 +37,6 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly wifiQrDataUrl = signal<string | null>(null);
   public readonly isSetupDrawerOpen = signal<boolean>(false);
   public readonly events = signal<UiEvent[]>([]);
-  public readonly existingSessionCodeInput = signal<string>("");
-  public readonly isCreatingSession = signal<boolean>(false);
   public readonly isBoardReady = signal<boolean>(false);
   public readonly isBootstrapping = signal<boolean>(true);
   public readonly bootErrorText = signal<string | null>(null);
@@ -52,6 +51,14 @@ export class BoardComponent implements OnInit, OnDestroy {
   private timerInterval: ReturnType<typeof setInterval> | null = null;
 
   public readonly activeMode = computed<GameModeId>(() => this.worldStore.activeMode());
+  public readonly modeLabel = computed(() => {
+    switch (this.activeMode()) {
+      case "draw-search": return "Museumssuche";
+      case "garden-coop": return "Gemeinschaftsgarten";
+      case "team-graffiti": return "Team-Graffiti";
+      default: return this.activeMode();
+    }
+  });
   public readonly leaderboard = computed(() => this.worldStore.leaderboard());
   public readonly drawingCount = computed(() => this.worldStore.drawingsList().length);
   public readonly roundPhase = computed(() => this.worldStore.round()?.phase ?? "LOBBY");
@@ -109,32 +116,7 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.cleanupBoardRuntime();
   }
 
-  public async createNewSession(): Promise<void> {
-    this.isCreatingSession.set(true);
-    this.bootErrorText.set(null);
-
-    try {
-      const createdSession = await this.apiService.createSession();
-      await this.router.navigate(["/board", createdSession.sessionCode]);
-    } catch {
-      this.bootErrorText.set("Session konnte nicht erstellt werden.");
-    } finally {
-      this.isCreatingSession.set(false);
-    }
-  }
-
-  public onExistingSessionCodeInput(rawValue: string): void {
-    const normalizedValue = rawValue.toUpperCase().replace(/[^A-Z2-9]/g, "").slice(0, 5);
-    this.existingSessionCodeInput.set(normalizedValue);
-  }
-
-  public async openExistingSession(): Promise<void> {
-    const sessionCode = this.existingSessionCodeInput();
-
-    if (sessionCode.length < 4) {
-      return;
-    }
-
+  public async onSessionSelected(sessionCode: string): Promise<void> {
     await this.router.navigate(["/board", sessionCode]);
   }
 
@@ -151,9 +133,6 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.wifiQrDataUrl.set(dataUrl || null);
   }
 
-  public selectMode(mode: GameModeId): void {
-    this.wsService.send({ type: "select-mode", mode });
-  }
 
   public startMode(): void {
     this.wsService.send({ type: "start-mode" });

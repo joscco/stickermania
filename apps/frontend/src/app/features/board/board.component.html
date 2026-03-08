@@ -6,39 +6,14 @@
     </div>
   </div>
 } @else if (!isBoardReady()) {
-  <div class="h-screen w-screen overflow-auto bg-stone-100 text-stone-900">
-    <div class="mx-auto max-w-2xl px-4 py-10 text-center">
-      <div class="text-3xl font-bold">Party-Board</div>
-      <div class="mt-2 text-sm text-stone-500">Session erstellen oder bestehende Session öffnen.</div>
-
-      @if (bootErrorText()) {
-        <div class="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-          {{ bootErrorText() }}
-        </div>
-      }
-
-      <div class="mt-8 rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
-        <div class="text-lg font-semibold">Neue Session</div>
-        <button class="mt-4 rounded-2xl bg-stone-900 px-5 py-3 text-white hover:bg-stone-800" [disabled]="isCreatingSession()" (click)="createNewSession()">
-          {{ isCreatingSession() ? 'Erstelle…' : 'Neue Session starten' }}
-        </button>
-      </div>
-
-      <div class="mt-6 rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
-        <div class="text-lg font-semibold">Bestehende Session öffnen</div>
-        <div class="mt-4 flex items-center justify-center gap-2">
-          <input class="w-40 rounded-xl border border-black/10 px-4 py-3 text-center uppercase tracking-[0.2em]" maxlength="5" [value]="existingSessionCodeInput()" (input)="onExistingSessionCodeInput($any($event.target).value)" (keydown.enter)="openExistingSession()" placeholder="ABCDE" />
-          <button class="rounded-xl border border-black/10 bg-white px-4 py-3 text-sm hover:bg-stone-50" (click)="openExistingSession()">Öffnen</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <app-board-lobby (sessionCreated)="onSessionSelected($event)" />
 } @else {
   <div class="h-screen w-screen overflow-hidden bg-white text-stone-900 relative flex">
     <div class="flex-1 flex flex-col min-w-0">
-      <div class="flex items-center justify-between gap-3 px-4 py-3 bg-white/80 border-b border-black/[0.06] backdrop-blur">
+      <!-- Header bar -->
+      <div class="flex items-center justify-between gap-3 px-4 py-3 bg-white/80 border-b border-black/6 backdrop-blur">
         <div class="flex items-center gap-3">
-          <span class="text-sm font-semibold text-stone-800">{{ activeMode() === 'draw-search' ? 'Museumssuche' : activeMode() === 'garden-coop' ? 'Gemeinschaftsgarten' : 'Team-Graffiti' }}</span>
+          <span class="text-sm font-semibold text-stone-800">{{ modeLabel() }}</span>
           @if (activeMode() === 'draw-search' && roundPhase() === 'ACTIVE') {
             <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">Aktiv · {{ drawingCount() }} Bilder</span>
           }
@@ -48,19 +23,16 @@
           @if (timeLeft()) {
             <span class="rounded-lg bg-stone-100 px-2 py-1 font-mono text-stone-600">{{ timeLeft() }}</span>
           }
+          <button class="rounded-lg border border-black/10 bg-white px-3 py-2 text-stone-600 hover:bg-stone-50 inline-flex items-center gap-2" (click)="startMode()">
+            ▶ Starten
+          </button>
           <button class="rounded-lg border border-black/10 bg-white px-3 py-2 text-stone-600 hover:bg-stone-50 inline-flex items-center gap-2" (click)="toggleSetupDrawer()">
             <img src="assets/icons/settings.svg" class="h-4 w-4" alt="" /> Einstellungen
           </button>
         </div>
       </div>
 
-      <div class="px-4 py-3 border-b border-black/[0.06] bg-stone-50 flex items-center gap-3 flex-wrap">
-        <button class="rounded-xl px-4 py-2 text-sm font-medium" [class.bg-stone-900]="activeMode() === 'draw-search'" [class.text-white]="activeMode() === 'draw-search'" [class.bg-white]="activeMode() !== 'draw-search'" [class.border]="activeMode() !== 'draw-search'" (click)="selectMode('draw-search')">Jeder gegen Jeden</button>
-        <button class="rounded-xl px-4 py-2 text-sm font-medium" [class.bg-stone-900]="activeMode() === 'garden-coop'" [class.text-white]="activeMode() === 'garden-coop'" [class.bg-white]="activeMode() !== 'garden-coop'" [class.border]="activeMode() !== 'garden-coop'" (click)="selectMode('garden-coop')">Garten</button>
-        <button class="rounded-xl px-4 py-2 text-sm font-medium" [class.bg-stone-900]="activeMode() === 'team-graffiti'" [class.text-white]="activeMode() === 'team-graffiti'" [class.bg-white]="activeMode() !== 'team-graffiti'" [class.border]="activeMode() !== 'team-graffiti'" (click)="selectMode('team-graffiti')">Teams</button>
-        <button class="rounded-xl bg-emerald-600 text-white px-4 py-2 text-sm font-medium hover:bg-emerald-700" (click)="startMode()">Modus starten</button>
-      </div>
-
+      <!-- Game scene -->
       <div class="flex-1 relative p-4 overflow-hidden bg-stone-50">
         <app-event-toasts [events]="events()"></app-event-toasts>
 
@@ -78,7 +50,8 @@
       </div>
     </div>
 
-    <div class="w-80 shrink-0 border-l border-black/[0.06]">
+    <!-- Sidebar -->
+    <div class="w-80 shrink-0 border-l border-black/6">
       <app-board-sidebar
         [sessionCode]="sessionCode()"
         [playerUrl]="playerUrl()"

@@ -54,6 +54,26 @@ export class FileSessionRepository implements SessionRepository {
     await fs.promises.rm(filePath, { force: true });
   }
 
+  public async listAll(): Promise<SessionState[]> {
+    try {
+      const entries = await fs.promises.readdir(this.basePath, { withFileTypes: true });
+      const results: SessionState[] = [];
+      for (const entry of entries) {
+        if (!entry.isFile() || !entry.name.endsWith(".json")) {
+          continue;
+        }
+        const sessionId = entry.name.replace(/\.json$/u, "");
+        const sessionState = await this.load(sessionId);
+        if (sessionState) {
+          results.push(sessionState);
+        }
+      }
+      return results;
+    } catch {
+      return [];
+    }
+  }
+
   public async listExpired(now: number): Promise<SessionState[]> {
     try {
       const entries = await fs.promises.readdir(this.basePath, { withFileTypes: true });

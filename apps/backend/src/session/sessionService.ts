@@ -86,6 +86,13 @@ export class SessionService {
         };
     }
 
+    public async listSessions(): Promise<SessionState[]> {
+        const allSessions = await this.sessionRepository.listAll();
+        return allSessions
+            .filter((session) => session.expiresAt > Date.now())
+            .sort((a, b) => b.createdAt - a.createdAt);
+    }
+
     public async loadState(sessionId: string): Promise<SessionState | null> {
         return await this.sessionRepository.load(sessionId);
     }
