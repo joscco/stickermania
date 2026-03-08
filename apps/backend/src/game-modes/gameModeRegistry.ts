@@ -1,11 +1,5 @@
-import type {
-    DrawSearchModeState,
-    GameModeId,
-    GardenModeState,
-    TeamGraffitiModeState,
-    UnknownModeState,
-} from "@birthday/shared";
-import type { GameModeEngine } from "./gameModeEngine.js";
+import type {DrawSearchModeState, GameModeId, GardenModeState, TeamGraffitiModeState, UnknownModeState,} from "@birthday/shared";
+import type {GameModeEngine} from "./gameModeEngine.js";
 
 
 export type AnyGameModeEngine =

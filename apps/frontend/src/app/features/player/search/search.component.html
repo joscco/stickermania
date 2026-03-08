@@ -6,11 +6,11 @@
         <img src="assets/icons/search.svg" class="w-5 h-5 inline" alt="" /> {{ task.prompt }}
       </div>
     } @else {
-    <div class="text-lg font-bold text-blue-800 inline-flex items-center gap-1">
-      <img src="assets/icons/hourglass.svg" class="w-5 h-5 inline" alt="" /> Warten…
-    </div>
-    <div class="text-xs text-blue-500 mt-0.5">Du hast alles gefunden, oder es gibt gerade nichts mehr zu tun.</div>
-  }
+      <div class="text-lg font-bold text-blue-800 inline-flex items-center gap-1">
+        <img src="assets/icons/hourglass.svg" class="w-5 h-5 inline" alt="" /> Warten…
+      </div>
+      <div class="text-xs text-blue-500 mt-0.5">Du hast alles gefunden, oder es gibt gerade nichts mehr zu tun.</div>
+    }
     @if (timeLeft()) {
       <div class="text-xs font-mono text-blue-500 mt-0.5 inline-flex items-center gap-1">
         <img src="assets/icons/timer.svg" class="w-3 h-3" alt="" /> {{ timeLeft() }}
@@ -33,7 +33,7 @@
         class="block"
         [modeState]="world.drawSearchModeState()"
         [containerWidthPx]="searchContainerSizePx()"
-        [containerHeightPx]="sceneHeightPx() * viewportCtrl.scale()"
+        [containerHeightPx]="sceneHeightPx()"
         [imageSizePx]="searchImageSizePx()"
       ></app-scene-renderer>
     </div>

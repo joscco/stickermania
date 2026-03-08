@@ -115,8 +115,22 @@ export type SessionServerToClientMessage =
     | { type: "error"; message: string }
     | { type: "pong"; t: number; serverTime: number };
 
-export type DrawSearchRoundPhase = "LOBBY" | "DRAW" | "SEARCH" | "PAUSED";
+/** Global game phase (not per-player). */
+export type DrawSearchGamePhase = "LOBBY" | "ACTIVE" | "PAUSED";
+
+/** What an individual player is currently doing. */
+export type DrawSearchPlayerPhase = "DRAW" | "SEARCH" | "IDLE";
+
+/** Legacy aliases kept for narrower compatibility; prefer the new names. */
+export type DrawSearchRoundPhase = DrawSearchGamePhase;
 export type DrawSearchPlayerMode = "LOBBY" | "DRAW" | "SEARCH" | "IDLE";
+
+export interface DrawSearchMuseumSlot {
+  id: string;
+  x: number;
+  y: number;
+  rotationDeg: number;
+}
 
 export interface DrawSearchDrawing {
   id: string;
@@ -126,13 +140,20 @@ export interface DrawSearchDrawing {
   imageAssetPath: string;
   x: number;
   y: number;
+  slotId: string | null;
   placedAt: number;
   foundBy: string | null;
   foundAt: number | null;
 }
 
+/**
+ * Kept for shape-compatibility but semantics changed:
+ * - `phase` is now a DrawSearchGamePhase (LOBBY | ACTIVE | PAUSED)
+ * - `endsAt` is always 0 (no global timer)
+ * - `roundNumber` tracks how many cycles have happened globally (informational)
+ */
 export interface DrawSearchRoundState {
-  phase: DrawSearchRoundPhase;
+  phase: DrawSearchGamePhase;
   endsAt: number;
   drawDurationSec: number;
   searchDurationSec: number;
@@ -140,6 +161,8 @@ export interface DrawSearchRoundState {
 }
 
 export interface DrawSearchPlayerPromptAssignment {
+  playerPhase: DrawSearchPlayerPhase;
+  cycleIndex: number;
   drawPrompts: string[];
   drawPromptIndex: number;
   activeDrawPrompt: string | null;
@@ -151,6 +174,7 @@ export interface DrawSearchPlayerPromptAssignment {
 export interface DrawSearchModeState {
   mode: "draw-search";
   drawings: Record<string, DrawSearchDrawing>;
+  museumSlots: DrawSearchMuseumSlot[];
   round: DrawSearchRoundState;
   promptAssignments: Record<string, DrawSearchPlayerPromptAssignment>;
   effectiveFieldWidth: number;
@@ -183,7 +207,8 @@ export type DrawSearchServerEvent =
     | { type: "assign-task"; task: DrawSearchPlayerTask }
     | { type: "search-result"; correct: boolean; drawingId: string; message: string }
     | { type: "score-update"; playerId: string; newScore: number; reason: string }
-    | { type: "round-phase"; phase: DrawSearchRoundPhase; endsAt: number }
+    | { type: "round-phase"; phase: DrawSearchGamePhase; endsAt: number }
+    | { type: "player-phase"; playerId: string; playerPhase: DrawSearchPlayerPhase }
     | {
   type: "draw-search-config";
   fieldWidth: number;

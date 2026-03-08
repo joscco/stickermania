@@ -1,22 +1,13 @@
 import crypto from "node:crypto";
-import type {
-    ClientKind,
-    ClientToServerMessage,
-    GameConfig,
-    GameModeId,
-    GameServerEnvelope,
-    SessionInfo,
-    SessionPlayer,
-    SessionState,
-} from "@birthday/shared";
-import type { AssetRepository } from "../infra/assetRepository.js";
-import type { SessionRepository } from "../infra/sessionRepository.js";
-import { DrawSearchEngine } from "../game-modes/draw-search/drawSearchEngine.js";
-import { GameModeRegistry } from "./gameModeRegistry.js";
-import { GardenCoopEngine } from "../game-modes/garden-coop/gardenCoopEngine.js";
-import { SessionStateFactory } from "./sessionStateFactory.js";
-import { TeamGraffitiEngine } from "../game-modes/team-graffiti/teamGraffitiEngine.js";
-import type { ConnectedClientSession, RuntimeEntry } from "./sessionRuntimeTypes.js";
+import type {ClientKind, ClientToServerMessage, GameConfig, GameModeId, GameServerEnvelope, SessionInfo, SessionPlayer, SessionState,} from "@birthday/shared";
+import type {AssetRepository} from "../infra/assetRepository.js";
+import type {SessionRepository} from "../infra/sessionRepository.js";
+import {DrawSearchEngine} from "../game-modes/draw-search/drawSearchEngine.js";
+import {GardenCoopEngine} from "../game-modes/garden-coop/gardenCoopEngine.js";
+import {SessionStateFactory} from "./sessionStateFactory.js";
+import {TeamGraffitiEngine} from "../game-modes/team-graffiti/teamGraffitiEngine.js";
+import type {ConnectedClientSession, RuntimeEntry} from "./sessionRuntimeTypes.js";
+import {GameModeRegistry} from "../game-modes/gameModeRegistry.js";
 
 const SESSION_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -115,10 +106,6 @@ export class SessionService {
         this.runtimes.delete(sessionId);
         return true;
     }
-
-    // -----------------------------------------------------------------------
-    // Player lifecycle
-    // -----------------------------------------------------------------------
 
     public async join(args: {
         sessionId: string;
@@ -236,9 +223,24 @@ export class SessionService {
         runtime.sessionRuntime.connectedClients.delete(clientId);
     }
 
-    // -----------------------------------------------------------------------
-    // Game-mode operations
-    // -----------------------------------------------------------------------
+    public async markPlayerDisconnected(sessionId: string, playerId: string): Promise<void> {
+        const state = await this.requireState(sessionId);
+
+        if (!state) {
+            return;
+        }
+
+        const player = state.players[playerId];
+
+        if (!player || !player.connected) {
+            return;
+        }
+
+        player.connected = false;
+        this.bumpRevision(state);
+        await this.persistState(state);
+        await this.publishState(state);
+    }
 
     public async selectMode(sessionId: string, mode: GameModeId): Promise<SessionState | null> {
         const state = await this.requireState(sessionId);

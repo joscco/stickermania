@@ -1,21 +1,139 @@
 <div
-  class="relative select-none overflow-hidden rounded-[2rem] bg-stone-50 touch-none transition-[width,height] duration-700 ease-out border border-black/5"
+  class="relative select-none overflow-hidden touch-none transition-[width,height] duration-700 ease-out museum-floor"
   [style.width.px]="containerWidthPx()"
   [style.height.px]="containerHeightPx()"
 >
-  @for (drawing of drawingsSorted(); track drawing.id) {
-    <img
-      class="absolute pointer-events-none transition-all duration-700 ease-out"
-      [style.left.px]="drawing.x"
-      [style.top.px]="drawing.y"
-      [style.width.px]="imageSizePx()"
-      [style.height.px]="imageSizePx()"
-      [style.transform]="'translate(-50%, -50%)'"
-      [src]="drawing.imageUrl"
-      [alt]="drawing.prompt"
-      draggable="false"
-    />
+  <!-- Museum walls (top-down border) -->
+  <div class="absolute top-0 left-0 right-0 museum-wall-top z-[5]" [style.height.px]="wallThickness()"></div>
+  <div class="absolute bottom-0 left-0 right-0 museum-wall-bottom z-[5]" [style.height.px]="wallThickness()"></div>
+  <div class="absolute top-0 bottom-0 left-0 museum-wall-left z-[5]" [style.width.px]="wallThickness()"></div>
+  <div class="absolute top-0 bottom-0 right-0 museum-wall-right z-[5]" [style.width.px]="wallThickness()"></div>
+  <!-- Corner accents -->
+  <div class="absolute top-0 left-0 z-[6] bg-[#7a6548]" [style.width.px]="wallThickness()" [style.height.px]="wallThickness()"></div>
+  <div class="absolute top-0 right-0 z-[6] bg-[#7a6548]" [style.width.px]="wallThickness()" [style.height.px]="wallThickness()"></div>
+  <div class="absolute bottom-0 left-0 z-[6] bg-[#7a6548]" [style.width.px]="wallThickness()" [style.height.px]="wallThickness()"></div>
+  <div class="absolute bottom-0 right-0 z-[6] bg-[#7a6548]" [style.width.px]="wallThickness()" [style.height.px]="wallThickness()"></div>
+
+  <!-- Visitors (Pokemon-style waddling sprites) -->
+  @for (visitor of visitors(); track visitor.id) {
+    <div
+      class="absolute pointer-events-none z-[1]"
+      [style.left.px]="visitor.startX"
+      [style.top.px]="visitor.startY"
+      [style.animation]="'museum-visitor-travel ' + visitor.durationMs + 'ms linear ' + visitor.delayMs + 'ms infinite alternate'"
+      [style.--walk-dx]="visitor.deltaX + 'px'"
+      [style.--walk-dy]="visitor.deltaY + 'px'"
+    >
+      <div
+        class="relative"
+        [style.width.px]="visitor.sizePx"
+        [style.height.px]="visitor.sizePx"
+        [style.--v-scale]="visitor.facingLeft ? '-1, 1' : '1, 1'"
+        [style.animation]="'museum-visitor-wobble 600ms ease-in-out ' + visitor.delayMs + 'ms infinite'"
+      >
+        <img
+          [src]="visitor.spriteUrl"
+          class="w-full h-full"
+          [style.transform]="visitor.facingLeft ? 'scaleX(-1)' : ''"
+          alt=""
+          draggable="false"
+        />
+      </div>
+    </div>
   }
 
-  <div class="absolute inset-0 pointer-events-none rounded-[2rem] border-4 border-dotted border-neutral-200 z-10"></div>
+  <!-- Empty easel slots (subtle indicators) -->
+  @for (slot of museumSlots(); track slot.id) {
+    <div
+      class="absolute pointer-events-none z-[2]"
+      [style.left.px]="slot.x"
+      [style.top.px]="slot.y"
+      [style.width.px]="plinthWidth()"
+      [style.height.px]="plinthHeight()"
+      [style.transform]="'translate(-50%, -50%) rotate(' + slot.rotationDeg + 'deg)'"
+    >
+      <!-- Easel shadow -->
+      <div class="absolute left-1/2 bottom-[6%] -translate-x-1/2 rounded-full bg-black/[0.06]"
+           [style.width.px]="frameWidth() * 0.7"
+           [style.height.px]="frameHeight() * 0.15">
+      </div>
+      <!-- Easel SVG -->
+      <img
+        src="assets/museum/easel.svg"
+        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30"
+        [style.width.px]="plinthWidth() * 0.6"
+        [style.height.px]="plinthHeight() * 0.6"
+        alt=""
+        draggable="false"
+      />
+    </div>
+  }
+
+  <!-- Drawings on easels (hand-drawn frame + painting) -->
+  @for (drawing of drawingsSorted(); track drawing.id) {
+    <div
+      class="absolute pointer-events-none z-[3]"
+      style="animation: easel-pop-in 0.5s ease-out both;"
+      [style.left.px]="drawing.x"
+      [style.top.px]="drawing.y"
+      [style.width.px]="plinthWidth()"
+      [style.height.px]="plinthHeight()"
+      [style.transform]="'translate(-50%, -50%) rotate(' + rotationForDrawing(drawing) + 'deg)'"
+    >
+      <!-- Easel shadow -->
+      <div class="absolute left-1/2 bottom-[6%] -translate-x-1/2 rounded-full bg-black/[0.1]"
+           [style.width.px]="frameWidth() * 0.7"
+           [style.height.px]="frameHeight() * 0.18">
+      </div>
+      <!-- Easel stand behind the painting -->
+      <img
+        src="assets/museum/easel.svg"
+        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-60"
+        [style.width.px]="plinthWidth() * 0.75"
+        [style.height.px]="plinthHeight() * 0.75"
+        alt=""
+        draggable="false"
+      />
+      <!-- Hand-drawn golden frame -->
+      <div class="absolute left-1/2 top-1/2 rounded-[0.5rem] shadow-[0_6px_16px_rgba(0,0,0,0.15)]"
+           [style.width.px]="frameWidth()"
+           [style.height.px]="frameHeight()"
+           [style.transform]="'translate(-50%, -50%)'"
+           style="border: 8px solid; border-image: linear-gradient(135deg, #d4a84c 0%, #f0d78c 30%, #c9941e 50%, #e8c85a 70%, #b8860b 100%) 1; background: #faf8f0;">
+      </div>
+      <!-- The actual painting -->
+      <img
+        class="absolute left-1/2 top-1/2 object-cover shadow-sm"
+        style="border-radius: 2px;"
+        [style.width.px]="imageSizePx()"
+        [style.height.px]="imageSizePx()"
+        [style.transform]="'translate(-50%, -50%)'"
+        [src]="drawing.imageUrl"
+        [alt]="drawing.prompt"
+        draggable="false"
+      />
+      <!-- Name plate below painting -->
+      <div class="absolute left-1/2 -translate-x-1/2 text-center"
+           [style.bottom.px]="plinthHeight() * 0.06">
+        <div class="bg-[#f5f0e0] border border-[#d4c5aa] rounded px-2 py-0.5 text-[8px] font-medium text-[#6b5c3e] shadow-sm whitespace-nowrap">
+          {{ drawing.prompt }}
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Free slot markers (subtle dots on the floor) -->
+  @for (freeSlot of freeMuseumSlots(); track freeSlot.id) {
+    <div
+      class="absolute pointer-events-none z-[2] opacity-30"
+      [style.left.px]="freeSlot.x"
+      [style.top.px]="freeSlot.y"
+      [style.transform]="'translate(-50%, -50%) rotate(' + freeSlot.rotationDeg + 'deg)'"
+    >
+      <div class="rounded-full bg-[#c4a882]/50"
+           [style.width.px]="imageSizePx() * 0.18"
+           [style.height.px]="imageSizePx() * 0.18">
+      </div>
+    </div>
+  }
 </div>

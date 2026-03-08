@@ -1,20 +1,32 @@
-@if (!isBoardReady()) {
-  <div class="min-h-dvh bg-stone-100 flex items-center justify-center px-4">
-    <div class="w-full max-w-xl rounded-3xl bg-white border border-black/5 shadow-sm p-8 text-center">
-      <div class="text-3xl font-bold text-stone-900">Party-Spielesammlung</div>
-      <p class="mt-3 text-sm text-stone-500">Starte eine neue Session oder öffne eine bestehende.</p>
+@if (isBootstrapping()) {
+  <div class="h-screen w-screen grid place-items-center bg-stone-100 text-stone-500">
+    <div class="text-center">
+      <div class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-stone-300 border-t-stone-600"></div>
+      <div class="mt-4 text-sm">Session wird geladen…</div>
+    </div>
+  </div>
+} @else if (!isBoardReady()) {
+  <div class="h-screen w-screen overflow-auto bg-stone-100 text-stone-900">
+    <div class="mx-auto max-w-2xl px-4 py-10 text-center">
+      <div class="text-3xl font-bold">Party-Board</div>
+      <div class="mt-2 text-sm text-stone-500">Session erstellen oder bestehende Session öffnen.</div>
 
       @if (bootErrorText()) {
-        <div class="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ bootErrorText() }}</div>
+        <div class="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {{ bootErrorText() }}
+        </div>
       }
 
-      <button class="mt-6 rounded-2xl bg-emerald-600 text-white px-6 py-3 text-sm font-medium hover:bg-emerald-700" [disabled]="isCreatingSession()" (click)="createNewSession()">
-        {{ isCreatingSession() ? 'Session wird erstellt…' : 'Neue Session starten' }}
-      </button>
+      <div class="mt-8 rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
+        <div class="text-lg font-semibold">Neue Session</div>
+        <button class="mt-4 rounded-2xl bg-stone-900 px-5 py-3 text-white hover:bg-stone-800" [disabled]="isCreatingSession()" (click)="createNewSession()">
+          {{ isCreatingSession() ? 'Erstelle…' : 'Neue Session starten' }}
+        </button>
+      </div>
 
-      <div class="mt-8 border-t border-black/5 pt-6">
-        <div class="text-sm font-medium text-stone-700">Bestehende Session öffnen</div>
-        <div class="mt-3 flex gap-2 justify-center">
+      <div class="mt-6 rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
+        <div class="text-lg font-semibold">Bestehende Session öffnen</div>
+        <div class="mt-4 flex items-center justify-center gap-2">
           <input class="w-40 rounded-xl border border-black/10 px-4 py-3 text-center uppercase tracking-[0.2em]" maxlength="5" [value]="existingSessionCodeInput()" (input)="onExistingSessionCodeInput($any($event.target).value)" (keydown.enter)="openExistingSession()" placeholder="ABCDE" />
           <button class="rounded-xl border border-black/10 bg-white px-4 py-3 text-sm hover:bg-stone-50" (click)="openExistingSession()">Öffnen</button>
         </div>
@@ -24,12 +36,12 @@
 } @else {
   <div class="h-screen w-screen overflow-hidden bg-white text-stone-900 relative flex">
     <div class="flex-1 flex flex-col min-w-0">
-      <div class="flex items-center justify-between gap-3 px-4 py-3 bg-white/80 border-b border-black/[0.06]">
+      <div class="flex items-center justify-between gap-3 px-4 py-3 bg-white/80 border-b border-black/[0.06] backdrop-blur">
         <div class="flex items-center gap-3">
-          <span class="text-sm font-semibold text-stone-800">{{ activeMode() === 'draw-search' ? 'Zeichnen & Finden' : activeMode() === 'garden-coop' ? 'Gemeinschaftsgarten' : 'Team-Graffiti' }}</span>
+          <span class="text-sm font-semibold text-stone-800">{{ activeMode() === 'draw-search' ? 'Museumssuche' : activeMode() === 'garden-coop' ? 'Gemeinschaftsgarten' : 'Team-Graffiti' }}</span>
           <span class="text-xs text-stone-400">Session {{ sessionCode() }}</span>
-          @if (roundNumber() > 0 && activeMode() === 'draw-search') {
-            <span class="text-xs text-stone-400">Runde {{ roundNumber() }}</span>
+          @if (activeMode() === 'draw-search' && roundPhase() === 'ACTIVE') {
+            <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">Aktiv · {{ drawingCount() }} Bilder</span>
           }
         </div>
 
@@ -37,8 +49,9 @@
           @if (timeLeft()) {
             <span class="rounded-lg bg-stone-100 px-2 py-1 font-mono text-stone-600">{{ timeLeft() }}</span>
           }
-          <button class="rounded-lg border border-black/10 bg-white px-3 py-2 text-stone-600 hover:bg-stone-50" (click)="resetSession()">Reset</button>
-          <button class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-600 hover:bg-red-100" (click)="deleteSession()">Löschen</button>
+          <button class="rounded-lg border border-black/10 bg-white px-3 py-2 text-stone-600 hover:bg-stone-50 inline-flex items-center gap-2" (click)="toggleSetupDrawer()">
+            <img src="assets/icons/settings.svg" class="h-4 w-4" alt="" /> Einstellungen
+          </button>
         </div>
       </div>
 
@@ -47,16 +60,6 @@
         <button class="rounded-xl px-4 py-2 text-sm font-medium" [class.bg-stone-900]="activeMode() === 'garden-coop'" [class.text-white]="activeMode() === 'garden-coop'" [class.bg-white]="activeMode() !== 'garden-coop'" [class.border]="activeMode() !== 'garden-coop'" (click)="selectMode('garden-coop')">Garten</button>
         <button class="rounded-xl px-4 py-2 text-sm font-medium" [class.bg-stone-900]="activeMode() === 'team-graffiti'" [class.text-white]="activeMode() === 'team-graffiti'" [class.bg-white]="activeMode() !== 'team-graffiti'" [class.border]="activeMode() !== 'team-graffiti'" (click)="selectMode('team-graffiti')">Teams</button>
         <button class="rounded-xl bg-emerald-600 text-white px-4 py-2 text-sm font-medium hover:bg-emerald-700" (click)="startMode()">Modus starten</button>
-
-        @if (activeMode() === 'draw-search') {
-          <div class="ml-auto flex items-center gap-2 text-sm">
-            <label class="text-stone-500">Zeichnen</label>
-            <input class="w-16 rounded-lg border border-black/10 px-2 py-1" type="number" [value]="drawDurationSec()" (input)="drawDurationSec.set(+($any($event.target).value))" />
-            <label class="text-stone-500">Suchen</label>
-            <input class="w-16 rounded-lg border border-black/10 px-2 py-1" type="number" [value]="searchDurationSec()" (input)="searchDurationSec.set(+($any($event.target).value))" />
-            <button class="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm hover:bg-stone-50" (click)="saveDrawSearchTimerSettings()">Timer speichern</button>
-          </div>
-        }
       </div>
 
       <div class="flex-1 relative p-4 overflow-hidden bg-stone-50">
@@ -142,6 +145,13 @@
         }
       </div>
 
+      @if (wifiQrDataUrl()) {
+        <div class="p-4 border-b border-black/[0.06]">
+          <div class="text-xs font-semibold uppercase tracking-wider text-stone-400">WLAN</div>
+          <img class="mt-3 w-32 h-32 rounded-2xl border border-black/5 bg-white" [src]="wifiQrDataUrl()!" alt="WLAN QR-Code" />
+        </div>
+      }
+
       <div class="px-4 pt-4 pb-2">
         <div class="text-xs font-semibold uppercase tracking-wider text-stone-400">Highscore</div>
       </div>
@@ -156,8 +166,8 @@
             @if (player.avatarUrl) {
               <img class="w-10 h-10 rounded-full border border-black/10 bg-white" [src]="player.avatarUrl" [alt]="player.name" />
             } @else {
-            <div class="w-10 h-10 rounded-full border border-black/10 bg-stone-100"></div>
-          }
+              <div class="w-10 h-10 rounded-full border border-black/10 bg-stone-100"></div>
+            }
             <div class="min-w-0 flex-1">
               <div class="truncate text-sm font-medium text-stone-800">{{ player.name || 'Unbenannt' }}</div>
               <div class="text-xs text-stone-500">{{ player.score }} Punkte</div>
@@ -166,5 +176,16 @@
         }
       </div>
     </div>
+
+    <app-board-setup-drawer
+      [isOpen]="isSetupDrawerOpen()"
+      [canReset]="true"
+      [playerUrl]="playerUrl()"
+      [playerQrDataUrl]="playerQrDataUrl()"
+      (wifiQrGenerated)="handleWifiQrGenerated($event)"
+      (onCloseRequested)="closeSetupDrawer()"
+      (resetRequested)="resetSession()"
+      (deleteRequested)="deleteSession()"
+    />
   </div>
 }

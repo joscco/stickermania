@@ -12,18 +12,42 @@ import type {
   TeamGraffitiModeState,
   TeamGraffitiServerEvent,
 } from "@birthday/shared";
-import { AudioService } from "../../core/audio.service";
 import { GameSessionStore } from "../../core/challenge.store";
 import { ApiService } from "../../core/api.service";
 import { WebSocketService } from "../../core/websocket.service";
 import { WorldStore } from "../../core/world.store";
 import { DrawComponent } from "./draw/draw.component";
 import { IdleSearchWaitingComponent } from "./idle/idle-search-waiting.component";
-import { IdleWaitingComponent } from "./idle/idle-waiting.component";
 import { LobbyAvatarComponent } from "./lobby/lobby-avatar.component";
 import { LobbyNameComponent } from "./lobby/lobby-name.component";
 import { LobbyReadyComponent } from "./lobby/lobby-ready.component";
 import { SearchComponent } from "./search";
+
+// ── localStorage reconnect helper ───────────────────────────────────
+const RECONNECT_STORAGE_KEY = "birthday_reconnect";
+
+interface ReconnectPayload {
+  playerId: string;
+  sessionId: string;
+  sessionCode: string;
+  playerName: string;
+}
+
+function loadReconnectPayload(): ReconnectPayload | null {
+  try {
+    const raw = localStorage.getItem(RECONNECT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.playerId && parsed.sessionId && parsed.sessionCode) {
+      return parsed as ReconnectPayload;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+function saveReconnectPayload(payload: ReconnectPayload): void {
+  localStorage.setItem(RECONNECT_STORAGE_KEY, JSON.stringify(payload));
+}
 
 @Component({
   selector: "app-player",
@@ -35,7 +59,6 @@ import { SearchComponent } from "./search";
     LobbyAvatarComponent,
     LobbyReadyComponent,
     DrawComponent,
-    IdleWaitingComponent,
     IdleSearchWaitingComponent,
   ],
   templateUrl: "./player.component.html",
@@ -59,12 +82,21 @@ export class PlayerComponent implements OnInit, OnDestroy {
   public readonly gardenModeState = computed<GardenModeState | null>(() => this.worldStore.gardenModeState());
   public readonly teamGraffitiModeState = computed<TeamGraffitiModeState | null>(() => this.worldStore.teamGraffitiModeState());
   public readonly leaderboard = computed(() => this.worldStore.leaderboard());
-  public readonly roundPhase = computed(() => this.worldStore.round()?.phase ?? "LOBBY");
-  public readonly roundEndsAt = computed(() => {
-    if (this.activeMode() === "draw-search") {
-      return this.worldStore.round()?.endsAt ?? 0;
-    }
 
+  /** Global game phase: LOBBY | ACTIVE | PAUSED */
+  public readonly gamePhase = computed(() => this.worldStore.round()?.phase ?? "LOBBY");
+
+  /** Per-player phase from the prompt assignment */
+  public readonly myPlayerPhase = computed(() => {
+    const playerId = this.sessionStore.playerId();
+    const modeState = this.drawSearchModeState();
+    if (!playerId || !modeState) return null;
+    return modeState.promptAssignments[playerId]?.playerPhase ?? null;
+  });
+
+
+  public readonly roundEndsAt = computed(() => {
+    // draw-search no longer has a global timer
     if (this.activeMode() === "team-graffiti") {
       return this.teamGraffitiModeState()?.roundEndsAt ?? 0;
     }
@@ -94,12 +126,17 @@ export class PlayerComponent implements OnInit, OnDestroy {
     private readonly apiService: ApiService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    private readonly audioService: AudioService,
     worldStore: WorldStore,
     sessionStore: GameSessionStore,
   ) {
     this.worldStore = worldStore;
     this.sessionStore = sessionStore;
+
+    // Restore player name from localStorage immediately
+    const reconnect = loadReconnectPayload();
+    if (reconnect?.playerName) {
+      this.sessionStore.playerName.set(reconnect.playerName);
+    }
 
     effect(() => {
       const endsAt = this.roundEndsAt();
@@ -128,11 +165,20 @@ export class PlayerComponent implements OnInit, OnDestroy {
   }
 
   public async ngOnInit(): Promise<void> {
-    this.playerId = localStorage.getItem("birthday_player_id") ?? null;
+    // Load reconnect payload from localStorage
+    const reconnect = loadReconnectPayload();
+    this.playerId = reconnect?.playerId ?? localStorage.getItem("birthday_player_id") ?? null;
 
     const sessionCode = this.resolveSessionCode();
 
     if (!sessionCode) {
+      // If we have a stored session, auto-redirect there
+      if (reconnect?.sessionCode) {
+        await this.router.navigate(["/player"], {
+          queryParams: { session: reconnect.sessionCode },
+        });
+        return;
+      }
       await this.router.navigate(["/join"]);
       return;
     }
@@ -177,19 +223,18 @@ export class PlayerComponent implements OnInit, OnDestroy {
   }
 
   public onNameSubmitted(name: string): void {
-    this.audioService.unlockIfNeeded();
     this.wsService.send({ type: "set-name", name });
     this.sessionStore.playerName.set(name);
+    // Persist name in reconnect payload
+    this.updateReconnectPayload({ playerName: name });
   }
 
   public onAvatarSubmitted(dataUrl: string): void {
-    this.audioService.unlockIfNeeded();
     this.wsService.send({ type: "submit-avatar", avatarDataUrl: dataUrl });
     this.sessionStore.clearTask();
   }
 
   public onAvatarSkipped(): void {
-    this.audioService.unlockIfNeeded();
     this.sessionStore.clearTask();
   }
 
@@ -199,8 +244,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
       mode: "draw-search",
       action: { type: "submit-drawing", imageDataUrl: dataUrl },
     });
-    this.audioService.unlockIfNeeded();
-    this.audioService.playPop();
     this.sessionStore.clearTask();
   }
 
@@ -330,22 +373,32 @@ export class PlayerComponent implements OnInit, OnDestroy {
     return Object.values(modeState.activeTags).filter((tag) => tag.buildingId === buildingId);
   }
 
+  // ── Message handling ──────────────────────────────────────────────
+
   private handleMessage(message: ServerToClientMessage): void {
     switch (message.type) {
       case "welcome": {
         const storedServerSession = localStorage.getItem("birthday_server_session");
 
         if (storedServerSession && storedServerSession !== message.serverSessionId) {
-          localStorage.removeItem("birthday_player_id");
+          // Server restarted – keep playerId, try to reconnect
           localStorage.setItem("birthday_server_session", message.serverSessionId);
-          window.location.reload();
-          return;
+          // Don't wipe playerId – the backend will create a new player if needed
         }
 
         localStorage.setItem("birthday_server_session", message.serverSessionId);
         this.sessionStore.setJoined({ sessionId: message.sessionId, playerId: message.playerId, clientId: message.clientId });
         this.playerId = message.playerId;
         localStorage.setItem("birthday_player_id", message.playerId);
+
+        // Save reconnect payload
+        const sessionCode = this.route.snapshot.queryParamMap.get("session") ?? localStorage.getItem("birthday_last_session_code") ?? "";
+        saveReconnectPayload({
+          playerId: message.playerId,
+          sessionId: message.sessionId,
+          sessionCode,
+          playerName: this.sessionStore.playerName(),
+        });
 
         if (message.assignedColors.length >= 2) {
           this.playerColors.set(message.assignedColors);
@@ -386,19 +439,26 @@ export class PlayerComponent implements OnInit, OnDestroy {
   private handleDrawSearchEvent(event: DrawSearchServerEvent): void {
     switch (event.type) {
       case "assign-task": {
-        this.sessionStore.setTask(event.task as DrawSearchPlayerTask);
-
+        // Directly set the task – per-player flow means we get tasks individually
         if (event.task.mode === "DRAW") {
+          this.sessionStore.setTask(event.task);
           this.drawCount.set(event.task.drawIndex);
           this.maxDrawings.set(event.task.drawTotal);
-
-          if (event.task.drawIndex === 0) {
-            this.audioService.playRoundStart();
-          }
         }
 
         if (event.task.mode === "SEARCH") {
-          this.audioService.playTick();
+          this.sessionStore.setTask(event.task);
+        }
+        break;
+      }
+
+      case "player-phase": {
+        // Only react to our own player-phase events
+        if (event.playerId === this.sessionStore.playerId()) {
+          if (event.playerPhase === "IDLE") {
+            this.sessionStore.clearTask("IDLE");
+          }
+          // DRAW and SEARCH phases are handled via assign-task events
         }
         break;
       }
@@ -406,7 +466,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
       case "score-update": {
         if (event.playerId === this.sessionStore.playerId()) {
           this.sessionStore.showFeedback(`+1 Punkt! ${event.reason}`, "success");
-          this.audioService.playTick();
         }
         break;
       }
@@ -441,7 +500,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
     switch (event.type) {
       case "garden-level-up": {
         this.sessionStore.showFeedback(`Level ${event.newLevel} erreicht!`, "success");
-        this.audioService.playSuccess();
         break;
       }
 
@@ -488,14 +546,16 @@ export class PlayerComponent implements OnInit, OnDestroy {
       }
 
       case "team-score-updated": {
-        if (event.teamId === this.currentTeamId()) {
-          this.audioService.playTick();
-        }
         break;
       }
     }
   }
 
+  /**
+   * Sync current UI mode from persisted session state.
+   * Now uses per-player `playerPhase` from prompt assignments
+   * instead of global round phase.
+   */
   private syncPlayerModeFromState(): void {
     const playerId = this.sessionStore.playerId();
     const sessionState = this.worldStore.sessionState();
@@ -507,15 +567,18 @@ export class PlayerComponent implements OnInit, OnDestroy {
     const player = sessionState.players[playerId];
 
     if (!player) {
-      localStorage.removeItem("birthday_player_id");
+      // Player not found in session – don't wipe localStorage, just reload
       window.location.reload();
       return;
     }
 
+    // Restore name from server state
     if (player.name.trim().length > 0) {
       this.sessionStore.playerName.set(player.name);
+      this.updateReconnectPayload({ playerName: player.name });
     }
 
+    // If name or avatar missing, show lobby
     if (this.sessionStore.playerName().trim().length === 0 || !player.avatarUrl) {
       this.sessionStore.currentMode.set("LOBBY");
       return;
@@ -523,27 +586,82 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
     switch (sessionState.activeMode) {
       case "draw-search": {
-        const currentTask = this.sessionStore.currentTask();
+        const modeState = sessionState.modeState as DrawSearchModeState;
 
-        if (currentTask?.mode === "DRAW" || currentTask?.mode === "SEARCH") {
-          this.sessionStore.currentMode.set(currentTask.mode);
+        // If game hasn't started yet (LOBBY or PAUSED), show lobby/ready
+        if (modeState.round.phase === "LOBBY" || modeState.round.phase === "PAUSED") {
+          this.sessionStore.clearTask("LOBBY");
           return;
         }
 
-        this.sessionStore.currentMode.set("IDLE");
+        // Game is ACTIVE – derive task from per-player state
+        const stateTask = this.deriveDrawSearchTaskFromState(playerId, modeState);
+
+        if (stateTask) {
+          this.sessionStore.setTask(stateTask);
+
+          if (stateTask.mode === "DRAW") {
+            this.drawCount.set(stateTask.drawIndex);
+            this.maxDrawings.set(stateTask.drawTotal);
+          }
+
+          return;
+        }
+
+        this.sessionStore.clearTask("IDLE");
         return;
       }
 
       case "garden-coop": {
-        this.sessionStore.currentMode.set("GARDEN");
+        this.sessionStore.clearTask("GARDEN");
         return;
       }
 
       case "team-graffiti": {
-        this.sessionStore.currentMode.set("TEAM_GRAFFITI");
+        this.sessionStore.clearTask("TEAM_GRAFFITI");
         return;
       }
     }
+  }
+
+  /**
+   * Derive the current task from per-player prompt assignment state.
+   * Uses playerPhase instead of global round phase.
+   */
+  private deriveDrawSearchTaskFromState(playerId: string, modeState: DrawSearchModeState): DrawSearchPlayerTask | null {
+    const promptAssignment = modeState.promptAssignments[playerId];
+
+    if (!promptAssignment) {
+      return null;
+    }
+
+    // Use per-player phase instead of global round phase
+    if (promptAssignment.playerPhase === "DRAW" && promptAssignment.activeDrawPrompt) {
+      return {
+        mode: "DRAW",
+        prompt: promptAssignment.activeDrawPrompt,
+        drawIndex: promptAssignment.cycleIndex ?? promptAssignment.drawPromptIndex,
+        drawTotal: (promptAssignment.cycleIndex ?? 0) + 1,
+      };
+    }
+
+    if (promptAssignment.playerPhase === "SEARCH" && promptAssignment.activeSearchDrawingId) {
+      const activeSearchTask = promptAssignment.searchTasks.find((searchTask) => searchTask.drawingId === promptAssignment.activeSearchDrawingId);
+      const activeDrawing = modeState.drawings[promptAssignment.activeSearchDrawingId];
+
+      if (!activeDrawing || activeDrawing.artistId === playerId) {
+        return null;
+      }
+
+      return {
+        mode: "SEARCH",
+        prompt: activeSearchTask?.prompt ?? activeDrawing.prompt,
+        drawingId: activeDrawing.id,
+        artistName: activeSearchTask?.artistName ?? this.worldStore.players()[activeDrawing.artistId]?.name ?? "Unbekannt",
+      };
+    }
+
+    return null;
   }
 
   private resolveSessionCode(): string | null {
@@ -557,9 +675,22 @@ export class PlayerComponent implements OnInit, OnDestroy {
     return storedSessionCode?.trim().toUpperCase() ?? null;
   }
 
+  private updateReconnectPayload(partial: Partial<ReconnectPayload>): void {
+    const existing = loadReconnectPayload();
+    const updated: ReconnectPayload = {
+      playerId: partial.playerId ?? existing?.playerId ?? this.playerId ?? "",
+      sessionId: partial.sessionId ?? existing?.sessionId ?? this.sessionId ?? "",
+      sessionCode: partial.sessionCode ?? existing?.sessionCode ?? "",
+      playerName: partial.playerName ?? existing?.playerName ?? this.sessionStore.playerName(),
+    };
+
+    if (updated.playerId && updated.sessionId) {
+      saveReconnectPayload(updated);
+    }
+  }
+
   private registerGlobalAudioUnlock(): void {
     const unlockAudio = () => {
-      this.audioService.unlockIfNeeded();
       window.removeEventListener("pointerdown", unlockAudio);
       window.removeEventListener("keydown", unlockAudio);
     };

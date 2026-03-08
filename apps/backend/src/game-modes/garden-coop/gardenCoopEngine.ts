@@ -6,7 +6,7 @@ import type {
     GardenPlotState,
     SessionState,
 } from "@birthday/shared";
-import type { GameActionResult, GameModeEngine } from "../../session/gameModeEngine.js";
+import {GameActionResult, GameModeEngine} from "../gameModeEngine.js";
 
 const DEFAULT_GARDEN_PLANTS: GardenPlantDefinition[] = [
     {

@@ -1,16 +1,12 @@
-import { DestroyRef, Injectable, computed, effect, inject, signal } from "@angular/core";
+import { DestroyRef, Injectable, computed, inject, signal } from "@angular/core";
 import { WebSocketService } from "../../../core/websocket.service";
-import { AudioService } from "../../../core/audio.service";
 import { GameSessionStore } from "../../../core/challenge.store";
-import { WorldStore } from "../../../core/world.store";
 import type { DrawSearchSearchTask, ServerToClientMessage } from "@birthday/shared";
 
 @Injectable()
 export class SearchStore {
   private readonly wsService = inject(WebSocketService);
-  private readonly audioService = inject(AudioService);
   private readonly sessionStore = inject(GameSessionStore);
-  private readonly worldStore = inject(WorldStore);
   private readonly destroyRef = inject(DestroyRef);
 
   public readonly feedback = signal<{ text: string; correct: boolean } | null>(null);
@@ -20,7 +16,6 @@ export class SearchStore {
     return currentTask?.mode === "SEARCH" ? currentTask : null;
   });
 
-  private allFoundBannerShownForRevision: number | null = null;
   private feedbackTimer: ReturnType<typeof setTimeout> | null = null;
   private unsubscribeWs: (() => void) | null = null;
 
@@ -36,36 +31,6 @@ export class SearchStore {
         clearTimeout(this.feedbackTimer);
       }
     });
-
-    effect(() => {
-      const roundState = this.worldStore.round();
-      const revision = this.worldStore.revision();
-      const currentMode = this.sessionStore.currentMode();
-
-      if (!roundState || roundState.phase !== "SEARCH" || currentMode !== "SEARCH") {
-        return;
-      }
-
-      const drawings = Object.values(this.worldStore.drawings());
-
-      if (drawings.length === 0) {
-        return;
-      }
-
-      const allDrawingsFound = drawings.every((drawing) => !!drawing.foundBy);
-
-      if (!allDrawingsFound) {
-        return;
-      }
-
-      if (this.allFoundBannerShownForRevision === revision) {
-        return;
-      }
-
-      this.allFoundBannerShownForRevision = revision;
-      this.showFeedback("Letzter Begriff gefunden! 🎉", true);
-      this.audioService.playRoundStart();
-    });
   }
 
   public takeSnapshot(args: {
@@ -79,8 +44,8 @@ export class SearchStore {
       return;
     }
 
-    this.audioService.unlockIfNeeded();
-    this.audioService.playShutter();
+    // this.audioService.unlockIfNeeded();
+    // this.audioService.playShutter();
 
     this.wsService.send({
       type: "game-action",
@@ -106,10 +71,10 @@ export class SearchStore {
     this.showFeedback(message.event.message, message.event.correct);
 
     if (message.event.correct) {
-      this.audioService.playSuccess();
+      // this.audioService.playSuccess();
       this.sessionStore.clearTask();
     } else {
-      this.audioService.playError();
+      // this.audioService.playError();
     }
   }
 

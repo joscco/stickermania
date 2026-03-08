@@ -3,6 +3,7 @@ import { Component, OnInit, signal } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 
 const LAST_SESSION_CODE_STORAGE_KEY = "birthday_last_session_code";
+const RECONNECT_STORAGE_KEY = "birthday_reconnect";
 
 @Component({
   selector: "app-join",
@@ -25,6 +26,22 @@ export class JoinComponent implements OnInit {
     const routeCode = this.route.snapshot.paramMap.get("sessionCode");
     if (routeCode) {
       this.sessionCode.set(this.normalizeSessionCode(routeCode));
+    }
+
+    // Auto-redirect if we have a stored reconnect payload
+    if (!routeCode) {
+      try {
+        const raw = localStorage.getItem(RECONNECT_STORAGE_KEY);
+        if (raw) {
+          const payload = JSON.parse(raw);
+          if (payload?.sessionCode && payload?.playerId) {
+            this.router.navigate(["/player"], {
+              queryParams: { session: payload.sessionCode },
+            });
+            return;
+          }
+        }
+      } catch { /* ignore */ }
     }
   }
 

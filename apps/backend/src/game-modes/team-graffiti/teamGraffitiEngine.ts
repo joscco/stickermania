@@ -6,7 +6,7 @@ import type {
     TeamGraffitiTag,
     TeamGraffitiTeamId,
 } from "@birthday/shared";
-import type { GameActionResult, GameModeEngine } from "../../session/gameModeEngine.js";
+import {GameActionResult, GameModeEngine} from "../gameModeEngine.js";
 
 export class TeamGraffitiEngine implements GameModeEngine<"team-graffiti", TeamGraffitiModeState> {
     public readonly mode = "team-graffiti" as const;

@@ -10,20 +10,12 @@ import {LocalAssetRepository} from "./infra/local/localAssetRepository.js";
 import {serveStatic} from "./http/static.js";
 import {createWebSocketHandler, disconnectSessionClients} from "./http/ws.js";
 
-// ---------------------------------------------------------------------------
-// Bootstrap
-// ---------------------------------------------------------------------------
-
 const backendConfig = loadBackendConfig({argv: process.argv, cwd: process.cwd()});
 const serverSessionId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 const sessionRepository = new FileSessionRepository(backendConfig.sessionsPath);
 const assetRepository = new LocalAssetRepository(backendConfig.dataRoot);
 const sessionService = new SessionService(backendConfig.gameConfig, sessionRepository, assetRepository);
-
-// ---------------------------------------------------------------------------
-// HTTP utilities
-// ---------------------------------------------------------------------------
 
 function buildBaseUrl(request: http.IncomingMessage): string {
     return `${request.headers["x-forwarded-proto"] ?? "http"}://${request.headers.host ?? `localhost:${backendConfig.gameConfig.port}`}`;
@@ -58,10 +50,6 @@ function serveAsset(response: http.ServerResponse, assetRelativePath: string): v
         response.end("Not found");
     }
 }
-
-// ---------------------------------------------------------------------------
-// HTTP server (REST endpoints)
-// ---------------------------------------------------------------------------
 
 const JSON_HEADER = {"Content-Type": "application/json; charset=utf-8"};
 
@@ -169,15 +157,7 @@ const server = http.createServer(async (request, response) => {
 
 });
 
-// ---------------------------------------------------------------------------
-// WebSocket handler
-// ---------------------------------------------------------------------------
-
 createWebSocketHandler(server, sessionService, serverSessionId);
-
-// ---------------------------------------------------------------------------
-// Start listening
-// ---------------------------------------------------------------------------
 
 server.listen(backendConfig.gameConfig.port, "0.0.0.0", () => {
     const mdnsHost = `${os.hostname()}.local`;

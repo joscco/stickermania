@@ -4,10 +4,6 @@ import { WebSocket, WebSocketServer } from "ws";
 import type { ClientToServerMessage, ServerToClientMessage, SessionState } from "@birthday/shared";
 import type { SessionService } from "../session/sessionService.js";
 
-// ---------------------------------------------------------------------------
-// Connected-client bookkeeping
-// ---------------------------------------------------------------------------
-
 interface ConnectedClient {
   ws: WebSocket;
   clientId: string;
@@ -17,10 +13,6 @@ interface ConnectedClient {
 }
 
 const clients = new Map<string, ConnectedClient>();
-
-// ---------------------------------------------------------------------------
-// WebSocket helpers
-// ---------------------------------------------------------------------------
 
 function sendToClient(ws: WebSocket, message: ServerToClientMessage): void {
   if (ws.readyState === WebSocket.OPEN) {
@@ -42,10 +34,6 @@ function broadcastSessionState(sessionId: string, state: SessionState): void {
   broadcastToSession(sessionId, { type: "session-state", state });
 }
 
-// ---------------------------------------------------------------------------
-// Disconnect helpers (used by REST endpoints)
-// ---------------------------------------------------------------------------
-
 export function disconnectSessionClients(sessionId: string): void {
   for (const [clientId, client] of clients.entries()) {
     if (client.sessionId === sessionId) {
@@ -55,10 +43,6 @@ export function disconnectSessionClients(sessionId: string): void {
     }
   }
 }
-
-// ---------------------------------------------------------------------------
-// Setup
-// ---------------------------------------------------------------------------
 
 export function createWebSocketHandler(
   server: http.Server,
@@ -87,8 +71,6 @@ export function createWebSocketHandler(
 
   wss.on("close", () => clearInterval(wsPingTimer));
 
-  // --- Event wiring ---------------------------------------------------------
-
   sessionService.setOnSessionStateChanged(async (sessionId, state) => {
     broadcastSessionState(sessionId, state);
   });
@@ -98,8 +80,6 @@ export function createWebSocketHandler(
       broadcastToSession(sessionId, event);
     }
   });
-
-  // --- Connection handler ---------------------------------------------------
 
   wss.on("connection", (ws: WebSocket) => {
     const clientId = crypto.randomUUID();
@@ -222,7 +202,7 @@ export function createWebSocketHandler(
       }
     });
 
-    ws.on("close", () => {
+    ws.on("close", async () => {
       const connectedClient = clients.get(clientId);
 
       if (!connectedClient) {
@@ -231,6 +211,13 @@ export function createWebSocketHandler(
 
       sessionService.removeConnectionSession(connectedClient.sessionId, clientId);
       clients.delete(clientId);
+
+      // Mark the player as disconnected and broadcast the updated state
+      try {
+        await sessionService.markPlayerDisconnected(connectedClient.sessionId, connectedClient.playerId);
+      } catch {
+        // best-effort – session may already be gone
+      }
     });
   });
 

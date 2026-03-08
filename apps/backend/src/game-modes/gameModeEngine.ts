@@ -1,5 +1,5 @@
 import type {ClientKind, GameClientActionMap, GameModeId, GameServerEventMap, SessionPlayer, SessionState,} from "@birthday/shared";
-import type {ConnectedClientSession} from "./sessionRuntimeTypes.js";
+import {ConnectedClientSession} from "../session/sessionRuntimeTypes.js";
 
 export interface GameActionContext {
     sessionId: string;

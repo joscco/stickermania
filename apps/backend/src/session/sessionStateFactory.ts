@@ -1,10 +1,5 @@
-import type {
-    GameConfig,
-    GameModeId,
-    SessionPlayer,
-    SessionState,
-} from "@birthday/shared";
-import type { GameModeRegistry } from "./gameModeRegistry.js";
+import type {GameConfig, GameModeId, SessionPlayer, SessionState,} from "@birthday/shared";
+import {GameModeRegistry} from "../game-modes/gameModeRegistry.js";
 
 export class SessionStateFactory {
     public constructor(
@@ -30,6 +25,7 @@ export class SessionStateFactory {
             revision: 0,
             updatedAt: now,
             createdAt: now,
+            // expire in sessionTtlHours hours
             expiresAt: now + this.config.sessionTtlHours * 60 * 60 * 1000,
         };
     }

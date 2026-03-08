@@ -22,137 +22,133 @@
     @if (!isNameSet()) {
       <app-lobby-name (nameSubmitted)="onNameSubmitted($event)" />
     } @else if (!hasAvatar()) {
-    <app-lobby-avatar
-      [playerName]="sessionStore.playerName()"
-      [colors]="playerColors()"
-      (avatarSubmitted)="onAvatarSubmitted($event)"
-      (skipped)="onAvatarSkipped()"
-    />
-  } @else {
-    @switch (activeMode()) {
-      @case ('draw-search') {
-        @if (roundPhase() === 'LOBBY' || roundPhase() === 'PAUSED') {
-          <app-lobby-ready [playerName]="sessionStore.playerName()" />
-        } @else {
-          @switch (sessionStore.currentMode()) {
-            @case ('DRAW') {
-              @if (sessionStore.currentTask(); as task) {
-                <app-draw
-                  [prompt]="task.prompt"
-                  [drawIndex]="drawCount()"
-                  [drawTotal]="maxDrawings()"
-                  [colors]="playerColors()"
+      <app-lobby-avatar
+        [playerName]="sessionStore.playerName()"
+        [colors]="playerColors()"
+        (avatarSubmitted)="onAvatarSubmitted($event)"
+        (skipped)="onAvatarSkipped()"
+      />
+    } @else {
+      @switch (activeMode()) {
+        @case ('draw-search') {
+          @if (gamePhase() === 'LOBBY' || gamePhase() === 'PAUSED') {
+            <app-lobby-ready [playerName]="sessionStore.playerName()" />
+          } @else {
+            @switch (sessionStore.currentMode()) {
+              @case ('DRAW') {
+                @if (sessionStore.currentTask(); as task) {
+                  <app-draw
+                    [prompt]="task.prompt"
+                    [drawIndex]="drawCount()"
+                    [drawTotal]="maxDrawings()"
+                    [colors]="playerColors()"
+                    [timeLeft]="timeLeft()"
+                    (drawingSubmitted)="onDrawingSubmitted($event)"
+                  />
+                }
+              }
+              @case ('SEARCH') {
+                <app-search
+                  [sceneWidthPx]="sceneWidthPx()"
+                  [sceneHeightPx]="sceneHeightPx()"
                   [timeLeft]="timeLeft()"
-                  (drawingSubmitted)="onDrawingSubmitted($event)"
                 />
               }
-            }
-            @case ('SEARCH') {
-              <app-search
-                [sceneWidthPx]="sceneWidthPx()"
-                [sceneHeightPx]="sceneHeightPx()"
-                [timeLeft]="timeLeft()"
-              />
-            }
-            @default {
-              @if (roundPhase() === 'SEARCH') {
+              @default {
                 <app-idle-search-waiting [timeLeft]="timeLeft()" />
-              } @else {
-                <app-idle-waiting [myScore]="myScore()" [leaderboard]="leaderboard()" />
               }
             }
           }
         }
-      }
-      @case ('garden-coop') {
-        <div class="h-full overflow-auto p-4 space-y-4">
-          <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
-            <div class="text-xs uppercase tracking-wider text-emerald-600">Fortschritt</div>
-            <div class="mt-1 text-2xl font-bold">Level {{ gardenModeState()?.level ?? 1 }}</div>
-            <div class="text-sm text-stone-500">{{ gardenModeState()?.experiencePoints ?? 0 }} XP</div>
-          </div>
-
-          <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
-            <div class="text-sm font-semibold">Inventar</div>
-            <div class="mt-3 grid grid-cols-2 gap-2">
-              @for (entry of gardenInventoryEntries(); track entry.plantId) {
-                <div class="rounded-2xl bg-stone-50 px-3 py-2 text-sm">
-                  <div class="font-medium text-stone-800">{{ entry.name }}</div>
-                  <div class="text-xs text-stone-500">Samen: {{ entry.seeds }} · Ernte: {{ entry.harvestedGoods }}</div>
-                </div>
-              }
+        @case ('garden-coop') {
+          <div class="h-full overflow-auto p-4 space-y-4">
+            <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
+              <div class="text-xs uppercase tracking-wider text-emerald-600">Fortschritt</div>
+              <div class="mt-1 text-2xl font-bold">Level {{ gardenModeState()?.level ?? 1 }}</div>
+              <div class="text-sm text-stone-500">{{ gardenModeState()?.experiencePoints ?? 0 }} XP</div>
             </div>
-          </div>
 
-          <div class="space-y-3">
-            @for (plot of gardenPlots(); track plot.id) {
-              <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
-                <div class="flex items-center justify-between gap-3">
-                  <div>
-                    <div class="text-sm font-semibold">{{ plot.id }}</div>
-                    <div class="text-xs text-stone-500">{{ plot.status }} @if (plot.plantId) { · {{ plantName(plot.plantId) }} }</div>
+            <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
+              <div class="text-sm font-semibold">Inventar</div>
+              <div class="mt-3 grid grid-cols-2 gap-2">
+                @for (entry of gardenInventoryEntries(); track entry.plantId) {
+                  <div class="rounded-2xl bg-stone-50 px-3 py-2 text-sm">
+                    <div class="font-medium text-stone-800">{{ entry.name }}</div>
+                    <div class="text-xs text-stone-500">Samen: {{ entry.seeds }} · Ernte: {{ entry.harvestedGoods }}</div>
                   </div>
-                  @if (plot.status === 'EMPTY') {
-                    <div class="flex flex-wrap gap-2 justify-end">
-                      @for (plantId of availablePlantIds(); track plantId) {
-                        <button class="rounded-xl bg-emerald-600 text-white px-3 py-2 text-sm" (click)="plantSeed(plot.id, plantId)">{{ plantName(plantId) }} pflanzen</button>
-                      }
-                    </div>
-                  } @else if (plot.status === 'GROWING') {
-                  <button class="rounded-xl bg-blue-600 text-white px-3 py-2 text-sm" (click)="waterPlant(plot.id)">Gießen</button>
-                } @else if (plot.status === 'READY') {
-                  <button class="rounded-xl bg-amber-500 text-white px-3 py-2 text-sm" (click)="harvestPlant(plot.id)">Ernten</button>
-                } @else if (plot.status === 'PAUSED_BY_PEST') {
-                  <button class="rounded-xl bg-rose-500 text-white px-3 py-2 text-sm" (click)="clearPest(plot.id)">Ungeziefer wegklicken</button>
                 }
-                </div>
               </div>
-            }
-          </div>
-        </div>
-      }
-      @case ('team-graffiti') {
-        <div class="h-full overflow-auto p-4 space-y-4">
-          <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
-            <div class="text-sm font-semibold">Dein Team</div>
-            @if (!currentTeamId()) {
-              <div class="mt-3 flex gap-3">
-                <button class="flex-1 rounded-2xl bg-red-500 text-white px-4 py-3 font-medium" (click)="assignTeam('RED')">Rot</button>
-                <button class="flex-1 rounded-2xl bg-blue-500 text-white px-4 py-3 font-medium" (click)="assignTeam('BLUE')">Blau</button>
-              </div>
-            } @else {
-            <div class="mt-2 text-lg font-bold">{{ currentTeamId() === 'RED' ? 'Team Rot' : 'Team Blau' }}</div>
-          }
-          </div>
+            </div>
 
-          <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
-            <div class="text-sm font-semibold">Tag setzen</div>
-            <div class="mt-3 grid grid-cols-1 gap-3">
-              @for (building of teamBuildings(); track building.id) {
-                <button class="rounded-2xl border border-black/10 bg-stone-50 px-4 py-3 text-left" (click)="placeTag(building.id)">
-                  <div class="font-medium text-stone-800">{{ building.name }}</div>
-                  <div class="text-xs text-stone-500">{{ tagsOnBuilding(building.id).length }} aktive Tags</div>
-                </button>
+            <div class="space-y-3">
+              @for (plot of gardenPlots(); track plot.id) {
+                <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <div class="text-sm font-semibold">{{ plot.id }}</div>
+                      <div class="text-xs text-stone-500">{{ plot.status }} @if (plot.plantId) { · {{ plantName(plot.plantId) }} }</div>
+                    </div>
+                    @if (plot.status === 'EMPTY') {
+                      <div class="flex flex-wrap gap-2 justify-end">
+                        @for (plantId of availablePlantIds(); track plantId) {
+                          <button class="rounded-xl bg-emerald-600 text-white px-3 py-2 text-sm" (click)="plantSeed(plot.id, plantId)">{{ plantName(plantId) }} pflanzen</button>
+                        }
+                      </div>
+                    } @else if (plot.status === 'GROWING') {
+                      <button class="rounded-xl bg-blue-600 text-white px-3 py-2 text-sm" (click)="waterPlant(plot.id)">Gießen</button>
+                    } @else if (plot.status === 'READY') {
+                      <button class="rounded-xl bg-amber-500 text-white px-3 py-2 text-sm" (click)="harvestPlant(plot.id)">Ernten</button>
+                    } @else if (plot.status === 'PAUSED_BY_PEST') {
+                      <button class="rounded-xl bg-rose-500 text-white px-3 py-2 text-sm" (click)="clearPest(plot.id)">Ungeziefer wegklicken</button>
+                    }
+                  </div>
+                </div>
               }
             </div>
           </div>
+        }
+        @case ('team-graffiti') {
+          <div class="h-full overflow-auto p-4 space-y-4">
+            <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
+              <div class="text-sm font-semibold">Dein Team</div>
+              @if (!currentTeamId()) {
+                <div class="mt-3 flex gap-3">
+                  <button class="flex-1 rounded-2xl bg-red-500 text-white px-4 py-3 font-medium" (click)="assignTeam('RED')">Rot</button>
+                  <button class="flex-1 rounded-2xl bg-blue-500 text-white px-4 py-3 font-medium" (click)="assignTeam('BLUE')">Blau</button>
+                </div>
+              } @else {
+                <div class="mt-2 text-lg font-bold">{{ currentTeamId() === 'RED' ? 'Team Rot' : 'Team Blau' }}</div>
+              }
+            </div>
 
-          <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
-            <div class="text-sm font-semibold">Gegnerische Tags entfernen</div>
-            <div class="mt-3 space-y-2">
-              @for (tag of availableTagsToWipe(); track tag.id) {
-                <button class="w-full rounded-2xl bg-stone-900 text-white px-4 py-3 text-left" (click)="wipeTag(tag.id)">
-                  {{ tag.teamId }} auf {{ tag.buildingId }} · {{ tag.wipeProgress }}%
-                </button>
-              } @empty {
-              <div class="text-sm text-stone-500">Gerade nichts zu entfernen.</div>
-            }
+            <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
+              <div class="text-sm font-semibold">Tag setzen</div>
+              <div class="mt-3 grid grid-cols-1 gap-3">
+                @for (building of teamBuildings(); track building.id) {
+                  <button class="rounded-2xl border border-black/10 bg-stone-50 px-4 py-3 text-left" (click)="placeTag(building.id)">
+                    <div class="font-medium text-stone-800">{{ building.name }}</div>
+                    <div class="text-xs text-stone-500">{{ tagsOnBuilding(building.id).length }} aktive Tags</div>
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div class="rounded-3xl bg-white border border-black/5 p-4 shadow-sm">
+              <div class="text-sm font-semibold">Gegnerische Tags entfernen</div>
+              <div class="mt-3 space-y-2">
+                @for (tag of availableTagsToWipe(); track tag.id) {
+                  <button class="w-full rounded-2xl bg-stone-900 text-white px-4 py-3 text-left" (click)="wipeTag(tag.id)">
+                    {{ tag.teamId }} auf {{ tag.buildingId }} · {{ tag.wipeProgress }}%
+                  </button>
+                } @empty {
+                  <div class="text-sm text-stone-500">Gerade nichts zu entfernen.</div>
+                }
+              </div>
             </div>
           </div>
-        </div>
+        }
       }
     }
-  }
   </div>
 
   @if (sessionStore.feedback()) {

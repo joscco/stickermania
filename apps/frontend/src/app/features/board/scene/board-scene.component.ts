@@ -13,9 +13,9 @@ export class BoardSceneComponent {
   public readonly worldStore = inject(WorldStore);
 
   private static readonly MIN_SCENE_WIDTH_PX = 500;
-  private static readonly MAX_SCENE_WIDTH_PX = 900;
+  private static readonly MAX_SCENE_WIDTH_PX = 1200;
   private static readonly MIN_SCENE_HEIGHT_PX = 360;
-  private static readonly MAX_SCENE_HEIGHT_PX = 640;
+  private static readonly MAX_SCENE_HEIGHT_PX = 800;
 
   public readonly modeState = computed(() => this.worldStore.drawSearchModeState());
 

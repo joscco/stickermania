@@ -11,7 +11,6 @@ import {
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 
-import { AudioService } from "../../../core/audio.service";
 import { WorldStore } from "../../../core/world.store";
 import { SceneRendererComponent } from "../../../shared/scene-renderer/scene-renderer.component";
 import { ViewportController } from "../viewport-controller";
@@ -57,7 +56,6 @@ export class SearchComponent implements AfterViewInit, OnDestroy {
 
   public readonly searchStore = inject(SearchStore);
   public readonly world = inject(WorldStore);
-  private readonly audio = inject(AudioService);
   private readonly destroyRef = inject(DestroyRef);
 
   // ─── ViewChild ─────────────────────────────────────────────────────
@@ -95,15 +93,11 @@ export class SearchComponent implements AfterViewInit, OnDestroy {
     height: this.sceneHeightPx(),
   }));
 
-  /** Pixel size of the circular scene container (logical field × zoom). */
-  public readonly searchContainerSizePx = computed(() =>
-    this.sceneWidthPx() * this.viewportCtrl.scale(),
-  );
+  /** Logical scene width in content coordinates. */
+  public readonly searchContainerSizePx = computed(() => this.sceneWidthPx());
 
-  /** Pixel size of each drawing on screen (config image size × zoom). */
-  public readonly searchImageSizePx = computed(() =>
-    this.world.imageSizePx() * this.viewportCtrl.scale(),
-  );
+  /** Logical drawing size in content coordinates. */
+  public readonly searchImageSizePx = computed(() => this.world.imageSizePx());
 
 
   // ─── Lifecycle ─────────────────────────────────────────────────────
@@ -171,7 +165,7 @@ export class SearchComponent implements AfterViewInit, OnDestroy {
     // On mobile we have explicit touch handlers (non-passive + preventDefault).
     // Avoid double-processing when the browser emits both TouchEvents and PointerEvents.
     if (e.pointerType === "touch") return;
-    this.audio.unlockIfNeeded();
+    // this.audio.unlockIfNeeded();
     this.viewportCtrl.stopInertia();
     this.viewportRef.nativeElement.setPointerCapture(e.pointerId);
     this.gesture.onPointerDown(e);
@@ -271,7 +265,7 @@ export class SearchComponent implements AfterViewInit, OnDestroy {
       }) as unknown as PointerEvent;
 
     const down = (ev: TouchEvent) => {
-      this.audio.unlockIfNeeded();
+      // this.audio.unlockIfNeeded();
       this.viewportCtrl.stopInertia();
       ev.preventDefault();
       ev.stopPropagation();

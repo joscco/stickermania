@@ -17,13 +17,14 @@ import { WebSocketService } from "../../core/websocket.service";
 import { WorldStore } from "../../core/world.store";
 import { EventToastsComponent, type UiEvent } from "./events/event-toasts.component";
 import { BoardSceneComponent } from "./scene/board-scene.component";
+import { BoardSetupDrawerComponent } from "./setup/board-setup-drawer.component";
 
 const EVENT_TOAST_DURATION_MS = 3000;
 
 @Component({
   selector: "app-board",
   standalone: true,
-  imports: [CommonModule, EventToastsComponent, BoardSceneComponent],
+  imports: [CommonModule, EventToastsComponent, BoardSceneComponent, BoardSetupDrawerComponent],
   templateUrl: "./board.component.html",
 })
 export class BoardComponent implements OnInit, OnDestroy {
@@ -31,6 +32,8 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   public readonly playerUrl = signal<string>("");
   public readonly playerQrDataUrl = signal<string | null>(null);
+  public readonly wifiQrDataUrl = signal<string | null>(null);
+  public readonly isSetupDrawerOpen = signal<boolean>(false);
   public readonly events = signal<UiEvent[]>([]);
   public readonly existingSessionCodeInput = signal<string>("");
   public readonly isCreatingSession = signal<boolean>(false);
@@ -138,6 +141,19 @@ export class BoardComponent implements OnInit, OnDestroy {
     await this.router.navigate(["/board", sessionCode]);
   }
 
+
+  public toggleSetupDrawer(): void {
+    this.isSetupDrawerOpen.set(!this.isSetupDrawerOpen());
+  }
+
+  public closeSetupDrawer(): void {
+    this.isSetupDrawerOpen.set(false);
+  }
+
+  public handleWifiQrGenerated(dataUrl: string): void {
+    this.wifiQrDataUrl.set(dataUrl || null);
+  }
+
   public selectMode(mode: GameModeId): void {
     this.wsService.send({ type: "select-mode", mode });
   }
@@ -243,6 +259,8 @@ export class BoardComponent implements OnInit, OnDestroy {
 
     this.wsService.disconnect();
     this.worldStore.clearSessionState();
+    this.isSetupDrawerOpen.set(false);
+    this.wifiQrDataUrl.set(null);
 
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
@@ -303,7 +321,7 @@ export class BoardComponent implements OnInit, OnDestroy {
       }
 
       case "round-phase": {
-        this.pushEvent(event.phase === "DRAW" ? "Zeichenphase gestartet." : event.phase === "SEARCH" ? "Suchphase gestartet." : "Runde pausiert.", Date.now());
+        this.pushEvent(event.phase === "ACTIVE" ? "Spiel gestartet! 🎨" : event.phase === "PAUSED" ? "Spiel pausiert." : "Lobby.", Date.now());
         break;
       }
 
@@ -320,7 +338,8 @@ export class BoardComponent implements OnInit, OnDestroy {
       }
 
       case "assign-task":
-      case "search-result": {
+      case "search-result":
+      case "player-phase": {
         break;
       }
     }
