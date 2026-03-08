@@ -17,6 +17,8 @@ import { WebSocketService } from "../../core/websocket.service";
 import { WorldStore } from "../../core/world.store";
 import { EventToastsComponent, type UiEvent } from "./events/event-toasts.component";
 import { BoardSceneComponent } from "./scene/board-scene.component";
+import { GardenSceneComponent } from "./scene/garden-scene.component";
+import { GraffitiSceneComponent } from "./scene/graffiti-scene.component";
 import { BoardSetupDrawerComponent } from "./setup/board-setup-drawer.component";
 
 const EVENT_TOAST_DURATION_MS = 3000;
@@ -24,7 +26,7 @@ const EVENT_TOAST_DURATION_MS = 3000;
 @Component({
   selector: "app-board",
   standalone: true,
-  imports: [CommonModule, EventToastsComponent, BoardSceneComponent, BoardSetupDrawerComponent],
+  imports: [CommonModule, EventToastsComponent, BoardSceneComponent, GardenSceneComponent, GraffitiSceneComponent, BoardSetupDrawerComponent],
   templateUrl: "./board.component.html",
 })
 export class BoardComponent implements OnInit, OnDestroy {

@@ -21,7 +21,7 @@ export class ViewportController {
   }
 
   public contentTransform(): string {
-    return `translate(${this.offsetX()}px, ${this.offsetY()}px)`;
+    return `translate(${this.offsetX()}px, ${this.offsetY()}px) scale(${this.scale()})`;
   }
 
   /**

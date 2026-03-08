@@ -1,0 +1,67 @@
+<div class="h-full overflow-auto p-6">
+  @if (!modeState()) {
+    <div class="text-sm text-stone-400 text-center py-12">Verbinde…</div>
+  } @else {
+    <div class="space-y-6">
+      <!-- Header with team scores -->
+      <div class="flex items-center justify-between">
+        <div class="text-lg font-bold text-stone-800">🎨 Team-Graffiti</div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded-full bg-red-500"></div>
+            <span class="text-lg font-bold text-red-600">{{ redScore() }}</span>
+          </div>
+          <span class="text-stone-300 font-bold">vs</span>
+          <div class="flex items-center gap-2">
+            <span class="text-lg font-bold text-blue-600">{{ blueScore() }}</span>
+            <div class="w-4 h-4 rounded-full bg-blue-500"></div>
+          </div>
+          @if (timeLeft()) {
+            <span class="ml-4 text-sm font-mono text-stone-500 bg-stone-100 px-3 py-1 rounded-lg">{{ timeLeft() }}</span>
+          }
+        </div>
+      </div>
+
+      <!-- City map - buildings grid -->
+      <div class="grid grid-cols-3 gap-4">
+        @for (building of buildings(); track building.id) {
+          <div class="rounded-2xl border-2 overflow-hidden transition-colors"
+               [class.border-red-400]="dominantTeam(building.id) === 'RED'"
+               [class.border-blue-400]="dominantTeam(building.id) === 'BLUE'"
+               [class.border-stone-200]="!dominantTeam(building.id)">
+            <!-- Building header -->
+            <div class="px-4 py-3"
+                 [class.bg-red-50]="dominantTeam(building.id) === 'RED'"
+                 [class.bg-blue-50]="dominantTeam(building.id) === 'BLUE'"
+                 [class.bg-stone-50]="!dominantTeam(building.id)">
+              <div class="font-semibold text-sm">{{ building.name }}</div>
+              <div class="text-xs text-stone-500 mt-0.5">{{ tagsOnBuilding(building.id) }} Tags aktiv</div>
+            </div>
+            <!-- Tag indicators -->
+            <div class="px-4 py-3 bg-white">
+              <div class="flex gap-1 flex-wrap">
+                @for (tag of activeTags(); track tag.id) {
+                  @if (tag.buildingId === building.id) {
+                    <div class="w-5 h-5 rounded-full text-xs text-white grid place-items-center font-bold"
+                         [class.bg-red-500]="tag.teamId === 'RED'"
+                         [class.bg-blue-500]="tag.teamId === 'BLUE'">
+                      @if (tag.wipeProgress > 0) {
+                        <div class="absolute inset-0 rounded-full border-2 border-white/60"></div>
+                      }
+                    </div>
+                  }
+                }
+              </div>
+              @if (tagsOnBuilding(building.id) === 0) {
+                <div class="text-xs text-stone-400">Kein Team kontrolliert dieses Gebäude.</div>
+              }
+            </div>
+          </div>
+        } @empty {
+          <div class="col-span-3 text-center text-stone-400 py-12">Noch keine Gebäude konfiguriert.</div>
+        }
+      </div>
+    </div>
+  }
+</div>
+

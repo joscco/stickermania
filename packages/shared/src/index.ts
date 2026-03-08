@@ -1,44 +1,90 @@
 // Shared types for the birthday party platform with multiple game modes
 
-export interface GameConfig {
-  playerColors: string[];
-  colorsPerPlayer: number;
+// ─── Config types ────────────────────────────────────────────────
+
+export interface DrawSearchGameConfig {
   drawPrompts: string[];
   drawDurationSec: number;
   searchDurationSec: number;
   maxDrawingsPerRound: number;
   searchOverscroll: number;
   canvasResolution: number;
-  drawingsPath: string;
-  port: number;
-  adminPassword: string | null;
   imageSizePx: number;
   fieldBaseSize: number;
   fieldGrowthPerDrawing: number;
   fieldMaxSize: number;
+  minDrawingsForSearch: number;
+}
+
+export interface GardenCoopGameConfig {
+  plotCount: number;
+  initialSeeds: number;
+  pestChance: number;
+}
+
+export interface TeamGraffitiGameConfig {
+  roundDurationSec: number;
+  tagCooldownSec: number;
+  wipeThreshold: number;
+}
+
+export interface GameConfig {
+  // General
+  playerColors: string[];
+  colorsPerPlayer: number;
+  drawingsPath: string;
+  port: number;
+  adminPassword: string | null;
   sessionTtlHours: number;
+  // Per-mode
+  drawSearch: DrawSearchGameConfig;
+  gardenCoop: GardenCoopGameConfig;
+  teamGraffiti: TeamGraffitiGameConfig;
+}
+
+function parseSubObject(raw: Record<string, unknown>, key: string): Record<string, unknown> {
+  const sub = raw[key];
+  return typeof sub === "object" && sub !== null ? sub as Record<string, unknown> : {};
 }
 
 export function parseGameConfig(raw: unknown): GameConfig {
-  const rawObject = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
+  const r = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
+
+  // Support flat legacy configs by also reading top-level keys
+  const ds = parseSubObject(r, "drawSearch");
+  const gc = parseSubObject(r, "gardenCoop");
+  const tg = parseSubObject(r, "teamGraffiti");
 
   return {
-    playerColors: Array.isArray(rawObject["playerColors"]) ? (rawObject["playerColors"] as string[]) : ["#dc2626", "#2563eb"],
-    colorsPerPlayer: typeof rawObject["colorsPerPlayer"] === "number" ? rawObject["colorsPerPlayer"] : 2,
-    drawPrompts: Array.isArray(rawObject["drawPrompts"]) ? (rawObject["drawPrompts"] as string[]) : ["Katze", "Hund", "Sonne"],
-    drawDurationSec: typeof rawObject["drawDurationSec"] === "number" ? rawObject["drawDurationSec"] : 60,
-    searchDurationSec: typeof rawObject["searchDurationSec"] === "number" ? rawObject["searchDurationSec"] : 90,
-    maxDrawingsPerRound: typeof rawObject["maxDrawingsPerRound"] === "number" ? rawObject["maxDrawingsPerRound"] : 3,
-    searchOverscroll: typeof rawObject["searchOverscroll"] === "number" ? rawObject["searchOverscroll"] : 0.15,
-    canvasResolution: typeof rawObject["canvasResolution"] === "number" ? rawObject["canvasResolution"] : 300,
-    drawingsPath: typeof rawObject["drawingsPath"] === "string" ? rawObject["drawingsPath"] : "./drawings",
-    port: typeof rawObject["port"] === "number" ? rawObject["port"] : 3001,
-    adminPassword: typeof rawObject["adminPassword"] === "string" ? rawObject["adminPassword"] : null,
-    imageSizePx: typeof rawObject["imageSizePx"] === "number" ? rawObject["imageSizePx"] : 160,
-    fieldBaseSize: typeof rawObject["fieldBaseSize"] === "number" ? rawObject["fieldBaseSize"] : 400,
-    fieldGrowthPerDrawing: typeof rawObject["fieldGrowthPerDrawing"] === "number" ? rawObject["fieldGrowthPerDrawing"] : 100,
-    fieldMaxSize: typeof rawObject["fieldMaxSize"] === "number" ? rawObject["fieldMaxSize"] : 6000,
-    sessionTtlHours: typeof rawObject["sessionTtlHours"] === "number" ? rawObject["sessionTtlHours"] : 24,
+    playerColors: Array.isArray(r["playerColors"]) ? (r["playerColors"] as string[]) : ["#dc2626", "#2563eb"],
+    colorsPerPlayer: typeof r["colorsPerPlayer"] === "number" ? r["colorsPerPlayer"] : 2,
+    drawingsPath: typeof r["drawingsPath"] === "string" ? r["drawingsPath"] : "./drawings",
+    port: typeof r["port"] === "number" ? r["port"] : 3001,
+    adminPassword: typeof r["adminPassword"] === "string" ? r["adminPassword"] : null,
+    sessionTtlHours: typeof r["sessionTtlHours"] === "number" ? r["sessionTtlHours"] : 24,
+    drawSearch: {
+      drawPrompts: Array.isArray(ds["drawPrompts"] ?? r["drawPrompts"]) ? (ds["drawPrompts"] ?? r["drawPrompts"]) as string[] : ["Katze", "Hund", "Sonne"],
+      drawDurationSec: typeof (ds["drawDurationSec"] ?? r["drawDurationSec"]) === "number" ? (ds["drawDurationSec"] ?? r["drawDurationSec"]) as number : 60,
+      searchDurationSec: typeof (ds["searchDurationSec"] ?? r["searchDurationSec"]) === "number" ? (ds["searchDurationSec"] ?? r["searchDurationSec"]) as number : 90,
+      maxDrawingsPerRound: typeof (ds["maxDrawingsPerRound"] ?? r["maxDrawingsPerRound"]) === "number" ? (ds["maxDrawingsPerRound"] ?? r["maxDrawingsPerRound"]) as number : 100,
+      searchOverscroll: typeof (ds["searchOverscroll"] ?? r["searchOverscroll"]) === "number" ? (ds["searchOverscroll"] ?? r["searchOverscroll"]) as number : 0.15,
+      canvasResolution: typeof (ds["canvasResolution"] ?? r["canvasResolution"]) === "number" ? (ds["canvasResolution"] ?? r["canvasResolution"]) as number : 400,
+      imageSizePx: typeof (ds["imageSizePx"] ?? r["imageSizePx"]) === "number" ? (ds["imageSizePx"] ?? r["imageSizePx"]) as number : 200,
+      fieldBaseSize: typeof (ds["fieldBaseSize"] ?? r["fieldBaseSize"]) === "number" ? (ds["fieldBaseSize"] ?? r["fieldBaseSize"]) as number : 800,
+      fieldGrowthPerDrawing: typeof (ds["fieldGrowthPerDrawing"] ?? r["fieldGrowthPerDrawing"]) === "number" ? (ds["fieldGrowthPerDrawing"] ?? r["fieldGrowthPerDrawing"]) as number : 200,
+      fieldMaxSize: typeof (ds["fieldMaxSize"] ?? r["fieldMaxSize"]) === "number" ? (ds["fieldMaxSize"] ?? r["fieldMaxSize"]) as number : 6000,
+      minDrawingsForSearch: typeof ds["minDrawingsForSearch"] === "number" ? ds["minDrawingsForSearch"] : 3,
+    },
+    gardenCoop: {
+      plotCount: typeof gc["plotCount"] === "number" ? gc["plotCount"] : 6,
+      initialSeeds: typeof gc["initialSeeds"] === "number" ? gc["initialSeeds"] : 3,
+      pestChance: typeof gc["pestChance"] === "number" ? gc["pestChance"] : 0.15,
+    },
+    teamGraffiti: {
+      roundDurationSec: typeof tg["roundDurationSec"] === "number" ? tg["roundDurationSec"] : 120,
+      tagCooldownSec: typeof tg["tagCooldownSec"] === "number" ? tg["tagCooldownSec"] : 5,
+      wipeThreshold: typeof tg["wipeThreshold"] === "number" ? tg["wipeThreshold"] : 100,
+    },
   };
 }
 

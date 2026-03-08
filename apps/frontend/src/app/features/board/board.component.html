@@ -70,67 +70,10 @@
             <app-board-scene class="block h-full w-full"></app-board-scene>
           }
           @case ('garden-coop') {
-            <div class="grid grid-cols-[2fr_1fr] gap-4 h-full">
-              <div class="rounded-3xl bg-white border border-black/5 p-4 overflow-auto">
-                <div class="text-sm font-semibold mb-4">Beete</div>
-                <div class="grid grid-cols-2 gap-4">
-                  @for (plot of gardenModeState()?.plots | keyvalue; track plot.key) {
-                    <div class="rounded-2xl border border-black/5 bg-stone-50 p-4">
-                      <div class="font-medium text-stone-800">{{ plot.key }}</div>
-                      <div class="text-sm text-stone-500 mt-1">{{ plot.value.status }}</div>
-                      @if (plot.value.plantId) {
-                        <div class="text-xs text-stone-400 mt-2">{{ gardenModeState()?.plantDefinitions?.[plot.value.plantId!]?.name ?? plot.value.plantId }}</div>
-                      }
-                    </div>
-                  }
-                </div>
-              </div>
-
-              <div class="rounded-3xl bg-white border border-black/5 p-4 overflow-auto">
-                <div class="text-sm font-semibold">Gartenstatus</div>
-                <div class="mt-3 text-3xl font-bold">Level {{ gardenModeState()?.level ?? 1 }}</div>
-                <div class="text-sm text-stone-500">{{ gardenModeState()?.experiencePoints ?? 0 }} XP</div>
-                <div class="mt-4 space-y-2">
-                  @for (inventoryEntry of gardenModeState()?.inventory | keyvalue; track inventoryEntry.key) {
-                    <div class="rounded-2xl bg-stone-50 px-3 py-2 text-sm">
-                      {{ gardenModeState()?.plantDefinitions?.[inventoryEntry.key]?.name ?? inventoryEntry.key }} · Samen {{ inventoryEntry.value.seeds }} · Ernte {{ inventoryEntry.value.harvestedGoods }}
-                    </div>
-                  }
-                </div>
-              </div>
-            </div>
+            <app-garden-scene class="block h-full w-full"></app-garden-scene>
           }
           @case ('team-graffiti') {
-            <div class="grid grid-cols-[2fr_1fr] gap-4 h-full">
-              <div class="rounded-3xl bg-white border border-black/5 p-4 overflow-auto">
-                <div class="text-sm font-semibold mb-4">Stadtkarte</div>
-                <div class="grid grid-cols-2 gap-4">
-                  @for (building of teamGraffitiModeState()?.buildings | keyvalue; track building.key) {
-                    <div class="rounded-2xl border border-black/5 bg-stone-50 p-4">
-                      <div class="font-medium text-stone-800">{{ building.value.name }}</div>
-                      <div class="text-xs text-stone-500 mt-1">{{ activeTagsByBuilding(building.key).length }} aktive Tags</div>
-                      <div class="mt-3 flex flex-wrap gap-2">
-                        @for (tag of activeTagsByBuilding(building.key); track tag.id) {
-                          <span class="rounded-full px-2 py-1 text-xs" [class.bg-red-100]="tag.teamId === 'RED'" [class.text-red-700]="tag.teamId === 'RED'" [class.bg-blue-100]="tag.teamId === 'BLUE'" [class.text-blue-700]="tag.teamId === 'BLUE'">{{ tag.teamId }}</span>
-                        }
-                      </div>
-                    </div>
-                  }
-                </div>
-              </div>
-
-              <div class="rounded-3xl bg-white border border-black/5 p-4 overflow-auto">
-                <div class="text-sm font-semibold">Teamstände</div>
-                <div class="mt-3 space-y-3">
-                  @for (teamScore of teamScores(); track teamScore.id) {
-                    <div class="rounded-2xl px-4 py-3 text-white" [class.bg-red-500]="teamScore.id === 'RED'" [class.bg-blue-500]="teamScore.id === 'BLUE'">
-                      <div class="text-sm font-medium">Team {{ teamScore.id }}</div>
-                      <div class="text-2xl font-bold">{{ teamScore.score }}</div>
-                    </div>
-                  }
-                </div>
-              </div>
-            </div>
+            <app-graffiti-scene class="block h-full w-full"></app-graffiti-scene>
           }
         }
       </div>

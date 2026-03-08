@@ -1,33 +1,20 @@
 import crypto from "node:crypto";
-import type {
-    DrawSearchClientAction,
-    DrawSearchDrawing,
-    DrawSearchGamePhase,
-    DrawSearchModeState,
-    DrawSearchMuseumSlot,
-    DrawSearchPlayerPromptAssignment,
-    DrawSearchRoundState,
-    DrawSearchServerEvent,
-    GameConfig,
-    SessionState,
-} from "@birthday/shared";
-import { clampInt } from "@birthday/shared";
-import type { AssetRepository } from "../../infra/assetRepository.js";
-import type { GameActionContext, GameActionResult, GameModeEngine } from "../gameModeEngine.js";
+import type {DrawSearchClientAction, DrawSearchDrawing, DrawSearchGameConfig, DrawSearchGamePhase, DrawSearchModeState, DrawSearchMuseumSlot, DrawSearchPlayerPromptAssignment, DrawSearchRoundState, DrawSearchServerEvent, GameConfig, SessionState,} from "@birthday/shared";
+import {clampInt} from "@birthday/shared";
+import type {AssetRepository} from "../../infra/assetRepository.js";
+import type {GameActionContext, GameActionResult, GameModeEngine} from "../gameModeEngine.js";
 
-/**
- * Minimum number of drawings (from different artists) before any player
- * can enter SEARCH phase. This prevents the "nothing to search" problem.
- */
-const MIN_DRAWINGS_FOR_SEARCH = 3;
 
 export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearchModeState> {
     public readonly mode = "draw-search" as const;
+    private readonly ds: DrawSearchGameConfig;
 
     public constructor(
         private readonly config: GameConfig,
         private readonly assetRepository: AssetRepository,
-    ) {}
+    ) {
+        this.ds = config.drawSearch;
+    }
 
     public createInitialState(): DrawSearchModeState {
         return {
@@ -36,8 +23,8 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
             museumSlots: [],
             round: this.createDefaultRoundState(),
             promptAssignments: {},
-            effectiveFieldWidth: this.config.fieldBaseSize,
-            effectiveFieldHeight: this.config.fieldBaseSize,
+            effectiveFieldWidth: this.ds.fieldBaseSize,
+            effectiveFieldHeight: this.ds.fieldBaseSize,
         };
     }
 
@@ -46,16 +33,66 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
     }): GameActionResult<"draw-search"> {
         const playerId = Object.keys(args.sessionState.players).at(-1);
 
-        if (playerId && !args.sessionState.modeState.promptAssignments[playerId]) {
+        if (!playerId) {
+            return { stateChanged: false, emittedEvents: [] };
+        }
+
+        const existingAssignment = args.sessionState.modeState.promptAssignments[playerId];
+        if (!existingAssignment) {
             args.sessionState.modeState.promptAssignments[playerId] = this.createEmptyPromptAssignment();
         }
 
         const events: DrawSearchServerEvent[] = [this.createConfigEvent(args.sessionState.modeState)];
 
-        // If the game is ACTIVE and the new player has a name, assign them a draw task immediately
-        if (playerId && args.sessionState.modeState.round.phase === "ACTIVE") {
+        // If the game is ACTIVE, re-emit the existing player state OR assign new tasks
+        if (args.sessionState.modeState.round.phase === "ACTIVE") {
+            const assignment = args.sessionState.modeState.promptAssignments[playerId];
             const player = args.sessionState.players[playerId];
-            if (player && player.name.trim().length > 0) {
+            const hasName = player && player.name.trim().length > 0;
+
+            if (hasName && assignment.playerPhase === "DRAW" && assignment.activeDrawPrompt) {
+                // Player was drawing — re-emit their draw task
+                events.push(
+                    { type: "player-phase", playerId, playerPhase: "DRAW" },
+                    {
+                        type: "assign-task",
+                        task: {
+                            mode: "DRAW",
+                            prompt: assignment.activeDrawPrompt,
+                            drawIndex: assignment.cycleIndex,
+                            drawTotal: assignment.cycleIndex + 1,
+                        },
+                    },
+                );
+            } else if (hasName && assignment.playerPhase === "SEARCH" && assignment.activeSearchDrawingId) {
+                // Player was searching — re-emit their search task
+                const drawing = args.sessionState.modeState.drawings[assignment.activeSearchDrawingId];
+                if (drawing) {
+                    const searchTask = assignment.searchTasks.find((t) => t.drawingId === assignment.activeSearchDrawingId);
+                    events.push(
+                        { type: "player-phase", playerId, playerPhase: "SEARCH" },
+                        {
+                            type: "assign-task",
+                            task: {
+                                mode: "SEARCH",
+                                prompt: searchTask?.prompt ?? drawing.prompt,
+                                drawingId: drawing.id,
+                                artistName: searchTask?.artistName ?? args.sessionState.players[drawing.artistId]?.name ?? "Unbekannt",
+                            },
+                        },
+                    );
+                } else {
+                    // Drawing was deleted? Transition back to DRAW
+                    const drawEvents = this.assignNextDrawPrompt(playerId, args.sessionState);
+                    events.push(...drawEvents);
+                }
+            } else if (hasName && assignment.playerPhase === "IDLE") {
+                // Player was idle — re-emit idle state, try to wake them up
+                events.push({ type: "player-phase", playerId, playerPhase: "IDLE" });
+                const wakeUpEvents = this.wakeUpIdlePlayers(args.sessionState);
+                events.push(...wakeUpEvents);
+            } else if (hasName) {
+                // New player or no active task — assign fresh draw prompt
                 const assignEvents = this.assignNextDrawPrompt(playerId, args.sessionState);
                 events.push(...assignEvents);
             }
@@ -335,7 +372,7 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
 
         // Check if there are enough drawings from other artists
         const uniqueArtists = new Set(allDrawings.map((d) => d.artistId));
-        const hasEnoughDrawings = allDrawings.length >= MIN_DRAWINGS_FOR_SEARCH && uniqueArtists.size >= 2;
+        const hasEnoughDrawings = allDrawings.length >= this.ds.minDrawingsForSearch && uniqueArtists.size >= 2;
 
         if (!hasEnoughDrawings || searchable.length === 0) {
             // Not enough to search yet → IDLE
@@ -422,7 +459,7 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
         const allDrawings = Object.values(sessionState.modeState.drawings);
         const uniqueArtists = new Set(allDrawings.map((d) => d.artistId));
 
-        if (allDrawings.length < MIN_DRAWINGS_FOR_SEARCH || uniqueArtists.size < 2) {
+        if (allDrawings.length < this.ds.minDrawingsForSearch || uniqueArtists.size < 2) {
             return events;
         }
 
@@ -475,11 +512,11 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
     // ─── Prompt helpers ──────────────────────────────────────────────
 
     private pickNextPrompt(assignment: DrawSearchPlayerPromptAssignment): string | null {
-        if (this.config.drawPrompts.length === 0) return null;
+        if (this.ds.drawPrompts.length === 0) return null;
 
         // Pick a random prompt from the pool (cycling infinitely)
         const cycleIndex = assignment.cycleIndex;
-        const shuffled = this.shuffleArray([...this.config.drawPrompts]);
+        const shuffled = this.shuffleArray([...this.ds.drawPrompts]);
         return shuffled[cycleIndex % shuffled.length];
     }
 
@@ -493,8 +530,8 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
         return {
             phase: "LOBBY" as DrawSearchGamePhase,
             endsAt: 0,
-            drawDurationSec: this.config.drawDurationSec,
-            searchDurationSec: this.config.searchDurationSec,
+            drawDurationSec: this.ds.drawDurationSec,
+            searchDurationSec: this.ds.searchDurationSec,
             roundNumber: 0,
         };
     }
@@ -514,8 +551,8 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
 
 
     private calculateFieldSizeForDrawingCount(drawingCount: number): number {
-        const grownFieldSize = this.config.fieldBaseSize + drawingCount * this.config.fieldGrowthPerDrawing;
-        return Math.min(grownFieldSize, this.config.fieldMaxSize);
+        const grownFieldSize = this.ds.fieldBaseSize + drawingCount * this.ds.fieldGrowthPerDrawing;
+        return Math.min(grownFieldSize, this.ds.fieldMaxSize);
     }
 
     private getNextFreeMuseumSlot(modeState: DrawSearchModeState): DrawSearchMuseumSlot | null {
@@ -529,7 +566,7 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
     }
 
     private createFallbackPosition(modeState: DrawSearchModeState): { x: number; y: number } {
-        const padding = this.config.imageSizePx;
+        const padding = this.ds.imageSizePx;
         return {
             x: padding + Math.random() * Math.max(1, modeState.effectiveFieldWidth - padding * 2),
             y: padding + Math.random() * Math.max(1, modeState.effectiveFieldHeight - padding * 2),
@@ -542,11 +579,11 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
         }
 
         const slots: DrawSearchMuseumSlot[] = [];
-        const frameWidth = this.config.imageSizePx * 1.25;
-        const frameHeight = this.config.imageSizePx * 1.25;
-        const minDistance = Math.max(frameWidth, frameHeight) * 1.7;
-        const marginX = frameWidth * 0.9;
-        const marginY = frameHeight * 0.9;
+        // Use plinth size (the actual visual bounding box) for distance calculation
+        const plinthSize = this.ds.imageSizePx * 1.62;
+        const minDistance = plinthSize * 1.4;
+        const marginX = plinthSize * 0.8;
+        const marginY = plinthSize * 0.8;
 
         for (let slotIndex = 0; slotIndex < slotCount; slotIndex += 1) {
             let bestCandidate: DrawSearchMuseumSlot | null = null;
@@ -593,13 +630,13 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
             type: "draw-search-config",
             fieldWidth: modeState.effectiveFieldWidth,
             fieldHeight: modeState.effectiveFieldHeight,
-            maxDrawingsPerRound: this.config.maxDrawingsPerRound,
-            searchOverscroll: this.config.searchOverscroll,
+            maxDrawingsPerRound: this.ds.maxDrawingsPerRound,
+            searchOverscroll: this.ds.searchOverscroll,
             initialZoom: 1,
-            imageSizePx: this.config.imageSizePx,
-            fieldBaseSize: this.config.fieldBaseSize,
-            fieldGrowthPerDrawing: this.config.fieldGrowthPerDrawing,
-            fieldMaxSize: this.config.fieldMaxSize,
+            imageSizePx: this.ds.imageSizePx,
+            fieldBaseSize: this.ds.fieldBaseSize,
+            fieldGrowthPerDrawing: this.ds.fieldGrowthPerDrawing,
+            fieldMaxSize: this.ds.fieldMaxSize,
         };
     }
 
