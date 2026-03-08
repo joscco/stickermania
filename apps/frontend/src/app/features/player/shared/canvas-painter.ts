@@ -3,7 +3,7 @@
  */
 
 /** Canvas internal resolution — always square */
-export const CANVAS_RESOLUTION = 300;
+export const CANVAS_RESOLUTION = 400;
 
 export class CanvasPainter {
   private isDrawing = false;

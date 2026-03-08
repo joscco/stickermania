@@ -21,16 +21,15 @@
           {{ index + 1 }}
         </div>
         @if (player.avatarUrl) {
-          <img class="w-9 h-9 rounded-full border border-black/10 bg-white object-cover shrink-0" [src]="player.avatarUrl" [alt]="player.name" />
+          <img class="w-9 h-9 rounded-xl border bg-white object-cover shrink-0" [class.border-emerald-400]="player.connected" [class.border-stone-300]="!player.connected" [src]="player.avatarUrl" [alt]="player.name" />
         } @else {
-          <div class="w-9 h-9 rounded-full border border-black/10 bg-stone-100 shrink-0"></div>
+          <div class="w-9 h-9 rounded-xl border bg-stone-100 shrink-0" [class.border-emerald-400]="player.connected" [class.border-stone-300]="!player.connected"></div>
         }
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-1.5">
-            <div class="w-2 h-2 rounded-full shrink-0" [class.bg-emerald-400]="player.connected" [class.bg-stone-300]="!player.connected"></div>
             <div class="truncate text-sm font-medium text-stone-800">{{ player.name || 'Spieler' }}</div>
           </div>
-          <div class="text-xs text-stone-500 ml-3.5">{{ player.score }} Punkte</div>
+          <div class="text-xs text-stone-500">{{ player.score }} Punkte</div>
         </div>
       </div>
     }
