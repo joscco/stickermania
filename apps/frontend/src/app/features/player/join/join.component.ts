@@ -24,25 +24,30 @@ export class JoinComponent implements OnInit {
 
   public ngOnInit(): void {
     const routeCode = this.route.snapshot.paramMap.get("sessionCode");
+
+    // If session code is in URL (e.g. from QR code), auto-redirect to player page
     if (routeCode) {
-      this.sessionCode.set(this.normalizeSessionCode(routeCode));
+      const normalized = this.normalizeSessionCode(routeCode);
+      localStorage.setItem(LAST_SESSION_CODE_STORAGE_KEY, normalized);
+      this.router.navigate(["/player"], {
+        queryParams: { session: normalized },
+      });
+      return;
     }
 
     // Auto-redirect if we have a stored reconnect payload
-    if (!routeCode) {
-      try {
-        const raw = localStorage.getItem(RECONNECT_STORAGE_KEY);
-        if (raw) {
-          const payload = JSON.parse(raw);
-          if (payload?.sessionCode && payload?.playerId) {
-            this.router.navigate(["/player"], {
-              queryParams: { session: payload.sessionCode },
-            });
-            return;
-          }
+    try {
+      const raw = localStorage.getItem(RECONNECT_STORAGE_KEY);
+      if (raw) {
+        const payload = JSON.parse(raw);
+        if (payload?.sessionCode && payload?.playerId) {
+          this.router.navigate(["/player"], {
+            queryParams: { session: payload.sessionCode },
+          });
+          return;
         }
-      } catch { /* ignore */ }
-    }
+      }
+    } catch { /* ignore */ }
   }
 
   public onInput(rawValue: string): void {

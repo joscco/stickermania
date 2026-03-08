@@ -4,10 +4,8 @@ import { ActivatedRoute, Router } from "@angular/router";
 import type {
   DrawSearchServerEvent,
   GameModeId,
-  GardenModeState,
   GardenServerEvent,
   ServerToClientMessage,
-  TeamGraffitiModeState,
   TeamGraffitiServerEvent,
 } from "@birthday/shared";
 import * as QRCode from "qrcode";
@@ -19,6 +17,7 @@ import { EventToastsComponent, type UiEvent } from "./events/event-toasts.compon
 import { BoardSceneComponent } from "./scene/board-scene.component";
 import { GardenSceneComponent } from "./scene/garden-scene.component";
 import { GraffitiSceneComponent } from "./scene/graffiti-scene.component";
+import { BoardSidebarComponent } from "./sidebar/board-sidebar.component";
 import { BoardSetupDrawerComponent } from "./setup/board-setup-drawer.component";
 
 const EVENT_TOAST_DURATION_MS = 3000;
@@ -26,7 +25,7 @@ const EVENT_TOAST_DURATION_MS = 3000;
 @Component({
   selector: "app-board",
   standalone: true,
-  imports: [CommonModule, EventToastsComponent, BoardSceneComponent, GardenSceneComponent, GraffitiSceneComponent, BoardSetupDrawerComponent],
+  imports: [CommonModule, EventToastsComponent, BoardSceneComponent, GardenSceneComponent, GraffitiSceneComponent, BoardSidebarComponent, BoardSetupDrawerComponent],
   templateUrl: "./board.component.html",
 })
 export class BoardComponent implements OnInit, OnDestroy {
@@ -54,10 +53,8 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   public readonly activeMode = computed<GameModeId>(() => this.worldStore.activeMode());
   public readonly leaderboard = computed(() => this.worldStore.leaderboard());
-  public readonly playerCount = computed(() => this.leaderboard().length);
   public readonly drawingCount = computed(() => this.worldStore.drawingsList().length);
   public readonly roundPhase = computed(() => this.worldStore.round()?.phase ?? "LOBBY");
-  public readonly roundNumber = computed(() => this.worldStore.round()?.roundNumber ?? 0);
   public readonly roundEndsAt = computed(() => {
     if (this.activeMode() === "draw-search") {
       return this.worldStore.round()?.endsAt ?? 0;
@@ -69,8 +66,6 @@ export class BoardComponent implements OnInit, OnDestroy {
 
     return 0;
   });
-  public readonly gardenModeState = computed<GardenModeState | null>(() => this.worldStore.gardenModeState());
-  public readonly teamGraffitiModeState = computed<TeamGraffitiModeState | null>(() => this.worldStore.teamGraffitiModeState());
 
   public constructor(
     private readonly wsService: WebSocketService,
@@ -199,25 +194,6 @@ export class BoardComponent implements OnInit, OnDestroy {
     }
   }
 
-  public teamScores(): Array<{ id: string; score: number }> {
-    const modeState = this.teamGraffitiModeState();
-
-    if (!modeState) {
-      return [];
-    }
-
-    return Object.entries(modeState.teams).map(([teamId, entry]) => ({ id: teamId, score: entry.score }));
-  }
-
-  public activeTagsByBuilding(buildingId: string): Array<TeamGraffitiModeState["activeTags"][string]> {
-    const modeState = this.teamGraffitiModeState();
-
-    if (!modeState) {
-      return [];
-    }
-
-    return Object.values(modeState.activeTags).filter((tag) => tag.buildingId === buildingId);
-  }
 
   private async bootstrapBoardSession(sessionCode: string): Promise<void> {
     this.isBootstrapping.set(true);
@@ -229,7 +205,7 @@ export class BoardComponent implements OnInit, OnDestroy {
       this.sessionId = resolvedSession.sessionId;
       this.sessionCode.set(resolvedSession.sessionCode);
 
-      const playerPageUrl = `${window.location.origin}/#/join/${encodeURIComponent(resolvedSession.sessionCode)}`;
+      const playerPageUrl = `${window.location.origin}/#/player?session=${encodeURIComponent(resolvedSession.sessionCode)}`;
       this.playerUrl.set(playerPageUrl);
       this.playerQrDataUrl.set(await QRCode.toDataURL(playerPageUrl, { margin: 1, scale: 6 }));
 

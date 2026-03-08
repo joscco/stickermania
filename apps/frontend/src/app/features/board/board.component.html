@@ -39,7 +39,6 @@
       <div class="flex items-center justify-between gap-3 px-4 py-3 bg-white/80 border-b border-black/[0.06] backdrop-blur">
         <div class="flex items-center gap-3">
           <span class="text-sm font-semibold text-stone-800">{{ activeMode() === 'draw-search' ? 'Museumssuche' : activeMode() === 'garden-coop' ? 'Gemeinschaftsgarten' : 'Team-Graffiti' }}</span>
-          <span class="text-xs text-stone-400">Session {{ sessionCode() }}</span>
           @if (activeMode() === 'draw-search' && roundPhase() === 'ACTIVE') {
             <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">Aktiv · {{ drawingCount() }} Bilder</span>
           }
@@ -79,45 +78,14 @@
       </div>
     </div>
 
-    <div class="w-80 shrink-0 border-l border-black/[0.06] bg-white flex flex-col">
-      <div class="p-4 border-b border-black/[0.06]">
-        <div class="text-xs font-semibold uppercase tracking-wider text-stone-400">Mitmachen</div>
-        <div class="mt-2 text-sm text-stone-500 break-all">{{ playerUrl() }}</div>
-        @if (playerQrDataUrl()) {
-          <img class="mt-3 w-40 h-40 rounded-2xl border border-black/5 bg-white" [src]="playerQrDataUrl()!" alt="QR-Code" />
-        }
-      </div>
-
-      @if (wifiQrDataUrl()) {
-        <div class="p-4 border-b border-black/[0.06]">
-          <div class="text-xs font-semibold uppercase tracking-wider text-stone-400">WLAN</div>
-          <img class="mt-3 w-32 h-32 rounded-2xl border border-black/5 bg-white" [src]="wifiQrDataUrl()!" alt="WLAN QR-Code" />
-        </div>
-      }
-
-      <div class="px-4 pt-4 pb-2">
-        <div class="text-xs font-semibold uppercase tracking-wider text-stone-400">Highscore</div>
-      </div>
-
-      <div class="flex-1 overflow-auto px-3 pb-3">
-        @if (leaderboard().length === 0) {
-          <div class="text-xs text-stone-400 py-8 text-center">Noch keine Spieler…</div>
-        }
-        @for (player of leaderboard(); track player.id; let index = $index) {
-          <div class="flex items-center gap-3 py-2 px-3 rounded-2xl mb-2 bg-stone-50 border border-black/5">
-            <div class="w-8 text-center text-sm font-semibold text-stone-400">{{ index + 1 }}</div>
-            @if (player.avatarUrl) {
-              <img class="w-10 h-10 rounded-full border border-black/10 bg-white" [src]="player.avatarUrl" [alt]="player.name" />
-            } @else {
-              <div class="w-10 h-10 rounded-full border border-black/10 bg-stone-100"></div>
-            }
-            <div class="min-w-0 flex-1">
-              <div class="truncate text-sm font-medium text-stone-800">{{ player.name || 'Unbenannt' }}</div>
-              <div class="text-xs text-stone-500">{{ player.score }} Punkte</div>
-            </div>
-          </div>
-        }
-      </div>
+    <div class="w-80 shrink-0 border-l border-black/[0.06]">
+      <app-board-sidebar
+        [sessionCode]="sessionCode()"
+        [playerUrl]="playerUrl()"
+        [playerQrDataUrl]="playerQrDataUrl()"
+        [wifiQrDataUrl]="wifiQrDataUrl()"
+        [leaderboard]="leaderboard()"
+      />
     </div>
 
     <app-board-setup-drawer
