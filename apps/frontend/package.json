@@ -3,9 +3,8 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "ng serve --configuration development",
-    "dev:lan": "ng serve --configuration development --host 0.0.0.0",
     "build": "ng build --configuration production",
-    "build:dev": "ng build --configuration development",
+    "build:cloud": "ng build --configuration cloud",
     "test": "ng test"
   },
   "private": true,

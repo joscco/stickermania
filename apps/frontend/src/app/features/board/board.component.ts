@@ -13,6 +13,7 @@ import { BoardSceneComponent } from "./scene/board-scene.component";
 import type { ServerToClientMessage, RoundPhase } from "@birthday/shared";
 import { ActivatedRoute, Router } from "@angular/router";
 import {Subscription} from 'rxjs';
+import { environment } from "../../../environments/environment";
 
 
 /** How long an event toast stays visible */
@@ -34,6 +35,8 @@ const EVENT_TOAST_DURATION_MS = 3000;
 export class BoardComponent implements OnInit, OnDestroy {
   public readonly store: WorldStore;
   private routeSubscription: Subscription | null = null;
+
+  public readonly isPartyMode = environment.appMode === "party";
 
   public readonly playerUrl = signal<string>("");
   public readonly playerQrDataUrl = signal<string | null>(null);
@@ -156,7 +159,7 @@ export class BoardComponent implements OnInit, OnDestroy {
       this.sessionId = resolvedSession.sessionId;
       this.sessionCode.set(resolvedSession.sessionCode);
 
-      const playerPageUrl = `${window.location.origin}/#/join/${encodeURIComponent(resolvedSession.sessionCode)}`;
+      const playerPageUrl = `${window.location.origin}/#/player?session=${encodeURIComponent(resolvedSession.sessionCode)}`;
       this.playerUrl.set(playerPageUrl);
       this.playerQrDataUrl.set(await QRCode.toDataURL(playerPageUrl, { margin: 1, scale: 6 }));
 
@@ -307,6 +310,19 @@ export class BoardComponent implements OnInit, OnDestroy {
       this.wsService.send({ type: "reset" });
     }
     this.pushEvent("Spiel zurückgesetzt! 🔄", Date.now());
+  }
+
+  public async deleteSession(): Promise<void> {
+    if (!this.sessionId) return;
+    if (!confirm("Session wirklich löschen? Alle Spieler werden getrennt und alle Daten gehen verloren.")) return;
+
+    try {
+      await this.apiService.deleteSession(this.sessionId);
+      this.cleanupBoardRuntime();
+      await this.router.navigate(["/board"]);
+    } catch {
+      this.pushEvent("Session konnte nicht gelöscht werden. ❌", Date.now());
+    }
   }
 
   public canReset(): boolean {

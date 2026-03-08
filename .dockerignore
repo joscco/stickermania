@@ -1,8 +1,11 @@
 node_modules
+dist
 .git
-.idea
-.DS_Store
-**/.DS_Store
-apps/**/dist
-packages/**/dist
+.gitignore
+Dockerfile
+README.md
 .data
+coverage
+.angular
+# WiFi credentials – must never be baked into cloud images
+wlan-config.json

@@ -52,20 +52,7 @@
         <span class="text-sm font-semibold text-stone-800 inline-flex items-center gap-1">
           <img src="assets/icons/paintbrush.svg" class="w-4 h-4" alt=""/> Zeichnen & Suchen
         </span>
-        <!-- Phase badge -->
-        <span class="text-xs font-medium px-2.5 py-1 rounded-full"
-          [class.bg-emerald-100]="roundPhase() === 'DRAW'" [class.text-emerald-700]="roundPhase() === 'DRAW'"
-          [class.bg-blue-100]="roundPhase() === 'SEARCH'" [class.text-blue-700]="roundPhase() === 'SEARCH'"
-          [class.bg-stone-200]="roundPhase() === 'LOBBY' || roundPhase() === 'PAUSED'"
-          [class.text-stone-600]="roundPhase() === 'LOBBY' || roundPhase() === 'PAUSED'"
-        >
-          <img [src]="phaseIcon" class="w-3.5 h-3.5 inline" alt=""/>
-          {{ phaseLabel }}
-        </span>
-        <!-- Timer -->
-        @if (timeLeft()) {
-          <span class="text-2xl font-mono font-bold text-stone-800 tabular-nums inline-flex items-center gap-1"><img src="assets/icons/timer.svg" class="w-6 h-6" alt=""/> {{ timeLeft() }}</span>
-        }
+
         @if (roundNumber() > 0) {
           <span class="text-xs text-stone-400">Runde {{ roundNumber() }}</span>
         }
@@ -73,10 +60,9 @@
 
       <div class="flex items-center gap-2 text-xs text-stone-400">
         <span>{{ drawingCount() }} Zeichnungen · {{ playerCount() }} Spieler</span>
-        <button class="rounded-lg border border-black/10 bg-white px-2.5 py-1 text-xs text-stone-500 hover:bg-stone-50" (click)="toggleSetupDrawer()">Setup</button>
-        @if (canReset()) {
-          <button class="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs text-red-600 hover:bg-red-100" (click)="resetWorld()">Reset</button>
-        }
+        <button class="rounded-lg border border-black/10 bg-white p-1.5 text-stone-500 hover:bg-stone-50" (click)="toggleSetupDrawer()" title="Einstellungen">
+          <img src="assets/icons/settings.svg" class="w-4 h-4" alt="Einstellungen"/>
+        </button>
       </div>
     </div>
 
@@ -120,7 +106,16 @@
         </div>
       } @else {
         <div class="text-center">
-          <div class="text-xs text-stone-400 uppercase mb-1 inline-flex items-center gap-1"><img [src]="phaseIcon" class="w-3.5 h-3.5" alt=""/> {{ phaseLabel }}</div>
+          <!-- Phase badge -->
+          <span class="text-xs font-medium px-2.5 py-1 rounded-full"
+                [class.bg-emerald-100]="roundPhase() === 'DRAW'" [class.text-emerald-700]="roundPhase() === 'DRAW'"
+                [class.bg-blue-100]="roundPhase() === 'SEARCH'" [class.text-blue-700]="roundPhase() === 'SEARCH'"
+                [class.bg-stone-200]="roundPhase() === 'LOBBY' || roundPhase() === 'PAUSED'"
+                [class.text-stone-600]="roundPhase() === 'LOBBY' || roundPhase() === 'PAUSED'"
+          >
+          <img [src]="phaseIcon" class="w-3.5 h-3.5 inline" alt=""/>
+            {{ phaseLabel }}
+        </span>
           @if (timeLeft()) {
             <div class="text-3xl font-mono font-bold text-stone-800 tabular-nums">{{ timeLeft() }}</div>
           }
@@ -183,7 +178,7 @@
     <!-- QR codes -->
     <div class="border-t border-black/[0.06] p-3">
       <div class="flex items-center justify-center gap-2">
-        @if (wifiQrDataUrl()) {
+        @if (isPartyMode && wifiQrDataUrl()) {
           <div class="flex flex-col items-center">
             <img class="h-28 w-28 rounded-lg bg-white p-0.5 border border-black/[0.06]" [src]="wifiQrDataUrl()!" alt="WiFi QR"/>
             <div class="mt-1 text-xs text-stone-400">WLAN</div>
@@ -201,8 +196,9 @@
     </div>
   </div>
 
-  <app-board-setup-drawer [isOpen]="showSetupDrawer()" [playerUrl]="playerUrl()" [playerQrDataUrl]="playerQrDataUrl()"
+  <app-board-setup-drawer [isOpen]="showSetupDrawer()" [canReset]="canReset()" [playerUrl]="playerUrl()" [playerQrDataUrl]="playerQrDataUrl()"
     (onCloseRequested)="onSetupDrawerCloseRequested()" (wifiQrGenerated)="onWifiQrGenerated($event)"
+    (resetRequested)="resetWorld()" (deleteRequested)="deleteSession()"
   ></app-board-setup-drawer>
 
   <app-admin-overlay [visible]="showAdminOverlay()" [errorText]="adminErrorText()" (submitAdminKey)="onAdminKeySubmitted($event)"></app-admin-overlay>

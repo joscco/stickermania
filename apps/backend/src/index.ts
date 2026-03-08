@@ -195,9 +195,42 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
+  const deleteMatch = requestUrl.pathname.match(/^\/api\/sessions\/([^/]+)$/u);
+  if (deleteMatch && request.method === "DELETE") {
+    const deletedSessionId = deleteMatch[1];
+    const deleted = await sessionService.deleteSession(deletedSessionId);
+    if (!deleted) {
+      response.writeHead(404, JSON_HEADER);
+      response.end(JSON.stringify({ message: "Session not found" }));
+      return;
+    }
+    // Disconnect all clients of this session
+    for (const [clientId, client] of clients.entries()) {
+      if (client.sessionId === deletedSessionId) {
+        sendTo(client.ws, { type: "error", message: "Session wurde gelöscht." });
+        client.ws.close();
+        clients.delete(clientId);
+      }
+    }
+    response.writeHead(200, JSON_HEADER);
+    response.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
   if (requestUrl.pathname === "/api/info" && request.method === "GET") {
     response.writeHead(200, JSON_HEADER);
     response.end(JSON.stringify({ baseUrl: buildBaseUrl(request) }));
+    return;
+  }
+
+  if (requestUrl.pathname === "/api/wlan-config" && request.method === "GET") {
+    if (backendConfig.wlanConfig) {
+      response.writeHead(200, JSON_HEADER);
+      response.end(JSON.stringify(backendConfig.wlanConfig));
+    } else {
+      response.writeHead(404, JSON_HEADER);
+      response.end(JSON.stringify({ message: "WLAN config not available" }));
+    }
     return;
   }
 

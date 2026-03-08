@@ -1,5 +1,6 @@
 export const environment = {
   production: true,
-  appMode: "party" as "party" | "cloud",
+  appMode: "cloud" as "party" | "cloud",
   websocketUrl: ""
 };
+

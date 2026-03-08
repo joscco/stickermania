@@ -44,4 +44,8 @@ export class ApiService {
   public reset(sessionId: string): Promise<void> {
     return firstValueFrom(this.httpClient.post<void>(`/api/sessions/${encodeURIComponent(sessionId)}/reset`, {}));
   }
+
+  public deleteSession(sessionId: string): Promise<void> {
+    return firstValueFrom(this.httpClient.delete<void>(`/api/sessions/${encodeURIComponent(sessionId)}`));
+  }
 }

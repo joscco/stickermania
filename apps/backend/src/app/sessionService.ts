@@ -279,6 +279,20 @@ export class SessionService {
         }
     }
 
+    public async deleteSession(sessionId: string): Promise<boolean> {
+        const runtime = this.runtimes.get(sessionId);
+        if (runtime?.phaseTimer) {
+            clearTimeout(runtime.phaseTimer);
+        }
+        this.runtimes.delete(sessionId);
+        try {
+            await this.sessionRepository.delete(sessionId);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
     public async loadStateByCode(sessionCode: string): Promise<GameState | null> {
         const state = await this.sessionRepository.loadByCode(sessionCode);
 

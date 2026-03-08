@@ -1,6 +1,7 @@
 import { CommonModule } from "@angular/common";
 import {Component, effect, input, output, signal} from "@angular/core";
 import * as QRCode from "qrcode";
+import { environment } from "../../../../environments/environment";
 
 type WifiSecurity = "WPA" | "WEP" | "nopass";
 
@@ -22,14 +23,19 @@ interface LocalConfig {
 })
 export class BoardSetupDrawerComponent {
   public readonly isOpen = input<boolean>(false);
+  public readonly canReset = input<boolean>(false);
 
   public readonly playerUrl = input<string>("");
   public readonly playerQrDataUrl = input<string | null>(null);
 
   public readonly wifiQrGenerated = output<string>();
   public readonly onCloseRequested = output();
+  public readonly resetRequested = output();
+  public readonly deleteRequested = output();
 
   public readonly copyHint = signal<string | null>(null);
+
+  public readonly isPartyMode = environment.appMode === "party";
 
   // WiFi form (not persisted)
   public readonly showWifi = signal<boolean>(false);
@@ -116,8 +122,12 @@ export class BoardSetupDrawerComponent {
     }
     this.didLoadLocalConfig = true;
 
+    if (!this.isPartyMode) {
+      return;
+    }
+
     try {
-      const response: Response = await fetch("/assets/wlan-config.json", { cache: "no-store" });
+      const response: Response = await fetch("/api/wlan-config", { cache: "no-store" });
       if (!response.ok) {
         return; // missing -> ignore
       }
