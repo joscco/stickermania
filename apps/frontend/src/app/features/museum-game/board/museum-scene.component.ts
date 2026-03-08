@@ -1,15 +1,15 @@
 import { CommonModule } from "@angular/common";
 import { Component, computed, inject } from "@angular/core";
 import { WorldStore } from "../../../core/world.store";
-import { SceneRendererComponent } from "../../../shared/scene-renderer/scene-renderer.component";
+import {MuseumSceneRendererComponent} from '../museum-scene-renderer.component';
 
 @Component({
   selector: "app-board-scene",
   standalone: true,
-  imports: [CommonModule, SceneRendererComponent],
-  templateUrl: "./board-scene.component.html",
+  imports: [CommonModule, MuseumSceneRendererComponent],
+  templateUrl: "./museum-scene.component.html",
 })
-export class BoardSceneComponent {
+export class MuseumSceneComponent {
   public readonly worldStore = inject(WorldStore);
 
   private static readonly MIN_SCENE_WIDTH_PX = 500;
@@ -28,7 +28,7 @@ export class BoardSceneComponent {
     const maxFieldSize = this.worldStore.fieldMaxSize();
     const interpolation = Math.min(1, Math.max(0, (logicalFieldWidth - baseFieldSize) / Math.max(1, maxFieldSize - baseFieldSize)));
 
-    return BoardSceneComponent.MIN_SCENE_WIDTH_PX + interpolation * (BoardSceneComponent.MAX_SCENE_WIDTH_PX - BoardSceneComponent.MIN_SCENE_WIDTH_PX);
+    return MuseumSceneComponent.MIN_SCENE_WIDTH_PX + interpolation * (MuseumSceneComponent.MAX_SCENE_WIDTH_PX - MuseumSceneComponent.MIN_SCENE_WIDTH_PX);
   });
 
   public readonly displayFieldHeight = computed(() => {
@@ -37,7 +37,7 @@ export class BoardSceneComponent {
     const maxFieldSize = this.worldStore.fieldMaxSize();
     const interpolation = Math.min(1, Math.max(0, (logicalFieldHeight - baseFieldSize) / Math.max(1, maxFieldSize - baseFieldSize)));
 
-    return BoardSceneComponent.MIN_SCENE_HEIGHT_PX + interpolation * (BoardSceneComponent.MAX_SCENE_HEIGHT_PX - BoardSceneComponent.MIN_SCENE_HEIGHT_PX);
+    return MuseumSceneComponent.MIN_SCENE_HEIGHT_PX + interpolation * (MuseumSceneComponent.MAX_SCENE_HEIGHT_PX - MuseumSceneComponent.MIN_SCENE_HEIGHT_PX);
   });
 
   public readonly imageSizeInPixel = computed(() => {

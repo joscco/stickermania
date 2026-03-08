@@ -1,0 +1,93 @@
+<!-- Minimalist B&W museum scene — clean white floor, hand-drawn frames, stick-figure visitors -->
+<div
+  class="relative select-none overflow-hidden touch-none transition-[width,height] duration-700 ease-out bg-white"
+  [style.width.px]="containerWidthPx()"
+  [style.height.px]="containerHeightPx()"
+>
+  <!-- Subtle dot grid floor pattern -->
+  <div class="absolute inset-0 opacity-[0.06]"
+       style="background-image: radial-gradient(circle, #000 0.8px, transparent 0.8px); background-size: 24px 24px;"></div>
+
+  <!-- Visitors (stick figures bobbing along) -->
+  @for (v of visitors(); track v.id) {
+    <div
+      #visitorEl
+      class="absolute pointer-events-none z-[1]"
+      [style.left.px]="v.startX"
+      [style.top.px]="v.startY"
+    >
+      <div
+        #visitorBobEl
+        [style.width.px]="v.sizePx"
+        [style.height.px]="v.sizePx"
+      >
+        <img
+          [src]="v.spriteUrl"
+          class="w-full h-full"
+          [style.transform]="v.facingLeft ? 'scaleX(-1)' : ''"
+          alt="" draggable="false"
+        />
+      </div>
+    </div>
+  }
+
+  <!-- Empty easel placeholders (faint) -->
+  @for (slot of freeSlots(); track slot.id) {
+    <div
+      class="absolute pointer-events-none z-[2]"
+      [style.left.px]="sx(slot.x)"
+      [style.top.px]="sy(slot.y)"
+      [style.width.px]="slotPx()"
+      [style.height.px]="slotPx()"
+      [style.transform]="'translate(-50%, -50%) rotate(' + slot.rotationDeg + 'deg)'"
+    >
+      <img
+        src="assets/museum/easel.svg"
+        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-25"
+        [style.width.px]="slotPx() * 0.55"
+        [style.height.px]="slotPx() * 0.7"
+        alt="" draggable="false"
+      />
+    </div>
+  }
+
+  <!-- Drawings on easels -->
+  @for (drawing of drawingsSorted(); track drawing.id) {
+    <div
+      class="absolute pointer-events-none z-[3]"
+      style="animation: pop-in 0.4s ease-out both;"
+      [style.left.px]="sx(drawing.x)"
+      [style.top.px]="sy(drawing.y)"
+      [style.width.px]="slotPx()"
+      [style.height.px]="slotPx()"
+      [style.transform]="'translate(-50%, -50%) rotate(' + rotation(drawing) + 'deg)'"
+    >
+      <!-- Easel behind the painting (legs visible below) -->
+      <img
+        src="assets/museum/easel.svg"
+        class="absolute left-1/2 -translate-x-1/2 opacity-70"
+        [style.width.px]="slotPx() * 0.6"
+        [style.height.px]="slotPx() * 0.9"
+        [style.top.px]="slotPx() * 0.1"
+        alt="" draggable="false"
+      />
+      <!-- Hand-drawn frame (B&W sketch) -->
+      <img
+        src="assets/museum/frame.svg"
+        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        [style.width.px]="framePx()"
+        [style.height.px]="framePx()"
+        alt="" draggable="false"
+      />
+      <!-- The actual painting -->
+      <img
+        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 object-cover rounded-sm"
+        [style.width.px]="imageSizePx() * 0.9"
+        [style.height.px]="imageSizePx() * 0.9"
+        [src]="drawing.imageUrl"
+        [alt]="drawing.prompt"
+        draggable="false"
+      />
+    </div>
+  }
+</div>

@@ -16,12 +16,12 @@ import { GameSessionStore } from "../../core/challenge.store";
 import { ApiService } from "../../core/api.service";
 import { WebSocketService } from "../../core/websocket.service";
 import { WorldStore } from "../../core/world.store";
-import { DrawComponent } from "./draw/draw.component";
 import { IdleSearchWaitingComponent } from "./idle/idle-search-waiting.component";
 import { LobbyAvatarComponent } from "./lobby/lobby-avatar.component";
 import { LobbyNameComponent } from "./lobby/lobby-name.component";
 import { LobbyReadyComponent } from "./lobby/lobby-ready.component";
-import { SearchComponent } from "./search";
+import {SearchComponent} from '../museum-game/player/search';
+import {DrawComponent} from '../museum-game/player/draw/draw.component';
 
 // ── localStorage reconnect helper ───────────────────────────────────
 const RECONNECT_STORAGE_KEY = "birthday_reconnect";
@@ -391,6 +391,14 @@ export class PlayerComponent implements OnInit, OnDestroy {
         this.playerId = message.playerId;
         localStorage.setItem("birthday_player_id", message.playerId);
 
+        // Update the cached join message so reconnects reuse the same player
+        this.wsService.updatePendingJoin({
+          type: "join",
+          kind: "player",
+          sessionId: message.sessionId,
+          playerId: message.playerId,
+        });
+
         // Save reconnect payload
         const sessionCode = this.route.snapshot.queryParamMap.get("session") ?? localStorage.getItem("birthday_last_session_code") ?? "";
         saveReconnectPayload({
@@ -576,6 +584,10 @@ export class PlayerComponent implements OnInit, OnDestroy {
     if (player.name.trim().length > 0) {
       this.sessionStore.playerName.set(player.name);
       this.updateReconnectPayload({ playerName: player.name });
+    } else if (this.sessionStore.playerName().trim().length > 0) {
+      // Client has a name from localStorage that the server doesn't know about yet
+      // (e.g. after reconnect created a new player). Re-send it.
+      this.wsService.send({ type: "set-name", name: this.sessionStore.playerName() });
     }
 
     // If name or avatar missing, show lobby

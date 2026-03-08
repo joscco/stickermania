@@ -2,7 +2,7 @@ import {
   Component, ElementRef, ViewChild, AfterViewInit,
   input, output, signal,
 } from "@angular/core";
-import { CanvasPainter } from "../shared/canvas-painter";
+import {CanvasPainter} from '../../../player/shared/canvas-painter';
 
 @Component({
   selector: "app-draw",

@@ -301,7 +301,8 @@
     "fieldBaseSize": 800,
     "fieldGrowthPerDrawing": 200,
     "fieldMaxSize": 6000,
-    "minDrawingsForSearch": 3
+    "minDrawingsForSearch": 3,
+    "seedTestDrawings": 5
   },
   "gardenCoop": {
     "plotCount": 6,

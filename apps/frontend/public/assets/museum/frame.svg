@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="#222" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Outer hand-drawn frame -->
+  <path d="M 5 5 Q 3 3 8 3 L 92 4 Q 97 3 97 8 L 96 92 Q 97 97 92 97 L 8 96 Q 3 97 3 92 Z"/>
+  <!-- Inner subtle line -->
+  <path d="M 10 10 Q 8 8 13 8 L 87 9 Q 92 8 92 13 L 91 87 Q 92 92 87 92 L 13 91 Q 8 92 8 87 Z" stroke-width="1" opacity="0.3"/>
+</svg>
+

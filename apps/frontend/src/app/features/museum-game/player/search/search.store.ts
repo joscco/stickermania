@@ -1,7 +1,7 @@
 import { DestroyRef, Injectable, computed, inject, signal } from "@angular/core";
-import { WebSocketService } from "../../../core/websocket.service";
-import { GameSessionStore } from "../../../core/challenge.store";
 import type { DrawSearchSearchTask, ServerToClientMessage } from "@birthday/shared";
+import {WebSocketService} from '../../../../core/websocket.service';
+import {GameSessionStore} from '../../../../core/challenge.store';
 
 @Injectable()
 export class SearchStore {

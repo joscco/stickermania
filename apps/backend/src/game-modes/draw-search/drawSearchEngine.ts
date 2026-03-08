@@ -110,8 +110,9 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
     }): GameActionResult<"draw-search"> {
         const modeState = args.sessionState.modeState;
 
+        const seedCount = this.ds.seedTestDrawings;
         // Start with a modest field size; it grows dynamically as drawings are added
-        const initialDrawingEstimate = Math.max(4, Object.keys(args.sessionState.players).length * 2);
+        const initialDrawingEstimate = Math.max(4, Object.keys(args.sessionState.players).length * 2 + seedCount);
         const effectiveFieldSize = this.calculateFieldSizeForDrawingCount(initialDrawingEstimate);
 
         modeState.drawings = {};
@@ -121,6 +122,11 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
         modeState.round.phase = "ACTIVE";
         modeState.round.endsAt = 0; // no global timer
         modeState.round.roundNumber += 1;
+
+        // Seed test drawings (for dev/testing)
+        if (seedCount > 0) {
+            this.injectTestDrawings(modeState, seedCount, args.now);
+        }
 
         const events: DrawSearchServerEvent[] = [this.createConfigEvent(modeState)];
 
@@ -549,6 +555,41 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
         };
     }
 
+    /**
+     * Inject pre-made test drawings into the mode state for dev/testing.
+     * These are served as static assets from the frontend.
+     */
+    private injectTestDrawings(modeState: DrawSearchModeState, count: number, now: number): void {
+        const testImages = [
+            { file: "cat.svg", prompt: "Katze" },
+            { file: "sun.svg", prompt: "Sonne" },
+            { file: "house.svg", prompt: "Haus" },
+            { file: "tree.svg", prompt: "Baum" },
+            { file: "fish.svg", prompt: "Fisch" },
+            { file: "star.svg", prompt: "Stern" },
+        ];
+
+        for (let i = 0; i < count; i++) {
+            const testImage = testImages[i % testImages.length];
+            const drawingId = `test-${i + 1}`;
+            const slot = this.getNextFreeMuseumSlot(modeState);
+            const fallback = this.createFallbackPosition(modeState);
+
+            modeState.drawings[drawingId] = {
+                id: drawingId,
+                artistId: "__test__",
+                prompt: testImage.prompt,
+                imageUrl: `/assets/test-drawings/${testImage.file}`,
+                imageAssetPath: "",
+                x: slot?.x ?? fallback.x,
+                y: slot?.y ?? fallback.y,
+                slotId: slot?.id ?? null,
+                placedAt: now - (count - i) * 1000,
+                foundBy: null,
+                foundAt: null,
+            };
+        }
+    }
 
     private calculateFieldSizeForDrawingCount(drawingCount: number): number {
         const grownFieldSize = this.ds.fieldBaseSize + drawingCount * this.ds.fieldGrowthPerDrawing;

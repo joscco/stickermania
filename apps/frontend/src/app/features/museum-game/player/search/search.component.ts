@@ -11,12 +11,12 @@ import {
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 
-import { WorldStore } from "../../../core/world.store";
-import { SceneRendererComponent } from "../../../shared/scene-renderer/scene-renderer.component";
-import { ViewportController } from "../viewport-controller";
-import { GestureInterpreter } from "../gesture-interpreter";
-import type { Point, Size } from "../types";
 import { SearchStore } from "./search.store";
+import {WorldStore} from '../../../../core/world.store';
+import {MuseumSceneRendererComponent} from '../../museum-scene-renderer.component';
+import {GestureInterpreter} from '../../../player/gesture-interpreter';
+import {ViewportController} from '../../../player/viewport-controller';
+import {Point, Size} from '../../../player/types';
 
 /**
  * Self-contained search-mode component.
@@ -38,7 +38,7 @@ import { SearchStore } from "./search.store";
 @Component({
   selector: "app-search",
   standalone: true,
-  imports: [CommonModule, SceneRendererComponent],
+  imports: [CommonModule, MuseumSceneRendererComponent],
   providers: [SearchStore],
   templateUrl: "./search.component.html",
 })

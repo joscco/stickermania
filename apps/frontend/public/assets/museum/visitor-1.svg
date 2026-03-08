@@ -1,19 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-  <!-- Cute top-down museum visitor sprite facing down -->
-  <!-- Body -->
-  <ellipse cx="12" cy="14" rx="5" ry="6" fill="#6b7280"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" stroke="#222" stroke-width="1.5" stroke-linecap="round">
+  <!-- Minimalist B&W stick figure -->
   <!-- Head -->
-  <circle cx="12" cy="7" r="5" fill="#fde68a" stroke="#d4a574" stroke-width="0.8"/>
-  <!-- Hair -->
-  <path d="M7 6 Q8 2 12 2 Q16 2 17 6" fill="#92400e" stroke="none"/>
-  <!-- Eyes -->
-  <circle cx="10" cy="7.5" r="0.8" fill="#1f2937"/>
-  <circle cx="14" cy="7.5" r="0.8" fill="#1f2937"/>
-  <!-- Blush -->
-  <ellipse cx="9" cy="9" rx="1.2" ry="0.6" fill="#fca5a5" opacity="0.5"/>
-  <ellipse cx="15" cy="9" rx="1.2" ry="0.6" fill="#fca5a5" opacity="0.5"/>
-  <!-- Feet -->
-  <ellipse cx="10" cy="20" rx="2" ry="1.5" fill="#4b5563"/>
-  <ellipse cx="14" cy="20" rx="2" ry="1.5" fill="#4b5563"/>
+  <circle cx="16" cy="10" r="5" fill="#222"/>
+  <!-- Body -->
+  <line x1="16" y1="15" x2="16" y2="25"/>
+  <!-- Arms -->
+  <line x1="16" y1="18" x2="10" y2="22"/>
+  <line x1="16" y1="18" x2="22" y2="22"/>
+  <!-- Legs -->
+  <line x1="16" y1="25" x2="12" y2="31"/>
+  <line x1="16" y1="25" x2="20" y2="31"/>
 </svg>
-

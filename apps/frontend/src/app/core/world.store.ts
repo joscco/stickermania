@@ -29,6 +29,16 @@ export class WorldStore {
   public readonly activeMode = computed<GameModeId>(() => this.sessionState()?.activeMode ?? "draw-search");
   public readonly players = computed<Record<string, SessionPlayer>>(() => this.sessionState()?.players ?? {});
 
+  /** All players including those without a name, sorted by score desc then join time asc */
+  public readonly allPlayers = computed<SessionPlayer[]>(() => {
+    return Object.values(this.players())
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.joinedAt - b.joinedAt;
+      });
+  });
+
+  /** Only named players, used for game-relevant leaderboards */
   public readonly leaderboard = computed<SessionPlayer[]>(() => {
     return Object.values(this.players())
       .filter((player) => player.name.trim().length > 0)

@@ -15,18 +15,18 @@ import { WebSocketService } from "../../core/websocket.service";
 import { WorldStore } from "../../core/world.store";
 import { EventToastsComponent, type UiEvent } from "./events/event-toasts.component";
 import { BoardLobbyComponent } from "./lobby/board-lobby.component";
-import { BoardSceneComponent } from "./scene/board-scene.component";
-import { GardenSceneComponent } from "./scene/garden-scene.component";
-import { GraffitiSceneComponent } from "./scene/graffiti-scene.component";
 import { BoardSidebarComponent } from "./sidebar/board-sidebar.component";
 import { BoardSetupDrawerComponent } from "./setup/board-setup-drawer.component";
+import {MuseumSceneComponent} from '../museum-game/board/museum-scene.component';
+import {GardenSceneComponent} from '../garden-game/board/garden-scene.component';
+import {GraffitiSceneComponent} from '../graffiti-game/board/graffiti-scene.component';
 
 const EVENT_TOAST_DURATION_MS = 3000;
 
 @Component({
   selector: "app-board",
   standalone: true,
-  imports: [CommonModule, EventToastsComponent, BoardLobbyComponent, BoardSceneComponent, GardenSceneComponent, GraffitiSceneComponent, BoardSidebarComponent, BoardSetupDrawerComponent],
+  imports: [CommonModule, EventToastsComponent, BoardLobbyComponent, MuseumSceneComponent, GardenSceneComponent, GraffitiSceneComponent, BoardSidebarComponent, BoardSetupDrawerComponent],
   templateUrl: "./board.component.html",
 })
 export class BoardComponent implements OnInit, OnDestroy {
@@ -60,6 +60,7 @@ export class BoardComponent implements OnInit, OnDestroy {
     }
   });
   public readonly leaderboard = computed(() => this.worldStore.leaderboard());
+  public readonly allPlayers = computed(() => this.worldStore.allPlayers());
   public readonly drawingCount = computed(() => this.worldStore.drawingsList().length);
   public readonly roundPhase = computed(() => this.worldStore.round()?.phase ?? "LOBBY");
   public readonly roundEndsAt = computed(() => {

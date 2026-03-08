@@ -14,6 +14,8 @@ export interface DrawSearchGameConfig {
   fieldGrowthPerDrawing: number;
   fieldMaxSize: number;
   minDrawingsForSearch: number;
+  /** If > 0, inject this many test drawings on startMode (for dev/testing) */
+  seedTestDrawings: number;
 }
 
 export interface GardenCoopGameConfig {
@@ -74,6 +76,7 @@ export function parseGameConfig(raw: unknown): GameConfig {
       fieldGrowthPerDrawing: typeof (ds["fieldGrowthPerDrawing"] ?? r["fieldGrowthPerDrawing"]) === "number" ? (ds["fieldGrowthPerDrawing"] ?? r["fieldGrowthPerDrawing"]) as number : 200,
       fieldMaxSize: typeof (ds["fieldMaxSize"] ?? r["fieldMaxSize"]) === "number" ? (ds["fieldMaxSize"] ?? r["fieldMaxSize"]) as number : 6000,
       minDrawingsForSearch: typeof ds["minDrawingsForSearch"] === "number" ? ds["minDrawingsForSearch"] : 3,
+      seedTestDrawings: typeof ds["seedTestDrawings"] === "number" ? ds["seedTestDrawings"] : 0,
     },
     gardenCoop: {
       plotCount: typeof gc["plotCount"] === "number" ? gc["plotCount"] : 6,

@@ -112,6 +112,16 @@ export class WebSocketService {
     this.sendRaw(msg);
   }
 
+  /**
+   * Update the cached join message without sending it.
+   * Used after receiving 'welcome' to ensure reconnects use the correct playerId.
+   */
+  public updatePendingJoin(msg: ClientToServerMessage): void {
+    if (msg.type === "join") {
+      this.pendingJoinMsg = msg;
+    }
+  }
+
   private sendRaw(msg: ClientToServerMessage): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(msg));

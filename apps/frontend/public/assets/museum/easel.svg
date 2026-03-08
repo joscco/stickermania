@@ -1,21 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100" fill="none" stroke="#222" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <!-- Hand-drawn easel/stand for museum paintings (top-down view) -->
-  <!-- Shadow -->
-  <ellipse cx="24" cy="42" rx="14" ry="4" fill="#c9b99a" opacity="0.35"/>
-  <!-- Back leg -->
-  <rect x="22" y="28" width="4" height="16" rx="2" fill="#8b7355"/>
-  <!-- Front legs -->
-  <rect x="12" y="30" width="3" height="14" rx="1.5" fill="#a08060" transform="rotate(-8,13.5,37)"/>
-  <rect x="33" y="30" width="3" height="14" rx="1.5" fill="#a08060" transform="rotate(8,34.5,37)"/>
-  <!-- Easel shelf -->
-  <rect x="8" y="26" width="32" height="4" rx="2" fill="#b09070"/>
-  <rect x="10" y="27" width="28" height="2" rx="1" fill="#c4a882"/>
-  <!-- Top crossbar -->
-  <rect x="14" y="4" width="20" height="3" rx="1.5" fill="#a08060"/>
-  <!-- Frame border (hand-drawn look with slight variation) -->
-  <rect x="7" y="5" width="34" height="24" rx="3" fill="#c9a84c" stroke="#b8942e" stroke-width="2"/>
-  <rect x="10" y="8" width="28" height="18" rx="2" fill="#f5f0e0"/>
-  <!-- Inner shadow for depth -->
-  <rect x="10" y="8" width="28" height="2" fill="#e8ddc4" rx="1"/>
+  <line x1="20" y1="90" x2="35" y2="30"/>
+  <line x1="60" y1="90" x2="45" y2="30"/>
+  <line x1="40" y1="95" x2="40" y2="28"/>
+  <line x1="25" y1="70" x2="55" y2="70"/>
+  <line x1="30" y1="28" x2="50" y2="28"/>
 </svg>
-

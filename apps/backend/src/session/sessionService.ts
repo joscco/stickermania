@@ -126,6 +126,35 @@ export class SessionService {
             return null;
         }
 
+        const runtime = this.getOrCreateRuntime(state);
+
+        // Board clients are spectators — they don't create or use players
+        if (args.kind === "board") {
+            runtime.sessionRuntime.connectedClients.set(args.clientId, {
+                playerId: "__board__",
+                clientId: args.clientId,
+                kind: args.kind,
+                connectedAt: Date.now(),
+            });
+
+            // Return a dummy player entry for the board (not stored in state.players)
+            return {
+                state,
+                player: {
+                    id: "__board__",
+                    name: "Board",
+                    avatarUrl: null,
+                    avatarAssetPath: null,
+                    score: 0,
+                    joinedAt: Date.now(),
+                    connected: true,
+                    isHost: false,
+                    teamId: null,
+                },
+            };
+        }
+
+        // Player clients
         let player = args.existingPlayerId ? state.players[args.existingPlayerId] : undefined;
 
         if (!player) {
@@ -140,7 +169,6 @@ export class SessionService {
 
         player.connected = true;
 
-        const runtime = this.getOrCreateRuntime(state);
         runtime.sessionRuntime.connectedClients.set(args.clientId, {
             playerId: player.id,
             clientId: args.clientId,

@@ -1,7 +1,7 @@
 <div class="h-full flex flex-col bg-white">
   <!-- Highscore list (takes up main space, scrollable) -->
   <div class="flex-1 overflow-auto px-4 pt-4 pb-2">
-    <div class="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-3">Highscore</div>
+    <div class="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-3">Spieler</div>
 
     @if (leaderboard().length === 0) {
       <div class="text-xs text-stone-400 py-8 text-center">Noch keine Spieler…</div>
@@ -26,8 +26,11 @@
           <div class="w-9 h-9 rounded-full border border-black/10 bg-stone-100 shrink-0"></div>
         }
         <div class="min-w-0 flex-1">
-          <div class="truncate text-sm font-medium text-stone-800">{{ player.name || 'Unbenannt' }}</div>
-          <div class="text-xs text-stone-500">{{ player.score }} Punkte</div>
+          <div class="flex items-center gap-1.5">
+            <div class="w-2 h-2 rounded-full shrink-0" [class.bg-emerald-400]="player.connected" [class.bg-stone-300]="!player.connected"></div>
+            <div class="truncate text-sm font-medium text-stone-800">{{ player.name || 'Spieler' }}</div>
+          </div>
+          <div class="text-xs text-stone-500 ml-3.5">{{ player.score }} Punkte</div>
         </div>
       </div>
     }
