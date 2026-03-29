@@ -18,6 +18,12 @@ export class BoardLobbyComponent implements OnInit {
   public readonly sessions = signal<SessionSummary[]>([]);
   public readonly isLoadingSessions = signal(true);
 
+  public readonly gameModes: { id: GameModeId; icon: string; label: string; description: string }[] = [
+    { id: "draw-search", icon: "assets/png/Icon_DrawGame.png", label: "Künstler & Kenner", description: "Bilder zeichnen und finden" },
+    { id: "team-graffiti", icon: "assets/png/Icon_TagGame.png", label: "Graffiti", description: "Zwei Teams taggen die Stadt" },
+    { id: "garden-coop", icon: "assets/png/Icon_GardenGame.png", label: "Garten", description: "Gemeinsam einen Garten pflegen" },
+  ];
+
   public constructor(private readonly api: ApiService) {}
 
   public async ngOnInit(): Promise<void> {
@@ -54,12 +60,7 @@ export class BoardLobbyComponent implements OnInit {
   }
 
   public modeLabel(mode: string): string {
-    switch (mode) {
-      case "draw-search": return "Künstler & Kenner";
-      case "garden-coop": return "Garten";
-      case "team-graffiti": return "Team-Graffiti";
-      default: return mode;
-    }
+    return this.gameModes.find((m) => m.id === mode)?.label ?? mode;
   }
 
   public modeEmoji(mode: string): string {

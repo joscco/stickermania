@@ -9,22 +9,22 @@
        style="background-image: radial-gradient(circle, #000 0.8px, transparent 0.8px); background-size: 24px 24px;"></div>
 
   <!-- Visitors (stick figures bobbing along) -->
-  @for (v of visitors(); track v.id) {
+  @for (visitor of visitors(); track visitor.id) {
     <div
       #visitorEl
       class="absolute pointer-events-none z-[1]"
-      [style.left.px]="v.startX"
-      [style.top.px]="v.startY"
+      [style.left.px]="visitor.startX"
+      [style.top.px]="visitor.startY"
     >
       <div
         #visitorBobEl
-        [style.width.px]="v.sizePx"
-        [style.height.px]="v.sizePx"
+        [style.width.px]="visitor.sizePx"
+        [style.height.px]="visitor.sizePx"
       >
         <img
-          [src]="v.spriteUrl"
+          [src]="visitor.spriteUrl"
           class="w-full h-full"
-          [style.transform]="v.facingLeft ? 'scaleX(-1)' : ''"
+          [style.transform]="visitor.facingLeft ? 'scaleX(-1)' : ''"
           alt="" draggable="false"
         />
       </div>
