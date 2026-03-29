@@ -53,7 +53,7 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly activeMode = computed<GameModeId>(() => this.worldStore.activeMode());
   public readonly modeLabel = computed(() => {
     switch (this.activeMode()) {
-      case "draw-search": return "Museumssuche";
+      case "draw-search": return "Künstler & Kenner";
       case "garden-coop": return "Gemeinschaftsgarten";
       case "team-graffiti": return "Team-Graffiti";
       default: return this.activeMode();

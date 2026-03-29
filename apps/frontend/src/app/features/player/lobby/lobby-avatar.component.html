@@ -3,37 +3,38 @@
     <h2 class="text-lg font-bold">Zeichne deinen Avatar</h2>
     <p class="text-xs text-stone-500">{{ playerName() }}, mal dich selbst!</p>
   </div>
-  <div class="relative rounded-2xl border-2 border-black/[0.06] overflow-hidden bg-white aspect-square no-select"
-       style="width: min(92vw, calc(100dvh - 260px));">
-    <canvas #canvas class="w-full h-full" style="touch-action: none;"
+  <div class="relative overflow-hidden no-select"
+       style="width: min(92vw, calc(100dvh - 260px)); aspect-ratio: 1;">
+    <img src="assets/png/Avatar_Frame.png" class="absolute inset-0 w-full h-full pointer-events-none z-0" alt="" />
+    <canvas #canvas class="absolute inset-[11%] w-[78%] h-[78%] z-10" style="touch-action: none;"
             (pointerdown)="painter.pointerDown($event)"
             (pointermove)="painter.pointerMove($event)"
             (pointerup)="painter.pointerUp()"
             (pointercancel)="painter.pointerUp()"
     ></canvas>
   </div>
-  <div class="flex gap-1.5 mt-3 flex-wrap justify-center">
-    @for (color of colors(); track color) {
-      <button class="w-8 h-8 rounded-full border-2 border-transparent transition-transform"
-              [style.background]="color"
-              [class.border-stone-900]="currentColor() === color"
-              [class.scale-110]="currentColor() === color"
-              (click)="selectColor(color)"></button>
-    }
+  <div class="flex items-center gap-3 mt-3">
+    <button class="w-12 h-12 rounded-xl transition-transform"
+            [class.scale-110]="brushThin() && !eraserMode()"
+            (click)="selectBrush(true)">
+      <img src="assets/png/Button_Small.png" class="w-full h-full object-contain" alt="Dünn" />
+    </button>
+    <button class="w-12 h-12 rounded-xl transition-transform"
+            [class.scale-110]="!brushThin() && !eraserMode()"
+            (click)="selectBrush(false)">
+      <img src="assets/png/Button_Big.png" class="w-full h-full object-contain" alt="Dick" />
+    </button>
+    <button class="w-12 h-12 rounded-xl transition-transform"
+            [class.scale-110]="eraserMode()"
+            (click)="toggleEraser()">
+      <img src="assets/png/Button_Eraser.png" class="w-full h-full object-contain" alt="Radierer" />
+    </button>
   </div>
-  <div class="flex items-center gap-3 mt-2">
-    <button class="rounded-lg px-3 py-1 text-sm border transition-colors"
-            [class.bg-stone-900]="brushThin()" [class.text-white]="brushThin()"
-            [class.bg-white]="!brushThin()" [class.text-stone-600]="!brushThin()"
-            (click)="brushThin.set(true)">Dünn</button>
-    <button class="rounded-lg px-3 py-1 text-sm border transition-colors"
-            [class.bg-stone-900]="!brushThin()" [class.text-white]="!brushThin()"
-            [class.bg-white]="brushThin()" [class.text-stone-600]="brushThin()"
-            (click)="brushThin.set(false)">Dick</button>
-  </div>
-  <div class="flex gap-2 mt-3">
+  <div class="flex gap-2 mt-3 items-center">
     <button class="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm hover:bg-stone-50" (click)="clear()">Löschen</button>
-    <button class="rounded-xl bg-stone-900 text-white px-6 py-2 text-sm font-medium hover:bg-stone-800 active:translate-y-px" (click)="submit()">Fertig ✓</button>
+    <button class="h-12 transition-transform hover:scale-105 active:translate-y-px" (click)="submit()">
+      <img src="assets/png/Button_Ready.png" class="h-full object-contain" alt="Fertig" />
+    </button>
   </div>
   <button class="mt-2 text-xs text-stone-400 hover:text-stone-600 underline" (click)="skipped.emit()">Überspringen</button>
 </div>

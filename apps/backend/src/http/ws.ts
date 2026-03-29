@@ -128,7 +128,6 @@ export function createWebSocketHandler(
           sessionId: joined.state.sessionId,
           serverTime: Date.now(),
           serverSessionId,
-          assignedColors: [],
         });
 
         sendToClient(ws, {

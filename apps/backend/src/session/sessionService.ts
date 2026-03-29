@@ -11,7 +11,7 @@ import {GameModeRegistry} from "../game-modes/gameModeRegistry.js";
 
 const SESSION_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
-function generateSessionCode(length: number = 5): string {
+function generateSessionCode(length: number = 4): string {
     let sessionCode = "";
 
     for (let index = 0; index < length; index += 1) {

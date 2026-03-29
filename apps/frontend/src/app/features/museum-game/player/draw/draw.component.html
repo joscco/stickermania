@@ -27,24 +27,21 @@
   <div class="px-3 pt-2 space-y-2 w-full max-w-md mx-auto"
        style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom));">
     <div class="flex items-center justify-center gap-3">
-      @for (color of colors(); track color) {
-        <button class="w-10 h-10 rounded-full border-3 transition-transform"
-                [style.background]="color"
-                [class.border-stone-900]="currentColor() === color"
-                [class.scale-110]="currentColor() === color"
-                [class.border-transparent]="currentColor() !== color"
-                [class.ring-2]="currentColor() === color"
-                [class.ring-stone-400]="currentColor() === color"
-                (click)="selectColor(color)"></button>
-      }
-      <div class="flex bg-stone-200 rounded-lg overflow-hidden ml-3">
-        <button class="px-3 py-1.5 text-xs font-medium transition-colors"
-                [class.bg-stone-900]="brushThin()" [class.text-white]="brushThin()"
-                (click)="brushThin.set(true)">Dünn</button>
-        <button class="px-3 py-1.5 text-xs font-medium transition-colors"
-                [class.bg-stone-900]="!brushThin()" [class.text-white]="!brushThin()"
-                (click)="brushThin.set(false)">Dick</button>
-      </div>
+      <button class="w-12 h-12 rounded-xl transition-transform"
+              [class.scale-110]="brushThin() && !eraserMode()"
+              (click)="selectBrush(true)">
+        <img src="assets/png/Button_Small.png" class="w-full h-full object-contain" alt="Dünn" />
+      </button>
+      <button class="w-12 h-12 rounded-xl transition-transform"
+              [class.scale-110]="!brushThin() && !eraserMode()"
+              (click)="selectBrush(false)">
+        <img src="assets/png/Button_Big.png" class="w-full h-full object-contain" alt="Dick" />
+      </button>
+      <button class="w-12 h-12 rounded-xl transition-transform"
+              [class.scale-110]="eraserMode()"
+              (click)="toggleEraser()">
+        <img src="assets/png/Button_Eraser.png" class="w-full h-full object-contain" alt="Radierer" />
+      </button>
     </div>
     <div class="flex gap-2">
       <button class="flex-1 rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm hover:bg-stone-50 inline-flex items-center justify-center gap-1" (click)="clear()">

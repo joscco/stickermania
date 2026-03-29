@@ -42,7 +42,7 @@ export class CanvasPainter {
     event.preventDefault();
     const canvas = this.getCanvas();
     if (!canvas) return;
-    (event.target as HTMLElement).setPointerCapture(event.pointerId);
+    canvas.setPointerCapture(event.pointerId);
     this.isDrawing = true;
 
     const rect = canvas.getBoundingClientRect();

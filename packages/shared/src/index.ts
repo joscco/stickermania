@@ -32,8 +32,6 @@ export interface TeamGraffitiGameConfig {
 
 export interface GameConfig {
   // General
-  playerColors: string[];
-  colorsPerPlayer: number;
   drawingsPath: string;
   port: number;
   adminPassword: string | null;
@@ -58,8 +56,6 @@ export function parseGameConfig(raw: unknown): GameConfig {
   const tg = parseSubObject(r, "teamGraffiti");
 
   return {
-    playerColors: Array.isArray(r["playerColors"]) ? (r["playerColors"] as string[]) : ["#dc2626", "#2563eb"],
-    colorsPerPlayer: typeof r["colorsPerPlayer"] === "number" ? r["colorsPerPlayer"] : 2,
     drawingsPath: typeof r["drawingsPath"] === "string" ? r["drawingsPath"] : "./drawings",
     port: typeof r["port"] === "number" ? r["port"] : 3001,
     adminPassword: typeof r["adminPassword"] === "string" ? r["adminPassword"] : null,
@@ -157,7 +153,6 @@ export type SessionServerToClientMessage =
   sessionId: string;
   serverTime: number;
   serverSessionId: string;
-  assignedColors: string[];
 }
     | { type: "session-state"; state: SessionState }
     | { type: "session-event"; text: string; createdAt: number }

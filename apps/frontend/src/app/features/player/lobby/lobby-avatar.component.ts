@@ -11,28 +11,33 @@ import { CanvasPainter } from "../shared/canvas-painter";
 })
 export class LobbyAvatarComponent implements AfterViewInit {
   public readonly playerName = input.required<string>();
-  public readonly colors = input.required<string[]>();
 
   public readonly avatarSubmitted = output<string>();
   public readonly skipped = output<void>();
 
   @ViewChild("canvas") canvasRef!: ElementRef<HTMLCanvasElement>;
 
-  public readonly currentColor = signal("#dc2626");
   public readonly brushThin = signal(true);
+  public readonly eraserMode = signal(false);
 
   public readonly painter = new CanvasPainter(
     () => this.canvasRef?.nativeElement,
-    () => this.currentColor(),
-    () => this.brushThin() ? 3 : 10,
+    () => this.eraserMode() ? '#ffffff' : '#000000',
+    () => this.eraserMode() ? 20 : this.brushThin() ? 3 : 10,
   );
 
   public ngAfterViewInit(): void {
     setTimeout(() => this.painter.init(), 50);
   }
 
-  public selectColor(color: string): void {
-    this.currentColor.set(color);
+
+  public selectBrush(thin: boolean): void {
+    this.brushThin.set(thin);
+    this.eraserMode.set(false);
+  }
+
+  public toggleEraser(): void {
+    this.eraserMode.set(!this.eraserMode());
   }
 
   public clear(): void {

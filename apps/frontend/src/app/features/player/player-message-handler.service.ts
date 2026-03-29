@@ -24,7 +24,6 @@ export class PlayerMessageHandler {
   /** Expose the playerId so the component can read it after 'welcome'. */
   public readonly playerId = signal<string | null>(null);
 
-  public readonly playerColors = signal<string[]>(["#dc2626", "#2563eb"]);
   public readonly drawCount = signal<number>(0);
   public readonly maxDrawings = signal<number>(3);
 
@@ -88,10 +87,6 @@ export class PlayerMessageHandler {
       sessionCode: this.sessionCode,
       playerName: this.sessionStore.playerName(),
     });
-
-    if (message.assignedColors.length >= 2) {
-      this.playerColors.set(message.assignedColors);
-    }
   }
 
   // ── Draw-Search ─────────────────────────────────────────────

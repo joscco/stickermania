@@ -55,7 +55,7 @@ export class BoardLobbyComponent implements OnInit {
 
   public modeLabel(mode: string): string {
     switch (mode) {
-      case "draw-search": return "Museumssuche";
+      case "draw-search": return "Künstler & Kenner";
       case "garden-coop": return "Garten";
       case "team-graffiti": return "Team-Graffiti";
       default: return mode;

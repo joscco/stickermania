@@ -24,7 +24,6 @@
     } @else if (!hasAvatar()) {
       <app-lobby-avatar
         [playerName]="sessionStore.playerName()"
-        [colors]="messageHandler.playerColors()"
         (avatarSubmitted)="onAvatarSubmitted($event)"
         (skipped)="onAvatarSkipped()"
       />
@@ -41,7 +40,6 @@
                     [prompt]="task.prompt"
                     [drawIndex]="messageHandler.drawCount()"
                     [drawTotal]="messageHandler.maxDrawings()"
-                    [colors]="messageHandler.playerColors()"
                     [timeLeft]="timer.timeLeft()"
                     (drawingSubmitted)="onDrawingSubmitted($event)"
                   />

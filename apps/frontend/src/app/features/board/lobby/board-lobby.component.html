@@ -20,40 +20,40 @@
       <div class="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-3">Spielmodus wählen</div>
       <div class="grid grid-cols-3 gap-3 mb-6">
         <button
-          class="rounded-2xl border-2 p-4 text-left transition-all"
+          class="rounded-2xl border-2 p-4 text-center transition-all"
           [class.border-stone-900]="selectedMode() === 'draw-search'"
           [class.bg-stone-50]="selectedMode() === 'draw-search'"
           [class.border-transparent]="selectedMode() !== 'draw-search'"
           [class.hover:border-stone-300]="selectedMode() !== 'draw-search'"
           (click)="selectMode('draw-search')"
         >
-          <div class="text-2xl mb-1">🖼️</div>
-          <div class="font-semibold text-sm text-stone-800">Museumssuche</div>
+          <img src="assets/png/Icon_DrawGame.png" alt="Draw & Search" class="w-24 h-24 mb-1 mx-auto" />
+          <div class="font-semibold text-sm text-stone-800">Künstler & Kenner</div>
           <div class="text-xs text-stone-500 mt-1">Zeichne & finde Bilder im Museum</div>
         </button>
 
         <button
-          class="rounded-2xl border-2 p-4 text-left transition-all"
+          class="rounded-2xl border-2 p-4 text-center transition-all"
           [class.border-stone-900]="selectedMode() === 'garden-coop'"
           [class.bg-stone-50]="selectedMode() === 'garden-coop'"
           [class.border-transparent]="selectedMode() !== 'garden-coop'"
           [class.hover:border-stone-300]="selectedMode() !== 'garden-coop'"
           (click)="selectMode('garden-coop')"
         >
-          <div class="text-2xl mb-1">🌱</div>
+          <img src="assets/png/Icon_GardenGame.png" alt="Draw & Search" class="w-24 h-24 mb-1 mx-auto" />
           <div class="font-semibold text-sm text-stone-800">Garten</div>
-          <div class="text-xs text-stone-500 mt-1">Pflegt gemeinsam einen Garten</div>
+          <div class="text-xs text-stone-500 mt-1">Pflegt Gemeinsam einen Garten</div>
         </button>
 
         <button
-          class="rounded-2xl border-2 p-4 text-left transition-all"
+          class="rounded-2xl border-2 p-4 text-center transition-all"
           [class.border-stone-900]="selectedMode() === 'team-graffiti'"
           [class.bg-stone-50]="selectedMode() === 'team-graffiti'"
           [class.border-transparent]="selectedMode() !== 'team-graffiti'"
           [class.hover:border-stone-300]="selectedMode() !== 'team-graffiti'"
           (click)="selectMode('team-graffiti')"
         >
-          <div class="text-2xl mb-1">🎨</div>
+          <img src="assets/png/Icon_TagGame.png" alt="Draw & Search" class="w-24 h-24 mb-1 mx-auto" />
           <div class="font-semibold text-sm text-stone-800">Team-Graffiti</div>
           <div class="text-xs text-stone-500 mt-1">Zwei Teams taggen die Stadt</div>
         </button>

@@ -7,11 +7,11 @@
 
     <input
       class="mt-6 w-full rounded-2xl border border-black/10 px-4 py-4 text-center text-2xl tracking-[0.3em] uppercase outline-none focus:border-stone-400"
-      maxlength="5"
+      maxlength="4"
       [value]="sessionCode()"
       (input)="onInput($any($event.target).value)"
       (keydown.enter)="continue()"
-      placeholder="ABCDE"
+      placeholder="ABCD"
     />
 
     <button

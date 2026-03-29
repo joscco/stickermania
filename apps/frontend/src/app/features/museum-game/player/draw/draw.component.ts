@@ -13,28 +13,32 @@ export class DrawComponent implements AfterViewInit {
   public readonly prompt = input.required<string>();
   public readonly drawIndex = input.required<number>();
   public readonly drawTotal = input.required<number>();
-  public readonly colors = input.required<string[]>();
   public readonly timeLeft = input<string>("");
 
   public readonly drawingSubmitted = output<string>();
 
   @ViewChild("drawCanvas") canvasRef!: ElementRef<HTMLCanvasElement>;
 
-  public readonly currentColor = signal("#dc2626");
   public readonly brushThin = signal(true);
+  public readonly eraserMode = signal(false);
 
   public readonly painter = new CanvasPainter(
     () => this.canvasRef?.nativeElement,
-    () => this.currentColor(),
-    () => this.brushThin() ? 3 : 10,
+    () => this.eraserMode() ? '#ffffff' : '#000000',
+    () => this.eraserMode() ? 20 : this.brushThin() ? 3 : 10,
   );
 
   public ngAfterViewInit(): void {
     setTimeout(() => this.painter.init(), 50);
   }
 
-  public selectColor(color: string): void {
-    this.currentColor.set(color);
+  public selectBrush(thin: boolean): void {
+    this.brushThin.set(thin);
+    this.eraserMode.set(false);
+  }
+
+  public toggleEraser(): void {
+    this.eraserMode.set(!this.eraserMode());
   }
 
   public clear(): void {
