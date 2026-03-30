@@ -38,7 +38,7 @@
         [disabled]="isCreating()"
         (click)="createSession()"
       >
-        {{ isCreating() ? 'Erstelle…' : 'Session starten →' }}
+        {{ isCreating() ? 'Erstelle...' : 'Session starten →' }}
       </button>
     </div>
 
@@ -47,7 +47,7 @@
       <div class="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-3 px-1">Bestehende Sessions</div>
 
       @if (isLoadingSessions()) {
-        <div class="text-sm text-stone-400 text-center py-8">Lade Sessions…</div>
+        <div class="text-sm text-stone-400 text-center py-8">Lade Sessions...</div>
       } @else if (sessions().length === 0) {
         <div class="text-sm text-stone-400 text-center py-8 rounded-2xl border border-dashed border-stone-300 bg-white">
           Keine aktiven Sessions vorhanden.

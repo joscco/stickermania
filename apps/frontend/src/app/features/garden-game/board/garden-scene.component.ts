@@ -45,7 +45,7 @@ export class GardenSceneComponent {
   public plotStatusLabel(status: string): string {
     switch (status) {
       case "EMPTY": return "Leer";
-      case "GROWING": return "Wächst…";
+      case "GROWING": return "Wächst...";
       case "READY": return "Erntereif!";
       case "PAUSED_BY_PEST": return "Ungeziefer!";
       default: return status;

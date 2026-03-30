@@ -1,8 +1,8 @@
 @if (isBootstrapping()) {
-  <div class="h-screen w-screen grid place-items-center bg-stone-100 text-stone-500">
+  <div class="h-screen w-screen grid place-items-center bg-white text-stone-500">
     <div class="text-center">
       <div class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-stone-300 border-t-stone-600"></div>
-      <div class="mt-4 text-sm">Session wird geladen…</div>
+      <div class="mt-4 text-sm">Session wird geladen...</div>
     </div>
   </div>
 } @else if (!isBoardReady()) {
@@ -33,7 +33,7 @@
       </div>
 
       <!-- Game scene -->
-      <div class="flex-1 relative p-4 overflow-hidden bg-stone-50">
+      <div class="flex-1 relative p-4 overflow-hidden bg-white">
         <app-event-toasts [events]="events()"></app-event-toasts>
 
         @switch (activeMode()) {

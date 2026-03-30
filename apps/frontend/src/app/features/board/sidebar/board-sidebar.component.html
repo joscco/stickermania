@@ -4,7 +4,7 @@
     <div class="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-3">Spieler</div>
 
     @if (leaderboard().length === 0) {
-      <div class="text-xs text-stone-400 py-8 text-center">Noch keine Spieler…</div>
+      <div class="text-xs text-stone-400 py-8 text-center">Noch keine Spieler...</div>
     }
 
     @for (player of leaderboard(); track player.id; let index = $index) {
@@ -39,9 +39,8 @@
   <div class="border-t border-black/[0.06] px-4 py-4 bg-stone-50/50">
     <!-- Session code, large and prominent -->
     <div class="text-center mb-3">
-      <div class="text-[0.65rem] uppercase tracking-widest text-stone-400 font-semibold">Session-Code</div>
+      <div class="text-xs uppercase tracking-widest text-stone-400 font-semibold">Session-Code</div>
       <div class="text-3xl font-black tracking-[0.25em] text-stone-900 mt-0.5">{{ sessionCode() }}</div>
-      <div class="text-[0.6rem] text-stone-400 mt-1 truncate">{{ playerUrl() }}</div>
     </div>
 
     <!-- QR codes side by side, same size -->
@@ -53,7 +52,7 @@
             [src]="playerQrDataUrl()!"
             alt="Mitspielen QR-Code"
           />
-          <span class="text-[0.6rem] text-stone-400 font-medium uppercase tracking-wider">Mitspielen</span>
+          <span class="text-xs text-stone-400 font-medium uppercase tracking-wider">Mitspielen</span>
         </div>
       }
       @if (wifiQrDataUrl()) {
@@ -63,7 +62,7 @@
             [src]="wifiQrDataUrl()!"
             alt="WLAN QR-Code"
           />
-          <span class="text-[0.6rem] text-stone-400 font-medium uppercase tracking-wider">WLAN</span>
+          <span class="text-xs text-stone-400 font-medium uppercase tracking-wider">WLAN</span>
         </div>
       }
     </div>

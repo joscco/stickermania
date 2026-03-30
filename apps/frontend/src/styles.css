@@ -1,5 +1,37 @@
 @import "tailwindcss";
 
+/*
+ * Override Darumadrop One metrics so it centers properly in line-boxes.
+ * The original font has an unusually large ascender/descender which
+ * pushes text downward. These overrides normalise the metrics.
+ */
+@font-face {
+  font-family: 'Darumadrop One Fixed';
+  src: local('Darumadrop One');
+  ascent-override: 80%;
+  descent-override: 20%;
+  line-gap-override: 0%;
+}
+
+@theme {
+  --font-sans: 'Darumadrop One Fixed', 'Darumadrop One', cursive;
+  --font-darumadrop: 'Darumadrop One Fixed', 'Darumadrop One', cursive;
+
+  /* Font-size overrides (text-xs, text-sm, text-base, etc.) */
+  --text-xs:   0.8rem;
+  --text-xs--line-height:   1.1rem;
+  --text-sm:   1.1rem;
+  --text-sm--line-height:   1.5rem;
+  --text-base: 1.2rem;
+  --text-base--line-height: 1.6rem;
+  --text-lg:   1.4rem;
+  --text-lg--line-height:   1.8rem;
+  --text-xl:   1.6rem;
+  --text-xl--line-height:   2rem;
+  --text-2xl:  2rem;
+  --text-2xl--line-height:  2.4rem;
+}
+
 /* Prevent zoom / magnifier on mobile Safari and Chrome */
 body {
   touch-action: manipulation;

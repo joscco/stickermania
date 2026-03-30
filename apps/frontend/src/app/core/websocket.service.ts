@@ -167,7 +167,7 @@ export class WebSocketService {
 
   private scheduleReconnect(): void {
     if (this.reconnectTimer) return;
-    // Exponential back-off: 500ms, 1s, 2s, 4s, … capped at 8s
+    // Exponential back-off: 500ms, 1s, 2s, 4s, ... capped at 8s
     const delay = Math.min(8000, 500 * Math.pow(2, this.reconnectAttempts));
     this.reconnectAttempts++;
     this.reconnectTimer = setTimeout(() => {

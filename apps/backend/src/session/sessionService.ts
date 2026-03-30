@@ -9,7 +9,7 @@ import {TeamGraffitiEngine} from "../game-modes/team-graffiti/teamGraffitiEngine
 import type {ConnectedClientSession, RuntimeEntry} from "./sessionRuntimeTypes.js";
 import {GameModeRegistry} from "../game-modes/gameModeRegistry.js";
 
-const SESSION_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const SESSION_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ";
 
 function generateSessionCode(length: number = 4): string {
     let sessionCode = "";
