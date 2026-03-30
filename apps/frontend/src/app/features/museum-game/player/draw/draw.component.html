@@ -30,17 +30,17 @@
       <button class="w-12 h-12 rounded-xl transition-transform"
               [class.scale-110]="brushThin() && !eraserMode()"
               (click)="selectBrush(true)">
-        <img src="assets/png/Button_Small.png" class="w-full h-full object-contain" alt="Dünn" />
+        <img src="assets/png/draw_button_small.png" class="w-full h-full object-contain" alt="Dünn" />
       </button>
       <button class="w-12 h-12 rounded-xl transition-transform"
               [class.scale-110]="!brushThin() && !eraserMode()"
               (click)="selectBrush(false)">
-        <img src="assets/png/Button_Big.png" class="w-full h-full object-contain" alt="Dick" />
+        <img src="assets/png/draw_button_big.png" class="w-full h-full object-contain" alt="Dick" />
       </button>
       <button class="w-12 h-12 rounded-xl transition-transform"
               [class.scale-110]="eraserMode()"
               (click)="toggleEraser()">
-        <img src="assets/png/Button_Eraser.png" class="w-full h-full object-contain" alt="Radierer" />
+        <img src="assets/png/draw_button_eraser.png" class="w-full h-full object-contain" alt="Radierer" />
       </button>
     </div>
     <div class="flex gap-2">

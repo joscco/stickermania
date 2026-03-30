@@ -19,9 +19,9 @@ export class BoardLobbyComponent implements OnInit {
   public readonly isLoadingSessions = signal(true);
 
   public readonly gameModes: { id: GameModeId; icon: string; label: string; description: string }[] = [
-    { id: "draw-search", icon: "assets/png/Icon_DrawGame.png", label: "Künstler & Kenner", description: "Bilder zeichnen und finden" },
-    { id: "team-graffiti", icon: "assets/png/Icon_TagGame.png", label: "Graffiti", description: "Zwei Teams taggen die Stadt" },
-    { id: "garden-coop", icon: "assets/png/Icon_GardenGame.png", label: "Garten", description: "Gemeinsam einen Garten pflegen" },
+    { id: "draw-search", icon: "assets/png/select_icon_draw_game.png", label: "Künstler & Kenner", description: "Bilder zeichnen und finden" },
+    { id: "team-graffiti", icon: "assets/png/select_icon_tag_game.png", label: "Team-Graffiti", description: "Zwei Teams taggen die Stadt" },
+    { id: "garden-coop", icon: "assets/png/select_icon_garden_game.png", label: "Gruppen-Garten", description: "Gemeinsam einen Garten pflegen" },
   ];
 
   public constructor(private readonly api: ApiService) {}
