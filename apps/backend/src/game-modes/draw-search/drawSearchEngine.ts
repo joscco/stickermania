@@ -561,12 +561,9 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
      */
     private injectTestDrawings(modeState: DrawSearchModeState, count: number, now: number): void {
         const testImages = [
-            { file: "cat.svg", prompt: "Katze" },
-            { file: "sun.svg", prompt: "Sonne" },
-            { file: "house.svg", prompt: "Haus" },
-            { file: "tree.svg", prompt: "Baum" },
-            { file: "fish.svg", prompt: "Fisch" },
-            { file: "star.svg", prompt: "Stern" },
+            { file: "/assets/png/art_example_0.png", prompt: "Riesen-Eisbär" },
+            { file: "/assets/png/art_example_1.png", prompt: "Abstrakter Typ" },
+            { file: "/assets/png/art_example_2.png", prompt: "Obstschale" },
         ];
 
         for (let i = 0; i < count; i++) {
@@ -579,7 +576,7 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
                 id: drawingId,
                 artistId: "__test__",
                 prompt: testImage.prompt,
-                imageUrl: `/assets/test-drawings/${testImage.file}`,
+                imageUrl: `${testImage.file}`,
                 imageAssetPath: "",
                 x: slot?.x ?? fallback.x,
                 y: slot?.y ?? fallback.y,

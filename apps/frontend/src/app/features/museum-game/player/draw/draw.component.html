@@ -12,37 +12,16 @@
 
   <!-- Square canvas fills available space -->
   <div class="flex-1 flex items-center justify-center px-2 w-full min-h-0">
-    <div class="relative rounded-2xl border-2 border-black/[0.06] overflow-hidden bg-white aspect-square no-select"
-         style="width: min(95vw, calc(100dvh - 260px));">
-      <canvas #drawCanvas class="w-full h-full" style="touch-action: none;"
-              (pointerdown)="painter.pointerDown($event)"
-              (pointermove)="painter.pointerMove($event)"
-              (pointerup)="painter.pointerUp()"
-              (pointercancel)="painter.pointerUp()"
-      ></canvas>
-    </div>
+    <app-drawing-canvas
+      #drawingCanvas
+      frameImageUrl="assets/png/draw_frame.png"
+      (submitted)="drawingSubmitted.emit($event)"
+    />
   </div>
 
-  <!-- Tools: safe-area padding at bottom for Safari toolbar -->
-  <div class="px-3 pt-2 space-y-2 w-full max-w-md mx-auto"
+  <!-- Action buttons -->
+  <div class="px-3 pt-2 w-full max-w-md mx-auto"
        style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom));">
-    <div class="flex items-center justify-center gap-3">
-      <button class="w-12 h-12 rounded-xl transition-transform"
-              [class.scale-110]="brushThin() && !eraserMode()"
-              (click)="selectBrush(true)">
-        <img src="assets/png/draw_button_small.png" class="w-full h-full object-contain" alt="Dünn" />
-      </button>
-      <button class="w-12 h-12 rounded-xl transition-transform"
-              [class.scale-110]="!brushThin() && !eraserMode()"
-              (click)="selectBrush(false)">
-        <img src="assets/png/draw_button_big.png" class="w-full h-full object-contain" alt="Dick" />
-      </button>
-      <button class="w-12 h-12 rounded-xl transition-transform"
-              [class.scale-110]="eraserMode()"
-              (click)="toggleEraser()">
-        <img src="assets/png/draw_button_eraser.png" class="w-full h-full object-contain" alt="Radierer" />
-      </button>
-    </div>
     <div class="flex gap-2">
       <button class="flex-1 rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm hover:bg-stone-50 inline-flex items-center justify-center gap-1" (click)="clear()">
         <img src="assets/icons/trash.svg" class="w-4 h-4" alt=""/> Löschen

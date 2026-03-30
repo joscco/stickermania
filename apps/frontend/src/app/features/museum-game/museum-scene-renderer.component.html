@@ -12,7 +12,7 @@
   @for (visitor of visitors(); track visitor.id) {
     <div
       #visitorEl
-      class="absolute pointer-events-none z-[1]"
+      class="absolute pointer-events-none z-1"
       [style.left.px]="visitor.startX"
       [style.top.px]="visitor.startY"
     >
@@ -34,60 +34,49 @@
   <!-- Empty easel placeholders (faint) -->
   @for (slot of freeSlots(); track slot.id) {
     <div
-      class="absolute pointer-events-none z-[2]"
+      class="absolute pointer-events-none z-2"
       [style.left.px]="sx(slot.x)"
       [style.top.px]="sy(slot.y)"
-      [style.width.px]="slotPx()"
-      [style.height.px]="slotPx()"
-      [style.transform]="'translate(-50%, -50%) rotate(' + slot.rotationDeg + 'deg)'"
+      style="transform: translate(-50%, -100%);"
     >
       <img
-        src="assets/museum/easel.svg"
-        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-25"
-        [style.width.px]="slotPx() * 0.55"
-        [style.height.px]="slotPx() * 0.7"
+        src="assets/png/art_frame_0.png"
+        class="opacity-20"
+        [style.height.px]="slotPx()"
+        style="width: auto;"
         alt="" draggable="false"
       />
     </div>
   }
 
-  <!-- Drawings on easels -->
+  <!-- Drawings on frames -->
   @for (drawing of drawingsSorted(); track drawing.id) {
     <div
-      class="absolute pointer-events-none z-[3]"
-      style="animation: pop-in 0.4s ease-out both;"
+      #drawingEl
+      class="absolute pointer-events-none z-3"
+      style="transform: translate(-50%, -100%) scale(0); opacity: 0;"
       [style.left.px]="sx(drawing.x)"
       [style.top.px]="sy(drawing.y)"
-      [style.width.px]="slotPx()"
-      [style.height.px]="slotPx()"
-      [style.transform]="'translate(-50%, -50%) rotate(' + rotation(drawing) + 'deg)'"
     >
-      <!-- Easel behind the painting (legs visible below) -->
-      <img
-        src="assets/museum/easel.svg"
-        class="absolute left-1/2 -translate-x-1/2 opacity-70"
-        [style.width.px]="slotPx() * 0.6"
-        [style.height.px]="slotPx() * 0.9"
-        [style.top.px]="slotPx() * 0.1"
-        alt="" draggable="false"
-      />
-      <!-- Hand-drawn frame (B&W sketch) -->
-      <img
-        src="assets/museum/frame.svg"
-        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-        [style.width.px]="framePx()"
-        [style.height.px]="framePx()"
-        alt="" draggable="false"
-      />
-      <!-- The actual painting -->
-      <img
-        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 object-cover rounded-sm"
-        [style.width.px]="imageSizePx() * 0.9"
-        [style.height.px]="imageSizePx() * 0.9"
-        [src]="drawing.imageUrl"
-        [alt]="drawing.prompt"
-        draggable="false"
-      />
+      <!-- Frame + easel (single PNG), anchored at bottom center -->
+      <div class="relative" [style.height.px]="slotPx()" style="width: fit-content; margin: 0 auto;">
+        <img
+          [src]="'assets/png/art_frame_' + frameIndex(drawing) + '.png'"
+          [style.height.px]="slotPx()"
+          style="width: auto; display: block;"
+          alt="" draggable="false"
+        />
+        <!-- The actual painting, centered in the frame area -->
+        <img
+          class="absolute left-1/2 -translate-x-1/2 object-cover rounded-sm"
+          [style.width.px]="slotPx() * 0.48"
+          [style.height.px]="slotPx() * 0.48"
+          [style.top.px]="slotPx() * 0.1"
+          [src]="drawing.imageUrl"
+          [alt]="drawing.prompt"
+          draggable="false"
+        />
+      </div>
     </div>
   }
 </div>

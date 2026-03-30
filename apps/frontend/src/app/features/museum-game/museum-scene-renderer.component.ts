@@ -33,14 +33,6 @@ const VISITOR_SPRITES = [
   selector: "app-scene-renderer",
   standalone: true,
   templateUrl: "./museum-scene-renderer.component.html",
-  styles: [`
-
-    @keyframes pop-in {
-      0%   { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-      60%  { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
-      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-    }
-  `],
 })
 export class MuseumSceneRendererComponent implements OnDestroy {
   public readonly modeState = input.required<DrawSearchModeState | null>();
@@ -56,8 +48,13 @@ export class MuseumSceneRendererComponent implements OnDestroy {
   private readonly visitorEls = viewChildren<ElementRef<HTMLElement>>('visitorEl');
   /** Query all visitor inner (bob) elements */
   private readonly visitorBobEls = viewChildren<ElementRef<HTMLElement>>('visitorBobEl');
+  /** Query all drawing wrapper elements for GSAP pop-in */
+  private readonly drawingEls = viewChildren<ElementRef<HTMLElement>>('drawingEl');
 
   private visitorTimelines: gsap.core.Timeline[] = [];
+  private drawingTweens: gsap.core.Tween[] = [];
+  /** Track drawing IDs that have already been animated */
+  private animatedDrawingIds = new Set<string>();
 
   constructor() {
     // Re-create GSAP animations whenever visitors or their DOM elements change
@@ -66,7 +63,7 @@ export class MuseumSceneRendererComponent implements OnDestroy {
       const els = this.visitorEls();
       const bobEls = this.visitorBobEls();
       // Kill existing timelines
-      this.killTimelines();
+      this.killVisitorTimelines();
 
       if (els.length === 0 || els.length !== visitors.length) return;
 
@@ -94,13 +91,43 @@ export class MuseumSceneRendererComponent implements OnDestroy {
         this.visitorTimelines.push(walkTl, bobTl);
       });
     });
+
+    // GSAP pop-in animation for newly placed drawings
+    effect(() => {
+      const drawings = this.drawingsSorted();
+      const els = this.drawingEls();
+
+      if (els.length === 0 || els.length !== drawings.length) return;
+
+      drawings.forEach((d, i) => {
+        if (this.animatedDrawingIds.has(d.id)) return;
+        this.animatedDrawingIds.add(d.id);
+
+        const el = els[i].nativeElement;
+        const tween = gsap.fromTo(el,
+          { scale: 0, opacity: 0, x: '-50%', y: '-100%' },
+          {
+            scale: 1,
+            opacity: 1,
+            x: '-50%',
+            y: '-100%',
+            duration: 0.45,
+            ease: 'back.out(1.4)',
+            delay: 0.05,
+          },
+        );
+        this.drawingTweens.push(tween);
+      });
+    });
   }
 
   ngOnDestroy(): void {
-    this.killTimelines();
+    this.killVisitorTimelines();
+    this.drawingTweens.forEach((t) => t.kill());
+    this.drawingTweens = [];
   }
 
-  private killTimelines(): void {
+  private killVisitorTimelines(): void {
     this.visitorTimelines.forEach((tl) => tl.kill());
     this.visitorTimelines = [];
   }
@@ -165,8 +192,13 @@ export class MuseumSceneRendererComponent implements OnDestroy {
     return visitors;
   });
 
-  public framePx(): number {
-    return this.imageSizePx() * 1.22;
+  /** Returns a stable frame index (0–4) for a given drawing */
+  public frameIndex(drawing: DrawSearchDrawing): number {
+    let hash = 0;
+    for (const ch of drawing.id) {
+      hash = (hash * 31 + ch.charCodeAt(0)) | 0;
+    }
+    return Math.abs(hash) % 5;
   }
 
   public slotPx(): number {
@@ -181,10 +213,5 @@ export class MuseumSceneRendererComponent implements OnDestroy {
   /** Scale a logical Y coordinate to display space */
   public sy(logicalY: number): number {
     return logicalY * this.scaleY();
-  }
-
-  public rotation(drawing: DrawSearchDrawing): number {
-    if (!drawing.slotId) return 0;
-    return this.museumSlots().find((s) => s.id === drawing.slotId)?.rotationDeg ?? 0;
   }
 }
