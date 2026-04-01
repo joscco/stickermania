@@ -1,5 +1,5 @@
 import {CommonModule} from "@angular/common";
-import {Component, computed, OnDestroy, OnInit} from "@angular/core";
+import {Component, computed, effect, OnDestroy, OnInit, signal} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
 import {GameSessionStore} from "../../core/challenge.store";
 import {ApiService} from "../../core/api.service";
@@ -38,6 +38,11 @@ import {LobbyNameComponent} from "./lobby/lobby-name.component";
 export class PlayerComponent implements OnInit, OnDestroy {
   private unsubscribeWs: (() => void) | null = null;
 
+  /** When true, the user is editing their name (even if already set). */
+  public readonly isEditingName = signal(false);
+  /** When true, the user is editing their avatar (even if already set). */
+  public readonly isEditingAvatar = signal(false);
+
   constructor(
     private readonly wsService: WebSocketService,
     private readonly apiService: ApiService,
@@ -53,6 +58,17 @@ export class PlayerComponent implements OnInit, OnDestroy {
     if (reconnect?.playerName) {
       this.sessionStore.playerName.set(reconnect.playerName);
     }
+
+    // Watch for session-fatal errors and redirect to /join
+    effect(() => {
+      const status = this.wsService.status();
+      const feedback = this.sessionStore.feedback();
+
+      // If we get an error feedback and the WS is disconnected, redirect after a short delay
+      if (feedback?.type === "error" && status === "disconnected") {
+        setTimeout(() => this.redirectToJoin(), 2000);
+      }
+    });
   }
 
   public readonly activeMode = computed(() => this.worldStore.activeMode());
@@ -65,6 +81,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     const id = this.sessionStore.playerId();
     return id ? !!this.worldStore.players()[id]?.avatarUrl : false;
   });
+  public readonly wsStatus = computed(() => this.wsService.status());
 
   // ── Lifecycle ──────────────────────────────────────────────
 
@@ -90,7 +107,18 @@ export class PlayerComponent implements OnInit, OnDestroy {
       localStorage.setItem("birthday_last_session_code", resolved.sessionCode);
 
       this.wsService.connect();
-      this.unsubscribeWs = this.wsService.onMessage((msg) => this.messageHandler.handle(msg));
+      this.unsubscribeWs = this.wsService.onMessage((msg) => {
+        this.messageHandler.handle(msg);
+
+        // Handle session-fatal errors: redirect to join
+        if (msg.type === "error") {
+          const fatal = /session|nicht gefunden|abgelaufen|gelöscht|closed|deleted/i.test(msg.message);
+          if (fatal) {
+            this.reconnectService.clear();
+            setTimeout(() => this.redirectToJoin(), 2500);
+          }
+        }
+      });
 
       const joinCheck = setInterval(() => {
         if (this.wsService.status() === "connected") {
@@ -107,7 +135,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
       this.registerGlobalAudioUnlock();
     } catch {
       this.sessionStore.showFeedback("Session wurde nicht gefunden oder ist abgelaufen.", "error");
-      await this.router.navigate(["/join"]);
+      setTimeout(() => this.redirectToJoin(), 2500);
     }
   }
 
@@ -115,22 +143,39 @@ export class PlayerComponent implements OnInit, OnDestroy {
     this.unsubscribeWs?.();
   }
 
+  // ── Name / Avatar editing ─────────────────────────────────
+
+  public startEditName(): void {
+    this.isEditingName.set(true);
+  }
+
+  public startEditAvatar(): void {
+    this.isEditingAvatar.set(true);
+  }
+
   public onNameSubmitted(name: string): void {
     this.wsService.send({ type: "set-name", name });
     this.sessionStore.playerName.set(name);
     this.reconnectService.update({ playerName: name });
+    this.isEditingName.set(false);
   }
 
   public onAvatarSubmitted(dataUrl: string): void {
     this.wsService.send({ type: "submit-avatar", avatarDataUrl: dataUrl });
     this.sessionStore.clearTask();
+    this.isEditingAvatar.set(false);
   }
 
   public onAvatarSkipped(): void {
     this.sessionStore.clearTask();
+    this.isEditingAvatar.set(false);
   }
 
   // ── Helpers ────────────────────────────────────────────────
+
+  public redirectToJoin(): void {
+    this.router.navigate(["/join"]);
+  }
 
   private registerGlobalAudioUnlock(): void {
     const unlock = () => {

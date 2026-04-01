@@ -1,27 +1,11 @@
 import {
   Component,
   computed,
-  effect,
-  ElementRef,
   input,
-  OnDestroy,
-  viewChildren,
 } from "@angular/core";
-import type { DrawSearchDrawing, DrawSearchModeState, DrawSearchMuseumSlot } from "@birthday/shared";
-import gsap from "gsap";
-
-interface MuseumVisitor {
-  id: string;
-  spriteUrl: string;
-  startX: number;
-  startY: number;
-  deltaX: number;
-  deltaY: number;
-  durationMs: number;
-  delayMs: number;
-  sizePx: number;
-  facingLeft: boolean;
-}
+import type { DrawSearchDrawing, DrawSearchModeState } from "@birthday/shared";
+import { FramedDrawingComponent } from "./shared/framed-drawing.component";
+import { MuseumVisitorComponent } from "./shared/museum-visitor.component";
 
 const VISITOR_SPRITES = [
   "assets/museum/visitor-1.svg",
@@ -29,12 +13,30 @@ const VISITOR_SPRITES = [
   "assets/museum/visitor-3.svg",
 ];
 
+/** Visitor defined in logical (scene) coordinates so it scales consistently. */
+interface LogicalVisitor {
+  id: string;
+  spriteUrl: string;
+  /** Logical start position. */
+  x: number;
+  y: number;
+  /** Logical walk delta. */
+  deltaX: number;
+  deltaY: number;
+  durationSec: number;
+  delaySec: number;
+  /** Logical size (will be scaled to display). */
+  logicalSize: number;
+  facingLeft: boolean;
+}
+
 @Component({
   selector: "app-scene-renderer",
   standalone: true,
+  imports: [FramedDrawingComponent, MuseumVisitorComponent],
   templateUrl: "./museum-scene-renderer.component.html",
 })
-export class MuseumSceneRendererComponent implements OnDestroy {
+export class MuseumSceneRendererComponent {
   public readonly modeState = input.required<DrawSearchModeState | null>();
   public readonly containerWidthPx = input.required<number>();
   public readonly containerHeightPx = input.required<number>();
@@ -43,94 +45,6 @@ export class MuseumSceneRendererComponent implements OnDestroy {
   public readonly logicalFieldWidth = input<number>(0);
   /** Logical field height from the backend (e.g. 2200) */
   public readonly logicalFieldHeight = input<number>(0);
-
-  /** Query all visitor wrapper elements */
-  private readonly visitorEls = viewChildren<ElementRef<HTMLElement>>('visitorEl');
-  /** Query all visitor inner (bob) elements */
-  private readonly visitorBobEls = viewChildren<ElementRef<HTMLElement>>('visitorBobEl');
-  /** Query all drawing wrapper elements for GSAP pop-in */
-  private readonly drawingEls = viewChildren<ElementRef<HTMLElement>>('drawingEl');
-
-  private visitorTimelines: gsap.core.Timeline[] = [];
-  private drawingTweens: gsap.core.Tween[] = [];
-  /** Track drawing IDs that have already been animated */
-  private animatedDrawingIds = new Set<string>();
-
-  constructor() {
-    // Re-create GSAP animations whenever visitors or their DOM elements change
-    effect(() => {
-      const visitors = this.visitors();
-      const els = this.visitorEls();
-      const bobEls = this.visitorBobEls();
-      // Kill existing timelines
-      this.killVisitorTimelines();
-
-      if (els.length === 0 || els.length !== visitors.length) return;
-
-      visitors.forEach((v, i) => {
-        const walkEl = els[i].nativeElement;
-        const bobEl = bobEls[i].nativeElement;
-
-        // Walk timeline: move from start position to start+delta and back, infinitely
-        const walkTl = gsap.timeline({ repeat: -1, yoyo: true, delay: v.delayMs / 1000 });
-        walkTl.to(walkEl, {
-          x: v.deltaX,
-          y: v.deltaY,
-          duration: v.durationMs / 1000,
-          ease: 'none',
-        });
-
-        // Bob timeline: gentle up-down bobbing
-        const bobTl = gsap.timeline({ repeat: -1, yoyo: true, delay: v.delayMs / 1000 });
-        bobTl.to(bobEl, {
-          y: -3,
-          duration: 0.4,
-          ease: 'sine.inOut',
-        });
-
-        this.visitorTimelines.push(walkTl, bobTl);
-      });
-    });
-
-    // GSAP pop-in animation for newly placed drawings
-    effect(() => {
-      const drawings = this.drawingsSorted();
-      const els = this.drawingEls();
-
-      if (els.length === 0 || els.length !== drawings.length) return;
-
-      drawings.forEach((d, i) => {
-        if (this.animatedDrawingIds.has(d.id)) return;
-        this.animatedDrawingIds.add(d.id);
-
-        const el = els[i].nativeElement;
-        const tween = gsap.fromTo(el,
-          { scale: 0, opacity: 0, x: '-50%', y: '-100%' },
-          {
-            scale: 1,
-            opacity: 1,
-            x: '-50%',
-            y: '-100%',
-            duration: 0.45,
-            ease: 'back.out(1.4)',
-            delay: 0.05,
-          },
-        );
-        this.drawingTweens.push(tween);
-      });
-    });
-  }
-
-  ngOnDestroy(): void {
-    this.killVisitorTimelines();
-    this.drawingTweens.forEach((t) => t.kill());
-    this.drawingTweens = [];
-  }
-
-  private killVisitorTimelines(): void {
-    this.visitorTimelines.forEach((tl) => tl.kill());
-    this.visitorTimelines = [];
-  }
 
   /** Scale factor: display / logical. Falls back to 1 if logical is 0 or not provided. */
   public readonly scaleX = computed(() => {
@@ -143,63 +57,57 @@ export class MuseumSceneRendererComponent implements OnDestroy {
     return logical > 0 ? this.containerHeightPx() / logical : 1;
   });
 
+  /** Uniform scale for visitor sizes (average of x/y to keep proportions). */
+  public readonly uniformScale = computed(() => (this.scaleX() + this.scaleY()) / 2);
+
   public readonly drawingsSorted = computed<DrawSearchDrawing[]>(() => {
     const state = this.modeState();
     if (!state) return [];
     return Object.values(state.drawings).sort((a, b) => a.placedAt - b.placedAt);
   });
 
-  public readonly museumSlots = computed<DrawSearchMuseumSlot[]>(() => this.modeState()?.museumSlots ?? []);
-
-  public readonly freeSlots = computed<DrawSearchMuseumSlot[]>(() => {
-    const used = new Set(
-      this.drawingsSorted()
-        .map((d) => d.slotId)
-        .filter((id): id is string => id !== null),
-    );
-    return this.museumSlots().filter((s) => !used.has(s.id));
-  });
-
-  public readonly visitors = computed<MuseumVisitor[]>(() => {
+  /**
+   * Visitors defined in logical coordinates.
+   * Uses the logical field dimensions so they scale identically in board and player.
+   */
+  public readonly visitors = computed<LogicalVisitor[]>(() => {
     const drawingCount = this.drawingsSorted().length;
-    const totalSlots = Math.max(4, this.museumSlots().length);
+    const totalSlots = Math.max(4, (this.modeState()?.museumSlots ?? []).length);
     const count = Math.min(10, Math.max(2, 1 + drawingCount));
-    const w = this.containerWidthPx();
-    const h = this.containerHeightPx();
-    const visitors: MuseumVisitor[] = [];
+
+    // Use logical dimensions if available, otherwise fall back to container px
+    const lw = this.logicalFieldWidth() || this.containerWidthPx();
+    const lh = this.logicalFieldHeight() || this.containerHeightPx();
+
+    const visitors: LogicalVisitor[] = [];
     const growth = Math.min(1, drawingCount / totalSlots);
 
     for (let i = 0; i < count; i++) {
       const band = (i + 1) / (count + 1);
       const right = i % 2 === 0;
-      const sx = right ? 30 + (i % 3) * 18 : w - 30 - (i % 3) * 18;
-      const ex = right ? Math.max(sx + 60, w - 40 - (i % 3) * 20) : Math.min(sx - 60, 40 + (i % 3) * 20);
-      const sy = Math.max(30, Math.min(h - 30, h * band + Math.sin(i * 91) * 18));
-      const ey = Math.max(30, Math.min(h - 30, sy + Math.sin(i * 31 + 7) * 50));
-      const size = 14 + growth * 10 + (i % 3) * 2;
+      const sx = right ? lw * 0.03 + (i % 3) * lw * 0.02 : lw * 0.97 - (i % 3) * lw * 0.02;
+      const ex = right
+        ? Math.max(sx + lw * 0.05, lw * 0.95 - (i % 3) * lw * 0.02)
+        : Math.min(sx - lw * 0.05, lw * 0.05 + (i % 3) * lw * 0.02);
+      const sy = Math.max(lh * 0.02, Math.min(lh * 0.98, lh * band + Math.sin(i * 91) * lh * 0.02));
+      const ey = Math.max(lh * 0.02, Math.min(lh * 0.98, sy + Math.sin(i * 31 + 7) * lh * 0.04));
+      const size = 40 + growth * 30 + (i % 3) * 8;
 
       visitors.push({
         id: `v-${i}`,
         spriteUrl: VISITOR_SPRITES[i % VISITOR_SPRITES.length],
-        startX: sx, startY: sy,
-        deltaX: ex - sx, deltaY: ey - sy,
-        durationMs: 7000 + i * 1400 + (i % 3) * 600,
-        delayMs: -i * 1100,
-        sizePx: size,
+        x: sx,
+        y: sy,
+        deltaX: ex - sx,
+        deltaY: ey - sy,
+        durationSec: 7 + i * 1.4 + (i % 3) * 0.6,
+        delaySec: -i * 1.1,
+        logicalSize: size,
         facingLeft: !right,
       });
     }
     return visitors;
   });
-
-  /** Returns a stable frame index (0–4) for a given drawing */
-  public frameIndex(drawing: DrawSearchDrawing): number {
-    let hash = 0;
-    for (const ch of drawing.id) {
-      hash = (hash * 31 + ch.charCodeAt(0)) | 0;
-    }
-    return Math.abs(hash) % 5;
-  }
 
   public slotPx(): number {
     return this.imageSizePx() * 1.5;

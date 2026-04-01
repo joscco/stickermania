@@ -10,73 +10,34 @@
 
   <!-- Visitors (stick figures bobbing along) -->
   @for (visitor of visitors(); track visitor.id) {
-    <div
-      #visitorEl
-      class="absolute pointer-events-none z-1"
-      [style.left.px]="visitor.startX"
-      [style.top.px]="visitor.startY"
-    >
-      <div
-        #visitorBobEl
-        [style.width.px]="visitor.sizePx"
-        [style.height.px]="visitor.sizePx"
-      >
-        <img
-          [src]="visitor.spriteUrl"
-          class="w-full h-full"
-          [style.transform]="visitor.facingLeft ? 'scaleX(-1)' : ''"
-          alt="" draggable="false"
-        />
-      </div>
-    </div>
+    <app-museum-visitor
+      class="absolute z-1"
+      [style.left.px]="sx(visitor.x)"
+      [style.top.px]="sy(visitor.y)"
+      [spriteUrl]="visitor.spriteUrl"
+      [sizePx]="visitor.logicalSize * uniformScale()"
+      [facingLeft]="visitor.facingLeft"
+      [deltaX]="visitor.deltaX * scaleX()"
+      [deltaY]="visitor.deltaY * scaleY()"
+      [durationSec]="visitor.durationSec"
+      [delaySec]="visitor.delaySec"
+    />
   }
 
-  <!-- Empty easel placeholders (faint) -->
-  @for (slot of freeSlots(); track slot.id) {
-    <div
-      class="absolute pointer-events-none z-2"
-      [style.left.px]="sx(slot.x)"
-      [style.top.px]="sy(slot.y)"
-      style="transform: translate(-50%, -100%);"
-    >
-      <img
-        src="assets/png/art_frame_0.png"
-        class="opacity-20"
-        [style.height.px]="slotPx()"
-        style="width: auto;"
-        alt="" draggable="false"
-      />
-    </div>
-  }
 
   <!-- Drawings on frames -->
   @for (drawing of drawingsSorted(); track drawing.id) {
     <div
-      #drawingEl
       class="absolute pointer-events-none z-3"
-      style="transform: translate(-50%, -100%) scale(0); opacity: 0;"
+      style="transform: translate(-50%, -100%);"
       [style.left.px]="sx(drawing.x)"
       [style.top.px]="sy(drawing.y)"
     >
-      <!-- Frame + easel (single PNG), anchored at bottom center -->
-      <div class="relative" [style.height.px]="slotPx()" style="width: fit-content; margin: 0 auto;">
-        <img
-          [src]="'assets/png/art_frame_' + frameIndex(drawing) + '.png'"
-          [style.height.px]="slotPx()"
-          style="width: auto; display: block;"
-          alt="" draggable="false"
-        />
-        <!-- The actual painting, centered in the frame area -->
-        <img
-          class="absolute left-1/2 -translate-x-1/2 object-cover rounded-sm"
-          [style.width.px]="slotPx() * 0.48"
-          [style.height.px]="slotPx() * 0.48"
-          [style.top.px]="slotPx() * 0.1"
-          [src]="drawing.imageUrl"
-          [alt]="drawing.prompt"
-          draggable="false"
-        />
-      </div>
+      <app-framed-drawing
+        [drawing]="drawing"
+        [sizePx]="slotPx()"
+        [animateIn]="true"
+      />
     </div>
   }
 </div>

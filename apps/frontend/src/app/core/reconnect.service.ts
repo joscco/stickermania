@@ -43,6 +43,12 @@ export class ReconnectService {
     }
   }
 
+  /** Remove all stored reconnect data (e.g. when the session is deleted). */
+  public clear(): void {
+    localStorage.removeItem(RECONNECT_STORAGE_KEY);
+    localStorage.removeItem("birthday_last_session_code");
+  }
+
   /**
    * Resolve the session code from the route query param or localStorage.
    */
