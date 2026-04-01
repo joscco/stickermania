@@ -10,26 +10,22 @@ import {PlayerMessageHandler} from "./player-message-handler.service";
 import {PlayerTimerService} from "./player-timer.service";
 import {GardenPlayerService} from "../garden-game/player/garden-player.service";
 import {GraffitiPlayerService} from "../graffiti-game/player/graffiti-player.service";
-import {GraffitiViewportComponent} from "../graffiti-game/player/graffiti-viewport.component";
-import {IdleSearchWaitingComponent} from "./idle/idle-search-waiting.component";
+import {DrawSearchPlayerViewComponent} from "../museum-game/player/draw-search-player-view.component";
+import {GardenPlayerViewComponent} from "../garden-game/player/garden-player-view.component";
+import {GraffitiPlayerViewComponent} from "../graffiti-game/player/graffiti-player-view.component";
 import {LobbyAvatarComponent} from "./lobby/lobby-avatar.component";
 import {LobbyNameComponent} from "./lobby/lobby-name.component";
-import {LobbyReadyComponent} from "./lobby/lobby-ready.component";
-import {SearchComponent} from "../museum-game/player/search";
-import {DrawComponent} from "../museum-game/player/draw/draw.component";
 
 @Component({
   selector: "app-player",
   standalone: true,
   imports: [
     CommonModule,
-    SearchComponent,
     LobbyNameComponent,
     LobbyAvatarComponent,
-    LobbyReadyComponent,
-    DrawComponent,
-    IdleSearchWaitingComponent,
-    GraffitiViewportComponent,
+    DrawSearchPlayerViewComponent,
+    GardenPlayerViewComponent,
+    GraffitiPlayerViewComponent,
   ],
   providers: [
     PlayerMessageHandler,
@@ -50,10 +46,8 @@ export class PlayerComponent implements OnInit, OnDestroy {
     private readonly reconnectService: ReconnectService,
     public readonly sessionStore: GameSessionStore,
     public readonly worldStore: WorldStore,
-    public readonly messageHandler: PlayerMessageHandler,
     public readonly timer: PlayerTimerService,
-    public readonly garden: GardenPlayerService,
-    public readonly graffiti: GraffitiPlayerService,
+    private readonly messageHandler: PlayerMessageHandler,
   ) {
     const reconnect = this.reconnectService.load();
     if (reconnect?.playerName) {
@@ -62,7 +56,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
   }
 
   public readonly activeMode = computed(() => this.worldStore.activeMode());
-  public readonly gamePhase = computed(() => this.worldStore.round()?.phase ?? "LOBBY");
   public readonly myScore = computed(() => {
     const id = this.sessionStore.playerId();
     return id ? (this.worldStore.players()[id]?.score ?? 0) : 0;
@@ -72,8 +65,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
     const id = this.sessionStore.playerId();
     return id ? !!this.worldStore.players()[id]?.avatarUrl : false;
   });
-  public readonly sceneWidthPx = computed(() => this.worldStore.drawSearchModeState()?.effectiveFieldWidth ?? 400);
-  public readonly sceneHeightPx = computed(() => this.worldStore.drawSearchModeState()?.effectiveFieldHeight ?? 400);
 
   // ── Lifecycle ──────────────────────────────────────────────
 
@@ -136,15 +127,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
   }
 
   public onAvatarSkipped(): void {
-    this.sessionStore.clearTask();
-  }
-
-  public onDrawingSubmitted(dataUrl: string): void {
-    this.wsService.send({
-      type: "game-action",
-      mode: "draw-search",
-      action: { type: "submit-drawing", imageDataUrl: dataUrl },
-    });
     this.sessionStore.clearTask();
   }
 

@@ -21,29 +21,25 @@
       </div>
     </div>
 
-    <!-- City scene (scaled to fit) -->
+    <!-- City scene (scaled to fit the board viewport completely) -->
     <div class="flex-1 relative overflow-hidden bg-amber-50/30" #boardViewport>
-      <div class="absolute inset-0 flex items-center justify-center">
-        <div class="relative origin-center"
+      <div class="absolute inset-0 flex items-center justify-center overflow-hidden">
+        <div class="relative"
              [style.width.px]="sceneWidth()"
              [style.height.px]="sceneHeight()"
-             style="transform: scale(var(--board-fit-scale)); --board-fit-scale: 1;">
+             [style.transform]="'scale(' + fitScale + ')'"
+             style="transform-origin: center center; flex-shrink: 0;">
           <!-- Subtle grid -->
           <div class="absolute inset-0 opacity-[0.04]"
                style="background-image: radial-gradient(circle, #000 0.6px, transparent 0.6px); background-size: 40px 40px;"></div>
 
-
           <!-- Houses -->
           @for (house of houses(); track house.id) {
-            <div class="absolute transition-all duration-300"
+            <div class="absolute"
                  [style.left.px]="house.x"
                  [style.top.px]="house.y"
                  style="transform: translate(-50%, -100%);">
-              <img [src]="houseImageUrl(house)"
-                   class="w-auto pointer-events-none drop-shadow-md"
-                   style="height: 180px;"
-                   [style.transform]="house.flipped ? 'scaleX(-1)' : ''"
-                   alt="" draggable="false" />
+              <app-tag-house [house]="house" [sizePx]="140" />
             </div>
           }
         </div>
