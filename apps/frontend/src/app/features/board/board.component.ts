@@ -55,7 +55,7 @@ export class BoardComponent implements OnInit, OnDestroy {
     switch (this.activeMode()) {
       case "draw-search": return "Künstler & Kenner";
       case "garden-coop": return "Gemeinschaftsgarten";
-      case "team-graffiti": return "Team-Graffiti";
+      case "team-graffiti": return "Tag-Spiel";
       default: return this.activeMode();
     }
   });
@@ -336,22 +336,30 @@ export class BoardComponent implements OnInit, OnDestroy {
     switch (event.type) {
       case "team-assigned": {
         const playerName = this.worldStore.players()[event.playerId]?.name || "Jemand";
-        this.pushEvent(`${playerName} ist jetzt Team ${event.teamId}.`, Date.now());
+        this.pushEvent(`${playerName} ist jetzt Team ${event.teamId === 'DIAMOND' ? '♦️ Karo' : '♥️ Herz'}.`, Date.now());
         break;
       }
 
-      case "tag-placed": {
-        this.pushEvent(`🎨 Neues Tag auf ${event.buildingId}.`, Date.now());
+      case "house-tagged": {
+        const teamLabel = event.teamId === 'DIAMOND' ? '♦️ Karo' : '♥️ Herz';
+        this.pushEvent(`🏷️ ${teamLabel} hat ein Haus getaggt!`, Date.now());
         break;
       }
 
-      case "tag-removed": {
-        this.pushEvent(`🧽 Tag entfernt (+${event.scoreAwarded} Punkte).`, Date.now());
+      case "house-wiped": {
+        const playerName = this.worldStore.players()[event.wipedByPlayerId]?.name || "Jemand";
+        this.pushEvent(`🧽 ${playerName} hat ein Tag entfernt.`, Date.now());
         break;
       }
 
       case "team-score-updated": {
-        this.pushEvent(`🏁 Team ${event.teamId} hat jetzt ${event.newScore} Punkte.`, Date.now());
+        const teamLabel = event.teamId === 'DIAMOND' ? '♦️ Karo' : '♥️ Herz';
+        this.pushEvent(`🏁 ${teamLabel} hat jetzt ${event.newScore} Punkte.`, Date.now());
+        break;
+      }
+
+      case "actions-updated": {
+        // Silent — no toast needed for action accrual
         break;
       }
     }

@@ -26,8 +26,12 @@ export interface GardenCoopGameConfig {
 
 export interface TeamGraffitiGameConfig {
   roundDurationSec: number;
-  tagCooldownSec: number;
-  wipeThreshold: number;
+  /** Seconds between automatic action grants */
+  actionAccrualIntervalSec: number;
+  /** Maximum actions a player can hold */
+  maxActions: number;
+  /** Actions granted to each player at round start */
+  initialActions: number;
 }
 
 export interface GameConfig {
@@ -80,9 +84,10 @@ export function parseGameConfig(raw: unknown): GameConfig {
       pestChance: typeof gc["pestChance"] === "number" ? gc["pestChance"] : 0.15,
     },
     teamGraffiti: {
-      roundDurationSec: typeof tg["roundDurationSec"] === "number" ? tg["roundDurationSec"] : 120,
-      tagCooldownSec: typeof tg["tagCooldownSec"] === "number" ? tg["tagCooldownSec"] : 5,
-      wipeThreshold: typeof tg["wipeThreshold"] === "number" ? tg["wipeThreshold"] : 100,
+      roundDurationSec: typeof tg["roundDurationSec"] === "number" ? tg["roundDurationSec"] : 300,
+      actionAccrualIntervalSec: typeof tg["actionAccrualIntervalSec"] === "number" ? tg["actionAccrualIntervalSec"] : 60,
+      maxActions: typeof tg["maxActions"] === "number" ? tg["maxActions"] : 5,
+      initialActions: typeof tg["initialActions"] === "number" ? tg["initialActions"] : 2,
     },
   };
 }
@@ -332,24 +337,29 @@ export type GardenServerEvent =
     | { type: "garden-pest-spawned"; plotId: string; plantId: string }
     | { type: "garden-order-fulfilled"; orderId: string; experienceGained: number };
 
-export type TeamGraffitiTeamId = "RED" | "BLUE";
+export type TeamGraffitiTeamId = "DIAMOND" | "HEART";
 
-export interface TeamGraffitiTag {
-  id: string;
-  buildingId: string;
-  placedByPlayerId: string;
-  teamId: TeamGraffitiTeamId;
-  placedAt: number;
-  removedAt: number | null;
-  wipeProgress: number;
-  active: boolean;
-}
+export type TeamGraffitiHouseType = "A" | "B" | "C";
 
-export interface TeamGraffitiBuilding {
+export interface TeamGraffitiHouse {
   id: string;
-  name: string;
+  houseType: TeamGraffitiHouseType;
+  /** Position in the city scene (logical coordinates) */
   x: number;
   y: number;
+  /** Whether the house sprite is horizontally flipped */
+  flipped: boolean;
+  /** Which team currently owns (tagged) this house, or null */
+  owner: TeamGraffitiTeamId | null;
+  /** Which PNG variant to show (0 or 1) */
+  tagVariant: 0 | 1;
+  /** Timestamp when current owner claimed this house (for score calc) */
+  ownedSince: number | null;
+}
+
+export interface TeamGraffitiPlayerActions {
+  actions: number;
+  lastAccrualAt: number;
 }
 
 export interface TeamGraffitiModeState {
@@ -357,22 +367,27 @@ export interface TeamGraffitiModeState {
   roundStartedAt: number | null;
   roundEndsAt: number | null;
   teams: Record<TeamGraffitiTeamId, { score: number }>;
-  buildings: Record<string, TeamGraffitiBuilding>;
-  activeTags: Record<string, TeamGraffitiTag>;
-  removedTags: Record<string, TeamGraffitiTag>;
+  houses: Record<string, TeamGraffitiHouse>;
+  playerActions: Record<string, TeamGraffitiPlayerActions>;
+  actionAccrualIntervalSec: number;
+  maxActions: number;
+  /** Logical scene dimensions */
+  sceneWidth: number;
+  sceneHeight: number;
 }
 
 export type TeamGraffitiClientAction =
     | { type: "assign-team"; playerId: string; teamId: TeamGraffitiTeamId }
-    | { type: "place-tag"; buildingId: string }
-    | { type: "wipe-tag"; tagId: string; progressDelta: number }
+    | { type: "tag-house"; houseId: string }
+    | { type: "wipe-house"; houseId: string }
     | { type: "start-team-round"; durationSec: number };
 
 export type TeamGraffitiServerEvent =
     | { type: "team-assigned"; playerId: string; teamId: TeamGraffitiTeamId }
-    | { type: "tag-placed"; tagId: string; buildingId: string; teamId: TeamGraffitiTeamId }
-    | { type: "tag-removed"; tagId: string; removedByPlayerId: string; scoreAwarded: number }
-    | { type: "team-score-updated"; teamId: TeamGraffitiTeamId; newScore: number };
+    | { type: "house-tagged"; houseId: string; teamId: TeamGraffitiTeamId; tagVariant: 0 | 1 }
+    | { type: "house-wiped"; houseId: string; wipedByPlayerId: string }
+    | { type: "team-score-updated"; teamId: TeamGraffitiTeamId; newScore: number }
+    | { type: "actions-updated"; playerId: string; actions: number };
 
 export type GameClientActionMap = {
   "draw-search": DrawSearchClientAction;

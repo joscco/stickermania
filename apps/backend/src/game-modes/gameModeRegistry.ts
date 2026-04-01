@@ -1,7 +1,6 @@
 import type {DrawSearchModeState, GameModeId, GardenModeState, TeamGraffitiModeState, UnknownModeState,} from "@birthday/shared";
 import type {GameModeEngine} from "./gameModeEngine.js";
 
-
 export type AnyGameModeEngine =
     | GameModeEngine<"draw-search", DrawSearchModeState>
     | GameModeEngine<"garden-coop", GardenModeState>
@@ -28,6 +27,4 @@ export class GameModeRegistry {
         const engine = this.get(mode);
         return engine.createInitialState();
     }
-
-
 }

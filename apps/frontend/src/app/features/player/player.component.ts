@@ -10,6 +10,7 @@ import {PlayerMessageHandler} from "./player-message-handler.service";
 import {PlayerTimerService} from "./player-timer.service";
 import {GardenPlayerService} from "../garden-game/player/garden-player.service";
 import {GraffitiPlayerService} from "../graffiti-game/player/graffiti-player.service";
+import {GraffitiViewportComponent} from "../graffiti-game/player/graffiti-viewport.component";
 import {IdleSearchWaitingComponent} from "./idle/idle-search-waiting.component";
 import {LobbyAvatarComponent} from "./lobby/lobby-avatar.component";
 import {LobbyNameComponent} from "./lobby/lobby-name.component";
@@ -28,6 +29,7 @@ import {DrawComponent} from "../museum-game/player/draw/draw.component";
     LobbyReadyComponent,
     DrawComponent,
     IdleSearchWaitingComponent,
+    GraffitiViewportComponent,
   ],
   providers: [
     PlayerMessageHandler,

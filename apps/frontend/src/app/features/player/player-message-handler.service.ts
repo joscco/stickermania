@@ -169,17 +169,23 @@ export class PlayerMessageHandler {
     switch (event.type) {
       case "team-assigned":
         if (event.playerId === this.sessionStore.playerId()) {
-          this.sessionStore.showFeedback(`Du bist jetzt Team ${event.teamId}.`, "success");
+          const label = event.teamId === "DIAMOND" ? "♦️ Karo" : "♥️ Herz";
+          this.sessionStore.showFeedback(`Du bist jetzt Team ${label}.`, "success");
         }
         break;
-      case "tag-placed":
+      case "house-tagged":
         break;
-      case "tag-removed":
-        if (event.removedByPlayerId === this.sessionStore.playerId()) {
-          this.sessionStore.showFeedback(`Tag entfernt. ${event.scoreAwarded} Punkte gesichert!`, "success");
+      case "house-wiped":
+        if (event.wipedByPlayerId === this.sessionStore.playerId()) {
+          this.sessionStore.showFeedback(`Tag entfernt!`, "success");
         }
         break;
       case "team-score-updated":
+        break;
+      case "actions-updated":
+        if (event.playerId === this.sessionStore.playerId()) {
+          // Silently handled through state sync
+        }
         break;
     }
   }

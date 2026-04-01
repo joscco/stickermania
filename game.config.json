@@ -295,9 +295,10 @@
     "pestChance": 0.15
   },
   "teamGraffiti": {
-    "roundDurationSec": 120,
-    "tagCooldownSec": 5,
-    "wipeThreshold": 100
+    "roundDurationSec": 300,
+    "actionAccrualIntervalSec": 60,
+    "maxActions": 5,
+    "initialActions": 2
   }
 }
 

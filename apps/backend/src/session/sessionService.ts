@@ -40,7 +40,7 @@ export class SessionService {
     ) {
         this.gameModeRegistry.register(new DrawSearchEngine(config, assetRepository));
         this.gameModeRegistry.register(new GardenCoopEngine());
-        this.gameModeRegistry.register(new TeamGraffitiEngine());
+        this.gameModeRegistry.register(new TeamGraffitiEngine(config));
 
         this.sessionStateFactory = new SessionStateFactory(config, this.gameModeRegistry);
     }
