@@ -94,49 +94,27 @@ export class PlayerMessageHandler {
   private handleDrawSearchEvent(event: DrawSearchServerEvent): void {
     switch (event.type) {
       case "assign-task":
-        if (event.task.mode === "DRAW") {
-          this.sessionStore.setTask(event.task);
-          this.drawCount.set(event.task.drawIndex);
-          this.maxDrawings.set(event.task.drawTotal);
-        }
-        if (event.task.mode === "SEARCH") {
-          this.sessionStore.setTask(event.task);
-        }
-        break;
-
-      case "player-phase":
-        if (event.playerId === this.sessionStore.playerId()) {
-          if (event.playerPhase === "IDLE") {
-            this.sessionStore.clearTask("IDLE");
-          }
-        }
+        this.sessionStore.setTask(event.task);
         break;
 
       case "score-update":
         if (event.playerId === this.sessionStore.playerId()) {
-          this.sessionStore.showFeedback(`+1 Punkt! ${event.reason}`, "success");
+          this.sessionStore.showFeedback(`+Punkte! ${event.reason}`, "success");
+        }
+        break;
+
+      case "guess-result":
+        if (event.correct) {
+          this.sessionStore.showFeedback(`${event.message}`, "success");
+        } else {
+          this.sessionStore.showFeedback(`${event.message} Richtig war: „${event.correctTitle}"`, "error");
         }
         break;
 
       case "round-phase":
-        if (event.phase === "PAUSED") {
-          this.sessionStore.clearTask();
+        if (event.phase === "LOBBY") {
+          this.sessionStore.clearTask("LOBBY");
         }
-        break;
-
-      case "draw-search-config":
-        this.maxDrawings.set(event.maxDrawingsPerRound);
-        this.worldStore.setFieldConfig({
-          imageSizePx: event.imageSizePx,
-          fieldBaseSize: event.fieldBaseSize,
-          fieldGrowthPerDrawing: event.fieldGrowthPerDrawing,
-          fieldMaxSize: event.fieldMaxSize,
-          maxDrawingsPerRound: event.maxDrawingsPerRound,
-          searchOverscroll: event.searchOverscroll,
-        });
-        break;
-
-      case "search-result":
         break;
     }
   }
@@ -220,19 +198,13 @@ export class PlayerMessageHandler {
     switch (sessionState.activeMode) {
       case "draw-search": {
         const modeState = sessionState.modeState as DrawSearchModeState;
-        if (modeState.round.phase === "LOBBY" || modeState.round.phase === "PAUSED") {
+        if (modeState.phase === "LOBBY") {
           this.sessionStore.clearTask("LOBBY");
           return;
         }
-        const stateTask = this.deriveDrawSearchTask(playerId, modeState);
-        if (stateTask) {
-          this.sessionStore.setTask(stateTask);
-          if (stateTask.mode === "DRAW") {
-            this.drawCount.set(stateTask.drawIndex);
-            this.maxDrawings.set(stateTask.drawTotal);
-          }
-          return;
-        }
+        // In ACTIVE phase, the server will re-send the task via onPlayerJoined.
+        // If we already have a task (from a prior assign-task event), keep it.
+        if (this.sessionStore.currentTask()) return;
         this.sessionStore.clearTask("IDLE");
         return;
       }
@@ -243,34 +215,6 @@ export class PlayerMessageHandler {
         this.sessionStore.clearTask("TEAM_GRAFFITI");
         return;
     }
-  }
-
-  private deriveDrawSearchTask(playerId: string, modeState: DrawSearchModeState): DrawSearchPlayerTask | null {
-    const pa = modeState.promptAssignments[playerId];
-    if (!pa) return null;
-
-    if (pa.playerPhase === "DRAW" && pa.activeDrawPrompt) {
-      return {
-        mode: "DRAW",
-        prompt: pa.activeDrawPrompt,
-        drawIndex: pa.cycleIndex ?? pa.drawPromptIndex,
-        drawTotal: (pa.cycleIndex ?? 0) + 1,
-      };
-    }
-
-    if (pa.playerPhase === "SEARCH" && pa.activeSearchDrawingId) {
-      const searchTask = pa.searchTasks.find((t) => t.drawingId === pa.activeSearchDrawingId);
-      const drawing = modeState.drawings[pa.activeSearchDrawingId];
-      if (!drawing || drawing.artistId === playerId) return null;
-      return {
-        mode: "SEARCH",
-        prompt: searchTask?.prompt ?? drawing.prompt,
-        drawingId: drawing.id,
-        artistName: searchTask?.artistName ?? this.worldStore.players()[drawing.artistId]?.name ?? "Unbekannt",
-      };
-    }
-
-    return null;
   }
 }
 

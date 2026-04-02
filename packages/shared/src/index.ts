@@ -4,17 +4,14 @@
 
 export interface DrawSearchGameConfig {
   drawPrompts: string[];
-  drawDurationSec: number;
-  searchDurationSec: number;
-  maxDrawingsPerRound: number;
-  searchOverscroll: number;
   canvasResolution: number;
-  imageSizePx: number;
-  fieldBaseSize: number;
-  fieldGrowthPerDrawing: number;
-  fieldMaxSize: number;
-  minDrawingsForSearch: number;
-  /** If > 0, inject this many test drawings on startMode (for dev/testing) */
+  /** How many fake captions to collect per drawing before it becomes guessable */
+  fakeCaptionsPerDrawing: number;
+  /** Points awarded for guessing the real title */
+  pointsCorrectGuess: number;
+  /** Points awarded when your fake caption fools someone */
+  pointsFooledPlayer: number;
+  /** If > 0, inject test drawings on startMode */
   seedTestDrawings: number;
 }
 
@@ -66,16 +63,10 @@ export function parseGameConfig(raw: unknown): GameConfig {
     sessionTtlHours: typeof r["sessionTtlHours"] === "number" ? r["sessionTtlHours"] : 24,
     drawSearch: {
       drawPrompts: Array.isArray(ds["drawPrompts"] ?? r["drawPrompts"]) ? (ds["drawPrompts"] ?? r["drawPrompts"]) as string[] : ["Katze", "Hund", "Sonne"],
-      drawDurationSec: typeof (ds["drawDurationSec"] ?? r["drawDurationSec"]) === "number" ? (ds["drawDurationSec"] ?? r["drawDurationSec"]) as number : 60,
-      searchDurationSec: typeof (ds["searchDurationSec"] ?? r["searchDurationSec"]) === "number" ? (ds["searchDurationSec"] ?? r["searchDurationSec"]) as number : 90,
-      maxDrawingsPerRound: typeof (ds["maxDrawingsPerRound"] ?? r["maxDrawingsPerRound"]) === "number" ? (ds["maxDrawingsPerRound"] ?? r["maxDrawingsPerRound"]) as number : 100,
-      searchOverscroll: typeof (ds["searchOverscroll"] ?? r["searchOverscroll"]) === "number" ? (ds["searchOverscroll"] ?? r["searchOverscroll"]) as number : 0.15,
       canvasResolution: typeof (ds["canvasResolution"] ?? r["canvasResolution"]) === "number" ? (ds["canvasResolution"] ?? r["canvasResolution"]) as number : 400,
-      imageSizePx: typeof (ds["imageSizePx"] ?? r["imageSizePx"]) === "number" ? (ds["imageSizePx"] ?? r["imageSizePx"]) as number : 200,
-      fieldBaseSize: typeof (ds["fieldBaseSize"] ?? r["fieldBaseSize"]) === "number" ? (ds["fieldBaseSize"] ?? r["fieldBaseSize"]) as number : 800,
-      fieldGrowthPerDrawing: typeof (ds["fieldGrowthPerDrawing"] ?? r["fieldGrowthPerDrawing"]) === "number" ? (ds["fieldGrowthPerDrawing"] ?? r["fieldGrowthPerDrawing"]) as number : 200,
-      fieldMaxSize: typeof (ds["fieldMaxSize"] ?? r["fieldMaxSize"]) === "number" ? (ds["fieldMaxSize"] ?? r["fieldMaxSize"]) as number : 6000,
-      minDrawingsForSearch: typeof ds["minDrawingsForSearch"] === "number" ? ds["minDrawingsForSearch"] : 3,
+      fakeCaptionsPerDrawing: typeof ds["fakeCaptionsPerDrawing"] === "number" ? ds["fakeCaptionsPerDrawing"] : 2,
+      pointsCorrectGuess: typeof ds["pointsCorrectGuess"] === "number" ? ds["pointsCorrectGuess"] : 100,
+      pointsFooledPlayer: typeof ds["pointsFooledPlayer"] === "number" ? ds["pointsFooledPlayer"] : 50,
       seedTestDrawings: typeof ds["seedTestDrawings"] === "number" ? ds["seedTestDrawings"] : 0,
     },
     gardenCoop: {
@@ -164,22 +155,10 @@ export type SessionServerToClientMessage =
     | { type: "error"; message: string }
     | { type: "pong"; t: number; serverTime: number };
 
-/** Global game phase (not per-player). */
-export type DrawSearchGamePhase = "LOBBY" | "ACTIVE" | "PAUSED";
+/** Global game phase — just LOBBY or ACTIVE. Each player progresses individually. */
+export type DrawSearchGamePhase = "LOBBY" | "ACTIVE";
 
-/** What an individual player is currently doing. */
-export type DrawSearchPlayerPhase = "DRAW" | "SEARCH" | "IDLE";
-
-/** Legacy aliases kept for narrower compatibility; prefer the new names. */
-export type DrawSearchRoundPhase = DrawSearchGamePhase;
-export type DrawSearchPlayerMode = "LOBBY" | "DRAW" | "SEARCH" | "IDLE";
-
-export interface DrawSearchMuseumSlot {
-  id: string;
-  x: number;
-  y: number;
-  rotationDeg: number;
-}
+// ─── Drawing ─────────────────────────────────────────────────
 
 export interface DrawSearchDrawing {
   id: string;
@@ -187,89 +166,78 @@ export interface DrawSearchDrawing {
   prompt: string;
   imageUrl: string;
   imageAssetPath: string;
-  x: number;
-  y: number;
-  slotId: string | null;
   placedAt: number;
-  foundBy: string | null;
-  foundAt: number | null;
 }
 
-/**
- * Kept for shape-compatibility but semantics changed:
- * - `phase` is now a DrawSearchGamePhase (LOBBY | ACTIVE | PAUSED)
- * - `endsAt` is always 0 (no global timer)
- * - `roundNumber` tracks how many cycles have happened globally (informational)
- */
-export interface DrawSearchRoundState {
-  phase: DrawSearchGamePhase;
-  endsAt: number;
-  drawDurationSec: number;
-  searchDurationSec: number;
-  roundNumber: number;
+// ─── Caption ─────────────────────────────────────────────────
+
+export interface DrawSearchCaption {
+  id: string;
+  drawingId: string;
+  text: string;
+  authorId: string;
+  /** True if this caption IS the real prompt (auto-generated by the system). */
+  isReal: boolean;
 }
 
-export interface DrawSearchPlayerPromptAssignment {
-  playerPhase: DrawSearchPlayerPhase;
-  cycleIndex: number;
-  drawPrompts: string[];
-  drawPromptIndex: number;
-  activeDrawPrompt: string | null;
-  searchTasks: Array<{ drawingId: string; prompt: string; artistName: string }>;
-  searchTaskIndex: number;
-  activeSearchDrawingId: string | null;
+// ─── Guess ───────────────────────────────────────────────────
+
+export interface DrawSearchPlayerGuess {
+  drawingId: string;
+  chosenCaptionId: string;
+  playerId: string;
+  isCorrect: boolean;
 }
+
+// ─── Mode state ──────────────────────────────────────────────
 
 export interface DrawSearchModeState {
   mode: "draw-search";
+  phase: DrawSearchGamePhase;
   drawings: Record<string, DrawSearchDrawing>;
-  museumSlots: DrawSearchMuseumSlot[];
-  round: DrawSearchRoundState;
-  promptAssignments: Record<string, DrawSearchPlayerPromptAssignment>;
-  effectiveFieldWidth: number;
-  effectiveFieldHeight: number;
+  captions: Record<string, DrawSearchCaption>;
+  /** All guesses ever submitted. playerId → list of guesses. */
+  playerGuesses: Record<string, DrawSearchPlayerGuess[]>;
 }
+
+// ─── Player tasks (sent individually) ────────────────────────
 
 export interface DrawSearchDrawTask {
   mode: "DRAW";
   prompt: string;
-  drawIndex: number;
-  drawTotal: number;
 }
 
-export interface DrawSearchSearchTask {
-  mode: "SEARCH";
-  prompt: string;
+export interface DrawSearchCaptionTask {
+  mode: "CAPTION";
   drawingId: string;
-  artistName: string;
+  imageUrl: string;
 }
 
-export type DrawSearchPlayerTask = DrawSearchDrawTask | DrawSearchSearchTask;
+export interface DrawSearchGuessTask {
+  mode: "GUESS";
+  drawingId: string;
+  imageUrl: string;
+  artistName: string;
+  captions: Array<{ id: string; text: string }>;
+}
+
+export type DrawSearchPlayerTask = DrawSearchDrawTask | DrawSearchCaptionTask | DrawSearchGuessTask;
+
+// ─── Client actions ──────────────────────────────────────────
 
 export type DrawSearchClientAction =
     | { type: "submit-drawing"; imageDataUrl: string }
-    | { type: "search-snapshot"; centerX: number; centerY: number; radius: number }
-    | { type: "start-round" }
-    | { type: "set-timer"; drawDurationSec: number; searchDurationSec: number };
+    | { type: "submit-caption"; drawingId: string; text: string }
+    | { type: "submit-guess"; drawingId: string; captionId: string }
+    | { type: "start-round" };
+
+// ─── Server events ───────────────────────────────────────────
 
 export type DrawSearchServerEvent =
     | { type: "assign-task"; task: DrawSearchPlayerTask }
-    | { type: "search-result"; correct: boolean; drawingId: string; message: string }
     | { type: "score-update"; playerId: string; newScore: number; reason: string }
-    | { type: "round-phase"; phase: DrawSearchGamePhase; endsAt: number }
-    | { type: "player-phase"; playerId: string; playerPhase: DrawSearchPlayerPhase }
-    | {
-  type: "draw-search-config";
-  fieldWidth: number;
-  fieldHeight: number;
-  maxDrawingsPerRound: number;
-  searchOverscroll: number;
-  initialZoom: number;
-  imageSizePx: number;
-  fieldBaseSize: number;
-  fieldGrowthPerDrawing: number;
-  fieldMaxSize: number;
-};
+    | { type: "round-phase"; phase: DrawSearchGamePhase }
+    | { type: "guess-result"; drawingId: string; correct: boolean; message: string; correctTitle: string };
 
 export interface GardenInventoryItem {
   plantId: string;
@@ -413,21 +381,3 @@ export type GameServerEnvelope =
 
 export type ClientToServerMessage = SessionClientToServerMessage | GameClientEnvelope;
 export type ServerToClientMessage = SessionServerToClientMessage | GameServerEnvelope;
-
-export function clampInt(value: number, min: number, max: number): number {
-  if (!Number.isFinite(value)) {
-    return min;
-  }
-
-  const flooredValue = Math.floor(value);
-
-  if (flooredValue < min) {
-    return min;
-  }
-
-  if (flooredValue > max) {
-    return max;
-  }
-
-  return flooredValue;
-}

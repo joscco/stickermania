@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100" fill="none" stroke="#222" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Hand-drawn easel/stand for museum paintings (top-down view) -->
-  <line x1="20" y1="90" x2="35" y2="30"/>
-  <line x1="60" y1="90" x2="45" y2="30"/>
-  <line x1="40" y1="95" x2="40" y2="28"/>
-  <line x1="25" y1="70" x2="55" y2="70"/>
-  <line x1="30" y1="28" x2="50" y2="28"/>
-</svg>

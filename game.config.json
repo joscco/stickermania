@@ -277,16 +277,10 @@
       "Muschel verrät ein Geheimnis",
       "Angler fängt alten Schuh"
     ],
-    "drawDurationSec": 60,
-    "searchDurationSec": 60,
-    "maxDrawingsPerRound": 100,
-    "searchOverscroll": 0.15,
     "canvasResolution": 400,
-    "imageSizePx": 200,
-    "fieldBaseSize": 800,
-    "fieldGrowthPerDrawing": 200,
-    "fieldMaxSize": 6000,
-    "minDrawingsForSearch": 3,
+    "fakeCaptionsPerDrawing": 2,
+    "pointsCorrectGuess": 100,
+    "pointsFooledPlayer": 50,
     "seedTestDrawings": 3
   },
   "gardenCoop": {

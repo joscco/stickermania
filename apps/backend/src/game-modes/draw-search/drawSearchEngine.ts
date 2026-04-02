@@ -1,13 +1,33 @@
 import crypto from "node:crypto";
-import type {DrawSearchClientAction, DrawSearchDrawing, DrawSearchGameConfig, DrawSearchGamePhase, DrawSearchModeState, DrawSearchMuseumSlot, DrawSearchPlayerPromptAssignment, DrawSearchRoundState, DrawSearchServerEvent, GameConfig, SessionState,} from "@birthday/shared";
-import {clampInt} from "@birthday/shared";
-import type {AssetRepository} from "../../infra/assetRepository.js";
-import type {GameActionContext, GameActionResult, GameModeEngine} from "../gameModeEngine.js";
+import type {
+    DrawSearchCaption,
+    DrawSearchClientAction,
+    DrawSearchDrawing,
+    DrawSearchGameConfig,
+    DrawSearchModeState,
+    DrawSearchPlayerGuess,
+    DrawSearchPlayerTask,
+    DrawSearchServerEvent,
+    GameConfig,
+    SessionState,
+} from "@birthday/shared";
+import type { AssetRepository } from "../../infra/assetRepository.js";
+import type { GameActionContext, GameActionResult, GameModeEngine } from "../gameModeEngine.js";
 
-
+/**
+ * Async, timer-free draw-search engine.
+ *
+ * Each player individually cycles through DRAW → CAPTION → GUESS → DRAW...
+ * The engine picks the best available task for each player after they complete one.
+ * Seed drawings from assets are injected on start so there's immediately
+ * something to caption and guess.
+ */
 export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearchModeState> {
     public readonly mode = "draw-search" as const;
     private readonly ds: DrawSearchGameConfig;
+
+    /** Per-player tracking (not persisted in state — rebuilt from state on reconnect). */
+    private readonly playerCurrentTask = new Map<string, DrawSearchPlayerTask>();
 
     public constructor(
         private readonly config: GameConfig,
@@ -16,131 +36,85 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
         this.ds = config.drawSearch;
     }
 
+    // ─── Initial state ───────────────────────────────────────────────
+
     public createInitialState(): DrawSearchModeState {
         return {
             mode: "draw-search",
+            phase: "LOBBY",
             drawings: {},
-            museumSlots: [],
-            round: this.createDefaultRoundState(),
-            promptAssignments: {},
-            effectiveFieldWidth: this.ds.fieldBaseSize,
-            effectiveFieldHeight: this.ds.fieldBaseSize,
+            captions: {},
+            playerGuesses: {},
         };
     }
+
+    // ─── Player joined ───────────────────────────────────────────────
 
     public onPlayerJoined(args: {
         sessionState: SessionState<DrawSearchModeState>;
+        player: { id: string };
+        now: number;
     }): GameActionResult<"draw-search"> {
-        const playerId = Object.keys(args.sessionState.players).at(-1);
+        const ms = args.sessionState.modeState;
+        const playerId = args.player.id;
+        const events: DrawSearchServerEvent[] = [];
 
-        if (!playerId) {
-            return { stateChanged: false, emittedEvents: [] };
-        }
+        events.push({ type: "round-phase", phase: ms.phase });
 
-        const existingAssignment = args.sessionState.modeState.promptAssignments[playerId];
-        if (!existingAssignment) {
-            args.sessionState.modeState.promptAssignments[playerId] = this.createEmptyPromptAssignment();
-        }
-
-        const events: DrawSearchServerEvent[] = [this.createConfigEvent(args.sessionState.modeState)];
-
-        // If the game is ACTIVE, re-emit the existing player state OR assign new tasks
-        if (args.sessionState.modeState.round.phase === "ACTIVE") {
-            const assignment = args.sessionState.modeState.promptAssignments[playerId];
+        if (ms.phase === "ACTIVE") {
             const player = args.sessionState.players[playerId];
-            const hasName = player && player.name.trim().length > 0;
-
-            if (hasName && assignment.playerPhase === "DRAW" && assignment.activeDrawPrompt) {
-                // Player was drawing — re-emit their draw task
-                events.push(
-                    { type: "player-phase", playerId, playerPhase: "DRAW" },
-                    {
-                        type: "assign-task",
-                        task: {
-                            mode: "DRAW",
-                            prompt: assignment.activeDrawPrompt,
-                            drawIndex: assignment.cycleIndex,
-                            drawTotal: assignment.cycleIndex + 1,
-                        },
-                    },
-                );
-            } else if (hasName && assignment.playerPhase === "SEARCH" && assignment.activeSearchDrawingId) {
-                // Player was searching — re-emit their search task
-                const drawing = args.sessionState.modeState.drawings[assignment.activeSearchDrawingId];
-                if (drawing) {
-                    const searchTask = assignment.searchTasks.find((t) => t.drawingId === assignment.activeSearchDrawingId);
-                    events.push(
-                        { type: "player-phase", playerId, playerPhase: "SEARCH" },
-                        {
-                            type: "assign-task",
-                            task: {
-                                mode: "SEARCH",
-                                prompt: searchTask?.prompt ?? drawing.prompt,
-                                drawingId: drawing.id,
-                                artistName: searchTask?.artistName ?? args.sessionState.players[drawing.artistId]?.name ?? "Unbekannt",
-                            },
-                        },
-                    );
+            if (player?.name.trim()) {
+                // Check if they already have a task (reconnect)
+                const existingTask = this.playerCurrentTask.get(playerId);
+                if (existingTask) {
+                    events.push({ type: "assign-task", task: existingTask });
                 } else {
-                    // Drawing was deleted? Transition back to DRAW
-                    const drawEvents = this.assignNextDrawPrompt(playerId, args.sessionState);
-                    events.push(...drawEvents);
+                    // Assign a fresh task
+                    const task = this.pickNextTask(playerId, args.sessionState);
+                    if (task) {
+                        this.playerCurrentTask.set(playerId, task);
+                        events.push({ type: "assign-task", task });
+                    }
                 }
-            } else if (hasName && assignment.playerPhase === "IDLE") {
-                // Player was idle — re-emit idle state, try to wake them up
-                events.push({ type: "player-phase", playerId, playerPhase: "IDLE" });
-                const wakeUpEvents = this.wakeUpIdlePlayers(args.sessionState);
-                events.push(...wakeUpEvents);
-            } else if (hasName) {
-                // New player or no active task — assign fresh draw prompt
-                const assignEvents = this.assignNextDrawPrompt(playerId, args.sessionState);
-                events.push(...assignEvents);
             }
         }
 
-        return {
-            stateChanged: true,
-            emittedEvents: events,
-        };
+        return { stateChanged: true, emittedEvents: events };
     }
+
+    // ─── Start / Reset ───────────────────────────────────────────────
 
     public startMode(args: {
         sessionState: SessionState<DrawSearchModeState>;
         now: number;
     }): GameActionResult<"draw-search"> {
-        const modeState = args.sessionState.modeState;
+        const ms = args.sessionState.modeState;
+        ms.phase = "ACTIVE";
+        ms.drawings = {};
+        ms.captions = {};
+        ms.playerGuesses = {};
+        this.playerCurrentTask.clear();
 
-        const seedCount = this.ds.seedTestDrawings;
-        // Start with a modest field size; it grows dynamically as drawings are added
-        const initialDrawingEstimate = Math.max(4, Object.keys(args.sessionState.players).length * 2 + seedCount);
-        const effectiveFieldSize = this.calculateFieldSizeForDrawingCount(initialDrawingEstimate);
-
-        modeState.drawings = {};
-        modeState.museumSlots = this.generateMuseumSlots(initialDrawingEstimate, effectiveFieldSize, effectiveFieldSize);
-        modeState.effectiveFieldWidth = effectiveFieldSize;
-        modeState.effectiveFieldHeight = effectiveFieldSize;
-        modeState.round.phase = "ACTIVE";
-        modeState.round.endsAt = 0; // no global timer
-        modeState.round.roundNumber += 1;
-
-        // Seed test drawings (for dev/testing)
-        if (seedCount > 0) {
-            this.injectTestDrawings(modeState, seedCount, args.now);
+        // Seed test drawings
+        if (this.ds.seedTestDrawings > 0) {
+            this.injectTestDrawings(ms, this.ds.seedTestDrawings, args.now);
         }
 
-        const events: DrawSearchServerEvent[] = [this.createConfigEvent(modeState)];
+        const events: DrawSearchServerEvent[] = [
+            { type: "round-phase", phase: "ACTIVE" },
+        ];
 
-        // Give each player their first draw prompt
+        // Assign first task to each named player
         for (const playerId of Object.keys(args.sessionState.players)) {
-            const assignEvents = this.assignNextDrawPrompt(playerId, args.sessionState);
-            events.push(...assignEvents);
-        }
+            const player = args.sessionState.players[playerId];
+            if (!player?.name.trim()) continue;
 
-        events.push({
-            type: "round-phase",
-            phase: "ACTIVE",
-            endsAt: 0,
-        });
+            const task = this.pickNextTask(playerId, args.sessionState);
+            if (task) {
+                this.playerCurrentTask.set(playerId, task);
+                events.push({ type: "assign-task", task });
+            }
+        }
 
         return { stateChanged: true, emittedEvents: events };
     }
@@ -150,16 +124,14 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
         now: number;
     }): GameActionResult<"draw-search"> {
         args.sessionState.modeState = this.createInitialState();
-
-        for (const playerId of Object.keys(args.sessionState.players)) {
-            args.sessionState.modeState.promptAssignments[playerId] = this.createEmptyPromptAssignment();
-        }
-
+        this.playerCurrentTask.clear();
         return {
             stateChanged: true,
-            emittedEvents: [this.createConfigEvent(args.sessionState.modeState)],
+            emittedEvents: [{ type: "round-phase", phase: "LOBBY" }],
         };
     }
+
+    // ─── Apply action ────────────────────────────────────────────────
 
     public async applyAction(args: {
         sessionState: SessionState<DrawSearchModeState>;
@@ -170,61 +142,46 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
             case "start-round":
                 return this.startMode({ sessionState: args.sessionState, now: args.context.now });
 
-            case "set-timer": {
-                args.sessionState.modeState.round.drawDurationSec = clampInt(args.action.drawDurationSec, 5, 600);
-                args.sessionState.modeState.round.searchDurationSec = clampInt(args.action.searchDurationSec, 5, 600);
-                return { stateChanged: true, emittedEvents: [this.createConfigEvent(args.sessionState.modeState)] };
-            }
-
             case "submit-drawing":
-                return await this.handleSubmitDrawing(args.sessionState, args.context, args.action.imageDataUrl);
+                return this.handleSubmitDrawing(args.sessionState, args.context, args.action.imageDataUrl);
 
-            case "search-snapshot":
-                return this.handleSearchSnapshot(
-                    args.sessionState,
-                    args.context.playerId,
-                    args.action.centerX,
-                    args.action.centerY,
-                    args.action.radius,
-                    args.context.now,
-                );
+            case "submit-caption":
+                return this.handleSubmitCaption(args.sessionState, args.context, args.action.drawingId, args.action.text);
+
+            case "submit-guess":
+                return this.handleSubmitGuess(args.sessionState, args.context, args.action.drawingId, args.action.captionId);
 
             default:
                 return { stateChanged: false, emittedEvents: [] };
         }
     }
 
-    /**
-     * No global timers in per-player mode.
-     */
-    public getNextTimerAt(_args: {
-        sessionState: SessionState<DrawSearchModeState>;
-    }): number | null {
+    // No timers in async mode
+    public getNextTimerAt(): number | null {
         return null;
     }
 
-    public onTimerElapsed(_args: {
-        sessionState: SessionState<DrawSearchModeState>;
-        now: number;
-    }): GameActionResult<"draw-search"> {
+    public onTimerElapsed(): GameActionResult<"draw-search"> {
         return { stateChanged: false, emittedEvents: [] };
     }
 
-    // ─── Per-player flow ──────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════
+    // Action handlers
+    // ═════════════════════════════════════════════════════════════════
 
     private async handleSubmitDrawing(
         sessionState: SessionState<DrawSearchModeState>,
         context: GameActionContext,
         imageDataUrl: string,
     ): Promise<GameActionResult<"draw-search">> {
-        const assignment = sessionState.modeState.promptAssignments[context.playerId];
+        const ms = sessionState.modeState;
+        if (ms.phase !== "ACTIVE") return { stateChanged: false, emittedEvents: [] };
 
-        if (!assignment?.activeDrawPrompt) {
-            return { stateChanged: false, emittedEvents: [] };
-        }
+        const currentTask = this.playerCurrentTask.get(context.playerId);
+        if (!currentTask || currentTask.mode !== "DRAW") return { stateChanged: false, emittedEvents: [] };
 
+        const prompt = currentTask.prompt;
         const drawingId = crypto.randomUUID();
-        const prompt = assignment.activeDrawPrompt;
         const playerName = sessionState.players[context.playerId]?.name || "player";
 
         const savedAsset = await this.assetRepository.saveDrawing({
@@ -236,453 +193,317 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
             imageDataUrl,
         });
 
-        // Grow field & add new slots if needed
-        this.growFieldIfNeeded(sessionState.modeState);
-
-        const assignedSlot = this.getNextFreeMuseumSlot(sessionState.modeState);
-        const fallbackPosition = this.createFallbackPosition(sessionState.modeState);
-
         const drawing: DrawSearchDrawing = {
             id: drawingId,
             artistId: context.playerId,
             prompt,
             imageUrl: savedAsset.publicUrl,
             imageAssetPath: savedAsset.assetPath,
-            x: assignedSlot?.x ?? fallbackPosition.x,
-            y: assignedSlot?.y ?? fallbackPosition.y,
-            slotId: assignedSlot?.id ?? null,
             placedAt: context.now,
-            foundBy: null,
-            foundAt: null,
         };
 
-        sessionState.modeState.drawings[drawingId] = drawing;
+        ms.drawings[drawingId] = drawing;
 
-        assignment.activeDrawPrompt = null;
-        assignment.drawPromptIndex += 1;
+        // Create the "real" caption for this drawing
+        const realCaptionId = `real-${drawingId}`;
+        ms.captions[realCaptionId] = {
+            id: realCaptionId,
+            drawingId,
+            text: prompt,
+            authorId: "__system__",
+            isReal: true,
+        };
 
+        // Assign next task
         const events: DrawSearchServerEvent[] = [];
-
-        // Transition THIS player to SEARCH
-        const searchEvents = this.transitionPlayerToSearch(context.playerId, sessionState);
-        events.push(...searchEvents);
-
-        // Check if any other players in IDLE can now start searching
-        // (they might have been waiting for enough drawings)
-        const wakeUpEvents = this.wakeUpIdlePlayers(sessionState, context.playerId);
-        events.push(...wakeUpEvents);
+        const nextTask = this.pickNextTask(context.playerId, sessionState);
+        if (nextTask) {
+            this.playerCurrentTask.set(context.playerId, nextTask);
+            events.push({ type: "assign-task", task: nextTask });
+        } else {
+            this.playerCurrentTask.delete(context.playerId);
+        }
 
         return { stateChanged: true, emittedEvents: events };
     }
 
-    private handleSearchSnapshot(
+    private handleSubmitCaption(
         sessionState: SessionState<DrawSearchModeState>,
-        playerId: string,
-        centerX: number,
-        centerY: number,
-        radius: number,
-        now: number,
+        context: GameActionContext,
+        drawingId: string,
+        text: string,
     ): GameActionResult<"draw-search"> {
-        const assignment = sessionState.modeState.promptAssignments[playerId];
-        const expectedDrawingId = assignment?.activeSearchDrawingId;
+        const ms = sessionState.modeState;
+        if (ms.phase !== "ACTIVE") return { stateChanged: false, emittedEvents: [] };
 
-        if (!expectedDrawingId) {
+        const currentTask = this.playerCurrentTask.get(context.playerId);
+        if (!currentTask || currentTask.mode !== "CAPTION" || currentTask.drawingId !== drawingId) {
             return { stateChanged: false, emittedEvents: [] };
         }
 
-        const drawing = sessionState.modeState.drawings[expectedDrawingId];
-        if (!drawing) {
+        // Create the fake caption
+        const captionId = crypto.randomUUID();
+        ms.captions[captionId] = {
+            id: captionId,
+            drawingId,
+            text: text.trim(),
+            authorId: context.playerId,
+            isReal: false,
+        };
+
+        // Assign next task
+        const events: DrawSearchServerEvent[] = [];
+        const nextTask = this.pickNextTask(context.playerId, sessionState);
+        if (nextTask) {
+            this.playerCurrentTask.set(context.playerId, nextTask);
+            events.push({ type: "assign-task", task: nextTask });
+        } else {
+            this.playerCurrentTask.delete(context.playerId);
+        }
+
+        return { stateChanged: true, emittedEvents: events };
+    }
+
+    private handleSubmitGuess(
+        sessionState: SessionState<DrawSearchModeState>,
+        context: GameActionContext,
+        drawingId: string,
+        captionId: string,
+    ): GameActionResult<"draw-search"> {
+        const ms = sessionState.modeState;
+        if (ms.phase !== "ACTIVE") return { stateChanged: false, emittedEvents: [] };
+
+        const currentTask = this.playerCurrentTask.get(context.playerId);
+        if (!currentTask || currentTask.mode !== "GUESS" || currentTask.drawingId !== drawingId) {
             return { stateChanged: false, emittedEvents: [] };
         }
 
-        if (drawing.artistId === playerId) {
-            return {
-                stateChanged: false,
-                emittedEvents: [{ type: "search-result", correct: false, drawingId: drawing.id, message: "Eigene Bilder zählen nicht." }],
-            };
-        }
+        // Check correctness
+        const realCaption = Object.values(ms.captions).find(
+            (c) => c.drawingId === drawingId && c.isReal,
+        );
+        const isCorrect = captionId === realCaption?.id;
 
-        const dx = drawing.x - centerX;
-        const dy = drawing.y - centerY;
-        const isCorrect = Math.sqrt(dx * dx + dy * dy) <= radius;
+        // Store guess
+        if (!ms.playerGuesses[context.playerId]) ms.playerGuesses[context.playerId] = [];
+        ms.playerGuesses[context.playerId].push({
+            drawingId,
+            chosenCaptionId: captionId,
+            playerId: context.playerId,
+            isCorrect,
+        });
 
-        if (!isCorrect) {
-            return {
-                stateChanged: false,
-                emittedEvents: [{ type: "search-result", correct: false, drawingId: drawing.id, message: "Leider daneben." }],
-            };
-        }
+        const events: DrawSearchServerEvent[] = [];
 
-        drawing.foundBy = playerId;
-        drawing.foundAt = now;
-
-        const searcher = sessionState.players[playerId];
-        const artist = sessionState.players[drawing.artistId];
-        if (searcher) { searcher.score += 1; }
-        if (artist) { artist.score += 1; }
-
-        const events: DrawSearchServerEvent[] = [
-            { type: "search-result", correct: true, drawingId: drawing.id, message: "Gefunden!" },
-        ];
-
-        if (searcher) {
-            events.push({ type: "score-update", playerId, newScore: searcher.score, reason: "Richtig gefunden" });
-        }
-        if (artist) {
-            events.push({ type: "score-update", playerId: artist.id, newScore: artist.score, reason: "Dein Bild wurde gefunden" });
-        }
-
-        // Check if there are more search tasks for this player
-        assignment.activeSearchDrawingId = null;
-        assignment.searchTaskIndex += 1;
-        this.activateNextSearchTask(assignment);
-
-        if (assignment.activeSearchDrawingId) {
-            // Player has more drawings to find
-            const next = sessionState.modeState.drawings[assignment.activeSearchDrawingId];
-            if (next) {
+        // Award points
+        if (isCorrect) {
+            const player = sessionState.players[context.playerId];
+            if (player) {
+                player.score += this.ds.pointsCorrectGuess;
                 events.push({
-                    type: "assign-task",
-                    task: {
-                        mode: "SEARCH",
-                        prompt: next.prompt,
-                        drawingId: next.id,
-                        artistName: sessionState.players[next.artistId]?.name || "Unbekannt",
-                    },
+                    type: "score-update",
+                    playerId: context.playerId,
+                    newScore: player.score,
+                    reason: "Richtig geraten!",
                 });
             }
         } else {
-            // Player finished searching → transition back to DRAW
-            assignment.cycleIndex += 1;
-            const drawEvents = this.assignNextDrawPrompt(playerId, sessionState);
-            events.push(...drawEvents);
+            // Award points to the fake-caption author who fooled this player
+            const chosenCaption = ms.captions[captionId];
+            if (chosenCaption && !chosenCaption.isReal && chosenCaption.authorId !== "__system__") {
+                const author = sessionState.players[chosenCaption.authorId];
+                if (author) {
+                    author.score += this.ds.pointsFooledPlayer;
+                    events.push({
+                        type: "score-update",
+                        playerId: chosenCaption.authorId,
+                        newScore: author.score,
+                        reason: `Dein Fake-Titel hat ${sessionState.players[context.playerId]?.name ?? "jemanden"} getäuscht!`,
+                    });
+                }
+            }
+        }
+
+        events.push({
+            type: "guess-result",
+            drawingId,
+            correct: isCorrect,
+            message: isCorrect ? "Richtig! 🎉" : "Falsch!",
+            correctTitle: realCaption?.text ?? "???",
+        });
+
+        // Assign next task
+        const nextTask = this.pickNextTask(context.playerId, sessionState);
+        if (nextTask) {
+            this.playerCurrentTask.set(context.playerId, nextTask);
+            events.push({ type: "assign-task", task: nextTask });
+        } else {
+            this.playerCurrentTask.delete(context.playerId);
         }
 
         return { stateChanged: true, emittedEvents: events };
     }
 
-    // ─── Player transition helpers ───────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════
+    // Task picker — the heart of the async flow
+    // ═════════════════════════════════════════════════════════════════
 
     /**
-     * Transition a player from DRAW to SEARCH.
-     * If not enough drawings exist yet, put them in IDLE.
+     * Pick the best next task for a player. Cycle: DRAW → CAPTION → GUESS → DRAW...
+     *
+     * Priority:
+     * 1. If there's a drawing that needs a fake caption and the player can write one → CAPTION
+     * 2. If there's a drawing that's "guessable" (has enough captions) and the player hasn't guessed it → GUESS
+     * 3. Otherwise → DRAW a new picture
+     *
+     * After a DRAW, we prefer CAPTION next. After CAPTION, we prefer GUESS. After GUESS, we prefer DRAW.
+     * This ensures variety.
      */
-    private transitionPlayerToSearch(playerId: string, sessionState: SessionState<DrawSearchModeState>): DrawSearchServerEvent[] {
-        const assignment = sessionState.modeState.promptAssignments[playerId];
-        if (!assignment) return [];
+    private pickNextTask(
+        playerId: string,
+        sessionState: SessionState<DrawSearchModeState>,
+    ): DrawSearchPlayerTask | null {
+        const ms = sessionState.modeState;
+        const lastTask = this.playerCurrentTask.get(playerId);
+        const lastMode = lastTask?.mode;
 
-        const allDrawings = Object.values(sessionState.modeState.drawings);
-        const searchable = this.shuffleArray(
-            allDrawings.filter((d) => d.artistId !== playerId && !d.foundBy),
+        // Determine what the player has already done
+        const playerDrawingIds = new Set(
+            Object.values(ms.drawings)
+                .filter((d) => d.artistId === playerId)
+                .map((d) => d.id),
+        );
+        const playerCaptionedDrawingIds = new Set(
+            Object.values(ms.captions)
+                .filter((c) => !c.isReal && c.authorId === playerId)
+                .map((c) => c.drawingId),
+        );
+        const playerGuessedDrawingIds = new Set(
+            (ms.playerGuesses[playerId] ?? []).map((g) => g.drawingId),
         );
 
-        // Check if there are enough drawings from other artists
-        const uniqueArtists = new Set(allDrawings.map((d) => d.artistId));
-        const hasEnoughDrawings = allDrawings.length >= this.ds.minDrawingsForSearch && uniqueArtists.size >= 2;
+        // Find drawings that need captions (not drawn by this player, not already captioned by them)
+        const needsCaptions = Object.values(ms.drawings).filter((d) => {
+            if (d.artistId === playerId) return false;
+            if (playerCaptionedDrawingIds.has(d.id)) return false;
+            const fakeCaptionCount = Object.values(ms.captions)
+                .filter((c) => c.drawingId === d.id && !c.isReal).length;
+            return fakeCaptionCount < this.ds.fakeCaptionsPerDrawing;
+        });
 
-        if (!hasEnoughDrawings || searchable.length === 0) {
-            // Not enough to search yet → IDLE
-            assignment.playerPhase = "IDLE";
-            assignment.searchTasks = [];
-            assignment.searchTaskIndex = 0;
-            assignment.activeSearchDrawingId = null;
-            return [{ type: "player-phase", playerId, playerPhase: "IDLE" }];
-        }
+        // Find drawings that are guessable (have enough captions, not drawn/captioned/guessed by this player)
+        const guessable = Object.values(ms.drawings).filter((d) => {
+            if (d.artistId === playerId) return false;
+            if (playerCaptionedDrawingIds.has(d.id)) return false;
+            if (playerGuessedDrawingIds.has(d.id)) return false;
+            const fakeCaptionCount = Object.values(ms.captions)
+                .filter((c) => c.drawingId === d.id && !c.isReal).length;
+            return fakeCaptionCount >= 1; // At least 1 fake caption to make it interesting
+        });
 
-        // Assign search tasks
-        assignment.playerPhase = "SEARCH";
-        assignment.searchTasks = searchable.map((drawing) => ({
-            drawingId: drawing.id,
-            prompt: drawing.prompt,
-            artistName: sessionState.players[drawing.artistId]?.name || "Unbekannt",
-        }));
-        assignment.searchTaskIndex = 0;
-        assignment.activeSearchDrawingId = searchable[0]?.id ?? null;
-
-        const events: DrawSearchServerEvent[] = [
-            { type: "player-phase", playerId, playerPhase: "SEARCH" },
-        ];
-
-        if (assignment.activeSearchDrawingId) {
-            const first = searchable[0];
-            events.push({
-                type: "assign-task",
-                task: {
-                    mode: "SEARCH",
-                    prompt: first.prompt,
-                    drawingId: first.id,
-                    artistName: sessionState.players[first.artistId]?.name || "Unbekannt",
-                },
-            });
-        }
-
-        return events;
-    }
-
-    /**
-     * Assign the next draw prompt to a player and set their phase to DRAW.
-     */
-    private assignNextDrawPrompt(playerId: string, sessionState: SessionState<DrawSearchModeState>): DrawSearchServerEvent[] {
-        const assignment = sessionState.modeState.promptAssignments[playerId] ?? this.createEmptyPromptAssignment();
-        sessionState.modeState.promptAssignments[playerId] = assignment;
-
-        // Pick next prompt from the infinite pool
-        const prompt = this.pickNextPrompt(assignment);
-        assignment.activeDrawPrompt = prompt;
-        assignment.playerPhase = "DRAW";
-
-        // Ensure drawPrompts tracks what we've assigned
-        if (prompt) {
-            if (assignment.drawPromptIndex >= assignment.drawPrompts.length) {
-                assignment.drawPrompts.push(prompt);
-            }
-        }
-
-        const events: DrawSearchServerEvent[] = [
-            { type: "player-phase", playerId, playerPhase: "DRAW" },
-        ];
-
-        if (prompt) {
-            events.push({
-                type: "assign-task",
-                task: {
-                    mode: "DRAW",
-                    prompt,
-                    drawIndex: assignment.cycleIndex,
-                    drawTotal: assignment.cycleIndex + 1, // grows infinitely
-                },
-            });
-        }
-
-        return events;
-    }
-
-    /**
-     * Wake up any IDLE players who were waiting for enough drawings.
-     */
-    private wakeUpIdlePlayers(sessionState: SessionState<DrawSearchModeState>, excludePlayerId?: string): DrawSearchServerEvent[] {
-        const events: DrawSearchServerEvent[] = [];
-        const allDrawings = Object.values(sessionState.modeState.drawings);
-        const uniqueArtists = new Set(allDrawings.map((d) => d.artistId));
-
-        if (allDrawings.length < this.ds.minDrawingsForSearch || uniqueArtists.size < 2) {
-            return events;
-        }
-
-        for (const [playerId, assignment] of Object.entries(sessionState.modeState.promptAssignments)) {
-            if (playerId === excludePlayerId) continue;
-            if (assignment.playerPhase !== "IDLE") continue;
-
-            // Try to transition them to SEARCH
-            const searchable = allDrawings.filter((d) => d.artistId !== playerId && !d.foundBy);
-            if (searchable.length === 0) continue;
-
-            const transitionEvents = this.transitionPlayerToSearch(playerId, sessionState);
-            events.push(...transitionEvents);
-        }
-
-        return events;
-    }
-
-    // ─── Field growth ────────────────────────────────────────────────
-
-    private growFieldIfNeeded(modeState: DrawSearchModeState): void {
-        const drawingCount = Object.keys(modeState.drawings).length + 1; // +1 for the one about to be placed
-        const newFieldSize = this.calculateFieldSizeForDrawingCount(drawingCount);
-
-        if (newFieldSize > modeState.effectiveFieldWidth) {
-            // Add more museum slots for the expanded space
-            const currentSlotCount = modeState.museumSlots.length;
-            const neededSlots = drawingCount + 4; // some buffer
-
-            if (neededSlots > currentSlotCount) {
-                const newSlots = this.generateMuseumSlots(neededSlots, newFieldSize, newFieldSize);
-                // Keep existing slots, add new ones
-                const existingIds = new Set(modeState.museumSlots.map((s) => s.id));
-                for (const slot of newSlots) {
-                    if (!existingIds.has(slot.id)) {
-                        modeState.museumSlots.push(slot);
-                    }
-                }
-                // If still not enough, just use the new full set
-                if (modeState.museumSlots.length < neededSlots) {
-                    modeState.museumSlots = newSlots;
-                }
-            }
-
-            modeState.effectiveFieldWidth = newFieldSize;
-            modeState.effectiveFieldHeight = newFieldSize;
-        }
-    }
-
-    // ─── Prompt helpers ──────────────────────────────────────────────
-
-    private pickNextPrompt(assignment: DrawSearchPlayerPromptAssignment): string | null {
-        if (this.ds.drawPrompts.length === 0) return null;
-
-        // Pick a random prompt from the pool (cycling infinitely)
-        const cycleIndex = assignment.cycleIndex;
-        const shuffled = this.shuffleArray([...this.ds.drawPrompts]);
-        return shuffled[cycleIndex % shuffled.length];
-    }
-
-    private activateNextSearchTask(assignment: DrawSearchPlayerPromptAssignment): void {
-        assignment.activeSearchDrawingId = assignment.searchTaskIndex < assignment.searchTasks.length
-            ? assignment.searchTasks[assignment.searchTaskIndex].drawingId
-            : null;
-    }
-
-    private createDefaultRoundState(): DrawSearchRoundState {
-        return {
-            phase: "LOBBY" as DrawSearchGamePhase,
-            endsAt: 0,
-            drawDurationSec: this.ds.drawDurationSec,
-            searchDurationSec: this.ds.searchDurationSec,
-            roundNumber: 0,
+        // Preferred order based on what they just did
+        const tryCaption = (): DrawSearchPlayerTask | null => {
+            if (needsCaptions.length === 0) return null;
+            const drawing = this.pickRandom(needsCaptions);
+            return { mode: "CAPTION", drawingId: drawing.id, imageUrl: drawing.imageUrl };
         };
-    }
 
-    private createEmptyPromptAssignment(): DrawSearchPlayerPromptAssignment {
-        return {
-            playerPhase: "IDLE",
-            cycleIndex: 0,
-            drawPrompts: [],
-            drawPromptIndex: 0,
-            activeDrawPrompt: null,
-            searchTasks: [],
-            searchTaskIndex: 0,
-            activeSearchDrawingId: null,
+        const tryGuess = (): DrawSearchPlayerTask | null => {
+            if (guessable.length === 0) return null;
+            const drawing = this.pickRandom(guessable);
+            const drawingCaptions = Object.values(ms.captions)
+                .filter((c) => c.drawingId === drawing.id);
+            const shuffled = this.shuffleArray(
+                drawingCaptions.map((c) => ({ id: c.id, text: c.text })),
+            );
+            return {
+                mode: "GUESS",
+                drawingId: drawing.id,
+                imageUrl: drawing.imageUrl,
+                artistName: sessionState.players[drawing.artistId]?.name ?? "Unbekannt",
+                captions: shuffled,
+            };
         };
+
+        const tryDraw = (): DrawSearchPlayerTask | null => {
+            const prompt = this.pickPrompt(playerId, ms);
+            return { mode: "DRAW", prompt };
+        };
+
+        // Cycle: after DRAW → try CAPTION, then GUESS, then DRAW
+        //        after CAPTION → try GUESS, then DRAW, then CAPTION
+        //        after GUESS → try DRAW, then CAPTION, then GUESS
+        //        default (first task) → DRAW
+        if (lastMode === "DRAW") {
+            return tryCaption() ?? tryGuess() ?? tryDraw();
+        }
+        if (lastMode === "CAPTION") {
+            return tryGuess() ?? tryDraw() ?? tryCaption();
+        }
+        if (lastMode === "GUESS") {
+            return tryDraw() ?? tryCaption() ?? tryGuess();
+        }
+
+        // First task — always start with DRAW
+        return tryDraw();
     }
 
-    /**
-     * Inject pre-made test drawings into the mode state for dev/testing.
-     * These are served as static assets from the frontend.
-     */
-    private injectTestDrawings(modeState: DrawSearchModeState, count: number, now: number): void {
+    // ═════════════════════════════════════════════════════════════════
+    // Helpers
+    // ═════════════════════════════════════════════════════════════════
+
+    /** Pick a random prompt that this player hasn't drawn yet (if possible). */
+    private pickPrompt(playerId: string, ms: DrawSearchModeState): string {
+        const usedPrompts = new Set(
+            Object.values(ms.drawings)
+                .filter((d) => d.artistId === playerId)
+                .map((d) => d.prompt),
+        );
+        const available = this.ds.drawPrompts.filter((p) => !usedPrompts.has(p));
+        const pool = available.length > 0 ? available : this.ds.drawPrompts;
+        return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    private pickRandom<T>(array: T[]): T {
+        return array[Math.floor(Math.random() * array.length)];
+    }
+
+    private shuffleArray<T>(array: T[]): T[] {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    private injectTestDrawings(ms: DrawSearchModeState, count: number, now: number): void {
         const testImages = [
-            { file: "/assets/png/art_example_0.png", prompt: "Riesen-Eisbär" },
-            { file: "/assets/png/art_example_1.png", prompt: "Abstrakter Typ" },
-            { file: "/assets/png/art_example_2.png", prompt: "Obstschale" },
+            { file: "/assets/png/art_example_0.png", prompt: "Strandkorb im Schnee" },
+            { file: "/assets/png/art_example_1.png", prompt: "Nervöser Kaktus" },
+            { file: "/assets/png/art_example_2.png", prompt: "Vergesslicher Goldfisch" },
         ];
 
         for (let i = 0; i < count; i++) {
             const testImage = testImages[i % testImages.length];
-            const drawingId = `test-${i + 1}`;
-            const slot = this.getNextFreeMuseumSlot(modeState);
-            const fallback = this.createFallbackPosition(modeState);
+            const drawingId = `seed-${i + 1}`;
 
-            modeState.drawings[drawingId] = {
+            ms.drawings[drawingId] = {
                 id: drawingId,
-                artistId: "__test__",
+                artistId: "__seed__",
                 prompt: testImage.prompt,
-                imageUrl: `${testImage.file}`,
+                imageUrl: testImage.file,
                 imageAssetPath: "",
-                x: slot?.x ?? fallback.x,
-                y: slot?.y ?? fallback.y,
-                slotId: slot?.id ?? null,
                 placedAt: now - (count - i) * 1000,
-                foundBy: null,
-                foundAt: null,
+            };
+
+            // Create real caption
+            ms.captions[`real-${drawingId}`] = {
+                id: `real-${drawingId}`,
+                drawingId,
+                text: testImage.prompt,
+                authorId: "__system__",
+                isReal: true,
             };
         }
-    }
-
-    private calculateFieldSizeForDrawingCount(drawingCount: number): number {
-        const grownFieldSize = this.ds.fieldBaseSize + drawingCount * this.ds.fieldGrowthPerDrawing;
-        return Math.min(grownFieldSize, this.ds.fieldMaxSize);
-    }
-
-    private getNextFreeMuseumSlot(modeState: DrawSearchModeState): DrawSearchMuseumSlot | null {
-        const usedSlotIds = new Set(
-            Object.values(modeState.drawings)
-                .map((drawing) => drawing.slotId)
-                .filter((slotId): slotId is string => slotId !== null),
-        );
-
-        return modeState.museumSlots.find((slot) => !usedSlotIds.has(slot.id)) ?? null;
-    }
-
-    private createFallbackPosition(modeState: DrawSearchModeState): { x: number; y: number } {
-        const padding = this.ds.imageSizePx;
-        return {
-            x: padding + Math.random() * Math.max(1, modeState.effectiveFieldWidth - padding * 2),
-            y: padding + Math.random() * Math.max(1, modeState.effectiveFieldHeight - padding * 2),
-        };
-    }
-
-    private generateMuseumSlots(slotCount: number, fieldWidth: number, fieldHeight: number): DrawSearchMuseumSlot[] {
-        if (slotCount <= 0) {
-            return [];
-        }
-
-        const slots: DrawSearchMuseumSlot[] = [];
-        // Use plinth size (the actual visual bounding box) for distance calculation
-        const plinthSize = this.ds.imageSizePx * 1.62;
-        const minDistance = plinthSize * 1.4;
-        const marginX = plinthSize * 0.8;
-        const marginY = plinthSize * 0.8;
-
-        for (let slotIndex = 0; slotIndex < slotCount; slotIndex += 1) {
-            let bestCandidate: DrawSearchMuseumSlot | null = null;
-            let bestDistanceScore = -Infinity;
-
-            for (let attemptIndex = 0; attemptIndex < 200; attemptIndex += 1) {
-                const candidateX = marginX + Math.random() * Math.max(1, fieldWidth - marginX * 2);
-                const candidateY = marginY + Math.random() * Math.max(1, fieldHeight - marginY * 2);
-                const nearestDistance = slots.reduce((nearest, existingSlot) => {
-                    const deltaX = existingSlot.x - candidateX;
-                    const deltaY = existingSlot.y - candidateY;
-                    return Math.min(nearest, Math.sqrt(deltaX * deltaX + deltaY * deltaY));
-                }, Number.POSITIVE_INFINITY);
-
-                const distanceScore = Number.isFinite(nearestDistance) ? nearestDistance : minDistance * 2;
-                const edgeBias = Math.min(candidateX, fieldWidth - candidateX, candidateY, fieldHeight - candidateY);
-                const candidateScore = distanceScore * 5 + edgeBias;
-
-                if (distanceScore < minDistance && attemptIndex < 180) {
-                    continue;
-                }
-
-                if (candidateScore > bestDistanceScore) {
-                    bestDistanceScore = candidateScore;
-                    bestCandidate = {
-                        id: `slot-${slotIndex + 1}`,
-                        x: candidateX,
-                        y: candidateY,
-                        rotationDeg: -4 + Math.random() * 8,
-                    };
-                }
-            }
-
-            if (bestCandidate) {
-                slots.push(bestCandidate);
-            }
-        }
-
-        return slots;
-    }
-
-    private createConfigEvent(modeState: DrawSearchModeState): DrawSearchServerEvent {
-        return {
-            type: "draw-search-config",
-            fieldWidth: modeState.effectiveFieldWidth,
-            fieldHeight: modeState.effectiveFieldHeight,
-            maxDrawingsPerRound: this.ds.maxDrawingsPerRound,
-            searchOverscroll: this.ds.searchOverscroll,
-            initialZoom: 1,
-            imageSizePx: this.ds.imageSizePx,
-            fieldBaseSize: this.ds.fieldBaseSize,
-            fieldGrowthPerDrawing: this.ds.fieldGrowthPerDrawing,
-            fieldMaxSize: this.ds.fieldMaxSize,
-        };
-    }
-
-    private shuffleArray<T>(array: T[]): T[] {
-        for (let index = array.length - 1; index > 0; index -= 1) {
-            const randomIndex = Math.floor(Math.random() * (index + 1));
-            [array[index], array[randomIndex]] = [array[randomIndex], array[index]];
-        }
-        return array;
     }
 }

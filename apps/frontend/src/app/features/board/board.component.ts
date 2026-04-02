@@ -42,8 +42,6 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly bootErrorText = signal<string | null>(null);
   public readonly sessionCode = signal<string | null>(null);
   public readonly timeLeft = signal<string>("");
-  public readonly drawDurationSec = signal<number>(60);
-  public readonly searchDurationSec = signal<number>(90);
 
   private sessionId: string | null = null;
   private routeSubscription: Subscription | null = null;
@@ -62,11 +60,8 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly leaderboard = computed(() => this.worldStore.leaderboard());
   public readonly allPlayers = computed(() => this.worldStore.allPlayers());
   public readonly drawingCount = computed(() => this.worldStore.drawingsList().length);
-  public readonly roundPhase = computed(() => this.worldStore.round()?.phase ?? "LOBBY");
+  public readonly roundPhase = computed(() => this.worldStore.drawSearchPhase());
   public readonly roundEndsAt = computed(() => {
-    if (this.activeMode() === "draw-search") {
-      return this.worldStore.round()?.endsAt ?? 0;
-    }
 
     if (this.activeMode() === "team-graffiti") {
       return this.worldStore.teamGraffitiModeState()?.roundEndsAt ?? 0;
@@ -139,17 +134,6 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.wsService.send({ type: "start-mode" });
   }
 
-  public saveDrawSearchTimerSettings(): void {
-    this.wsService.send({
-      type: "game-action",
-      mode: "draw-search",
-      action: {
-        type: "set-timer",
-        drawDurationSec: this.drawDurationSec(),
-        searchDurationSec: this.searchDurationSec(),
-      },
-    });
-  }
 
   public resetSession(): void {
     this.wsService.send({ type: "reset-session" });
@@ -238,12 +222,6 @@ export class BoardComponent implements OnInit, OnDestroy {
       case "session-state": {
         this.worldStore.setSessionState(message.state);
         this.worldStore.setConnected();
-
-        if (message.state.activeMode === "draw-search") {
-          const drawSearchModeState = message.state.modeState as any;
-          this.drawDurationSec.set(drawSearchModeState.round?.drawDurationSec ?? 60);
-          this.searchDurationSec.set(drawSearchModeState.round?.searchDurationSec ?? 90);
-        }
         break;
       }
 
@@ -279,25 +257,16 @@ export class BoardComponent implements OnInit, OnDestroy {
       }
 
       case "round-phase": {
-        this.pushEvent(event.phase === "ACTIVE" ? "Spiel gestartet! 🎨" : event.phase === "PAUSED" ? "Spiel pausiert." : "Lobby.", Date.now());
+        this.pushEvent(event.phase === "ACTIVE" ? "Spiel gestartet! 🎨" : "Lobby.", Date.now());
         break;
       }
 
-      case "draw-search-config": {
-        this.worldStore.setFieldConfig({
-          imageSizePx: event.imageSizePx,
-          fieldBaseSize: event.fieldBaseSize,
-          fieldGrowthPerDrawing: event.fieldGrowthPerDrawing,
-          fieldMaxSize: event.fieldMaxSize,
-          maxDrawingsPerRound: event.maxDrawingsPerRound,
-          searchOverscroll: event.searchOverscroll,
-        });
+      case "guess-result": {
+        // Show on the board when someone guesses
         break;
       }
 
-      case "assign-task":
-      case "search-result":
-      case "player-phase": {
+      case "assign-task": {
         break;
       }
     }

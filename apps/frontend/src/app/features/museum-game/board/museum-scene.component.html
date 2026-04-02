@@ -1,25 +1,55 @@
-<div class="relative h-full w-full flex items-center justify-center">
-  <app-scene-renderer
-    class="block"
-    [modeState]="modeState()"
-    [containerWidthPx]="displayFieldWidth()"
-    [containerHeightPx]="displayFieldHeight()"
-    [imageSizePx]="imageSizeInPixel()"
-    [logicalFieldWidth]="logicalFieldWidth()"
-    [logicalFieldHeight]="logicalFieldHeight()"
-  ></app-scene-renderer>
-
+<div class="h-full w-full flex flex-col overflow-hidden bg-stone-50">
   @if (!modeState()) {
-    <div class="absolute inset-0 grid place-items-center text-sm text-stone-400">Verbinde...</div>
-  }
+    <div class="flex-1 grid place-items-center text-sm text-stone-400">Verbinde...</div>
+  } @else {
+    <!-- Phase banner -->
+    <div class="shrink-0 flex items-center justify-center py-2 bg-white/80 backdrop-blur border-b border-black/5">
+      @switch (phase()) {
+        @case ('LOBBY') {
+          <span class="text-sm text-stone-400">Lobby — Wartet auf Spieler...</span>
+        }
+        @case ('ACTIVE') {
+          <span class="text-sm font-semibold text-stone-600">🎨 Spiel läuft · {{ drawingCount() }} Bilder</span>
+        }
+      }
+    </div>
 
-  @if (modeState() && drawingCount() === 0) {
-    <div class="absolute inset-0 grid place-items-center z-20">
-      <div class="text-center">
-        <img src="assets/icons/paintbrush.svg" class="w-16 h-16 mx-auto mb-3 opacity-40" alt=""/>
-        <div class="text-lg font-semibold text-stone-400">Das Museum wartet auf Kunst...</div>
-        <div class="text-xs text-stone-300 mt-1">Scannt den QR-Code und stellt weitere Gemälde auf</div>
-      </div>
+    <!-- Main content -->
+    <div class="flex-1 overflow-hidden relative">
+      @if (drawingCount() === 0) {
+        <div class="h-full grid place-items-center">
+          <div class="text-center">
+            <img src="assets/icons/paintbrush.svg" class="w-16 h-16 mx-auto mb-3 opacity-40" alt="" />
+            <div class="text-lg font-semibold text-stone-400">Das Museum wartet auf Kunst...</div>
+            <div class="text-xs text-stone-300 mt-1">Scannt den QR-Code und malt drauflos!</div>
+          </div>
+        </div>
+      } @else {
+        <!-- Zoom-to-fit scene: all drawings visible -->
+        <div #sceneContainer class="h-full w-full flex items-center justify-center overflow-hidden">
+          <div
+            class="relative transition-transform duration-500 ease-out"
+            [style.width.px]="sceneSize().width"
+            [style.height.px]="sceneSize().height"
+            [style.transform]="'scale(' + sceneCssScale() + ')'"
+            style="transform-origin: center center;"
+          >
+            @for (item of scatteredDrawings(); track item.drawing.id) {
+              <div
+                class="absolute"
+                [style.left.px]="item.x - sceneSize().offsetX"
+                [style.top.px]="item.y - sceneSize().offsetY"
+              >
+                <app-framed-drawing
+                  [drawing]="item.drawing"
+                  [sizePx]="160"
+                  [animateIn]="true"
+                />
+              </div>
+            }
+          </div>
+        </div>
+      }
     </div>
   }
 </div>

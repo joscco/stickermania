@@ -16,20 +16,17 @@ import gsap from "gsap";
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div #animTarget class="relative" [style.height.px]="sizePx" style="width: fit-content; margin: 0 auto;">
-      <!-- Frame + easel PNG -->
+    <div #animTarget class="relative" [style.width.px]="sizePx" [style.height.px]="sizePx" style="margin: 0 auto;">
+      <!-- Frame 500x500 native, scaled to sizePx -->
       <img
         [src]="'assets/png/art_frame_' + frameIdx + '.png'"
-        [style.height.px]="sizePx"
-        style="width: auto; display: block;"
+        class="absolute inset-0 w-full h-full"
         alt="" draggable="false"
       />
-      <!-- Actual painting, centered inside the frame -->
+      <!-- Painting 400x400 native = 2/3 of 600, centered (16% inset) -->
       <img
-        class="absolute left-1/2 -translate-x-1/2 object-cover rounded-sm"
-        [style.width.px]="sizePx * 0.48"
-        [style.height.px]="sizePx * 0.48"
-        [style.top.px]="sizePx * 0.1"
+        class="absolute object-cover"
+        style="top: 16%; left: 16%; width: 66%; height: 66%;"
         [src]="drawing.imageUrl"
         [alt]="drawing.prompt"
         draggable="false"

@@ -1,7 +1,7 @@
 import { Injectable, signal } from "@angular/core";
 import type { DrawSearchPlayerTask } from "@birthday/shared";
 
-export type PlayerUiMode = "LOBBY" | "DRAW" | "SEARCH" | "IDLE" | "GARDEN" | "TEAM_GRAFFITI";
+export type PlayerUiMode = "LOBBY" | "DRAW" | "CAPTION" | "GUESS" | "IDLE" | "GARDEN" | "TEAM_GRAFFITI";
 
 @Injectable({ providedIn: "root" })
 export class GameSessionStore {

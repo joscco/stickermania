@@ -1,8 +1,8 @@
 import { Injectable, computed, signal } from "@angular/core";
 import type {
   DrawSearchDrawing,
+  DrawSearchGamePhase,
   DrawSearchModeState,
-  DrawSearchRoundState,
   GardenModeState,
   GameModeId,
   SessionPlayer,
@@ -18,12 +18,6 @@ export class WorldStore {
   public readonly sessionState = signal<SessionState | null>(null);
   public readonly lastError = signal<string | null>(null);
 
-  public readonly imageSizePx = signal<number>(160);
-  public readonly fieldBaseSize = signal<number>(400);
-  public readonly fieldGrowthPerDrawing = signal<number>(100);
-  public readonly fieldMaxSize = signal<number>(6000);
-  public readonly maxDrawingsPerRound = signal<number>(3);
-  public readonly searchOverscroll = signal<number>(0.15);
 
   public readonly revision = computed(() => this.sessionState()?.revision ?? null);
   public readonly activeMode = computed<GameModeId>(() => this.sessionState()?.activeMode ?? "draw-search");
@@ -81,7 +75,7 @@ export class WorldStore {
     return sessionState.modeState as TeamGraffitiModeState;
   });
 
-  public readonly round = computed<DrawSearchRoundState | null>(() => this.drawSearchModeState()?.round ?? null);
+  public readonly drawSearchPhase = computed<DrawSearchGamePhase>(() => this.drawSearchModeState()?.phase ?? "LOBBY");
   public readonly drawings = computed<Record<string, DrawSearchDrawing>>(() => this.drawSearchModeState()?.drawings ?? {});
   public readonly drawingsList = computed<DrawSearchDrawing[]>(() => {
     return Object.values(this.drawings()).sort((leftDrawing, rightDrawing) => leftDrawing.placedAt - rightDrawing.placedAt);
@@ -113,25 +107,4 @@ export class WorldStore {
     this.sessionState.set(null);
   }
 
-  public setFieldConfig(args: {
-    imageSizePx: number;
-    fieldBaseSize: number;
-    fieldGrowthPerDrawing: number;
-    fieldMaxSize: number;
-    maxDrawingsPerRound?: number;
-    searchOverscroll?: number;
-  }): void {
-    this.imageSizePx.set(args.imageSizePx);
-    this.fieldBaseSize.set(args.fieldBaseSize);
-    this.fieldGrowthPerDrawing.set(args.fieldGrowthPerDrawing);
-    this.fieldMaxSize.set(args.fieldMaxSize);
-
-    if (typeof args.maxDrawingsPerRound === "number") {
-      this.maxDrawingsPerRound.set(args.maxDrawingsPerRound);
-    }
-
-    if (typeof args.searchOverscroll === "number") {
-      this.searchOverscroll.set(args.searchOverscroll);
-    }
-  }
 }
