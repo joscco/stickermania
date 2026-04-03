@@ -46,9 +46,9 @@ export class GameViewportComponent implements AfterViewInit, OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
 
   public readonly viewportCtrl = new ViewportController({
-    minScale: 0.2,
-    maxScale: 1.6,
-    overscrollFraction: 0.08,
+    minScale: 0.3,
+    maxScale: 1.2,
+    overscrollPx: 100,
   });
 
   private readonly gesture = new GestureInterpreter({
@@ -226,7 +226,9 @@ export class GameViewportComponent implements AfterViewInit, OnDestroy {
   }
 
   private getViewportSize(): Size {
-    if (!this.viewportRef) return { width: 400, height: 400 };
+    if (!this.viewportRef) {
+      return { width: 400, height: 400 };
+    }
     const rect = this.viewportRef.nativeElement.getBoundingClientRect();
     return { width: rect.width, height: rect.height };
   }

@@ -8,16 +8,16 @@ export class ViewportController {
 
   private readonly minScale: number;
   private readonly maxScale: number;
-  /** Overscroll as a fraction of the viewport dimension (e.g. 0.08 = 8%). */
-  private readonly overscrollFraction: number;
+  /** Max pixels the viewport center may go beyond the scene edge. */
+  private readonly overscrollPx: number;
 
   private inertiaRafHandle: number | null = null;
   private panVelocityPxPerMs: Point = { x: 0, y: 0 };
 
-  public constructor(args?: { minScale?: number; maxScale?: number; overscrollFraction?: number }) {
+  public constructor(args?: { minScale?: number; maxScale?: number; overscrollPx?: number }) {
     this.minScale = args?.minScale ?? 0.6;
     this.maxScale = args?.maxScale ?? 2.8;
-    this.overscrollFraction = args?.overscrollFraction ?? 0.08;
+    this.overscrollPx = args?.overscrollPx ?? 200;
   }
 
   public contentTransform(): string {
@@ -188,12 +188,14 @@ export class ViewportController {
 
   private clampAxis(offset: number, viewportDim: number, scaledSceneDim: number): number {
     // offset = position of content's top-left corner in viewport space.
-    // The viewfinder center sits at viewportDim / 2.
-    // Overscroll scales with the viewport dimension so it feels consistent at every zoom level.
-    const overscrollPx = viewportDim * this.overscrollFraction;
-    const half = viewportDim / 2;
-    const max = half + overscrollPx;                    // viewfinder may pass left/top edge by overscrollPx
-    const min = half - scaledSceneDim - overscrollPx;   // viewfinder may pass right/bottom edge by overscrollPx
+    // Scene edges may go at most overscrollPx beyond the viewport edges.
+    const max = this.overscrollPx;
+    const min = viewportDim - scaledSceneDim - this.overscrollPx;
+
+    // When the scene is smaller than the viewport, min > max → center the scene.
+    if (min > max) {
+      return (min + max) / 2;
+    }
     return Math.min(max, Math.max(min, offset));
   }
 }
