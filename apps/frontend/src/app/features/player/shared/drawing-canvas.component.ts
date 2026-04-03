@@ -26,7 +26,7 @@ import { CanvasPainter } from "./canvas-painter";
   standalone: true,
   template: `
     <div #wrapper class="relative overflow-hidden no-select bg-white"
-         style="width: min(95vw, calc(100dvh - 260px)); aspect-ratio: 1;">
+         style="width: min(95vw, calc(100dvh - 260px)); aspect-ratio: 1; touch-action: manipulation;">
 
       @if (frameImageUrl()) {
         <img [src]="frameImageUrl()" class="absolute inset-0 w-full h-full pointer-events-none z-20" alt="" draggable="false" />

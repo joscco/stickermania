@@ -17,19 +17,19 @@ import gsap from "gsap";
   imports: [CommonModule],
   template: `
     <div #animTarget class="relative" [style.width.px]="sizePx" [style.height.px]="sizePx" style="margin: 0 auto;">
-      <!-- Frame 500x500 native, scaled to sizePx -->
-      <img
-        [src]="'assets/png/art_frame_' + frameIdx + '.png'"
-        class="absolute inset-0 w-full h-full"
-        alt="" draggable="false"
-      />
-      <!-- Painting 400x400 native = 2/3 of 600, centered (16% inset) -->
+      <!-- Painting 400x400 native inside 600x600 frame = 66.7%, centered (16.7% inset) — rendered first = behind -->
       <img
         class="absolute object-cover"
-        style="top: 16%; left: 16%; width: 66%; height: 66%;"
+        style="top: 16.67%; left: 16.67%; width: 66.67%; height: 66.67%;"
         [src]="drawing.imageUrl"
         [alt]="drawing.prompt"
         draggable="false"
+      />
+      <!-- Frame 500x500 native, scaled to sizePx — rendered second = in front -->
+      <img
+        [src]="'assets/png/art_frame_' + frameIdx + '.png'"
+        class="absolute inset-0 w-full h-full pointer-events-none"
+        alt="" draggable="false"
       />
     </div>
   `,

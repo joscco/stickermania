@@ -1,13 +1,8 @@
-<div class="h-full flex flex-col items-center">
-  <!-- Prompt + Timer -->
+<div class="h-full flex flex-col items-center" style="touch-action: manipulation;">
+  <!-- Prompt -->
   <div class="text-center py-2 px-4">
-    <div class="text-xs text-stone-400 uppercase tracking-wider">Zeichne ({{ drawIndex() + 1 }}/{{ drawTotal() }}):</div>
+    <div class="text-xs text-stone-400 uppercase tracking-wider">Zeichne:</div>
     <div class="text-2xl font-bold">{{ prompt() }}</div>
-    @if (timeLeft()) {
-      <div class="text-xs font-mono text-stone-500 mt-0.5 inline-flex items-center gap-1">
-        <img src="assets/icons/timer.svg" class="w-3 h-3" alt=""/> {{ timeLeft() }}
-      </div>
-    }
   </div>
 
   <!-- Square canvas fills available space -->

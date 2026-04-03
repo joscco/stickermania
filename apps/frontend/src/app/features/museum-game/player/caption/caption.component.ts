@@ -9,23 +9,18 @@ import { FramedDrawingComponent } from "../../shared/framed-drawing.component";
   standalone: true,
   imports: [CommonModule, FormsModule, FramedDrawingComponent],
   template: `
-    <div class="h-full flex flex-col items-center justify-center p-4 gap-4 overflow-auto">
-      <div class="text-xs text-stone-400 uppercase tracking-wider">
-        ✍️ Fake-Titel schreiben
-      </div>
-
-      <!-- The drawing in a frame -->
+    <div class="h-full flex flex-col items-center justify-center p-4 gap-3 overflow-auto">
+      <!-- The drawing in a frame — big and prominent -->
       <div class="shrink-0">
         <app-framed-drawing
           [drawing]="{ id: task().drawingId, artistId: '', prompt: '', imageUrl: task().imageUrl, imageAssetPath: '', placedAt: 0 }"
-          [sizePx]="180"
+          [sizePx]="240"
           [animateIn]="true"
         />
       </div>
 
-      <div class="text-sm text-stone-500 text-center max-w-xs">
-        Schreib einen lustigen Fake-Titel für dieses Bild!<br/>
-        Die anderen müssen dann den echten Titel erraten.
+      <div class="text-xs text-stone-400 text-center max-w-xs">
+        Schreib einen lustigen Fake-Titel!
       </div>
 
       <!-- Text input -->

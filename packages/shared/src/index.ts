@@ -234,10 +234,10 @@ export type DrawSearchClientAction =
 // ─── Server events ───────────────────────────────────────────
 
 export type DrawSearchServerEvent =
-    | { type: "assign-task"; task: DrawSearchPlayerTask }
+    | { type: "assign-task"; targetPlayerId: string; task: DrawSearchPlayerTask }
     | { type: "score-update"; playerId: string; newScore: number; reason: string }
     | { type: "round-phase"; phase: DrawSearchGamePhase }
-    | { type: "guess-result"; drawingId: string; correct: boolean; message: string; correctTitle: string };
+    | { type: "guess-result"; targetPlayerId: string; drawingId: string; correct: boolean; message: string; correctTitle: string };
 
 export interface GardenInventoryItem {
   plantId: string;
@@ -375,9 +375,9 @@ export type GameClientEnvelope =
     | { type: "game-action"; mode: "team-graffiti"; action: TeamGraffitiClientAction };
 
 export type GameServerEnvelope =
-    | { type: "game-event"; mode: "draw-search"; event: DrawSearchServerEvent }
-    | { type: "game-event"; mode: "garden-coop"; event: GardenServerEvent }
-    | { type: "game-event"; mode: "team-graffiti"; event: TeamGraffitiServerEvent };
+    | { type: "game-event"; mode: "draw-search"; event: DrawSearchServerEvent; targetPlayerId?: string }
+    | { type: "game-event"; mode: "garden-coop"; event: GardenServerEvent; targetPlayerId?: string }
+    | { type: "game-event"; mode: "team-graffiti"; event: TeamGraffitiServerEvent; targetPlayerId?: string };
 
 export type ClientToServerMessage = SessionClientToServerMessage | GameClientEnvelope;
 export type ServerToClientMessage = SessionServerToClientMessage | GameServerEnvelope;
