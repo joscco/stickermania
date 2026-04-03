@@ -27,8 +27,8 @@
         <div class="relative"
              [style.width.px]="sceneWidth()"
              [style.height.px]="sceneHeight()"
-             [style.transform]="'scale(' + fitScale() + ')'"
-             style="transform-origin: center center; flex-shrink: 0;">
+             [style.zoom]="fitScale()"
+             style="flex-shrink: 0;">
           <!-- Houses -->
           @for (house of houses(); track house.id) {
             <div class="absolute"

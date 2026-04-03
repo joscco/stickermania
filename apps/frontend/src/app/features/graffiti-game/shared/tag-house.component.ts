@@ -60,12 +60,6 @@ export class TagHouseComponent implements OnDestroy {
 
     this.squishTimeline = gsap.timeline()
       .to(el, {
-        scaleX: 0.5,
-        scaleY: 1.12,
-        duration: 0.12,
-        ease: "power2.in",
-      })
-      .to(el, {
         scaleX: 1.15,
         scaleY: 0.9,
         duration: 0.15,
