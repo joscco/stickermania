@@ -2,8 +2,7 @@
 <div [style.transform]="house().flipped ? 'scaleX(-1)' : ''">
   <!-- Inner wrapper: GSAP animates scaleX/scaleY here (always 1-based) -->
   <div #animTarget class="inline-block">
-    <img [src]="imageUrl()"
-         class="w-auto drop-shadow-md"
+    <img [src]="imageUrl()" class="w-auto"
          [style.height.px]="TAG_HOUSE_SIZE_PX"
          alt="" draggable="false" />
   </div>

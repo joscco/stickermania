@@ -1,4 +1,4 @@
-import { Injectable, signal, NgZone } from "@angular/core";
+import { Injectable, signal } from "@angular/core";
 import type { ClientToServerMessage, ServerToClientMessage } from "@birthday/shared";
 
 export type WsConnectionStatus = "connecting" | "connected" | "disconnected";
@@ -28,7 +28,7 @@ export class WebSocketService {
   /** Bound handler for visibilitychange */
   private readonly onVisChange = () => this.handleVisibilityChange();
 
-  constructor(private readonly ngZone: NgZone) {
+  constructor() {
     // When the phone locks/unlocks the screen or the user switches apps,
     // the WS may silently die. Re-check on visibility change.
     if (typeof document !== "undefined") {
@@ -49,51 +49,43 @@ export class WebSocketService {
     try {
       ws = new WebSocket(wsUrl);
     } catch {
-      this.ngZone.run(() => {
-        this.status.set("disconnected");
-        this.scheduleReconnect();
-      });
+      this.status.set("disconnected");
+      this.scheduleReconnect();
       return;
     }
     this.ws = ws;
 
     ws.onopen = () => {
-      this.ngZone.run(() => {
-        this.reconnectAttempts = 0;
-        this.status.set("connected");
-        this.startPing();
+      this.reconnectAttempts = 0;
+      this.status.set("connected");
+      this.startPing();
 
-        // Re-send the join message so the server re-registers us
-        if (this.pendingJoinMsg) {
-          this.sendRaw(this.pendingJoinMsg);
-        }
-      });
+      // Re-send the join message so the server re-registers us
+      if (this.pendingJoinMsg) {
+        this.sendRaw(this.pendingJoinMsg);
+      }
     };
 
     ws.onmessage = (event) => {
       try {
         const msg: ServerToClientMessage = JSON.parse(event.data);
-        this.ngZone.run(() => {
-          if (msg.type === "pong") {
-            this.lastPongAt = Date.now();
-            return; // don't propagate pong to listeners
-          }
-          this.lastMessage.set(msg);
-          for (const listener of this.messageListeners) {
-            listener(msg);
-          }
-        });
+        if (msg.type === "pong") {
+          this.lastPongAt = Date.now();
+          return; // don't propagate pong to listeners
+        }
+        this.lastMessage.set(msg);
+        for (const listener of this.messageListeners) {
+          listener(msg);
+        }
       } catch {
         // ignore invalid JSON
       }
     };
 
     ws.onclose = () => {
-      this.ngZone.run(() => {
-        this.cleanupSocket();
-        this.status.set("disconnected");
-        this.scheduleReconnect();
-      });
+      this.cleanupSocket();
+      this.status.set("disconnected");
+      this.scheduleReconnect();
     };
 
     ws.onerror = () => {
@@ -188,10 +180,8 @@ export class WebSocketService {
       if (Date.now() - this.lastPongAt > 10_000) {
         console.warn("[ws] no pong in 10 s — forcing reconnect");
         this.destroySocket();
-        this.ngZone.run(() => {
-          this.status.set("disconnected");
-          this.scheduleReconnect();
-        });
+        this.status.set("disconnected");
+        this.scheduleReconnect();
         return;
       }
 
