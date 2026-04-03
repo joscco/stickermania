@@ -1,10 +1,10 @@
 import {
   Component,
+  computed,
+  effect,
   ElementRef,
-  Input,
-  OnChanges,
+  input,
   OnDestroy,
-  SimpleChanges,
   ViewChild,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
@@ -15,32 +15,15 @@ import gsap from "gsap";
   selector: "app-framed-drawing",
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div #animTarget class="relative" [style.width.px]="sizePx" [style.height.px]="sizePx" style="margin: 0 auto;">
-      <!-- Painting 400x400 native inside 600x600 frame = 66.7%, centered (16.7% inset) — rendered first = behind -->
-      <img
-        class="absolute object-cover"
-        style="top: 16.67%; left: 16.67%; width: 66.67%; height: 66.67%;"
-        [src]="drawing.imageUrl"
-        [alt]="drawing.prompt"
-        draggable="false"
-      />
-      <!-- Frame 500x500 native, scaled to sizePx — rendered second = in front -->
-      <img
-        [src]="'assets/png/art_frame_' + frameIdx + '.png'"
-        class="absolute inset-0 w-full h-full pointer-events-none"
-        alt="" draggable="false"
-      />
-    </div>
-  `,
+  templateUrl: "./framed-drawing.component.html",
   styles: [`:host { display: inline-block; }`],
 })
-export class FramedDrawingComponent implements OnChanges, OnDestroy {
-  @Input({ required: true }) drawing!: DrawSearchDrawing;
+export class FramedDrawingComponent implements OnDestroy {
+  public readonly drawing = input.required<DrawSearchDrawing>();
   /** Total height of the frame+easel in px. */
-  @Input() sizePx = 120;
+  public readonly sizePx = input<number>(120);
   /** Whether to play a pop-in animation when the component first appears. */
-  @Input() animateIn = false;
+  public readonly animateIn = input<boolean>(false);
 
   @ViewChild("animTarget", { static: true }) animTargetRef!: ElementRef<HTMLElement>;
 
@@ -48,19 +31,23 @@ export class FramedDrawingComponent implements OnChanges, OnDestroy {
   private hasAnimatedIn = false;
 
   /** Deterministic frame variant (0–4) based on drawing id. */
-  public get frameIdx(): number {
+  public readonly frameIdx = computed(() => {
     let hash = 0;
-    for (const ch of this.drawing.id) {
+    for (const ch of this.drawing().id) {
       hash = (hash * 31 + ch.charCodeAt(0)) | 0;
     }
     return Math.abs(hash) % 5;
-  }
+  });
 
-  public ngOnChanges(changes: SimpleChanges): void {
-    if (changes["drawing"] && this.animateIn && !this.hasAnimatedIn) {
-      this.hasAnimatedIn = true;
-      this.playPopIn();
-    }
+  constructor() {
+    effect(() => {
+      // Re-read drawing to track changes
+      this.drawing();
+      if (this.animateIn() && !this.hasAnimatedIn) {
+        this.hasAnimatedIn = true;
+        this.playPopIn();
+      }
+    });
   }
 
   public ngOnDestroy(): void {

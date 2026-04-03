@@ -17,9 +17,6 @@ export class WorldStore {
   public readonly connectionStatus = signal<ConnectionStatus>("connecting");
   public readonly sessionState = signal<SessionState | null>(null);
   public readonly lastError = signal<string | null>(null);
-
-
-  public readonly revision = computed(() => this.sessionState()?.revision ?? null);
   public readonly activeMode = computed<GameModeId>(() => this.sessionState()?.activeMode ?? "draw-search");
   public readonly players = computed<Record<string, SessionPlayer>>(() => this.sessionState()?.players ?? {});
 
@@ -88,14 +85,6 @@ export class WorldStore {
 
   public setConnecting(): void {
     this.connectionStatus.set("connecting");
-  }
-
-  public setDisconnected(): void {
-    this.connectionStatus.set("disconnected");
-  }
-
-  public setError(message: string): void {
-    this.lastError.set(message);
   }
 
   public setSessionState(state: SessionState): void {

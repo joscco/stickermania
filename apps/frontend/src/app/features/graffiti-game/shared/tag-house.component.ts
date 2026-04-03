@@ -1,10 +1,10 @@
 import {
   Component,
+  computed,
+  effect,
   ElementRef,
-  Input,
-  OnChanges,
+  input,
   OnDestroy,
-  SimpleChanges,
   ViewChild,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
@@ -15,58 +15,48 @@ import gsap from "gsap";
   selector: "app-tag-house",
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <!-- Outer wrapper: only handles the horizontal flip (never touched by GSAP) -->
-    <div [style.transform]="house.flipped ? 'scaleX(-1)' : ''">
-      <!-- Inner wrapper: GSAP animates scaleX/scaleY here (always 1-based) -->
-      <div #animTarget class="inline-block">
-        <img [src]="imageUrl"
-             class="w-auto drop-shadow-md"
-             [style.height.px]="sizePx"
-             alt="" draggable="false" />
-      </div>
-    </div>
-  `,
+  templateUrl: "./tag-house.component.html",
   styles: [`:host { display: inline-block; }`],
 })
-export class TagHouseComponent implements OnChanges, OnDestroy {
-  @Input({ required: true }) house!: TeamGraffitiHouse;
-  @Input() sizePx = 160;
+export class TagHouseComponent implements OnDestroy {
+  public readonly house = input.required<TeamGraffitiHouse>();
+  public readonly sizePx = input<number>(160);
 
   @ViewChild("animTarget", { static: true }) animTargetRef!: ElementRef<HTMLElement>;
 
-  private timeline: gsap.core.Timeline | null = null;
-  private prevOwner: string | null | undefined = undefined;
+  private squishTimeline: gsap.core.Timeline | null = null;
+  private previousOwner: string | null | undefined = undefined;
 
-  public get imageUrl(): string {
-    const t = this.house.houseType.toLowerCase();
-    if (!this.house.owner) {
-      return `assets/png/tag_house_${t}_default.png`;
+  public readonly imageUrl = computed(() => {
+    const h = this.house();
+    const houseType = h.houseType.toLowerCase();
+    if (!h.owner) {
+      return `assets/png/tag_house_${houseType}_default.png`;
     }
-    const team = this.house.owner === "DIAMOND" ? "diamond" : "heart";
-    return `assets/png/tag_house_${t}_${team}_${this.house.tagVariant}.png`;
-  }
+    const teamName = h.owner === "DIAMOND" ? "diamond" : "heart";
+    return `assets/png/tag_house_${houseType}_${teamName}_${h.tagVariant}.png`;
+  });
 
-  public ngOnChanges(changes: SimpleChanges): void {
-    if (changes["house"]) {
-      const curr = this.house;
-      if (this.prevOwner !== undefined && this.prevOwner !== curr.owner) {
+  constructor() {
+    effect(() => {
+      const currentHouse = this.house();
+      if (this.previousOwner !== undefined && this.previousOwner !== currentHouse.owner) {
         this.playSquish();
       }
-      this.prevOwner = curr.owner;
-    }
+      this.previousOwner = currentHouse.owner;
+    });
   }
 
   public ngOnDestroy(): void {
-    this.timeline?.kill();
+    this.squishTimeline?.kill();
   }
 
   /** Play squish animation on the inner wrapper. scaleX/scaleY are always 1-based here. */
   public playSquish(): void {
-    this.timeline?.kill();
+    this.squishTimeline?.kill();
     const el = this.animTargetRef.nativeElement;
 
-    this.timeline = gsap.timeline()
+    this.squishTimeline = gsap.timeline()
       .to(el, {
         scaleX: 0.5,
         scaleY: 1.12,

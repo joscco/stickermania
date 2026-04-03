@@ -8,13 +8,16 @@ import {WebSocketService} from "../../core/websocket.service";
 import {WorldStore} from "../../core/world.store";
 import {PlayerMessageHandler} from "./player-message-handler.service";
 import {PlayerTimerService} from "./player-timer.service";
-import {GardenPlayerService} from "../garden-game/player/garden-player.service";
-import {GraffitiPlayerService} from "../graffiti-game/player/graffiti-player.service";
 import {DrawSearchPlayerViewComponent} from "../museum-game/player/draw-search-player-view.component";
 import {GardenPlayerViewComponent} from "../garden-game/player/garden-player-view.component";
 import {GraffitiPlayerViewComponent} from "../graffiti-game/player/graffiti-player-view.component";
 import {LobbyAvatarComponent} from "./lobby/lobby-avatar.component";
 import {LobbyNameComponent} from "./lobby/lobby-name.component";
+import {GardenPlayerService} from '../garden-game/services/garden-player.service';
+import {GraffitiEventHandler} from '../graffiti-game/services/graffiti-event-handler';
+import {DrawSearchEventHandler} from '../museum-game/services/draw-search-event-handler';
+import {GraffitiPlayerService} from '../graffiti-game/services/graffiti-player.service';
+import {GardenEventHandler} from '../garden-game/services/garden-event-handler';
 
 @Component({
   selector: "app-player",
@@ -32,6 +35,9 @@ import {LobbyNameComponent} from "./lobby/lobby-name.component";
     PlayerTimerService,
     GardenPlayerService,
     GraffitiPlayerService,
+    DrawSearchEventHandler,
+    GardenEventHandler,
+    GraffitiEventHandler,
   ],
   templateUrl: "./player.component.html",
 })
@@ -90,9 +96,13 @@ export class PlayerComponent implements OnInit, OnDestroy {
    */
   public readonly isReady = computed(() => {
     const state = this.worldStore.sessionState();
-    if (!state) return false;
+    if (!state) {
+      return false;
+    }
     const playerId = this.sessionStore.playerId();
-    if (!playerId) return false;
+    if (!playerId) {
+      return false;
+    }
     return !!state.players[playerId];
   });
 
@@ -183,8 +193,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
     this.sessionStore.clearTask();
     this.isEditingAvatar.set(false);
   }
-
-  // ── Helpers ────────────────────────────────────────────────
 
   public redirectToJoin(): void {
     this.router.navigate(["/join"]);

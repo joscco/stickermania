@@ -1,4 +1,4 @@
-import type { Point } from "./types";
+import {Point} from '../types';
 
 export interface GestureCallbacks {
   onPanStart?: () => void;

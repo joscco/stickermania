@@ -25,22 +25,7 @@ const NUMBER_ROWS = [
   selector: "app-on-screen-keyboard",
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div class="w-full bg-stone-100 border-t border-stone-200 px-1 pt-1.5"
-         style="padding-bottom: max(0.25rem, env(safe-area-inset-bottom));">
-      @for (row of currentRows(); track $index) {
-        <div class="flex justify-center gap-[3px] mb-[3px]">
-          @for (key of row; track key) {
-            <button
-              class="rounded-lg font-sans text-stone-900 active:bg-stone-300 transition-colors select-none"
-              [class]="getKeyClass(key)"
-              (pointerdown)="onKey($event, key)"
-            >{{ getKeyLabel(key) }}</button>
-          }
-        </div>
-      }
-    </div>
-  `,
+  templateUrl: "./on-screen-keyboard.component.html",
 })
 export class OnScreenKeyboardComponent {
   public readonly maxLength = input<number>(80);

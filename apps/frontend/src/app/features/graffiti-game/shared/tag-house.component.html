@@ -1,0 +1,11 @@
+<!-- Outer wrapper: only handles the horizontal flip (never touched by GSAP) -->
+<div [style.transform]="house().flipped ? 'scaleX(-1)' : ''">
+  <!-- Inner wrapper: GSAP animates scaleX/scaleY here (always 1-based) -->
+  <div #animTarget class="inline-block">
+    <img [src]="imageUrl()"
+         class="w-auto drop-shadow-md"
+         [style.height.px]="sizePx()"
+         alt="" draggable="false" />
+  </div>
+</div>
+

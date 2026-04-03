@@ -1,16 +1,12 @@
 import { inject, Injectable, signal } from "@angular/core";
-import type {
-  DrawSearchModeState,
-  DrawSearchServerEvent,
-  GardenServerEvent,
-  ServerToClientMessage,
-  TeamGraffitiServerEvent,
-} from "@birthday/shared";
+import type { ServerToClientMessage } from "@birthday/shared";
 import { GameSessionStore } from "../../core/challenge.store";
 import { ReconnectService } from "../../core/reconnect.service";
 import { WebSocketService } from "../../core/websocket.service";
 import { WorldStore } from "../../core/world.store";
-import { GardenPlayerService } from "../garden-game/player/garden-player.service";
+import {DrawSearchEventHandler} from '../museum-game/services/draw-search-event-handler';
+import {GardenEventHandler} from '../garden-game/services/garden-event-handler';
+import {GraffitiEventHandler} from '../graffiti-game/services/graffiti-event-handler';
 
 @Injectable()
 export class PlayerMessageHandler {
@@ -18,19 +14,20 @@ export class PlayerMessageHandler {
   private readonly worldStore = inject(WorldStore);
   private readonly wsService = inject(WebSocketService);
   private readonly reconnectService = inject(ReconnectService);
-  private readonly gardenService = inject(GardenPlayerService);
+  private readonly drawSearchHandler = inject(DrawSearchEventHandler);
+  private readonly gardenHandler = inject(GardenEventHandler);
+  private readonly graffitiHandler = inject(GraffitiEventHandler);
 
   /** Expose the playerId so the component can read it after 'welcome'. */
   public readonly playerId = signal<string | null>(null);
 
-  public readonly drawCount = signal<number>(0);
-  public readonly maxDrawings = signal<number>(3);
-
   /**
-   * Resolve the session code that was used to join (for reconnect storage).
+   * Session code used for reconnect storage.
    * Set by the component after route resolution.
    */
   public sessionCode = "";
+
+  // ─── Main dispatch ──────────────────────────────────────────
 
   public handle(message: ServerToClientMessage): void {
     switch (message.type) {
@@ -43,11 +40,9 @@ export class PlayerMessageHandler {
         this.syncPlayerModeFromState();
         break;
       case "game-event":
-        if (message.mode === "draw-search") this.handleDrawSearchEvent(message.event);
-        else if (message.mode === "garden-coop") this.handleGardenEvent(message.event);
-        else if (message.mode === "team-graffiti") this.handleTeamGraffitiEvent(message.event);
-        break;
-      case "session-event":
+        if (message.mode === "draw-search") this.drawSearchHandler.handleEvent(message.event);
+        else if (message.mode === "garden-coop") this.gardenHandler.handleEvent(message.event);
+        else if (message.mode === "team-graffiti") this.graffitiHandler.handleEvent(message.event);
         break;
       case "error":
         this.sessionStore.showFeedback(message.message, "error");
@@ -55,13 +50,9 @@ export class PlayerMessageHandler {
     }
   }
 
-  // ── Welcome ─────────────────────────────────────────────────
+  // ─── Welcome ────────────────────────────────────────────────
 
   private handleWelcome(message: Extract<ServerToClientMessage, { type: "welcome" }>): void {
-    const storedServerSession = localStorage.getItem("birthday_server_session");
-    if (storedServerSession && storedServerSession !== message.serverSessionId) {
-      localStorage.setItem("birthday_server_session", message.serverSessionId);
-    }
     localStorage.setItem("birthday_server_session", message.serverSessionId);
 
     this.sessionStore.setJoined({
@@ -88,86 +79,7 @@ export class PlayerMessageHandler {
     });
   }
 
-  // ── Draw-Search ─────────────────────────────────────────────
-
-  private handleDrawSearchEvent(event: DrawSearchServerEvent): void {
-    switch (event.type) {
-      case "assign-task":
-        this.sessionStore.setTask(event.task);
-        break;
-
-      case "score-update":
-        if (event.playerId === this.sessionStore.playerId()) {
-          this.sessionStore.showFeedback(`+Punkte! ${event.reason}`, "success");
-        }
-        break;
-
-      case "guess-result":
-        if (event.correct) {
-          this.sessionStore.showFeedback(`${event.message}`, "success");
-        } else {
-          this.sessionStore.showFeedback(`${event.message} Richtig war: „${event.correctTitle}"`, "error");
-        }
-        break;
-
-      case "round-phase":
-        if (event.phase === "LOBBY") {
-          this.sessionStore.clearTask("LOBBY");
-        }
-        break;
-    }
-  }
-
-  // ── Garden ──────────────────────────────────────────────────
-
-  private handleGardenEvent(event: GardenServerEvent): void {
-    switch (event.type) {
-      case "garden-level-up":
-        this.sessionStore.showFeedback(`Level ${event.newLevel} erreicht!`, "success");
-        break;
-      case "garden-plot-ready":
-        this.sessionStore.showFeedback(`${this.gardenService.plantName(event.plantId)} ist erntereif.`, "success");
-        break;
-      case "garden-plot-needs-water":
-        this.sessionStore.showFeedback(`${this.gardenService.plantName(event.plantId)} braucht Wasser.`, "error");
-        break;
-      case "garden-pest-spawned":
-        this.sessionStore.showFeedback(`Ungeziefer bei ${this.gardenService.plantName(event.plantId)}.`, "error");
-        break;
-      case "garden-order-fulfilled":
-        this.sessionStore.showFeedback(`Auftrag erfüllt (+${event.experienceGained} XP).`, "success");
-        break;
-    }
-  }
-
-  // ── Team Graffiti ───────────────────────────────────────────
-
-  private handleTeamGraffitiEvent(event: TeamGraffitiServerEvent): void {
-    switch (event.type) {
-      case "team-assigned":
-        if (event.playerId === this.sessionStore.playerId()) {
-          const label = event.teamId === "DIAMOND" ? "♦️ Karo" : "♥️ Herz";
-          this.sessionStore.showFeedback(`Du bist jetzt Team ${label}.`, "success");
-        }
-        break;
-      case "house-tagged":
-        break;
-      case "house-wiped":
-        if (event.wipedByPlayerId === this.sessionStore.playerId()) {
-          this.sessionStore.showFeedback(`Tag entfernt!`, "success");
-        }
-        break;
-      case "team-score-updated":
-        break;
-      case "actions-updated":
-        if (event.playerId === this.sessionStore.playerId()) {
-          // Silently handled through state sync
-        }
-        break;
-    }
-  }
-
-  // ── State sync on reconnect ─────────────────────────────────
+  // ─── State sync on reconnect ────────────────────────────────
 
   public syncPlayerModeFromState(): void {
     const playerId = this.sessionStore.playerId();
@@ -194,29 +106,16 @@ export class PlayerMessageHandler {
       return;
     }
 
+    // Delegate mode-specific sync to the respective handler
     switch (sessionState.activeMode) {
-      case "draw-search": {
-        const modeState = sessionState.modeState as DrawSearchModeState;
-        if (modeState.phase === "LOBBY") {
-          this.sessionStore.clearTask("LOBBY");
-          return;
-        }
-        // In ACTIVE phase, the server will re-send the task via onPlayerJoined.
-        // If we already have a task (from a prior assign-task event), keep it.
-        if (this.sessionStore.currentTask()) return;
-        // If we're already in a draw-search task mode (DRAW/CAPTION/GUESS),
-        // don't overwrite it — a session-state broadcast from another player
-        // would otherwise reset our task mode.
-        const current = this.sessionStore.currentMode();
-        if (current === "DRAW" || current === "CAPTION" || current === "GUESS") return;
-        this.sessionStore.clearTask("IDLE");
+      case "draw-search":
+        this.drawSearchHandler.syncMode(sessionState);
         return;
-      }
       case "garden-coop":
-        this.sessionStore.clearTask("GARDEN");
+        this.gardenHandler.syncMode();
         return;
       case "team-graffiti":
-        this.sessionStore.clearTask("TEAM_GRAFFITI");
+        this.graffitiHandler.syncMode();
         return;
     }
   }

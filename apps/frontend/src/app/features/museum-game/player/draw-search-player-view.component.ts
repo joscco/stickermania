@@ -5,9 +5,9 @@ import {WebSocketService} from "../../../core/websocket.service";
 import {WorldStore} from "../../../core/world.store";
 import {PlayerMessageHandler} from "../../player/player-message-handler.service";
 import {PlayerTimerService} from "../../player/player-timer.service";
-import {DrawComponent} from "../player/draw/draw.component";
-import {CaptionComponent} from "../player/caption/caption.component";
-import {GuessComponent} from "../player/guess/guess.component";
+import {DrawComponent} from "./draw/draw.component";
+import {CaptionComponent} from "./caption/caption.component";
+import {GuessComponent} from "./guess/guess.component";
 import {LobbyReadyComponent} from "../../player/lobby/lobby-ready.component";
 import {IdleSearchWaitingComponent} from "../../player/idle/idle-search-waiting.component";
 
@@ -22,44 +22,7 @@ import {IdleSearchWaitingComponent} from "../../player/idle/idle-search-waiting.
     LobbyReadyComponent,
     IdleSearchWaitingComponent,
   ],
-  template: `
-    @if (gamePhase() === 'LOBBY') {
-      <app-lobby-ready [playerName]="sessionStore.playerName()" />
-    } @else {
-      @switch (sessionStore.currentMode()) {
-        @case ('DRAW') {
-          @if (sessionStore.currentTask(); as task) {
-            <app-draw
-              [prompt]="$any(task).prompt"
-              [drawIndex]="0"
-              [drawTotal]="0"
-              [timeLeft]="''"
-              (drawingSubmitted)="onDrawingSubmitted($event)"
-            />
-          }
-        }
-        @case ('CAPTION') {
-          @if (sessionStore.currentTask(); as task) {
-            <app-caption
-              [task]="$any(task)"
-              (captionSubmitted)="onCaptionSubmitted($event)"
-            />
-          }
-        }
-        @case ('GUESS') {
-          @if (sessionStore.currentTask(); as task) {
-            <app-guess
-              [task]="$any(task)"
-              (guessSubmitted)="onGuessSubmitted($event)"
-            />
-          }
-        }
-        @default {
-          <app-idle-search-waiting [timeLeft]="''" />
-        }
-      }
-    }
-  `,
+  templateUrl: "./draw-search-player-view.component.html",
 })
 export class DrawSearchPlayerViewComponent {
   private readonly ws = inject(WebSocketService);

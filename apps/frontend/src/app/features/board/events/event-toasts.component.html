@@ -2,7 +2,7 @@
   @for (event of displayedEvents(); track event.id) {
     <div
       #toast
-      class="rounded-xl border border-black/[0.06] bg-white/90 px-3 py-2 text-xs text-stone-700 shadow-sm backdrop-blur"
+      class="rounded-xl border border-black/6 bg-white/90 px-3 py-2 text-xs text-stone-700 shadow-sm backdrop-blur"
       [attr.data-id]="event.id"
     >
       {{ event.text }}

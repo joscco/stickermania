@@ -1,0 +1,48 @@
+<div class="h-full flex flex-col items-center justify-center p-4 gap-4 overflow-auto">
+  <div class="text-xs text-stone-400 uppercase tracking-wider">
+    🤔 Welcher Titel ist echt?
+  </div>
+
+  <!-- The drawing in a frame -->
+  <div class="shrink-0">
+    <app-framed-drawing
+      [drawing]="{ id: task().drawingId, artistId: '', prompt: '', imageUrl: task().imageUrl, imageAssetPath: '', placedAt: 0 }"
+      [sizePx]="180"
+      [animateIn]="true"
+    />
+  </div>
+
+  <div class="text-xs text-stone-400">Gemalt von {{ task().artistName }}</div>
+
+  <div class="text-sm font-semibold text-stone-700 text-center">
+    Welcher Titel ist echt?
+  </div>
+
+  <!-- Caption options -->
+  <div class="w-full max-w-xs space-y-2">
+    @for (caption of task().captions; track caption.id) {
+      <button
+        class="w-full rounded-xl border px-4 py-3 text-sm text-left transition-all active:scale-[0.97]"
+        [class.border-black/10]="!selectedCaptionId()"
+        [class.bg-white]="!selectedCaptionId()"
+        [class.hover:bg-stone-50]="!selectedCaptionId()"
+        [class.border-emerald-400]="selectedCaptionId() === caption.id && wasCorrectGuess()"
+        [class.bg-emerald-50]="selectedCaptionId() === caption.id && wasCorrectGuess()"
+        [class.border-red-400]="selectedCaptionId() === caption.id && !wasCorrectGuess()"
+        [class.bg-red-50]="selectedCaptionId() === caption.id && !wasCorrectGuess()"
+        [class.opacity-50]="!!selectedCaptionId() && selectedCaptionId() !== caption.id"
+        [class.pointer-events-none]="!!selectedCaptionId()"
+        (click)="selectCaption(caption.id)"
+      >
+        {{ caption.text }}
+      </button>
+    }
+  </div>
+
+  @if (selectedCaptionId()) {
+    <div class="text-sm font-medium" [class.text-emerald-600]="wasCorrectGuess()" [class.text-red-500]="!wasCorrectGuess()">
+      {{ wasCorrectGuess() ? 'Richtig! 🎉' : 'Falsch!' }}
+    </div>
+  }
+</div>
+

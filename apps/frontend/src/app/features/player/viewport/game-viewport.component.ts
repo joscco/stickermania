@@ -3,17 +3,16 @@ import {
   Component,
   DestroyRef,
   ElementRef,
-  EventEmitter,
-  Input,
   OnDestroy,
-  Output,
   ViewChild,
   inject,
+  input,
+  output,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { GestureInterpreter } from "../player/gesture-interpreter";
-import { ViewportController } from "../player/viewport-controller";
-import type { Point, Size } from "../player/types";
+import {GestureInterpreter} from './gesture-interpreter';
+import {Point, Size} from '../types';
+import {ViewportController} from './viewport-controller';
 
 /**
  * A generic pan/zoom viewport that emits tap events in content (logical) coordinates.
@@ -23,7 +22,7 @@ import type { Point, Size } from "../player/types";
  * <app-game-viewport
  *   [sceneWidth]="2000"
  *   [sceneHeight]="1400"
- *   (contentTap)="onTap($event)">
+ *   (contentTapped)="onTap($event)">
  *   <!-- place your scene content here (absolute-positioned children) -->
  *   <ng-content />
  * </app-game-viewport>
@@ -33,32 +32,14 @@ import type { Point, Size } from "../player/types";
   selector: "app-game-viewport",
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div
-      class="h-full w-full relative overflow-hidden"
-      #viewport
-      style="touch-action: none;"
-      (pointerdown)="onPointerDown($event)"
-      (pointermove)="onPointerMove($event)"
-      (pointerup)="onPointerUp($event)"
-      (pointercancel)="onPointerUp($event)"
-      (wheel)="onWheel($event)"
-    >
-      <div class="absolute left-0 top-0 origin-top-left"
-           style="touch-action: none;"
-           [style.transform]="contentTransform()">
-        <!-- projected scene content -->
-        <ng-content />
-      </div>
-    </div>
-  `,
+  templateUrl: "./game-viewport.component.html",
 })
 export class GameViewportComponent implements AfterViewInit, OnDestroy {
-  @Input({ required: true }) sceneWidth = 1000;
-  @Input({ required: true }) sceneHeight = 1000;
+  public readonly sceneWidth = input.required<number>();
+  public readonly sceneHeight = input.required<number>();
 
   /** Emits a tap in content (logical scene) coordinates. */
-  @Output() contentTap = new EventEmitter<Point>();
+  public readonly contentTapped = output<Point>();
 
   @ViewChild("viewport") private viewportRef!: ElementRef<HTMLElement>;
 
@@ -123,7 +104,7 @@ export class GameViewportComponent implements AfterViewInit, OnDestroy {
       y: clientPoint.y - rect.top,
     };
     const contentPoint = this.viewportCtrl.viewportToContentPoint({ viewportPoint });
-    this.contentTap.emit(contentPoint);
+    this.contentTapped.emit(contentPoint);
   }
 
   // ── Pointer / wheel ───────────────────────────────────────────
@@ -241,7 +222,7 @@ export class GameViewportComponent implements AfterViewInit, OnDestroy {
   // ── Helpers ───────────────────────────────────────────────────
 
   private sceneSize(): Size {
-    return { width: this.sceneWidth, height: this.sceneHeight };
+    return { width: this.sceneWidth(), height: this.sceneHeight() };
   }
 
   private getViewportSize(): Size {

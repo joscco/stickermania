@@ -1,5 +1,5 @@
 import { signal } from "@angular/core";
-import type { Point, Size } from "./types";
+import {Point, Size} from '../types';
 
 export class ViewportController {
   public readonly scale = signal<number>(1.0);

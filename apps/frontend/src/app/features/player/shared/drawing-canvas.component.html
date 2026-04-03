@@ -1,0 +1,44 @@
+<div #wrapper class="relative overflow-hidden no-select bg-white"
+     style="width: min(95vw, calc(100dvh - 260px)); aspect-ratio: 1; touch-action: manipulation;">
+
+  @if (frameImageUrl()) {
+    <img [src]="frameImageUrl()" class="absolute inset-0 w-full h-full pointer-events-none z-20" alt=""
+         draggable="false"/>
+    <canvas #drawCanvas class="absolute z-10" style="touch-action: none;"
+            [style.inset]="canvasInset()"
+            [style.width]="canvasContentSize()"
+            [style.height]="canvasContentSize()"
+            (pointerdown)="painter.pointerDown($event)"
+            (pointermove)="painter.pointerMove($event)"
+            (pointerup)="painter.pointerUp()"
+            (pointercancel)="painter.pointerUp()"
+    ></canvas>
+  } @else {
+    <canvas #drawCanvas class="w-full h-full rounded-2xl border-2 border-black/6" style="touch-action: none;"
+            (pointerdown)="painter.pointerDown($event)"
+            (pointermove)="painter.pointerMove($event)"
+            (pointerup)="painter.pointerUp()"
+            (pointercancel)="painter.pointerUp()"
+    ></canvas>
+  }
+</div>
+
+<!-- Tool bar -->
+<div class="flex items-center justify-center gap-3 mt-3">
+  <button class="w-12 h-12 rounded-xl transition-transform"
+          [class.scale-110]="brushThin() && !eraserMode()"
+          (click)="selectThinBrush()">
+    <img src="assets/png/draw_button_small.png" class="w-full h-full object-contain" alt="Dünn"/>
+  </button>
+  <button class="w-12 h-12 rounded-xl transition-transform"
+          [class.scale-110]="!brushThin() && !eraserMode()"
+          (click)="selectThickBrush()">
+    <img src="assets/png/draw_button_big.png" class="w-full h-full object-contain" alt="Dick"/>
+  </button>
+  <button class="w-12 h-12 rounded-xl transition-transform"
+          [class.scale-110]="eraserMode()"
+          (click)="selectEraser()">
+    <img src="assets/png/draw_button_eraser.png" class="w-full h-full object-contain" alt="Radierer"/>
+  </button>
+</div>
+
