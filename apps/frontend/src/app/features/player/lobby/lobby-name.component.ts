@@ -1,5 +1,5 @@
 import { Component, output, signal } from "@angular/core";
-import { OnScreenKeyboardComponent } from "../shared/on-screen-keyboard.component";
+import { OnScreenKeyboardComponent } from "../shared/keyboard/on-screen-keyboard.component";
 
 @Component({
   selector: "app-lobby-name",

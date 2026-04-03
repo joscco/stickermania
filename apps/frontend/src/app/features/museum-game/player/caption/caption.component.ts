@@ -2,7 +2,7 @@ import { Component, input, output, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import type { DrawSearchCaptionTask } from "@birthday/shared";
 import { FramedDrawingComponent } from "../../shared/framed-drawing.component";
-import { OnScreenKeyboardComponent } from "../../../player/shared/on-screen-keyboard.component";
+import { OnScreenKeyboardComponent } from "../../../player/shared/keyboard/on-screen-keyboard.component";
 
 @Component({
   selector: "app-caption",

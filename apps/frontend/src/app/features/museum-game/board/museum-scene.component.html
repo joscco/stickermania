@@ -28,7 +28,7 @@
         <!-- Zoom-to-fit scene: all drawings visible -->
         <div #sceneContainer class="h-full w-full flex items-center justify-center overflow-hidden">
           <div
-            class="relative transition-transform duration-500 ease-out"
+            class="relative transition-all duration-500 ease-out"
             [style.width.px]="sceneSize().width"
             [style.height.px]="sceneSize().height"
             [style.transform]="'scale(' + sceneCssScale() + ')'"
@@ -36,7 +36,7 @@
           >
             @for (item of scatteredDrawings(); track item.drawing.id) {
               <div
-                class="absolute"
+                class="absolute transition-all duration-500 ease-out"
                 [style.left.px]="item.x - sceneSize().offsetX"
                 [style.top.px]="item.y - sceneSize().offsetY"
               >

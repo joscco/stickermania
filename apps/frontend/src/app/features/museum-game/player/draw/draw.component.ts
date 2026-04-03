@@ -1,5 +1,5 @@
 import { Component, input, output, ViewChild } from "@angular/core";
-import { DrawingCanvasComponent } from "../../../player/shared/drawing-canvas.component";
+import { DrawingCanvasComponent } from "../../../player/shared/paint-canvas/drawing-canvas.component";
 
 @Component({
   selector: "app-draw",

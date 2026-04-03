@@ -40,9 +40,13 @@ export class PlayerMessageHandler {
         this.syncPlayerModeFromState();
         break;
       case "game-event":
-        if (message.mode === "draw-search") this.drawSearchHandler.handleEvent(message.event);
-        else if (message.mode === "garden-coop") this.gardenHandler.handleEvent(message.event);
-        else if (message.mode === "team-graffiti") this.graffitiHandler.handleEvent(message.event);
+        if (message.mode === "draw-search") {
+          this.drawSearchHandler.handleEvent(message.event);
+        } else if (message.mode === "garden-coop") {
+          this.gardenHandler.handleEvent(message.event);
+        } else if (message.mode === "team-graffiti") {
+          this.graffitiHandler.handleEvent(message.event);
+        }
         break;
       case "error":
         this.sessionStore.showFeedback(message.message, "error");

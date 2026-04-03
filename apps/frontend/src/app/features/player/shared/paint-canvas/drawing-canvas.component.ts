@@ -10,35 +10,23 @@ import {
 } from "@angular/core";
 import { CanvasPainter } from "./canvas-painter";
 
-/**
- * Shared drawing canvas used by both avatar-drawing and prompt-drawing.
- *
- * Usage:
- *   <app-drawing-canvas
- *     [frameImageUrl]="'assets/png/draw_frame.png'"   ← optional overlay frame
- *     [canvasInset]="'11%'"                            ← how much to inset canvas inside frame
- *     (cleared)="..."
- *     (submitted)="onSubmit($event)"
- *   />
- */
+/** Size of frame overlay images (px) */
+const FRAME_SIZE = 1100;
+/** Size of the actual drawing area within the frame (px) */
+const CANVAS_SIZE = 900;
+
 @Component({
   selector: "app-drawing-canvas",
   standalone: true,
   templateUrl: "./drawing-canvas.component.html",
 })
 export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
-  /** Optional frame image overlaid on top of the canvas */
-  public readonly frameImageUrl = input<string | null>(null);
-
-  /** Emits the data URL on submit */
   public readonly submitted = output<string>();
-  /** Emits when cleared */
   public readonly cleared = output<void>();
 
   @ViewChild("drawCanvas") canvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild("wrapper") wrapperRef!: ElementRef<HTMLElement>;
 
-  public readonly canvasInset = input<string>(11 + "%");
   public readonly brushThin = signal(true);
   public readonly eraserMode = signal(false);
 
@@ -48,12 +36,8 @@ export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
     () => (this.eraserMode() ? 20 : this.brushThin() ? 5 : 10),
   );
 
-  /** Computed content size so canvas fills the space inside the inset */
-  public canvasContentSize(): string {
-    const inset = this.canvasInset();
-    if (inset === "0" || inset === "0%") return "100%";
-    return `calc(100% - 2 * ${inset})`;
-  }
+  public readonly canvasSizePercent = `${((CANVAS_SIZE / FRAME_SIZE) * 100).toFixed(3)}%`;
+
 
   ngAfterViewInit(): void {
     setTimeout(() => this.painter.init(), 50);

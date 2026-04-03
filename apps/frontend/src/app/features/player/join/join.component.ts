@@ -1,7 +1,7 @@
 import { CommonModule } from "@angular/common";
 import { Component, OnInit, signal } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
-import { OnScreenKeyboardComponent } from "../shared/on-screen-keyboard.component";
+import { OnScreenKeyboardComponent } from "../shared/keyboard/on-screen-keyboard.component";
 
 const LAST_SESSION_CODE_STORAGE_KEY = "birthday_last_session_code";
 const RECONNECT_STORAGE_KEY = "birthday_reconnect";
