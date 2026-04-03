@@ -1,8 +1,10 @@
 import { Component, output, signal } from "@angular/core";
+import { OnScreenKeyboardComponent } from "../shared/on-screen-keyboard.component";
 
 @Component({
   selector: "app-lobby-name",
   standalone: true,
+  imports: [OnScreenKeyboardComponent],
   templateUrl: './lobby-name.component.html',
 })
 export class LobbyNameComponent {

@@ -1,47 +1,54 @@
-import { Component, inject, input, output, signal } from "@angular/core";
+import { Component, input, output, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { FormsModule } from "@angular/forms";
 import type { DrawSearchCaptionTask } from "@birthday/shared";
 import { FramedDrawingComponent } from "../../shared/framed-drawing.component";
+import { OnScreenKeyboardComponent } from "../../../player/shared/on-screen-keyboard.component";
 
 @Component({
   selector: "app-caption",
   standalone: true,
-  imports: [CommonModule, FormsModule, FramedDrawingComponent],
+  imports: [CommonModule, FramedDrawingComponent, OnScreenKeyboardComponent],
   template: `
-    <div class="h-full flex flex-col items-center justify-center p-4 gap-3 overflow-auto">
-      <!-- The drawing in a frame — big and prominent -->
-      <div class="shrink-0">
-        <app-framed-drawing
-          [drawing]="{ id: task().drawingId, artistId: '', prompt: '', imageUrl: task().imageUrl, imageAssetPath: '', placedAt: 0 }"
-          [sizePx]="240"
-          [animateIn]="true"
-        />
+    <div class="h-full flex flex-col">
+      <div class="flex-1 flex flex-col items-center justify-center p-4 gap-3 overflow-auto">
+        <!-- The drawing in a frame — big and prominent -->
+        <div class="shrink-0">
+          <app-framed-drawing
+            [drawing]="{ id: task().drawingId, artistId: '', prompt: '', imageUrl: task().imageUrl, imageAssetPath: '', placedAt: 0 }"
+            [sizePx]="200"
+            [animateIn]="true"
+          />
+        </div>
+
+        <div class="text-xs text-stone-400 text-center max-w-xs">
+          Schreib einen lustigen Fake-Titel!
+        </div>
+
+        <!-- Text display (no native input → no mobile keyboard) -->
+        <div class="w-full max-w-xs">
+          <div
+            class="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm min-h-[2.75rem] flex items-center"
+          >
+            <span>{{ captionText() || '' }}</span>
+            <span class="animate-pulse text-stone-300 ml-0.5">|</span>
+          </div>
+        </div>
+
+        <button
+          class="rounded-xl bg-amber-500 text-white font-semibold px-6 py-3 text-sm disabled:opacity-40 transition-all active:scale-95"
+          [disabled]="captionText().trim().length === 0"
+          (click)="submit()"
+        >
+          Absenden
+        </button>
       </div>
 
-      <div class="text-xs text-stone-400 text-center max-w-xs">
-        Schreib einen lustigen Fake-Titel!
-      </div>
-
-      <!-- Text input -->
-      <div class="w-full max-w-xs">
-        <input
-          type="text"
-          [(ngModel)]="captionText"
-          (keydown.enter)="submit()"
-          placeholder="Dein Fake-Titel..."
-          maxlength="80"
-          class="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-amber-400/50"
-        />
-      </div>
-
-      <button
-        class="rounded-xl bg-amber-500 text-white font-semibold px-6 py-3 text-sm disabled:opacity-40 transition-all active:scale-95"
-        [disabled]="captionText().trim().length === 0"
-        (click)="submit()"
-      >
-        Absenden
-      </button>
+      <app-on-screen-keyboard
+        [value]="captionText()"
+        [maxLength]="80"
+        (valueChange)="captionText.set($event)"
+        (enterPressed)="submit()"
+      />
     </div>
   `,
 })

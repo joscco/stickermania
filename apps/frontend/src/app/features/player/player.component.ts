@@ -83,6 +83,19 @@ export class PlayerComponent implements OnInit, OnDestroy {
   });
   public readonly wsStatus = computed(() => this.wsService.status());
 
+  /**
+   * True once we have received a session-state AND our player exists in it.
+   * Until then we show a loading spinner to avoid flashing lobby/avatar screens
+   * during reconnect.
+   */
+  public readonly isReady = computed(() => {
+    const state = this.worldStore.sessionState();
+    if (!state) return false;
+    const playerId = this.sessionStore.playerId();
+    if (!playerId) return false;
+    return !!state.players[playerId];
+  });
+
   // ── Lifecycle ──────────────────────────────────────────────
 
   public async ngOnInit(): Promise<void> {

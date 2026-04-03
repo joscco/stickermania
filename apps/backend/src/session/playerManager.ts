@@ -25,7 +25,7 @@ export class PlayerManager {
         clientId: string;
         kind: ClientKind;
         existingPlayerId?: string;
-    }): Promise<{state: SessionState; player: SessionPlayer} | null> {
+    }): Promise<{state: SessionState; player: SessionPlayer; gameEvents: any[]} | null> {
         const state = await this.sessionRepository.load(args.sessionId);
         if (!state) return null;
 
@@ -53,6 +53,7 @@ export class PlayerManager {
                     isHost: false,
                     teamId: null,
                 },
+                gameEvents: [],
             };
         }
 
@@ -90,11 +91,10 @@ export class PlayerManager {
         await this.sessionRepository.save(state);
         await this.eventPublisher.publishState(state);
 
-        if (result.emittedEvents.length > 0) {
-            await this.eventPublisher.publishGameEvents(state.sessionId, state.activeMode, result.emittedEvents as never[]);
-        }
-
-        return {state, player};
+        // Don't publish game events here — the joining client is not yet in the
+        // wsPlugin clients map, so targeted events would be lost. Instead, return
+        // them so the caller (wsPlugin) can send them directly to the client.
+        return {state, player, gameEvents: result.emittedEvents as any[]};
     }
 
     public async setPlayerName(sessionId: string, playerId: string, name: string): Promise<SessionState | null> {

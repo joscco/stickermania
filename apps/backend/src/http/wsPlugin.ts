@@ -111,7 +111,9 @@ export async function registerWebSocket(
                 return;
             }
 
-            if (!parsedMessage) return;
+            if (!parsedMessage) {
+                return;
+            }
 
             // ── Join ──────────────────────────────────────────
 
@@ -146,6 +148,21 @@ export async function registerWebSocket(
                 });
 
                 sendToClient(ws, {type: "session-state", state: joined.state});
+
+                // Send game events (e.g. assign-task) directly to the joining client.
+                // These can't be broadcast-published in playerManager.join() because
+                // the client isn't in the clients map yet at that point.
+                if (joined.gameEvents.length > 0) {
+                    const mode = joined.state.activeMode;
+                    for (const event of joined.gameEvents) {
+                        const envelope: any = {type: "game-event", mode, event};
+                        if (event.targetPlayerId) {
+                            envelope.targetPlayerId = event.targetPlayerId;
+                        }
+                        sendToClient(ws, envelope);
+                    }
+                }
+
                 return;
             }
 

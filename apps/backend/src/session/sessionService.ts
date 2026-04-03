@@ -132,7 +132,7 @@ export class SessionService {
         clientId: string;
         kind: ClientKind;
         existingPlayerId?: string;
-    }): Promise<{state: SessionState; player: SessionPlayer} | null> {
+    }): Promise<{state: SessionState; player: SessionPlayer; gameEvents: any[]} | null> {
         return this.playerManager.join(args);
     }
 

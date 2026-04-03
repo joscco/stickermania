@@ -1,33 +1,40 @@
-<div class="min-h-dvh bg-stone-100 flex items-center justify-center px-4">
-  <div class="w-full max-w-md rounded-3xl bg-white border border-black/5 shadow-sm p-6 text-center">
-    <div class="text-2xl font-bold text-stone-900">Session beitreten</div>
-    <p class="mt-2 text-sm text-stone-500">
-      Gib den Session-Code vom Board ein.
-    </p>
+<div class="min-h-dvh bg-stone-100 flex flex-col">
+  <div class="flex-1 flex items-center justify-center px-4">
+    <div class="w-full max-w-md rounded-3xl bg-white border border-black/5 shadow-sm p-6 text-center">
+      <div class="text-2xl font-bold text-stone-900">Session beitreten</div>
+      <p class="mt-2 text-sm text-stone-500">
+        Gib den Session-Code vom Board ein.
+      </p>
 
-    <input
-      class="mt-6 w-full rounded-2xl border border-black/10 px-4 py-4 text-center text-2xl tracking-[0.3em] uppercase outline-none focus:border-stone-400"
-      maxlength="4"
-      [value]="sessionCode()"
-      (input)="onInput($any($event.target).value)"
-      (keydown.enter)="continue()"
-      placeholder="ABCD"
-    />
-
-    <button
-      class="mt-4 w-full rounded-2xl bg-stone-900 text-white px-4 py-3 text-sm font-medium hover:bg-stone-800"
-      (click)="continue()"
-    >
-      Beitreten
-    </button>
-
-    @if (lastSessionCode()) {
-      <button
-        class="mt-3 text-sm text-stone-500 underline"
-        (click)="useLastSession()"
+      <div
+        class="mt-6 w-full rounded-2xl border border-black/10 px-4 py-4 text-center text-2xl tracking-[0.3em] uppercase min-h-[3.5rem] flex items-center justify-center bg-white"
       >
-        Letzte Session {{ lastSessionCode() }} verwenden
+        <span>{{ sessionCode() || '' }}</span>
+        <span class="animate-pulse text-stone-300 ml-0.5">|</span>
+      </div>
+
+      <button
+        class="mt-4 w-full rounded-2xl bg-stone-900 text-white px-4 py-3 text-sm font-medium hover:bg-stone-800"
+        (click)="continue()"
+      >
+        Beitreten
       </button>
-    }
+
+      @if (lastSessionCode()) {
+        <button
+          class="mt-3 text-sm text-stone-500 underline"
+          (click)="useLastSession()"
+        >
+          Letzte Session {{ lastSessionCode() }} verwenden
+        </button>
+      }
+    </div>
   </div>
+
+  <app-on-screen-keyboard
+    [value]="sessionCode()"
+    [maxLength]="5"
+    (valueChange)="onKeyboardInput($event)"
+    (enterPressed)="continue()"
+  />
 </div>

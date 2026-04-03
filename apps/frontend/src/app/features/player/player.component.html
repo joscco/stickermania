@@ -37,7 +37,13 @@
 
   <!-- Content -->
   <div class="flex-1 overflow-hidden">
-    @if (isEditingName() || !isNameSet()) {
+    @if (!isReady() && !isEditingName() && isNameSet()) {
+      <!-- Loading: waiting for server state after reconnect -->
+      <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
+        <div class="w-8 h-8 border-3 border-stone-200 border-t-stone-500 rounded-full animate-spin"></div>
+        <span class="text-xs">Verbinde...</span>
+      </div>
+    } @else if (isEditingName() || !isNameSet()) {
       <app-lobby-name (nameSubmitted)="onNameSubmitted($event)" />
     } @else if (isEditingAvatar() || !hasAvatar()) {
       <app-lobby-avatar

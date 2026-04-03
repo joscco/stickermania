@@ -29,7 +29,8 @@ import { CanvasPainter } from "./canvas-painter";
          style="width: min(95vw, calc(100dvh - 260px)); aspect-ratio: 1; touch-action: manipulation;">
 
       @if (frameImageUrl()) {
-        <img [src]="frameImageUrl()" class="absolute inset-0 w-full h-full pointer-events-none z-20" alt="" draggable="false" />
+        <img [src]="frameImageUrl()" class="absolute inset-0 w-full h-full pointer-events-none z-20" alt=""
+             draggable="false"/>
         <canvas #drawCanvas class="absolute z-10" style="touch-action: none;"
                 [style.inset]="canvasInset()"
                 [style.width]="canvasContentSize()"
@@ -53,18 +54,18 @@ import { CanvasPainter } from "./canvas-painter";
     <div class="flex items-center justify-center gap-3 mt-3">
       <button class="w-12 h-12 rounded-xl transition-transform"
               [class.scale-110]="brushThin() && !eraserMode()"
-              (click)="selectBrush(true)">
-        <img src="assets/png/draw_button_small.png" class="w-full h-full object-contain" alt="Dünn" />
+              (click)="selectThinBrush()">
+        <img src="assets/png/draw_button_small.png" class="w-full h-full object-contain" alt="Dünn"/>
       </button>
       <button class="w-12 h-12 rounded-xl transition-transform"
               [class.scale-110]="!brushThin() && !eraserMode()"
-              (click)="selectBrush(false)">
-        <img src="assets/png/draw_button_big.png" class="w-full h-full object-contain" alt="Dick" />
+              (click)="selectThickBrush()">
+        <img src="assets/png/draw_button_big.png" class="w-full h-full object-contain" alt="Dick"/>
       </button>
       <button class="w-12 h-12 rounded-xl transition-transform"
               [class.scale-110]="eraserMode()"
-              (click)="toggleEraser()">
-        <img src="assets/png/draw_button_eraser.png" class="w-full h-full object-contain" alt="Radierer" />
+              (click)="selectEraser()">
+        <img src="assets/png/draw_button_eraser.png" class="w-full h-full object-contain" alt="Radierer"/>
       </button>
     </div>
   `,
@@ -88,7 +89,7 @@ export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
   public readonly painter = new CanvasPainter(
     () => this.canvasRef?.nativeElement,
     () => (this.eraserMode() ? "#ffffff" : "#000000"),
-    () => (this.eraserMode() ? 20 : this.brushThin() ? 3 : 10),
+    () => (this.eraserMode() ? 20 : this.brushThin() ? 5 : 10),
   );
 
   /** Computed content size so canvas fills the space inside the inset */
@@ -109,6 +110,15 @@ export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
       wrapper.addEventListener("gestureend", this.preventGesture, { passive: false });
       wrapper.addEventListener("touchstart", this.preventMultiTouch, { passive: false });
     }
+
+    // Block ALL zoom/gesture defaults at document level while canvas is alive.
+    // This catches double-tap-zoom, pinch-to-zoom, Safari magnifier, and
+    // long-press context-menu that the per-wrapper handlers sometimes miss.
+    document.addEventListener("gesturestart", this.preventGesture, { passive: false });
+    document.addEventListener("gesturechange", this.preventGesture, { passive: false });
+    document.addEventListener("gestureend", this.preventGesture, { passive: false });
+    document.addEventListener("touchmove", this.preventPinchZoom, { passive: false });
+    document.addEventListener("contextmenu", this.preventGesture);
   }
 
   ngOnDestroy(): void {
@@ -119,6 +129,12 @@ export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
       wrapper.removeEventListener("gestureend", this.preventGesture);
       wrapper.removeEventListener("touchstart", this.preventMultiTouch);
     }
+
+    document.removeEventListener("gesturestart", this.preventGesture);
+    document.removeEventListener("gesturechange", this.preventGesture);
+    document.removeEventListener("gestureend", this.preventGesture);
+    document.removeEventListener("touchmove", this.preventPinchZoom);
+    document.removeEventListener("contextmenu", this.preventGesture);
   }
 
   public preventGesture = (e: Event): void => {
@@ -126,19 +142,30 @@ export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
   };
 
   public preventMultiTouch = (e: TouchEvent): void => {
-    // Prevent multi-touch zoom / magnifier
     if (e.touches.length > 1) {
       e.preventDefault();
     }
   };
 
-  public selectBrush(thin: boolean): void {
-    this.brushThin.set(thin);
+  /** Block pinch-zoom (2+ finger touchmove) at the document level */
+  public preventPinchZoom = (e: TouchEvent): void => {
+    if (e.touches.length > 1) {
+      e.preventDefault();
+    }
+  };
+
+  public selectThickBrush(): void {
+    this.brushThin.set(false);
     this.eraserMode.set(false);
   }
 
-  public toggleEraser(): void {
-    this.eraserMode.set(!this.eraserMode());
+  public selectThinBrush(): void {
+    this.brushThin.set(true);
+    this.eraserMode.set(false);
+  }
+
+  public selectEraser(): void {
+    this.eraserMode.set(true);
   }
 
   public clear(): void {

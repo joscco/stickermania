@@ -1,7 +1,6 @@
 import { inject, Injectable, signal } from "@angular/core";
 import type {
   DrawSearchModeState,
-  DrawSearchPlayerTask,
   DrawSearchServerEvent,
   GardenServerEvent,
   ServerToClientMessage,
@@ -205,6 +204,11 @@ export class PlayerMessageHandler {
         // In ACTIVE phase, the server will re-send the task via onPlayerJoined.
         // If we already have a task (from a prior assign-task event), keep it.
         if (this.sessionStore.currentTask()) return;
+        // If we're already in a draw-search task mode (DRAW/CAPTION/GUESS),
+        // don't overwrite it — a session-state broadcast from another player
+        // would otherwise reset our task mode.
+        const current = this.sessionStore.currentMode();
+        if (current === "DRAW" || current === "CAPTION" || current === "GUESS") return;
         this.sessionStore.clearTask("IDLE");
         return;
       }

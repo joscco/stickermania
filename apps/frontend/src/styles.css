@@ -33,9 +33,15 @@
 }
 
 /* Prevent zoom / magnifier on mobile Safari and Chrome */
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
 body {
   touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
 }
 
 /* Prevent blue text-selection highlight while drawing on canvas */
