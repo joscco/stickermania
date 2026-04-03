@@ -22,24 +22,20 @@
     </div>
 
     <!-- City scene (scaled to fit the board viewport completely) -->
-    <div class="flex-1 relative overflow-hidden bg-amber-50/30" #boardViewport>
+    <div class="flex-1 relative overflow-hidden" #boardViewport>
       <div class="absolute inset-0 flex items-center justify-center overflow-hidden">
         <div class="relative"
              [style.width.px]="sceneWidth()"
              [style.height.px]="sceneHeight()"
-             [style.transform]="'scale(' + fitScale + ')'"
+             [style.transform]="'scale(' + fitScale() + ')'"
              style="transform-origin: center center; flex-shrink: 0;">
-          <!-- Subtle grid -->
-          <div class="absolute inset-0 opacity-[0.04]"
-               style="background-image: radial-gradient(circle, #000 0.6px, transparent 0.6px); background-size: 40px 40px;"></div>
-
           <!-- Houses -->
           @for (house of houses(); track house.id) {
             <div class="absolute"
                  [style.left.px]="house.x"
                  [style.top.px]="house.y"
                  style="transform: translate(-50%, -100%);">
-              <app-tag-house [house]="house" [sizePx]="140" />
+              <app-tag-house [house]="house" />
             </div>
           }
         </div>

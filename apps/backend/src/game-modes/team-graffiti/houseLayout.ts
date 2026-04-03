@@ -1,8 +1,31 @@
-import type {TeamGraffitiHouseType} from "@birthday/shared";
+import {type TeamGraffitiHouseType, TEAM_GRAFFITI_HOUSE_TYPES} from "@birthday/shared";
 
 /** Logical city scene dimensions. */
-export const SCENE_WIDTH = 2000;
-export const SCENE_HEIGHT = 1400;
+export const SCENE_WIDTH = 4000;
+export const SCENE_HEIGHT = 2000;
+// Minimum distance between houses to avoid overlap and ensure good spacing. Center to center
+const MIN_HOUSE_DISTANCE = 180;
+// Margin to edges to avoid placing houses too close to the border
+const HOUSE_MARGIN = 200;
+const MAX_PLACEMENT_ATTEMPTS = 1200;
+const TARGET_HOUSE_COUNT = 400;
+const FLIP_THRESHOLD = 0.5;
+
+// Constants for pseudo-random number generator.
+// Leave as it is.
+
+/** Seed for the deterministic pseudo-random number generator. */
+const RNG_SEED = 42;
+
+/** RNG multiplier (linear congruential generator). */
+const RNG_MULTIPLIER = 1103515245;
+
+/** RNG increment (linear congruential generator). */
+const RNG_INCREMENT = 12345;
+
+/** Bitmask to keep the RNG value within 31-bit range. */
+const RNG_MASK = 0x7fffffff;
+
 
 export interface HouseDef {
     houseType: TeamGraffitiHouseType;
@@ -15,29 +38,25 @@ export interface HouseDef {
 function seededRandom(seed: number): () => number {
     let s = seed;
     return () => {
-        s = (s * 1103515245 + 12345) & 0x7fffffff;
-        return (s >>> 0) / 0x7fffffff;
+        s = (s * RNG_MULTIPLIER + RNG_INCREMENT) & RNG_MASK;
+        return (s >>> 0) / RNG_MASK;
     };
 }
 
 function generateHouseLayout(): HouseDef[] {
-    const rng = seededRandom(42);
-    const types: TeamGraffitiHouseType[] = ["A", "B", "C"];
+    const rng = seededRandom(RNG_SEED);
+    const types = TEAM_GRAFFITI_HOUSE_TYPES;
     const houses: HouseDef[] = [];
 
-    const minDist = 220;
-    const margin = 160;
-    const attempts = 200;
-
-    for (let i = 0; i < attempts && houses.length < 24; i++) {
-        const x = Math.round(margin + rng() * (SCENE_WIDTH - 2 * margin));
-        const y = Math.round(margin + rng() * (SCENE_HEIGHT - 2 * margin));
+    for (let i = 0; i < MAX_PLACEMENT_ATTEMPTS && houses.length < TARGET_HOUSE_COUNT; i++) {
+        const x = Math.round(HOUSE_MARGIN + rng() * (SCENE_WIDTH - 2 * HOUSE_MARGIN));
+        const y = Math.round(HOUSE_MARGIN + rng() * (SCENE_HEIGHT - 2 * HOUSE_MARGIN));
 
         let tooClose = false;
-        for (const h of houses) {
-            const dx = h.x - x;
-            const dy = h.y - y;
-            if (Math.sqrt(dx * dx + dy * dy) < minDist) {
+        for (const house of houses) {
+            const dx = house.x - x;
+            const dy = house.y - y;
+            if (Math.sqrt(dx * dx + dy * dy) < MIN_HOUSE_DISTANCE) {
                 tooClose = true;
                 break;
             }
@@ -48,7 +67,7 @@ function generateHouseLayout(): HouseDef[] {
             houseType: types[houses.length % types.length],
             x,
             y,
-            flipped: rng() > 0.5,
+            flipped: rng() > FLIP_THRESHOLD,
         });
     }
 

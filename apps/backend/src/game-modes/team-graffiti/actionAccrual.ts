@@ -18,6 +18,11 @@ export function accrueActionsForPlayer(modeState: TeamGraffitiModeState, playerI
         playerActions.actions += 1;
         playerActions.lastAccrualAt += intervalMs;
     }
+
+    // When at max, fast-forward so spending an action doesn't cause instant refill.
+    if (playerActions.actions >= modeState.maxActions) {
+        playerActions.lastAccrualAt = now;
+    }
 }
 
 /**
@@ -31,11 +36,19 @@ export function accrueAllActions(
     const intervalMs = modeState.actionAccrualIntervalSec * 1000;
 
     for (const [playerId, pa] of Object.entries(modeState.playerActions) as [string, TeamGraffitiPlayerActions][]) {
-        if (pa.actions >= modeState.maxActions) continue;
+        if (pa.actions >= modeState.maxActions) {
+            pa.lastAccrualAt = now;
+            continue;
+        }
 
         while (pa.lastAccrualAt + intervalMs <= now && pa.actions < modeState.maxActions) {
             pa.actions += 1;
             pa.lastAccrualAt += intervalMs;
+        }
+
+        // When at max, fast-forward so spending an action doesn't cause instant refill.
+        if (pa.actions >= modeState.maxActions) {
+            pa.lastAccrualAt = now;
         }
 
         events.push({

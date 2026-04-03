@@ -1,9 +1,9 @@
 import type {DrawSearchModeState} from "@birthday/shared";
 
 const TEST_IMAGES = [
-    {file: "/assets/png/art_example_0.png", prompt: "Strandkorb im Schnee"},
-    {file: "/assets/png/art_example_1.png", prompt: "Nervöser Kaktus"},
-    {file: "/assets/png/art_example_2.png", prompt: "Vergesslicher Goldfisch"},
+    {file: "/assets/png/art_example_0.png", prompt: "Eisbär im Schnee"},
+    {file: "/assets/png/art_example_1.png", prompt: "Abstrakter Kerl"},
+    {file: "/assets/png/art_example_2.png", prompt: "Obstkorb"},
 ] as const;
 
 /**

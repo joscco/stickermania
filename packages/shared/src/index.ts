@@ -307,7 +307,8 @@ export type GardenServerEvent =
 
 export type TeamGraffitiTeamId = "DIAMOND" | "HEART";
 
-export type TeamGraffitiHouseType = "A" | "B" | "C";
+export const TEAM_GRAFFITI_HOUSE_TYPES = ["A", "B", "C"] as const;
+export type TeamGraffitiHouseType = (typeof TEAM_GRAFFITI_HOUSE_TYPES)[number];
 
 export interface TeamGraffitiHouse {
   id: string;

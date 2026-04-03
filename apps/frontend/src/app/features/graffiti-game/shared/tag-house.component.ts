@@ -11,6 +11,9 @@ import { CommonModule } from "@angular/common";
 import type { TeamGraffitiHouse } from "@birthday/shared";
 import gsap from "gsap";
 
+/** Canonical house sprite height used across all views (board + player). */
+export const TAG_HOUSE_SIZE_PX = 140;
+
 @Component({
   selector: "app-tag-house",
   standalone: true,
@@ -20,7 +23,6 @@ import gsap from "gsap";
 })
 export class TagHouseComponent implements OnDestroy {
   public readonly house = input.required<TeamGraffitiHouse>();
-  public readonly sizePx = input<number>(160);
 
   @ViewChild("animTarget", { static: true }) animTargetRef!: ElementRef<HTMLElement>;
 
@@ -76,4 +78,6 @@ export class TagHouseComponent implements OnDestroy {
         ease: "elastic.out(1, 0.4)",
       });
   }
+
+  protected readonly TAG_HOUSE_SIZE_PX = TAG_HOUSE_SIZE_PX;
 }

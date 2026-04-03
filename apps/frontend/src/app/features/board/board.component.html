@@ -12,12 +12,16 @@
     <div class="flex-1 flex flex-col min-w-0">
       <!-- Header bar -->
       <div class="flex items-center justify-between gap-3 px-4 py-3 bg-white/80 border-b border-black/6 backdrop-blur">
-        <div class="flex items-center gap-3">
-          <span class="text-sm font-semibold text-stone-800">{{ modeLabel() }}</span>
-          @if (activeMode() === 'draw-search' && roundPhase() !== 'LOBBY') {
-            <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">{{ roundPhase() }} · {{ drawingCount() }} Bilder</span>
-          }
-        </div>
+        @if (worldStore.sessionState()) {
+          <div class="flex items-center gap-3">
+            <span class="text-sm font-semibold text-stone-800">{{ modeLabel() }}</span>
+            @if (activeMode() === 'draw-search' && roundPhase() !== 'LOBBY') {
+              <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">{{ roundPhase() }} · {{ drawingCount() }} Bilder</span>
+            }
+          </div>
+        } @else {
+          <div></div>
+        }
 
         <div class="flex items-center gap-2 text-xs text-stone-400">
           @if (timeLeft()) {
@@ -36,15 +40,22 @@
       <div class="flex-1 relative p-4 overflow-hidden bg-white">
         <app-event-toasts [events]="events()"></app-event-toasts>
 
-        @switch (activeMode()) {
-          @case ('draw-search') {
-            <app-board-scene class="block h-full w-full"></app-board-scene>
-          }
-          @case ('garden-coop') {
-            <app-garden-scene class="block h-full w-full"></app-garden-scene>
-          }
-          @case ('team-graffiti') {
-            <app-graffiti-scene class="block h-full w-full"></app-graffiti-scene>
+        @if (!worldStore.sessionState()) {
+          <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
+            <div class="h-8 w-8 animate-spin rounded-full border-4 border-stone-200 border-t-stone-500"></div>
+            <span class="text-sm">Verbinde mit Session…</span>
+          </div>
+        } @else {
+          @switch (activeMode()) {
+            @case ('draw-search') {
+              <app-board-scene class="block h-full w-full"></app-board-scene>
+            }
+            @case ('garden-coop') {
+              <app-garden-scene class="block h-full w-full"></app-garden-scene>
+            }
+            @case ('team-graffiti') {
+              <app-graffiti-scene class="block h-full w-full"></app-graffiti-scene>
+            }
           }
         }
       </div>

@@ -3,6 +3,7 @@ import {
   AfterViewInit,
   Component,
   computed,
+  effect,
   ElementRef,
   inject,
   OnDestroy,
@@ -47,17 +48,27 @@ export class GraffitiSceneComponent implements AfterViewInit, OnDestroy {
   public readonly diamondScore = signal(0);
   public readonly heartScore = signal(0);
 
-  public fitScale = 1;
+  public fitScale = signal(1);
 
   private resizeObserver?: ResizeObserver;
   private tickInterval: ReturnType<typeof setInterval> | null = null;
+  private viewInitDone = false;
+
+  constructor() {
+    // Re-attach ResizeObserver and recompute fitScale whenever modeState changes
+    // (the #boardViewport element only exists when modeState is truthy).
+    effect(() => {
+      void this.modeState();
+      // Need to wait until AfterViewInit has run so the ViewChild can resolve.
+      if (!this.viewInitDone) return;
+      // Schedule after change detection so the ViewChild is up-to-date.
+      setTimeout(() => this.attachResizeObserver(), 0);
+    });
+  }
 
   public ngAfterViewInit(): void {
-    this.computeFitScale();
-    this.resizeObserver = new ResizeObserver(() => this.computeFitScale());
-    if (this.boardViewportRef) {
-      this.resizeObserver.observe(this.boardViewportRef.nativeElement);
-    }
+    this.viewInitDone = true;
+    this.attachResizeObserver();
 
     // Continuous tick for timer and live scores (every 500ms)
     this.tickInterval = setInterval(() => this.tick(), 500);
@@ -67,6 +78,17 @@ export class GraffitiSceneComponent implements AfterViewInit, OnDestroy {
   public ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
     if (this.tickInterval) clearInterval(this.tickInterval);
+  }
+
+  private attachResizeObserver(): void {
+    // Disconnect any previous observer
+    this.resizeObserver?.disconnect();
+    this.computeFitScale();
+
+    if (this.boardViewportRef) {
+      this.resizeObserver = new ResizeObserver(() => this.computeFitScale());
+      this.resizeObserver.observe(this.boardViewportRef.nativeElement);
+    }
   }
 
   private tick(): void {
@@ -104,12 +126,16 @@ export class GraffitiSceneComponent implements AfterViewInit, OnDestroy {
   }
 
   private computeFitScale(): void {
-    if (!this.boardViewportRef) return;
+    if (!this.boardViewportRef) {
+      return;
+    }
     const rect = this.boardViewportRef.nativeElement.getBoundingClientRect();
     const sw = this.sceneWidth();
     const sh = this.sceneHeight();
-    if (sw <= 0 || sh <= 0 || rect.width <= 0 || rect.height <= 0) return;
-    this.fitScale = Math.min(rect.width / sw, rect.height / sh);
+    if (sw <= 0 || sh <= 0 || rect.width <= 0 || rect.height <= 0) {
+      return;
+    }
+    this.fitScale.set(Math.min(rect.width / sw, rect.height / sh));
   }
 
   public houseImageUrl(house: TeamGraffitiHouse): string {
