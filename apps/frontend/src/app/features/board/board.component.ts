@@ -131,6 +131,10 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.wsService.send({ type: "start-mode" });
   }
 
+  public async backToLobby(): Promise<void> {
+    this.cleanupBoardRuntime();
+    await this.router.navigate(["/board"]);
+  }
 
   public resetSession(): void {
     this.wsService.send({ type: "reset-session" });
