@@ -1,11 +1,11 @@
 import { inject, Injectable, signal } from "@angular/core";
 import { Router } from "@angular/router";
 import type { ServerToClientMessage } from "@birthday/shared";
-import { GameSessionStore } from "../../core/challenge.store";
-import { ReconnectService } from "../../core/reconnect.service";
-import { WebSocketService } from "../../core/websocket.service";
-import { WorldStore } from "../../core/world.store";
-import {StickerEventHandler} from '../sticker-game/services/sticker-event-handler';
+import {StickerEventHandler} from '../../sticker-game/services/sticker-event-handler';
+import {ReconnectService} from '../../../core/reconnect.service';
+import {WebSocketService} from '../../../core/websocket.service';
+import {WorldStore} from '../../../core/world.store';
+import {GameSessionStore} from '../../../core/challenge.store';
 
 @Injectable()
 export class PlayerMessageHandler {

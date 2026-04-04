@@ -21,7 +21,12 @@ export class StickerBoardSceneComponent {
     });
 
     public readonly lastVoteResults = computed<StickerCollageVoteResult[]>(() => {
-        return this.modeState()?.lastVoteResults ?? [];
+        const modeState = this.modeState();
+        if (modeState) {
+            return modeState.lastVoteResults;
+        } else {
+            return [];
+        }
     });
 
     public readonly topResults = computed(() => {
@@ -29,42 +34,58 @@ export class StickerBoardSceneComponent {
     });
 
     public readonly currentRoundSubmissionCount = computed(() => {
-        const ms = this.modeState();
-        if (!ms) return 0;
-        return (ms.submissions[ms.currentRoundIndex] ?? []).length;
+        const modeState = this.modeState();
+        if (!modeState) {
+            return 0;
+        }
+        const currentRoundSubmissions = modeState.submissions[modeState.currentRoundIndex];
+        if (!currentRoundSubmissions) {
+            return 0;
+        }
+        return currentRoundSubmissions.length;
     });
 
     public readonly playerCount = computed(() => {
-        return Object.values(this.worldStore.players()).filter(p => p.connected).length;
+        return Object.values(this.worldStore.players()).filter(player => player.connected).length;
     });
 
-    private catalogMap = new Map<string, {imageUrl: string}>();
+    private stickerCatalogMap = new Map<string, {imageUrl: string}>();
 
     public getStickerUrl(stickerId: string): string {
-        const ms = this.modeState();
-        if (!ms) return "";
-        if (this.catalogMap.size !== ms.stickerCatalog.length) {
-            this.catalogMap.clear();
-            for (const s of ms.stickerCatalog) {
-                this.catalogMap.set(s.id, s);
+        const modeState = this.modeState();
+        if (!modeState) {
+            return "";
+        }
+        if (this.stickerCatalogMap.size !== modeState.stickerCatalog.length) {
+            this.stickerCatalogMap.clear();
+            for (const sticker of modeState.stickerCatalog) {
+                this.stickerCatalogMap.set(sticker.id, sticker);
             }
         }
-        return this.catalogMap.get(stickerId)?.imageUrl ?? "";
+        return this.stickerCatalogMap.get(stickerId)?.imageUrl ?? "";
     }
 
     public getPlayerName(playerId: string): string {
-        return this.worldStore.players()[playerId]?.name ?? "Anonym";
+        const player = this.worldStore.players()[playerId];
+        if (player) {
+            return player.name;
+        } else {
+            return "Anonym";
+        }
     }
 
     public getCollage(collageId: string): StickerCollage | undefined {
-        const ms = this.modeState();
-        if (!ms) return undefined;
+        const modeState = this.modeState();
+        if (!modeState) {
+            return undefined;
+        }
         // Search across all rounds
-        for (const roundSubs of Object.values(ms.submissions)) {
-            const found = roundSubs.find(c => c.id === collageId);
-            if (found) return found;
+        for (const roundSubmissions of Object.values(modeState.submissions)) {
+            const foundCollage = roundSubmissions.find(collage => collage.id === collageId);
+            if (foundCollage) {
+                return foundCollage;
+            }
         }
         return undefined;
     }
 }
-

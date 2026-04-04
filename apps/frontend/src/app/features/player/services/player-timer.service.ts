@@ -1,9 +1,7 @@
-import { computed, DestroyRef, effect, inject, Injectable, signal } from "@angular/core";
-import { WorldStore } from "../../core/world.store";
+import {DestroyRef, effect, inject, Injectable, signal} from "@angular/core";
 
 @Injectable()
 export class PlayerTimerService {
-  private readonly worldStore = inject(WorldStore);
   private readonly destroyRef = inject(DestroyRef);
   private timerInterval: ReturnType<typeof setInterval> | null = null;
 

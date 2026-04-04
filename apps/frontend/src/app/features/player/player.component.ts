@@ -6,13 +6,13 @@ import {ApiService} from "../../core/api.service";
 import {ReconnectService} from "../../core/reconnect.service";
 import {WebSocketService} from "../../core/websocket.service";
 import {WorldStore} from "../../core/world.store";
-import {PlayerMessageHandler} from "./player-message-handler.service";
-import {PlayerTimerService} from "./player-timer.service";
 import {StickerPlayerViewComponent} from "../sticker-game/player/sticker-player-view.component";
 import {LobbyAvatarComponent} from "./lobby/lobby-avatar.component";
 import {LobbyNameComponent} from "./lobby/lobby-name.component";
 import {StickerEventHandler} from '../sticker-game/services/sticker-event-handler';
 import {StickerPlayerService} from '../sticker-game/services/sticker-player.service';
+import {PlayerTimerService} from './services/player-timer.service';
+import {PlayerMessageHandler} from './services/player-message-handler.service';
 
 @Component({
   selector: "app-player",
