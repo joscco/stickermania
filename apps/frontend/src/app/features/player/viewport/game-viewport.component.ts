@@ -47,7 +47,7 @@ export class GameViewportComponent implements AfterViewInit, OnDestroy {
 
   public readonly viewportCtrl = new ViewportController({
     minScale: 0.3,
-    maxScale: 1.2,
+    maxScale: 1,
     overscrollPx: 100,
   });
 
