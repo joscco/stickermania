@@ -17,7 +17,7 @@ export class CaptionComponent {
   public readonly captionText = signal("");
 
   public submit(): void {
-    const text = this.captionText().trim();
+    const text = this.captionText();
     if (text.length === 0) return;
     this.captionSubmitted.emit({ drawingId: this.task().drawingId, text });
     this.captionText.set("");

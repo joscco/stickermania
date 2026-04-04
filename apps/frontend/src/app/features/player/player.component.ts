@@ -54,6 +54,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     return s === "idle" || s === "connecting";
   });
   public readonly isDisconnected = computed(() => this.wsService.status() === "disconnected");
+  public readonly wasConnected = computed(() => this.wsService.wasConnected());
 
   constructor(
     private readonly wsService: WebSocketService,

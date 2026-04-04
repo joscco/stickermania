@@ -12,7 +12,7 @@ export class LobbyNameComponent {
   public readonly nameSubmitted = output<string>();
 
   public submit(): void {
-    const name = this.nameInput().trim();
+    const name = this.nameInput();
     if (name.length > 0) {
       this.nameSubmitted.emit(name);
     }

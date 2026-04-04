@@ -13,6 +13,9 @@ export type WsConnectionStatus = "idle" | "connecting" | "connected" | "disconne
 export class WebSocketService {
   public readonly status = signal<WsConnectionStatus>("idle");
 
+  /** True once the WebSocket was connected at least once. Never resets to false. */
+  public readonly wasConnected = signal(false);
+
 
   private ws: WebSocket | null = null;
   private messageListeners: Array<(msg: ServerToClientMessage) => void> = [];
@@ -88,6 +91,7 @@ export class WebSocketService {
       if (gen !== this.generation) { ws.close(); return; }
       this.reconnectAttempt = 0;
       this.status.set("connected");
+      this.wasConnected.set(true);
       this.startPing();
 
       // Re-send the join message so the server re-registers us

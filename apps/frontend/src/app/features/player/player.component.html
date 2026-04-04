@@ -45,7 +45,12 @@
     @if (isConnecting()) {
       <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
         <div class="w-8 h-8 border-3 border-stone-200 border-t-stone-500 rounded-full animate-spin"></div>
-        <span class="text-xs">Verbinde...</span>
+        @if (wasConnected()) {
+          <span class="text-xs font-medium text-stone-500">Verbindung verloren</span>
+          <span class="text-xs">Versuche erneut zu verbinde...</span>
+        } @else {
+          <span class="text-xs">Verbind...</span>
+        }
       </div>
     } @else if (isDisconnected()) {
       <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">

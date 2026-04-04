@@ -38,86 +38,74 @@ export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
 
   public readonly canvasSizePercent = `${((CANVAS_SIZE / FRAME_SIZE) * 100).toFixed(3)}%`;
 
+  // ─── Safari iOS gesture suppression ─────────────────────────
+  //
+  // There is no single kill-switch. Safari's magnifier (UIKit),
+  // pinch-zoom (viewport), double-tap-zoom, and context-menu are
+  // four independent subsystems. CSS `touch-action: none` does NOT
+  // fully suppress all of them — we must intercept at the event
+  // level with { passive: false }.
+  //
+  // Three handlers cover everything:
+  //   blockAll         → gesture*, dblclick, contextmenu
+  //   blockMultiTouch  → touchstart/touchmove with 2+ fingers
+  //   blockDoubleTap   → touchstart within 500ms of the last one
+  //                      (kills magnifier + double-tap-zoom)
 
-  /** Block double-tap zoom (Safari fires this before zooming) */
-  private preventDblClick = (e: Event): void => {
-    e.preventDefault();
+  private lastTouchStart = 0;
+
+  private blockAll = (e: Event): void => e.preventDefault();
+
+  private blockMultiTouch = (e: TouchEvent): void => {
+    if (e.touches.length > 1) e.preventDefault();
   };
 
-  /**
-   * Safari sometimes triggers zoom on rapid successive taps.
-   * Detecting two touchends within 300ms and calling preventDefault()
-   * on the second one reliably kills it.
-   */
-  private lastTouchEnd = 0;
-  private preventDoubleTapZoom = (e: TouchEvent): void => {
+  private blockDoubleTap = (e: TouchEvent): void => {
     const now = Date.now();
-    if (now - this.lastTouchEnd < 300) {
-      e.preventDefault();
-    }
-    this.lastTouchEnd = now;
+    if (now - this.lastTouchStart < 500) e.preventDefault();
+    this.lastTouchStart = now;
   };
+
+  /** Registry for bulk cleanup in ngOnDestroy */
+  private readonly guards: [EventTarget, string, (e: any) => void][] = [];
+
+  private guard(target: EventTarget, event: string, handler: (e: any) => void): void {
+    target.addEventListener(event, handler, { passive: false });
+    this.guards.push([target, event, handler]);
+  }
 
   ngAfterViewInit(): void {
     setTimeout(() => this.painter.init(), 50);
 
-    // Prevent Safari pinch-zoom / magnifier gestures on the drawing area
     const wrapper = this.wrapperRef?.nativeElement;
+    const canvas = this.canvasRef?.nativeElement;
+
+    // Document-level: active while the canvas component is alive
+    for (const evt of ["gesturestart", "gesturechange", "gestureend", "dblclick", "contextmenu"]) {
+      this.guard(document, evt, this.blockAll);
+    }
+    this.guard(document, "touchstart", this.blockDoubleTap);
+    this.guard(document, "touchmove", this.blockMultiTouch);
+
+    // Wrapper: extra multi-touch guard
     if (wrapper) {
-      wrapper.addEventListener("gesturestart", this.preventGesture, { passive: false });
-      wrapper.addEventListener("gesturechange", this.preventGesture, { passive: false });
-      wrapper.addEventListener("gestureend", this.preventGesture, { passive: false });
-      wrapper.addEventListener("touchstart", this.preventMultiTouch, { passive: false });
+      this.guard(wrapper, "touchstart", this.blockMultiTouch);
     }
 
-    // Block ALL zoom/gesture defaults at document level while canvas is alive.
-    // This catches double-tap-zoom, pinch-to-zoom, Safari magnifier, and
-    // long-press context-menu that the per-wrapper handlers sometimes miss.
-    document.addEventListener("gesturestart", this.preventGesture, { passive: false });
-    document.addEventListener("gesturechange", this.preventGesture, { passive: false });
-    document.addEventListener("gestureend", this.preventGesture, { passive: false });
-    document.addEventListener("touchstart", this.preventMultiTouch, { passive: false });
-    document.addEventListener("touchmove", this.preventPinchZoom, { passive: false });
-    document.addEventListener("touchend", this.preventDoubleTapZoom, { passive: false });
-    document.addEventListener("dblclick", this.preventDblClick, { passive: false });
-    document.addEventListener("contextmenu", this.preventGesture);
+    // Canvas: extra double-tap guard (closest to the source)
+    if (canvas) {
+      this.guard(canvas, "touchstart", this.blockDoubleTap);
+    }
   }
 
   ngOnDestroy(): void {
-    const wrapper = this.wrapperRef?.nativeElement;
-    if (wrapper) {
-      wrapper.removeEventListener("gesturestart", this.preventGesture);
-      wrapper.removeEventListener("gesturechange", this.preventGesture);
-      wrapper.removeEventListener("gestureend", this.preventGesture);
-      wrapper.removeEventListener("touchstart", this.preventMultiTouch);
+    for (const [target, event, handler] of this.guards) {
+      target.removeEventListener(event, handler);
     }
-
-    document.removeEventListener("gesturestart", this.preventGesture);
-    document.removeEventListener("gesturechange", this.preventGesture);
-    document.removeEventListener("gestureend", this.preventGesture);
-    document.removeEventListener("touchstart", this.preventMultiTouch);
-    document.removeEventListener("touchmove", this.preventPinchZoom);
-    document.removeEventListener("touchend", this.preventDoubleTapZoom);
-    document.removeEventListener("dblclick", this.preventDblClick);
-    document.removeEventListener("contextmenu", this.preventGesture);
+    this.guards.length = 0;
   }
 
-  public preventGesture = (e: Event): void => {
-    e.preventDefault();
-  };
-
-  public preventMultiTouch = (e: TouchEvent): void => {
-    if (e.touches.length > 1) {
-      e.preventDefault();
-    }
-  };
-
-  /** Block pinch-zoom (2+ finger touchmove) at the document level */
-  public preventPinchZoom = (e: TouchEvent): void => {
-    if (e.touches.length > 1) {
-      e.preventDefault();
-    }
-  };
+  // ─── Brush controls ─────────────────────────────────────────
 
   public selectThickBrush(): void {
     this.brushThin.set(false);
