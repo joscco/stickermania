@@ -1,13 +1,26 @@
 @import "tailwindcss";
 
 /*
- * Override Darumadrop One metrics so it centers properly in line-boxes.
- * The original font has an unusually large ascender/descender which
- * pushes text downward. These overrides normalise the metrics.
+ * Load Darumadrop One from the bundled TTF so it works offline / in LAN.
+ * The Google-Fonts <link> in index.html still wins when online because
+ * browsers prefer an already-loaded sheet, but this guarantees the font
+ * is available without any network access.
+ *
+ * The "Fixed" variant overrides the ascent / descent metrics so the text
+ * centers properly in line-boxes (the original font has an unusually
+ * large ascender / descender which pushes text downward).
  */
 @font-face {
+  font-family: 'Darumadrop One';
+  src: local('Darumadrop One'),
+       url('/assets/DarumadropOne-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
   font-family: 'Darumadrop One Fixed';
-  src: local('Darumadrop One');
+  src: local('Darumadrop One'),
+       url('/assets/DarumadropOne-Regular.ttf') format('truetype');
   ascent-override: 80%;
   descent-override: 20%;
   line-gap-override: 0%;
@@ -32,7 +45,7 @@
   --text-2xl--line-height:  2.4rem;
 }
 
-/* Prevent zoom / magnifier on mobile Safari and Chrome */
+/* Prevent zoom / magnifier on mobile Safari and Chrome. */
 html {
   touch-action: manipulation;
   -webkit-text-size-adjust: 100%;

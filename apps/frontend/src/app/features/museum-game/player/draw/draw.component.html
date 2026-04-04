@@ -1,8 +1,8 @@
-<div class="h-full flex flex-col items-center justify-center touch-manipulation">
+<div class="h-full flex flex-col items-center justify-center" style="touch-action: manipulation;">
   <!-- Prompt -->
-  <div class="text-center py-3 px-4 h-20 flex flex-col justify-center overflow-hidden">
-    <div class="text-xs text-stone-400 uppercase tracking-wider">ZEICHNE:</div>
-    <div class="text-xl font-bold line-clamp-2">{{ prompt() }}</div>
+  <div class="text-center py-3 px-4 min-h-20 shrink-0 flex flex-col justify-center">
+    <div class="text-xs text-stone-400 uppercase tracking-wider shrink-0">ZEICHNE:</div>
+    <div class="text-xl font-bold" style="overflow-wrap: break-word; text-wrap: balance;">{{ prompt() }}</div>
   </div>
 
   <!-- Square canvas fills available space -->

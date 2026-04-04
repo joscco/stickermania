@@ -39,6 +39,25 @@ export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
   public readonly canvasSizePercent = `${((CANVAS_SIZE / FRAME_SIZE) * 100).toFixed(3)}%`;
 
 
+  /** Block double-tap zoom (Safari fires this before zooming) */
+  private preventDblClick = (e: Event): void => {
+    e.preventDefault();
+  };
+
+  /**
+   * Safari sometimes triggers zoom on rapid successive taps.
+   * Detecting two touchends within 300ms and calling preventDefault()
+   * on the second one reliably kills it.
+   */
+  private lastTouchEnd = 0;
+  private preventDoubleTapZoom = (e: TouchEvent): void => {
+    const now = Date.now();
+    if (now - this.lastTouchEnd < 300) {
+      e.preventDefault();
+    }
+    this.lastTouchEnd = now;
+  };
+
   ngAfterViewInit(): void {
     setTimeout(() => this.painter.init(), 50);
 
@@ -57,7 +76,10 @@ export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
     document.addEventListener("gesturestart", this.preventGesture, { passive: false });
     document.addEventListener("gesturechange", this.preventGesture, { passive: false });
     document.addEventListener("gestureend", this.preventGesture, { passive: false });
+    document.addEventListener("touchstart", this.preventMultiTouch, { passive: false });
     document.addEventListener("touchmove", this.preventPinchZoom, { passive: false });
+    document.addEventListener("touchend", this.preventDoubleTapZoom, { passive: false });
+    document.addEventListener("dblclick", this.preventDblClick, { passive: false });
     document.addEventListener("contextmenu", this.preventGesture);
   }
 
@@ -73,7 +95,10 @@ export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
     document.removeEventListener("gesturestart", this.preventGesture);
     document.removeEventListener("gesturechange", this.preventGesture);
     document.removeEventListener("gestureend", this.preventGesture);
+    document.removeEventListener("touchstart", this.preventMultiTouch);
     document.removeEventListener("touchmove", this.preventPinchZoom);
+    document.removeEventListener("touchend", this.preventDoubleTapZoom);
+    document.removeEventListener("dblclick", this.preventDblClick);
     document.removeEventListener("contextmenu", this.preventGesture);
   }
 

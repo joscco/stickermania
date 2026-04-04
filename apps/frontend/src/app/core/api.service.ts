@@ -37,27 +37,6 @@ export class ApiService {
     );
   }
 
-  public getState(args: { sessionId: string; sinceRevision: number | null }): Promise<SessionState | null> {
-    const sinceRevision = args.sinceRevision ?? -1;
-
-    return firstValueFrom(
-      this.httpClient.get<SessionState>(
-        `/api/sessions/${encodeURIComponent(args.sessionId)}/state?sinceRevision=${encodeURIComponent(String(sinceRevision))}`,
-        { observe: "response" },
-      ),
-    ).then((response) => {
-      if (response.status === 204) {
-        return null;
-      }
-
-      return response.body ?? null;
-    });
-  }
-
-  public reset(sessionId: string): Promise<void> {
-    return firstValueFrom(this.httpClient.post<void>(`/api/sessions/${encodeURIComponent(sessionId)}/reset`, {}));
-  }
-
   public deleteSession(sessionId: string): Promise<void> {
     return firstValueFrom(this.httpClient.delete<void>(`/api/sessions/${encodeURIComponent(sessionId)}`));
   }

@@ -81,8 +81,6 @@ export class BoardComponent implements OnInit, OnDestroy {
   }
 
   public ngOnInit(): void {
-    this.worldStore.setConnecting();
-
     this.routeSubscription = this.route.paramMap.subscribe(async (paramMap) => {
       const routeSessionCode = paramMap.get("sessionCode");
 
@@ -174,8 +172,8 @@ export class BoardComponent implements OnInit, OnDestroy {
       this.playerQrDataUrl.set(await QRCode.toDataURL(playerPageUrl, { margin: 1, scale: 6 }));
 
       this.startTimerTick();
-      this.wsService.connect();
       this.unsubscribeWs = this.wsService.onMessage((message) => this.handleMessage(message));
+      this.wsService.connect();
 
       const joinCheckInterval = setInterval(() => {
         if (this.wsService.status() === "connected" && this.sessionId) {
@@ -215,13 +213,11 @@ export class BoardComponent implements OnInit, OnDestroy {
   private handleMessage(message: ServerToClientMessage): void {
     switch (message.type) {
       case "welcome": {
-        this.worldStore.setConnected();
         break;
       }
 
       case "session-state": {
         this.worldStore.setSessionState(message.state);
-        this.worldStore.setConnected();
         break;
       }
 

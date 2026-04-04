@@ -1,5 +1,7 @@
 <div #wrapper class="relative overflow-hidden no-select bg-white"
-     style="width: min(95vw, calc(100dvh - 260px)); aspect-ratio: 1; touch-action: none; user-select: none; -webkit-touch-callout: none; -webkit-user-select: none;">
+     style="width: min(95vw, calc(100dvh - 260px)); aspect-ratio: 1; touch-action: none; user-select: none; -webkit-touch-callout: none; -webkit-user-select: none;"
+     (pointerdown)="$event.preventDefault()"
+     (pointermove)="$event.preventDefault()">
 
   <img src="assets/png/draw_frame.png" class="absolute inset-0 w-full h-full pointer-events-none z-20" alt=""
        draggable="false"/>
@@ -9,8 +11,8 @@
           [style.height]="canvasSizePercent"
           (pointerdown)="painter.pointerDown($event)"
           (pointermove)="painter.pointerMove($event)"
-          (pointerup)="painter.pointerUp()"
-          (pointercancel)="painter.pointerUp()"
+          (pointerup)="painter.pointerUp($event)"
+          (pointercancel)="painter.pointerUp($event)"
   ></canvas>
 </div>
 

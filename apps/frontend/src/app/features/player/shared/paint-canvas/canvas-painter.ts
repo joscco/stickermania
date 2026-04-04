@@ -8,6 +8,8 @@ export const CANVAS_RESOLUTION = 400;
 export class CanvasPainter {
   private isDrawing = false;
   private lastPoint: { x: number; y: number } | null = null;
+  /** The pointer id of the finger/stylus that started the current stroke. */
+  private activePointerId: number | null = null;
 
   constructor(
     private readonly getCanvas: () => HTMLCanvasElement | undefined,
@@ -40,10 +42,14 @@ export class CanvasPainter {
 
   public pointerDown(event: PointerEvent): void {
     event.preventDefault();
+    // Only allow one pointer to draw at a time — ignore additional fingers
+    if (this.isDrawing) return;
+
     const canvas = this.getCanvas();
     if (!canvas) return;
     canvas.setPointerCapture(event.pointerId);
     this.isDrawing = true;
+    this.activePointerId = event.pointerId;
 
     const rect = canvas.getBoundingClientRect();
     const scale = CANVAS_RESOLUTION / rect.width;
@@ -64,6 +70,8 @@ export class CanvasPainter {
   public pointerMove(event: PointerEvent): void {
     if (!this.isDrawing || !this.lastPoint) return;
     event.preventDefault();
+    // Ignore events from fingers that didn't start the stroke
+    if (event.pointerId !== this.activePointerId) return;
     const canvas = this.getCanvas();
     if (!canvas) return;
 
@@ -85,9 +93,12 @@ export class CanvasPainter {
     this.lastPoint = { x: currentX, y: currentY };
   }
 
-  public pointerUp(): void {
+  public pointerUp(event: PointerEvent): void {
+    // Only end the stroke when the original finger lifts
+    if (event.pointerId !== this.activePointerId) return;
     this.isDrawing = false;
     this.lastPoint = null;
+    this.activePointerId = null;
   }
 
   public toDataURL(): string | null {

@@ -10,11 +10,9 @@ import type {
   TeamGraffitiModeState,
 } from "@birthday/shared";
 
-export type ConnectionStatus = "connecting" | "connected" | "disconnected";
-
 @Injectable({ providedIn: "root" })
 export class WorldStore {
-  public readonly connectionStatus = signal<ConnectionStatus>("connecting");
+
   public readonly sessionState = signal<SessionState | null>(null);
   public readonly lastError = signal<string | null>(null);
   public readonly activeMode = computed<GameModeId>(() => this.sessionState()?.activeMode ?? "draw-search");
@@ -78,14 +76,6 @@ export class WorldStore {
     return Object.values(this.drawings()).sort((leftDrawing, rightDrawing) => leftDrawing.placedAt - rightDrawing.placedAt);
   });
 
-  public setConnected(): void {
-    this.connectionStatus.set("connected");
-    this.lastError.set(null);
-  }
-
-  public setConnecting(): void {
-    this.connectionStatus.set("connecting");
-  }
 
   public setSessionState(state: SessionState): void {
     this.sessionState.set(state);

@@ -1,5 +1,5 @@
 import {CommonModule} from "@angular/common";
-import {Component, computed, effect, OnDestroy, OnInit, signal} from "@angular/core";
+import {Component, computed, OnDestroy, OnInit, signal} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
 import {GameSessionStore} from "../../core/challenge.store";
 import {ApiService} from "../../core/api.service";
@@ -49,6 +49,12 @@ export class PlayerComponent implements OnInit, OnDestroy {
   /** When true, the user is editing their avatar (even if already set). */
   public readonly isEditingAvatar = signal(false);
 
+  public readonly isConnecting = computed(() => {
+    const s = this.wsService.status();
+    return s === "idle" || s === "connecting";
+  });
+  public readonly isDisconnected = computed(() => this.wsService.status() === "disconnected");
+
   constructor(
     private readonly wsService: WebSocketService,
     private readonly apiService: ApiService,
@@ -64,17 +70,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
     if (reconnect?.playerName) {
       this.sessionStore.playerName.set(reconnect.playerName);
     }
-
-    // Watch for session-fatal errors and redirect to /join
-    effect(() => {
-      const status = this.wsService.status();
-      const feedback = this.sessionStore.feedback();
-
-      // If we get an error feedback and the WS is disconnected, redirect after a short delay
-      if (feedback?.type === "error" && status === "disconnected") {
-        setTimeout(() => this.redirectToJoin(), 2000);
-      }
-    });
   }
 
   public readonly activeMode = computed(() => this.worldStore.activeMode());
@@ -87,7 +82,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     const id = this.sessionStore.playerId();
     return id ? !!this.worldStore.players()[id]?.avatarUrl : false;
   });
-  public readonly wsStatus = computed(() => this.wsService.status());
+
 
   /**
    * True once we have received a session-state AND our player exists in it.
@@ -96,14 +91,19 @@ export class PlayerComponent implements OnInit, OnDestroy {
    */
   public readonly isReady = computed(() => {
     const state = this.worldStore.sessionState();
-    if (!state) {
-      return false;
-    }
+    if (!state) return false;
     const playerId = this.sessionStore.playerId();
-    if (!playerId) {
-      return false;
-    }
+    if (!playerId) return false;
     return !!state.players[playerId];
+  });
+
+  protected readonly activeTitle = computed(() => {
+    switch (this.activeMode()) {
+      case "draw-search": return "Zeichnen & Finden";
+      case "garden-coop": return "Gemeinschaftsgarten";
+      case "team-graffiti": return "Tag-Spiel";
+      default: return "";
+    }
   });
 
   // ── Lifecycle ──────────────────────────────────────────────
@@ -122,6 +122,21 @@ export class PlayerComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // ⚠️ Safari iOS: WebSocket-Verbindung MUSS vor dem ersten `await` gestartet werden.
+    //
+    // Safari blockiert `new WebSocket()` wenn es innerhalb einer Promise-Continuation
+    // aufgerufen wird (= nach einem `await`). Der Handshake hängt dann endlos im
+    // CONNECTING-State, ohne dass onopen, onerror oder onclose jemals feuern.
+    //
+    // Deshalb: Listener registrieren und connect() synchron hier aufrufen,
+    // BEVOR wir auf den HTTP-Call (resolveSessionByCode) warten.
+    // Das `join`-Paket wird erst nach dem HTTP-Response gesendet — falls der
+    // WebSocket dann schon offen ist, geht es sofort raus. Falls nicht, speichert
+    // send() es als `pendingJoinMsg` und der WebSocketService sendet es
+    // automatisch bei onopen.
+    this.unsubscribeWs = this.wsService.onMessage((msg) => this.messageHandler.handle(msg));
+    this.wsService.connect();
+
     try {
       const resolved = await this.apiService.resolveSessionByCode(sessionCode);
       this.sessionStore.setSession(resolved.sessionId);
@@ -129,36 +144,17 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
       localStorage.setItem("birthday_last_session_code", resolved.sessionCode);
 
-      this.wsService.connect();
-      this.unsubscribeWs = this.wsService.onMessage((msg) => {
-        this.messageHandler.handle(msg);
-
-        // Handle session-fatal errors: redirect to join
-        if (msg.type === "error") {
-          const fatal = /session|nicht gefunden|abgelaufen|gelöscht|closed|deleted/i.test(msg.message);
-          if (fatal) {
-            this.reconnectService.clear();
-            setTimeout(() => this.redirectToJoin(), 2500);
-          }
-        }
+      // send() stores join as pendingJoinMsg — auto-sent on onopen if WS isn't ready yet
+      this.wsService.send({
+        type: "join",
+        kind: "player",
+        sessionId: resolved.sessionId,
+        playerId: playerId ?? undefined,
       });
 
-      const joinCheck = setInterval(() => {
-        if (this.wsService.status() === "connected") {
-          this.wsService.send({
-            type: "join",
-            kind: "player",
-            sessionId: resolved.sessionId,
-            playerId: playerId ?? undefined,
-          });
-          clearInterval(joinCheck);
-        }
-      }, 200);
-
-      this.registerGlobalAudioUnlock();
     } catch {
       this.sessionStore.showFeedback("Session wurde nicht gefunden oder ist abgelaufen.", "error");
-      setTimeout(() => this.redirectToJoin(), 2500);
+      setTimeout(() => this.router.navigate(["/join"]), 2500);
     }
   }
 
@@ -166,7 +162,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     this.unsubscribeWs?.();
   }
 
-  // ── Name / Avatar editing ─────────────────────────────────
+  // ── UI actions ─────────────────────────────────────────────
 
   public startEditName(): void {
     this.isEditingName.set(true);
@@ -192,18 +188,5 @@ export class PlayerComponent implements OnInit, OnDestroy {
   public onAvatarSkipped(): void {
     this.sessionStore.clearTask();
     this.isEditingAvatar.set(false);
-  }
-
-  public redirectToJoin(): void {
-    this.router.navigate(["/join"]);
-  }
-
-  private registerGlobalAudioUnlock(): void {
-    const unlock = () => {
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
-    };
-    window.addEventListener("pointerdown", unlock, { once: true });
-    window.addEventListener("keydown", unlock, { once: true });
   }
 }

@@ -1,4 +1,5 @@
 import { inject, Injectable, signal } from "@angular/core";
+import { Router } from "@angular/router";
 import type { ServerToClientMessage } from "@birthday/shared";
 import { GameSessionStore } from "../../core/challenge.store";
 import { ReconnectService } from "../../core/reconnect.service";
@@ -14,6 +15,7 @@ export class PlayerMessageHandler {
   private readonly worldStore = inject(WorldStore);
   private readonly wsService = inject(WebSocketService);
   private readonly reconnectService = inject(ReconnectService);
+  private readonly router = inject(Router);
   private readonly drawSearchHandler = inject(DrawSearchEventHandler);
   private readonly gardenHandler = inject(GardenEventHandler);
   private readonly graffitiHandler = inject(GraffitiEventHandler);
@@ -36,7 +38,6 @@ export class PlayerMessageHandler {
         break;
       case "session-state":
         this.worldStore.setSessionState(message.state);
-        this.worldStore.setConnected();
         this.syncPlayerModeFromState();
         break;
       case "game-event":
@@ -49,7 +50,7 @@ export class PlayerMessageHandler {
         }
         break;
       case "error":
-        this.sessionStore.showFeedback(message.message, "error");
+        this.handleError(message.message);
         break;
     }
   }
@@ -121,6 +122,20 @@ export class PlayerMessageHandler {
       case "team-graffiti":
         this.graffitiHandler.syncMode();
         return;
+    }
+  }
+
+  // ─── Error handling ─────────────────────────────────────────
+
+  private handleError(message: string): void {
+    this.sessionStore.showFeedback(message, "error");
+
+    // Session-fatal errors → stop reconnect, clear data, redirect to /join
+    const fatal = /session|nicht gefunden|abgelaufen|gelöscht|closed|deleted/i.test(message);
+    if (fatal) {
+      this.wsService.disconnect();      // stop reconnect loop → status stays "disconnected"
+      this.reconnectService.clear();
+      setTimeout(() => this.router.navigate(["/join"]), 2000);
     }
   }
 }

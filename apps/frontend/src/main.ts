@@ -1,8 +1,16 @@
-import { bootstrapApplication } from "@angular/platform-browser";
-import { provideRouter, withHashLocation } from "@angular/router";
-import { AppComponent } from "./app/app.component";
-import { routes } from "./app/app.routes";
+import {bootstrapApplication} from "@angular/platform-browser";
+import {provideRouter, withHashLocation} from "@angular/router";
+import {AppComponent} from "./app/app.component";
+import {routes} from "./app/app.routes";
+import {provideHttpClient} from '@angular/common/http';
+import {provideBrowserGlobalErrorListeners, provideZonelessChangeDetection} from '@angular/core';
 
 bootstrapApplication(AppComponent, {
-  providers: [provideRouter(routes, withHashLocation())]
+  providers: [
+    provideBrowserGlobalErrorListeners(),
+    provideZonelessChangeDetection(),
+    provideHttpClient(),
+    provideRouter(routes, withHashLocation())
+  ],
+
 }).catch((error) => console.error(error));

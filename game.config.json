@@ -118,7 +118,7 @@
   },
   "teamGraffiti": {
     "roundDurationSec": 300,
-    "actionAccrualIntervalSec": 2,
+    "actionAccrualIntervalSec": 1,
     "maxActions": 5,
     "initialActions": 5
   }

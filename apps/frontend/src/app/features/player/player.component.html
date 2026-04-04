@@ -1,16 +1,18 @@
-<div class="h-dvh overflow-hidden bg-white text-stone-900 overscroll-none flex flex-col no-select" style="padding-bottom: env(safe-area-inset-bottom);">
+<div class="h-dvh overflow-hidden bg-white text-stone-900 overscroll-none flex flex-col no-select"
+     style="padding-bottom: env(safe-area-inset-bottom);">
   <!-- Header -->
   <div class="sticky top-0 z-30 bg-white backdrop-blur border-b border-black/6">
     <div class="mx-auto w-full max-w-lg px-3 py-2">
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2">
-          <span class="text-sm font-semibold">{{ activeMode() === 'draw-search' ? 'Zeichnen & Finden' : activeMode() === 'garden-coop' ? 'Gemeinschaftsgarten' : 'Tag-Spiel' }}</span>
+          <span class="text-sm font-semibold">{{ activeTitle() }}</span>
           @if (sessionStore.playerName()) {
             <button
               class="text-xs text-stone-400 hover:text-stone-600 transition-colors underline decoration-dotted underline-offset-2"
               (click)="startEditName()"
               title="Name ändern"
-            >{{ sessionStore.playerName() }}</button>
+            >{{ sessionStore.playerName() }}
+            </button>
           }
         </div>
         <div class="flex items-center gap-2">
@@ -20,10 +22,12 @@
               class="w-6 h-6 rounded-full border border-black/10 bg-stone-50 flex items-center justify-center text-xs hover:bg-stone-100 transition-colors"
               (click)="startEditAvatar()"
               title="Avatar ändern"
-            >✏️</button>
+            >✏️
+            </button>
           }
           @if (timer.timeLeft()) {
-            <span class="text-xs font-mono font-bold text-stone-600 bg-stone-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1">
+            <span
+              class="text-xs font-mono font-bold text-stone-600 bg-stone-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1">
               <img src="assets/icons/timer.svg" class="w-3 h-3 inline" alt=""/> {{ timer.timeLeft() }}
             </span>
           }
@@ -37,55 +41,53 @@
 
   <!-- Content -->
   <div class="flex-1 overflow-hidden">
-    @if (!isReady() && !isEditingName() && isNameSet()) {
-      <!-- Loading: waiting for server state after reconnect -->
+
+    @if (isConnecting()) {
       <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
         <div class="w-8 h-8 border-3 border-stone-200 border-t-stone-500 rounded-full animate-spin"></div>
         <span class="text-xs">Verbinde...</span>
       </div>
-    } @else if (isEditingName() || !isNameSet()) {
-      <app-lobby-name (nameSubmitted)="onNameSubmitted($event)" />
-    } @else if (isEditingAvatar() || !hasAvatar()) {
-      <app-lobby-avatar
-        [playerName]="sessionStore.playerName()"
-        (avatarSubmitted)="onAvatarSubmitted($event)"
-        (skipped)="onAvatarSkipped()"
-      />
+    } @else if (isDisconnected()) {
+      <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
+        <div class="w-8 h-8 border-3 border-stone-200 border-t-stone-500 rounded-full animate-spin"></div>
+        <span class="text-xs">Verbindung unterbrochen...</span>
+        <span class="text-xs text-stone-500">Du wirst zurück zur Lobby gebracht...</span>
+      </div>
     } @else {
-      @switch (activeMode()) {
-        @case ('draw-search') {
-          <app-draw-search-player-view class="block h-full w-full" />
-        }
-        @case ('garden-coop') {
-          <app-garden-player-view class="block h-full w-full" />
-        }
-        @case ('team-graffiti') {
-          <app-graffiti-player-view class="block h-full w-full" />
+      <!-- User is connected -->
+      @if (isEditingName() || !isNameSet()) {
+        <app-lobby-name (nameSubmitted)="onNameSubmitted($event)"/>
+      } @else if (isEditingAvatar()) {
+        <app-lobby-avatar
+          [playerName]="sessionStore.playerName()"
+          (avatarSubmitted)="onAvatarSubmitted($event)"
+          (skipped)="onAvatarSkipped()"
+        />
+      } @else if (!isReady()) {
+        <!-- Connected but waiting for session-state from server -->
+        <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
+          <div class="w-8 h-8 border-3 border-stone-200 border-t-stone-500 rounded-full animate-spin"></div>
+          <span class="text-xs">Lade Spielstand...</span>
+        </div>
+      } @else if (!hasAvatar()) {
+        <app-lobby-avatar
+          [playerName]="sessionStore.playerName()"
+          (avatarSubmitted)="onAvatarSubmitted($event)"
+          (skipped)="onAvatarSkipped()"
+        />
+      } @else {
+        @switch (activeMode()) {
+          @case ('draw-search') {
+            <app-draw-search-player-view class="block h-full w-full"/>
+          }
+          @case ('garden-coop') {
+            <app-garden-player-view class="block h-full w-full"/>
+          }
+          @case ('team-graffiti') {
+            <app-graffiti-player-view class="block h-full w-full"/>
+          }
         }
       }
     }
   </div>
-
-  <!-- Feedback toast -->
-  @if (sessionStore.feedback()) {
-    <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 rounded-xl px-4 py-2 text-sm font-medium shadow-lg text-white flex items-center gap-3"
-         [class.bg-emerald-500]="sessionStore.feedback()!.type === 'success'"
-         [class.bg-red-500]="sessionStore.feedback()!.type === 'error'">
-      <span>{{ sessionStore.feedback()!.text }}</span>
-      @if (sessionStore.feedback()!.type === 'error') {
-        <button
-          class="text-xs bg-white/20 hover:bg-white/30 rounded-lg px-2 py-1 transition-colors"
-          (click)="redirectToJoin()"
-        >Zur Lobby</button>
-      }
-    </div>
-  }
-
-  <!-- Disconnected banner -->
-  @if (wsStatus() === 'disconnected' && isNameSet()) {
-    <div class="fixed top-14 left-1/2 -translate-x-1/2 z-50 rounded-xl bg-amber-500 text-white px-4 py-2 text-xs font-medium shadow-lg flex items-center gap-2">
-      <span class="inline-block w-2 h-2 rounded-full bg-white/60 animate-pulse"></span>
-      Verbindung unterbrochen – Reconnect...
-    </div>
-  }
 </div>
