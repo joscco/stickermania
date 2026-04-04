@@ -348,13 +348,11 @@ export interface TeamGraffitiModeState {
 export type TeamGraffitiClientAction =
     | { type: "assign-team"; playerId: string; teamId: TeamGraffitiTeamId }
     | { type: "tag-house"; houseId: string }
-    | { type: "wipe-house"; houseId: string }
     | { type: "start-team-round"; durationSec: number };
 
 export type TeamGraffitiServerEvent =
     | { type: "team-assigned"; playerId: string; teamId: TeamGraffitiTeamId }
     | { type: "house-tagged"; houseId: string; teamId: TeamGraffitiTeamId; tagVariant: 0 | 1 }
-    | { type: "house-wiped"; houseId: string; wipedByPlayerId: string }
     | { type: "team-score-updated"; teamId: TeamGraffitiTeamId; newScore: number }
     | { type: "actions-updated"; playerId: string; actions: number };
 

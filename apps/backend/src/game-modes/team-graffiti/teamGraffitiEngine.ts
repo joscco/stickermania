@@ -10,7 +10,7 @@ import {GameActionResult, GameModeEngine} from "../gameModeEngine.js";
 import {HOUSE_LAYOUT, SCENE_HEIGHT, SCENE_WIDTH} from "./houseLayout.js";
 import {accrueActionsForPlayer, accrueAllActions, computeNextAccrualTime} from "./actionAccrual.js";
 import {finalizeScores} from "./scoreHelpers.js";
-import {handleAssignTeam, handleTagHouse, handleWipeHouse} from "./actionHandlers.js";
+import {handleAssignTeam, handleTagHouse} from "./actionHandlers.js";
 import {startRound} from "./roundManager.js";
 
 export class TeamGraffitiEngine implements GameModeEngine<"team-graffiti", TeamGraffitiModeState> {
@@ -108,8 +108,6 @@ export class TeamGraffitiEngine implements GameModeEngine<"team-graffiti", TeamG
             case "tag-house":
                 return handleTagHouse(args.sessionState, args.context.playerId, args.action.houseId, args.context.now);
 
-            case "wipe-house":
-                return handleWipeHouse(args.sessionState, args.context.playerId, args.action.houseId, args.context.now);
 
             case "start-team-round": {
                 startRound(

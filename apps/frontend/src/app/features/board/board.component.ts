@@ -311,11 +311,6 @@ export class BoardComponent implements OnInit, OnDestroy {
         break;
       }
 
-      case "house-wiped": {
-        const playerName = this.worldStore.players()[event.wipedByPlayerId]?.name || "Jemand";
-        this.pushEvent(`🧽 ${playerName} hat ein Tag entfernt.`, Date.now());
-        break;
-      }
 
       case "team-score-updated": {
         const teamLabel = event.teamId === 'DIAMOND' ? '♦️ Karo' : '♥️ Herz';

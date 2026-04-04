@@ -1,9 +1,7 @@
 import type {SessionState} from "@birthday/shared";
-import type {SessionRepository} from "../infra/sessionRepository.js";
 import type {GameModeRegistry} from "../game-modes/gameModeRegistry.js";
 import type {RuntimeEntry} from "./sessionRuntimeTypes.js";
-import {SessionEventPublisher} from "./sessionEventPublisher.js";
-import type {SessionLock} from "./sessionLock.js";
+import type {SessionMutator} from "./sessionMutator.js";
 
 /**
  * Manages phase-timer scheduling for game mode engines.
@@ -12,16 +10,14 @@ import type {SessionLock} from "./sessionLock.js";
  * setTimeout for that moment, fires `onTimerElapsed`, publishes results,
  * and recurses.
  *
- * All state-mutating timer callbacks run inside the SessionLock to prevent
- * race conditions with concurrent game-actions.
+ * All state-mutating timer callbacks run through the SessionMutator to
+ * prevent race conditions with concurrent game-actions.
  */
 export class PhaseTimerScheduler {
     public constructor(
         private readonly runtimes: Map<string, RuntimeEntry>,
-        private readonly sessionRepository: SessionRepository,
         private readonly gameModeRegistry: GameModeRegistry,
-        private readonly eventPublisher: SessionEventPublisher,
-        private readonly sessionLock: SessionLock,
+        private readonly mutator: SessionMutator,
     ) {}
 
     public schedule(sessionId: string, state: SessionState): void {
@@ -47,15 +43,9 @@ export class PhaseTimerScheduler {
         runtime.phaseTimer = setTimeout(() => {
             runtime.phaseTimer = null;
 
-            // Run inside the session lock so we don't race with game-actions
-            this.sessionLock.run(sessionId, async () => {
+            this.mutator.mutate(sessionId, async (currentState) => {
                 if (!engine.onTimerElapsed) {
-                    return;
-                }
-
-                const currentState = await this.sessionRepository.load(sessionId);
-                if (!currentState) {
-                    return;
+                    return {stateChanged: false, extra: undefined};
                 }
 
                 const result = await engine.onTimerElapsed({
@@ -63,24 +53,20 @@ export class PhaseTimerScheduler {
                     now: Date.now(),
                 });
 
-                if (result.stateChanged) {
-                    this.eventPublisher.bumpRevision(currentState);
-                    await this.sessionRepository.save(currentState);
-                    await this.eventPublisher.publishState(currentState);
-                }
-
-                if (result.emittedEvents.length > 0) {
-                    await this.eventPublisher.publishGameEvents(sessionId, currentState.activeMode, result.emittedEvents as never[]);
-                }
-
+                return {
+                    stateChanged: result.stateChanged,
+                    gameEvents: result.emittedEvents.length > 0
+                        ? {mode: currentState.activeMode, events: result.emittedEvents as any[]}
+                        : undefined,
+                    extra: undefined,
+                };
+            }).then((outcome) => {
                 // Recurse – schedule next timer based on the fresh state
-                this.schedule(sessionId, currentState);
+                if (outcome) {
+                    this.schedule(sessionId, outcome.state);
+                }
             }).catch((err) => {
                 console.error(`[PhaseTimer] Error in timer callback for session ${sessionId}:`, err);
-                // Attempt to recover by re-scheduling from persisted state
-                this.sessionRepository.load(sessionId).then((s) => {
-                    if (s) this.schedule(sessionId, s);
-                }).catch(() => { /* give up */ });
             });
         }, delayMs);
     }

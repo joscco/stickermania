@@ -11,7 +11,7 @@ import type {ConnectedClientSession, RuntimeEntry} from "./sessionRuntimeTypes.j
 import {SessionEventPublisher} from "./sessionEventPublisher.js";
 import {PhaseTimerScheduler} from "./phaseTimerScheduler.js";
 import {PlayerManager} from "./playerManager.js";
-import {SessionLock} from "./sessionLock.js";
+import {SessionMutator} from "./sessionMutator.js";
 
 const SESSION_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ";
 
@@ -29,9 +29,9 @@ export class SessionService {
     private readonly gameModeRegistry = new GameModeRegistry();
     private readonly sessionStateFactory: SessionStateFactory;
     private readonly eventPublisher = new SessionEventPublisher();
+    private readonly mutator: SessionMutator;
     private readonly phaseTimer: PhaseTimerScheduler;
     private readonly playerManager: PlayerManager;
-    private readonly sessionLock = new SessionLock();
 
     public constructor(
         private readonly config: GameConfig,
@@ -44,22 +44,20 @@ export class SessionService {
 
         this.sessionStateFactory = new SessionStateFactory(config, this.gameModeRegistry);
 
+        this.mutator = new SessionMutator(sessionRepository, this.eventPublisher);
+
         this.phaseTimer = new PhaseTimerScheduler(
             this.runtimes,
-            sessionRepository,
             this.gameModeRegistry,
-            this.eventPublisher,
-            this.sessionLock,
+            this.mutator,
         );
 
         this.playerManager = new PlayerManager(
-            sessionRepository,
             assetRepository,
             this.gameModeRegistry,
             this.sessionStateFactory,
-            this.eventPublisher,
+            this.mutator,
             this.runtimes,
-            this.sessionLock,
         );
     }
 
@@ -164,10 +162,7 @@ export class SessionService {
     // ─── Game-mode orchestration ────────────────────────────────────
 
     public async selectMode(sessionId: string, mode: GameModeId): Promise<SessionState | null> {
-        return this.sessionLock.run(sessionId, async () => {
-            const state = await this.sessionRepository.load(sessionId);
-            if (!state) return null;
-
+        const result = await this.mutator.mutate(sessionId, (state) => {
             this.phaseTimer.clear(sessionId);
 
             state.activeMode = mode;
@@ -176,58 +171,47 @@ export class SessionService {
             const runtime = this.getOrCreateRuntime(state);
             runtime.sessionRuntime.activeMode = mode;
 
-            this.eventPublisher.bumpRevision(state);
-            await this.sessionRepository.save(state);
-            await this.eventPublisher.publishState(state);
-            return state;
+            return {stateChanged: true, extra: undefined};
         });
+        return result?.state ?? null;
     }
 
     public async startMode(sessionId: string): Promise<SessionState | null> {
-        return this.sessionLock.run(sessionId, async () => {
-            const state = await this.sessionRepository.load(sessionId);
-            if (!state) return null;
-
+        const result = await this.mutator.mutate(sessionId, (state) => {
             const engine = this.gameModeRegistry.get(state.activeMode);
-            const result = engine.startMode({sessionState: state as never, now: Date.now()});
+            const engineResult = engine.startMode({sessionState: state as never, now: Date.now()});
 
-            if (result.stateChanged) {
-                this.eventPublisher.bumpRevision(state);
-                await this.sessionRepository.save(state);
-                await this.eventPublisher.publishState(state);
-            }
-
-            if (result.emittedEvents.length > 0) {
-                await this.eventPublisher.publishGameEvents(sessionId, state.activeMode, result.emittedEvents as never[]);
-            }
-
-            this.phaseTimer.schedule(sessionId, state);
-            return state;
+            return {
+                stateChanged: engineResult.stateChanged,
+                gameEvents: engineResult.emittedEvents.length > 0
+                    ? {mode: state.activeMode, events: engineResult.emittedEvents as any[]}
+                    : undefined,
+                extra: undefined,
+            };
         });
+
+        if (result) {
+            this.phaseTimer.schedule(sessionId, result.state);
+        }
+        return result?.state ?? null;
     }
 
     public async resetSession(sessionId: string): Promise<SessionState | null> {
-        return this.sessionLock.run(sessionId, async () => {
-            const state = await this.sessionRepository.load(sessionId);
-            if (!state) return null;
-
+        const result = await this.mutator.mutate(sessionId, (state) => {
             this.phaseTimer.clear(sessionId);
 
             const engine = this.gameModeRegistry.get(state.activeMode);
-            const result = engine.resetMode({sessionState: state as never, now: Date.now()});
+            const engineResult = engine.resetMode({sessionState: state as never, now: Date.now()});
 
-            if (result.stateChanged) {
-                this.eventPublisher.bumpRevision(state);
-                await this.sessionRepository.save(state);
-                await this.eventPublisher.publishState(state);
-            }
-
-            if (result.emittedEvents.length > 0) {
-                await this.eventPublisher.publishGameEvents(sessionId, state.activeMode, result.emittedEvents as never[]);
-            }
-
-            return state;
+            return {
+                stateChanged: engineResult.stateChanged,
+                gameEvents: engineResult.emittedEvents.length > 0
+                    ? {mode: state.activeMode, events: engineResult.emittedEvents as any[]}
+                    : undefined,
+                extra: undefined,
+            };
         });
+        return result?.state ?? null;
     }
 
     public async handleGameAction(args: {
@@ -237,14 +221,13 @@ export class SessionService {
         clientKind: ClientKind;
         message: Extract<ClientToServerMessage, {type: "game-action"}>;
     }): Promise<SessionState | null> {
-        return this.sessionLock.run(args.sessionId, async () => {
-            const state = await this.sessionRepository.load(args.sessionId);
-            if (!state) return null;
-
-            if (state.activeMode !== args.message.mode) return state;
+        const result = await this.mutator.mutate(args.sessionId, async (state) => {
+            if (state.activeMode !== args.message.mode) {
+                return {stateChanged: false, extra: undefined};
+            }
 
             const engine = this.gameModeRegistry.get(state.activeMode);
-            const result = await engine.applyAction({
+            const engineResult = await engine.applyAction({
                 sessionState: state as never,
                 action: args.message.action as never,
                 context: {
@@ -256,22 +239,20 @@ export class SessionService {
                 },
             });
 
-            if (result.stateChanged) {
-                this.eventPublisher.bumpRevision(state);
-                await this.sessionRepository.save(state);
-                await this.eventPublisher.publishState(state);
-            }
-
-            if (result.emittedEvents.length > 0) {
-                await this.eventPublisher.publishGameEvents(state.sessionId, state.activeMode, result.emittedEvents as never[]);
-            }
-
-            this.phaseTimer.schedule(args.sessionId, state);
-            return state;
+            return {
+                stateChanged: engineResult.stateChanged,
+                gameEvents: engineResult.emittedEvents.length > 0
+                    ? {mode: state.activeMode, events: engineResult.emittedEvents as any[]}
+                    : undefined,
+                extra: undefined,
+            };
         });
-    }
 
-    // ─── Internals ──────────────────────────────────────────────────
+        if (result) {
+            this.phaseTimer.schedule(args.sessionId, result.state);
+        }
+        return result?.state ?? null;
+    }
 
     private getOrCreateRuntime(state: SessionState): RuntimeEntry {
         const existing = this.runtimes.get(state.sessionId);

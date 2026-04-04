@@ -17,11 +17,6 @@ export class GraffitiEventHandler {
                     this.sessionStore.showFeedback(`Du bist jetzt Team ${label}.`, "success");
                 }
                 break;
-            case "house-wiped":
-                if (event.wipedByPlayerId === this.sessionStore.playerId()) {
-                    this.sessionStore.showFeedback(`Tag entfernt!`, "success");
-                }
-                break;
             case "house-tagged":
             case "team-score-updated":
             case "actions-updated":

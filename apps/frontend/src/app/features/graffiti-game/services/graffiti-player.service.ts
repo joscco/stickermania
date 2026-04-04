@@ -119,7 +119,7 @@ export class GraffitiPlayerService {
   }
 
   /**
-   * Smart tap action: if opponent owns it → wipe, if neutral → tag, if own team → nothing.
+   * Tap action: tag neutral or opponent houses, ignore own.
    * Immediately deducts an optimistic action so the UI feels instant.
    */
   public tapHouse(house: TeamGraffitiHouse): void {
