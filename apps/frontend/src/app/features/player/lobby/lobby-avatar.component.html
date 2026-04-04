@@ -6,6 +6,7 @@
 
   <app-drawing-canvas
     #drawingCanvas
+    [initialImage]="initialAvatarImage()"
     (submitted)="avatarSubmitted.emit($event)"
   />
 

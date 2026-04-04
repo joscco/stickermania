@@ -85,6 +85,16 @@ export class PlayerComponent implements OnInit, OnDestroy {
     return id ? !!this.worldStore.players()[id]?.avatarUrl : false;
   });
 
+  /** Existing avatar image to pre-populate the avatar drawing canvas. */
+  public readonly existingAvatarImage = computed(() => {
+    // Prefer device-cached data-URL (always available, no CORS issues)
+    const deviceAvatar = this.reconnectService.loadDeviceAvatar();
+    if (deviceAvatar) return deviceAvatar;
+    // Fallback: current server avatar URL
+    const id = this.sessionStore.playerId();
+    return id ? (this.worldStore.players()[id]?.avatarUrl ?? null) : null;
+  });
+
 
   /**
    * True once we have received a session-state AND our player exists in it.

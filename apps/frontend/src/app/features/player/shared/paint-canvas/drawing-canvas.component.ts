@@ -24,6 +24,9 @@ export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
   public readonly submitted = output<string>();
   public readonly cleared = output<void>();
 
+  /** Optional image (data-URL or http URL) to pre-populate the canvas with. */
+  public readonly initialImage = input<string | null>(null);
+
   @ViewChild("drawCanvas") canvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild("wrapper") wrapperRef!: ElementRef<HTMLElement>;
 
@@ -75,7 +78,13 @@ export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    setTimeout(() => this.painter.init(), 50);
+    setTimeout(() => {
+      this.painter.init();
+      const img = this.initialImage();
+      if (img) {
+        this.painter.loadImage(img);
+      }
+    }, 50);
 
     const wrapper = this.wrapperRef?.nativeElement;
     const canvas = this.canvasRef?.nativeElement;

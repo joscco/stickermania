@@ -9,6 +9,7 @@ import { DrawingCanvasComponent } from "../shared/paint-canvas/drawing-canvas.co
 })
 export class LobbyAvatarComponent {
   public readonly playerName = input.required<string>();
+  public readonly initialAvatarImage = input<string | null>(null);
   public readonly avatarSubmitted = output<string>();
   public readonly skipped = output<void>();
 

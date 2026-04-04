@@ -30,6 +30,23 @@ export class CanvasPainter {
     return true;
   }
 
+  /** Load an image (data-URL or http URL) onto the canvas as starting content. */
+  public loadImage(src: string): void {
+    const canvas = this.getCanvas();
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, CANVAS_RESOLUTION, CANVAS_RESOLUTION);
+      ctx.drawImage(img, 0, 0, CANVAS_RESOLUTION, CANVAS_RESOLUTION);
+    };
+    img.src = src;
+  }
+
   public clear(): void {
     const canvas = this.getCanvas();
     if (!canvas) return;

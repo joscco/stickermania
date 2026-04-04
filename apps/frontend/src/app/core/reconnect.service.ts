@@ -1,4 +1,4 @@
-import { Injectable } from "@angular/core";
+import { Injectable, signal } from "@angular/core";
 import type { ActivatedRoute } from "@angular/router";
 
 const RECONNECT_STORAGE_KEY = "birthday_reconnect";
@@ -64,6 +64,11 @@ export class ReconnectService {
 
   // ── Device-level identity (survives session changes) ──────
 
+  /** Reactive signal tracking the device avatar data-URL. */
+  public readonly deviceAvatar = signal<string | null>(
+    localStorage.getItem(DEVICE_AVATAR_KEY) || null,
+  );
+
   public saveDeviceName(name: string): void {
     localStorage.setItem(DEVICE_NAME_KEY, name);
   }
@@ -74,10 +79,11 @@ export class ReconnectService {
 
   public saveDeviceAvatar(dataUrl: string): void {
     localStorage.setItem(DEVICE_AVATAR_KEY, dataUrl);
+    this.deviceAvatar.set(dataUrl);
   }
 
   public loadDeviceAvatar(): string | null {
-    return localStorage.getItem(DEVICE_AVATAR_KEY) || null;
+    return this.deviceAvatar();
   }
 }
 
