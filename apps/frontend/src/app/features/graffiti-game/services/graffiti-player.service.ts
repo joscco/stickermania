@@ -1,4 +1,4 @@
-import {computed, DestroyRef, effect, inject, Injectable, signal} from "@angular/core";
+import {computed, effect, inject, Injectable, signal} from "@angular/core";
 import type {TeamGraffitiHouse, TeamGraffitiModeState, TeamGraffitiTeamId} from "@birthday/shared";
 import {WebSocketService} from "../../../core/websocket.service";
 import {WorldStore} from "../../../core/world.store";
@@ -9,25 +9,11 @@ export class GraffitiPlayerService {
   private readonly ws = inject(WebSocketService);
   private readonly worldStore = inject(WorldStore);
   private readonly sessionStore = inject(GameSessionStore);
-  private readonly destroyRef = inject(DestroyRef);
 
-  /**
-   * Optimistic action offset — decremented on tap, reset to 0 whenever
-   * the server pushes an updated session-state (which includes the real
-   * action count).
-   */
-  private readonly optimisticSpent = signal(0);
-
-  /** Track the server revision so we can reset optimistic state on each update. */
-  private lastSeenRevision = -1;
-
-  /** Client-side accrual timer handle. */
-  private accrualInterval: ReturnType<typeof setInterval> | null = null;
-  /** Extra actions predicted by client-side accrual (reset on server update). */
-  private readonly predictedAccrual = signal(0);
+  /** Taps used locally but not yet confirmed by the server. */
+  private readonly pendingTaps = signal(0);
 
   public readonly modeState = computed<TeamGraffitiModeState | null>(() => this.worldStore.teamGraffitiModeState());
-
   public readonly currentTeamId = computed<TeamGraffitiTeamId | null>(() => {
     const playerId = this.sessionStore.playerId();
     if (!playerId) return null;
@@ -47,17 +33,15 @@ export class GraffitiPlayerService {
   private readonly serverActions = computed<number>(() => {
     const state = this.modeState();
     const playerId = this.sessionStore.playerId();
-    if (!state || !playerId) return 0;
+    if (!state || !playerId) {
+      return 0;
+    }
     return state.playerActions[playerId]?.actions ?? 0;
   });
 
-  /**
-   * Displayed action count: server value − optimistic spent + predicted accrual,
-   * clamped to [0, maxActions].
-   */
+  /** Displayed actions: server value minus taps still in-flight. */
   public readonly myActions = computed<number>(() => {
-    const base = this.serverActions() - this.optimisticSpent() + this.predictedAccrual();
-    return Math.max(0, Math.min(base, this.maxActions()));
+    return Math.max(0, this.serverActions() - this.pendingTaps());
   });
 
   public readonly maxActions = computed<number>(() => {
@@ -66,46 +50,18 @@ export class GraffitiPlayerService {
 
   public readonly isRoundRunning = computed<boolean>(() => {
     const state = this.modeState();
-    if (!state?.roundEndsAt) return false;
+    if (!state?.roundEndsAt) {
+      return false;
+    }
     return Date.now() < state.roundEndsAt;
   });
 
   constructor() {
-    // Reset optimistic state whenever the server pushes a new revision
+    // Reset pending taps whenever the server sends a new action count
     effect(() => {
-      const state = this.worldStore.sessionState();
-      if (!state) return;
-      if (state.revision !== this.lastSeenRevision) {
-        this.lastSeenRevision = state.revision;
-        this.optimisticSpent.set(0);
-        this.predictedAccrual.set(0);
-      }
+      this.serverActions(); // track dependency
+      this.pendingTaps.set(0);
     });
-
-    // Start/stop client-side accrual prediction timer when round state changes
-    effect(() => {
-      const state = this.modeState();
-      this.stopAccrualTimer();
-      if (!state?.roundStartedAt || !state?.roundEndsAt) return;
-      if (Date.now() >= state.roundEndsAt) return;
-
-      const intervalMs = state.actionAccrualIntervalSec * 1000;
-      if (intervalMs <= 0) return;
-
-      this.accrualInterval = setInterval(() => {
-        const ms = this.modeState();
-        if (!ms?.roundEndsAt || Date.now() >= ms.roundEndsAt) {
-          this.stopAccrualTimer();
-          return;
-        }
-        // Only predict if the displayed count is below max
-        if (this.myActions() < this.maxActions()) {
-          this.predictedAccrual.update((v) => v + 1);
-        }
-      }, intervalMs);
-    });
-
-    this.destroyRef.onDestroy(() => this.stopAccrualTimer());
   }
 
   public assignTeam(teamId: TeamGraffitiTeamId): void {
@@ -118,28 +74,20 @@ export class GraffitiPlayerService {
     this.ws.send({type: "game-action", mode: "team-graffiti", action: {type: "tag-house", houseId}});
   }
 
-  /**
-   * Tap action: tag neutral or opponent houses, ignore own.
-   * Immediately deducts an optimistic action so the UI feels instant.
-   */
   public tapHouse(house: TeamGraffitiHouse): void {
     const teamId = this.currentTeamId();
-    if (!teamId || !this.isRoundRunning() || this.myActions() <= 0) return;
 
-    if (house.owner === teamId) {
-      // Own house — nothing to do
+    if (!teamId || !this.isRoundRunning() || this.myActions() <= 0) {
+      // Can't tap if not on a team, round isn't running, or no actions left
       return;
     }
 
-    // Optimistic deduction — the server will confirm via session-state push
-    this.optimisticSpent.update((v) => v + 1);
-    this.tagHouse(house.id);
-  }
-
-  private stopAccrualTimer(): void {
-    if (this.accrualInterval) {
-      clearInterval(this.accrualInterval);
-      this.accrualInterval = null;
+    if (house.owner === teamId) {
+      // House is already owned by player's team, no need to tap
+      return;
     }
+
+    this.pendingTaps.update((v) => v + 1);
+    this.tagHouse(house.id);
   }
 }
