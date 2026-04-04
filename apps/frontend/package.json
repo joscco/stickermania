@@ -2,6 +2,9 @@
   "name": "@birthday/frontend",
   "version": "0.0.0",
   "scripts": {
+    "check-stickers": "node scripts/check-sticker-assets.mjs",
+    "prebuild": "node scripts/check-sticker-assets.mjs",
+    "prebuild:cloud": "node scripts/check-sticker-assets.mjs",
     "dev": "ng serve --configuration development",
     "build": "ng build --configuration production",
     "build:cloud": "ng build --configuration cloud",

@@ -1,5 +1,5 @@
 import {inject, Injectable, computed} from "@angular/core";
-import type {StickerCollageClientAction, StickerCollageModeState, StickerCollage, StickerHand} from "@birthday/shared";
+import type {StickerCollageClientAction, StickerCollageModeState, StickerCollage, StickerHand, StickerPlacement} from "@birthday/shared";
 import {GameSessionStore} from "../../../core/challenge.store";
 import {WorldStore} from "../../../core/world.store";
 import {WebSocketService} from "../../../core/websocket.service";
@@ -66,7 +66,7 @@ export class StickerPlayerService {
         this.sendAction({type: "swap-sticker", handIndex, newStickerId});
     }
 
-    public submitCollage(placements: Array<{stickerId: string; x: number; y: number; rotation: number; scale: number; zIndex: number}>): void {
+    public submitCollage(placements: StickerPlacement[]): void {
         this.sendAction({type: "submit-collage", placements});
     }
 

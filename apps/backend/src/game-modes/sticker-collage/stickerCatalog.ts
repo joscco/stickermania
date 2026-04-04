@@ -10,66 +10,49 @@ import type {StickerDefinition, StickerCollageGameConfig, StickerHand} from "@bi
  */
 export const DEFAULT_STICKER_CATALOG: StickerDefinition[] = [
     // ── Eyes ─────────────────────────────────
-    {id: "eyes_round",      imageUrl: "assets/stickers/eyes_round.png",      categories: ["eyes"]},
-    {id: "eyes_cute",       imageUrl: "assets/stickers/eyes_cute.png",       categories: ["eyes"]},
-    {id: "eyes_angry",      imageUrl: "assets/stickers/eyes_angry.png",      categories: ["eyes"]},
-    {id: "eyes_sleepy",     imageUrl: "assets/stickers/eyes_sleepy.png",     categories: ["eyes"]},
-    {id: "eyes_star",       imageUrl: "assets/stickers/eyes_star.png",       categories: ["eyes"]},
-    {id: "eyes_heart",      imageUrl: "assets/stickers/eyes_heart.png",      categories: ["eyes"]},
+    {id: "eyes_round",      imageUrl: "assets/png/sticker_eye_round.png",      categories: ["eyes"]},
+    {id: "eyes_cute",       imageUrl: "assets/png/sticker_eye_cute.png",       categories: ["eyes"]},
+    {id: "eyes_angry",      imageUrl: "assets/png/sticker_eye_angry.png",      categories: ["eyes"]},
+    {id: "eyes_sleepy",     imageUrl: "assets/png/sticker_eye_sleepy.png",     categories: ["eyes"]},
+    {id: "eyes_star",       imageUrl: "assets/png/sticker_eye_star.png",       categories: ["eyes"]},
+    {id: "eyes_heart",      imageUrl: "assets/png/sticker_eye_heart.png",      categories: ["eyes"]},
 
     // ── Mouths ───────────────────────────────
-    {id: "mouth_smile",     imageUrl: "assets/stickers/mouth_smile.png",     categories: ["mouth"]},
-    {id: "mouth_open",      imageUrl: "assets/stickers/mouth_open.png",      categories: ["mouth"]},
-    {id: "mouth_teeth",     imageUrl: "assets/stickers/mouth_teeth.png",     categories: ["mouth"]},
-    {id: "mouth_tongue",    imageUrl: "assets/stickers/mouth_tongue.png",    categories: ["mouth"]},
+    {id: "mouth_smile",     imageUrl: "assets/png/sticker_mouth_smile.png",     categories: ["mouth"]},
+    {id: "mouth_open",      imageUrl: "assets/png/sticker_mouth_open.png",      categories: ["mouth"]},
+    {id: "mouth_teeth",     imageUrl: "assets/png/sticker_mouth_teeth.png",     categories: ["mouth"]},
+    {id: "mouth_tongue",    imageUrl: "assets/png/sticker_mouth_tongue.png",    categories: ["mouth"]},
 
     // ── Noses ────────────────────────────────
-    {id: "nose_round",      imageUrl: "assets/stickers/nose_round.png",      categories: ["nose"]},
-    {id: "nose_pointy",     imageUrl: "assets/stickers/nose_pointy.png",     categories: ["nose"]},
-    {id: "nose_clown",      imageUrl: "assets/stickers/nose_clown.png",      categories: ["nose"]},
+    {id: "nose_round",      imageUrl: "assets/png/sticker_nose_round.png",      categories: ["nose"]},
+    {id: "nose_pointy",     imageUrl: "assets/png/sticker_nose_pointy.png",     categories: ["nose"]},
+    {id: "nose_clown",      imageUrl: "assets/png/sticker_nose_clown.png",      categories: ["nose"]},
 
     // ── Shapes ───────────────────────────────
-    {id: "shape_circle",    imageUrl: "assets/stickers/shape_circle.png",    categories: ["shape"]},
-    {id: "shape_square",    imageUrl: "assets/stickers/shape_square.png",    categories: ["shape"]},
-    {id: "shape_triangle",  imageUrl: "assets/stickers/shape_triangle.png",  categories: ["shape"]},
-    {id: "shape_star",      imageUrl: "assets/stickers/shape_star.png",      categories: ["shape"]},
-    {id: "shape_blob",      imageUrl: "assets/stickers/shape_blob.png",      categories: ["shape"]},
-    {id: "shape_cloud",     imageUrl: "assets/stickers/shape_cloud.png",     categories: ["shape"]},
+    {id: "shape_circle",    imageUrl: "assets/png/sticker_shape_circle.png",    categories: ["shape"]},
+    {id: "shape_square",    imageUrl: "assets/png/sticker_shape_square.png",    categories: ["shape"]},
+    {id: "shape_triangle",  imageUrl: "assets/png/sticker_shape_triangle.png",  categories: ["shape"]},
+    {id: "shape_star",      imageUrl: "assets/png/sticker_shape_star.png",      categories: ["shape"]},
+    {id: "shape_blob",      imageUrl: "assets/png/sticker_shape_blob.png",      categories: ["shape"]},
+    {id: "shape_cloud",     imageUrl: "assets/png/sticker_shape_cloud.png",     categories: ["shape"]},
 
     // ── Fruits ───────────────────────────────
-    {id: "fruit_apple",     imageUrl: "assets/stickers/fruit_apple.png",     categories: ["fruit", "food"]},
-    {id: "fruit_banana",    imageUrl: "assets/stickers/fruit_banana.png",    categories: ["fruit", "food"]},
-    {id: "fruit_cherry",    imageUrl: "assets/stickers/fruit_cherry.png",    categories: ["fruit", "food"]},
-    {id: "fruit_strawberry",imageUrl: "assets/stickers/fruit_strawberry.png",categories: ["fruit", "food"]},
+    {id: "fruit_apple",     imageUrl: "assets/png/sticker_fruit_apple.png",     categories: ["fruit", "food"]},
+    {id: "fruit_banana",    imageUrl: "assets/png/sticker_fruit_banana.png",    categories: ["fruit", "food"]},
+    {id: "fruit_cherry",    imageUrl: "assets/png/sticker_fruit_cherry.png",    categories: ["fruit", "food"]},
+    {id: "fruit_strawberry",imageUrl: "assets/png/sticker_fruit_strawberry.png",categories: ["fruit", "food"]},
 
     // ── Accessories ──────────────────────────
-    {id: "acc_hat",         imageUrl: "assets/stickers/acc_hat.png",         categories: ["accessory"]},
-    {id: "acc_crown",       imageUrl: "assets/stickers/acc_crown.png",       categories: ["accessory"]},
-    {id: "acc_glasses",     imageUrl: "assets/stickers/acc_glasses.png",     categories: ["accessory"]},
-    {id: "acc_bowtie",      imageUrl: "assets/stickers/acc_bowtie.png",      categories: ["accessory"]},
-    {id: "acc_mustache",    imageUrl: "assets/stickers/acc_mustache.png",    categories: ["accessory"]},
+    {id: "acc_hat",         imageUrl: "assets/png/sticker_acc_hat.png",         categories: ["accessory"]},
+    {id: "acc_crown",       imageUrl: "assets/png/sticker_acc_crown.png",       categories: ["accessory"]},
+    {id: "acc_glasses",     imageUrl: "assets/png/sticker_acc_glasses.png",     categories: ["accessory"]},
+    {id: "acc_bowtie",      imageUrl: "assets/png/sticker_acc_bowtie.png",      categories: ["accessory"]},
 
     // ── Objects ──────────────────────────────
-    {id: "obj_chair",       imageUrl: "assets/stickers/obj_chair.png",       categories: ["object"]},
-    {id: "obj_lamp",        imageUrl: "assets/stickers/obj_lamp.png",        categories: ["object"]},
-    {id: "obj_flower",      imageUrl: "assets/stickers/obj_flower.png",      categories: ["object", "nature"]},
-    {id: "obj_tree",        imageUrl: "assets/stickers/obj_tree.png",        categories: ["object", "nature"]},
-    {id: "obj_sun",         imageUrl: "assets/stickers/obj_sun.png",         categories: ["object", "nature"]},
-    {id: "obj_moon",        imageUrl: "assets/stickers/obj_moon.png",        categories: ["object", "nature"]},
 
     // ── Body parts ───────────────────────────
-    {id: "body_arm_left",   imageUrl: "assets/stickers/body_arm_left.png",   categories: ["body"]},
-    {id: "body_arm_right",  imageUrl: "assets/stickers/body_arm_right.png",  categories: ["body"]},
-    {id: "body_leg",        imageUrl: "assets/stickers/body_leg.png",        categories: ["body"]},
-    {id: "body_hand",       imageUrl: "assets/stickers/body_hand.png",       categories: ["body"]},
-    {id: "body_tail",       imageUrl: "assets/stickers/body_tail.png",       categories: ["body"]},
-    {id: "body_wing",       imageUrl: "assets/stickers/body_wing.png",       categories: ["body"]},
 
     // ── Extras ───────────────────────────────
-    {id: "extra_sparkle",   imageUrl: "assets/stickers/extra_sparkle.png",   categories: ["effect"]},
-    {id: "extra_lightning",  imageUrl: "assets/stickers/extra_lightning.png", categories: ["effect"]},
-    {id: "extra_heart",     imageUrl: "assets/stickers/extra_heart.png",     categories: ["effect"]},
-    {id: "extra_fire",      imageUrl: "assets/stickers/extra_fire.png",      categories: ["effect"]},
 ];
 
 /**

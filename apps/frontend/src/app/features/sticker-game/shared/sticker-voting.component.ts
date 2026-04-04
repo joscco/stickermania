@@ -31,9 +31,10 @@ import type {StickerCollage, StickerDefinition, SessionPlayer} from "@birthday/s
                     >
                         <!-- Mini canvas preview -->
                         <div class="relative w-full aspect-square bg-stone-50 rounded-lg overflow-hidden">
-                            @for (placement of submission.placements; track placement.stickerId) {
+                            @for (placement of submission.placements; track placement.instanceId) {
                                 <img
                                     [src]="getStickerUrl(placement.stickerId)"
+                                    [alt]="placement.stickerId"
                                     class="absolute w-8 h-8 object-contain"
                                     [style.left.px]="placement.x * 0.4"
                                     [style.top.px]="placement.y * 0.4"

@@ -4,7 +4,8 @@ import type {StickerHand, StickerDefinition} from "@birthday/shared";
 
 /**
  * Displays the player's sticker hand.
- * Tapping a sticker adds it to the canvas; long-press opens the swap modal.
+ * Tapping a sticker adds a new instance to the canvas (duplicates allowed).
+ * Long-press (context menu) opens the swap modal when swaps are available.
  */
 @Component({
     selector: "app-sticker-hand",
@@ -14,21 +15,26 @@ import type {StickerHand, StickerDefinition} from "@birthday/shared";
         <div class="px-3 py-2">
             <div class="flex items-center justify-between mb-1.5">
                 <span class="text-xs font-semibold text-stone-500">Deine Sticker</span>
-                @if (hand.swapsRemaining > 0) {
-                    <span class="text-xs text-amber-600 font-medium">{{ hand.swapsRemaining }} Tausch übrig</span>
-                }
+                <div class="flex items-center gap-2">
+                    @if (hand.swapsRemaining > 0) {
+                        <span class="text-xs text-amber-600 font-medium">{{ hand.swapsRemaining }} Tausch übrig</span>
+                    }
+                    @if (!canAddMore) {
+                        <span class="text-xs text-red-400 font-medium">Max erreicht</span>
+                    }
+                </div>
             </div>
             <div class="flex gap-2 overflow-x-auto pb-1">
-                @for (stickerId of hand.stickerIds; track stickerId; let i = $index) {
+                @for (stickerId of hand.stickerIds; track $index) {
                     <button
                         class="shrink-0 w-14 h-14 rounded-lg border-2 flex items-center justify-center bg-white transition-all active:scale-90"
-                        [class.border-purple-300]="!usedStickerIds.has(stickerId)"
-                        [class.border-stone-200]="usedStickerIds.has(stickerId)"
-                        [class.opacity-40]="usedStickerIds.has(stickerId)"
-                        [class.hover:border-purple-400]="!usedStickerIds.has(stickerId)"
-                        [class.hover:shadow-md]="!usedStickerIds.has(stickerId)"
+                        [class.border-purple-300]="canAddMore"
+                        [class.border-stone-200]="!canAddMore"
+                        [class.opacity-50]="!canAddMore"
+                        [class.hover:border-purple-400]="canAddMore"
+                        [class.hover:shadow-md]="canAddMore"
                         (click)="onStickerTap(stickerId)"
-                        (contextmenu)="onStickerLongPress($event, i, stickerId)"
+                        (contextmenu)="onStickerLongPress($event, $index, stickerId)"
                     >
                         <img
                             [src]="getStickerUrl(stickerId)"
@@ -45,8 +51,9 @@ import type {StickerHand, StickerDefinition} from "@birthday/shared";
 export class StickerHandComponent {
     @Input() hand!: StickerHand;
     @Input() stickerCatalog: StickerDefinition[] = [];
-    @Input() usedStickerIds: Set<string> = new Set();
-    @Output() stickerDragged = new EventEmitter<string>();
+    /** Whether the canvas can accept more stickers (total limit not reached). */
+    @Input() canAddMore: boolean = true;
+    @Output() stickerTapped = new EventEmitter<string>();
     @Output() swapRequested = new EventEmitter<{index: number; stickerId: string}>();
 
     private catalogMap = new Map<string, StickerDefinition>();
@@ -62,8 +69,8 @@ export class StickerHandComponent {
     }
 
     public onStickerTap(stickerId: string): void {
-        if (this.usedStickerIds.has(stickerId)) return;
-        this.stickerDragged.emit(stickerId);
+        if (!this.canAddMore) return;
+        this.stickerTapped.emit(stickerId);
     }
 
     public onStickerLongPress(event: Event, index: number, stickerId: string): void {
@@ -73,4 +80,3 @@ export class StickerHandComponent {
         }
     }
 }
-

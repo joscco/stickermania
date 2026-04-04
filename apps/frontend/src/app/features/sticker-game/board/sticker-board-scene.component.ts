@@ -30,9 +30,10 @@ import type {StickerCollage, StickerCollageModeState, StickerCollageVoteResult} 
                                  [class.ring-2]="i === 0"
                                  [class.ring-amber-400]="i === 0">
                                 <div class="relative aspect-square bg-stone-50 overflow-hidden">
-                                    @for (placement of getCollage(result.collageId)?.placements ?? []; track placement.stickerId) {
+                                    @for (placement of getCollage(result.collageId)?.placements ?? []; track placement.instanceId) {
                                         <img
                                             [src]="getStickerUrl(placement.stickerId)"
+                                            [alt]="placement.stickerId"
                                             class="absolute w-10 h-10 object-contain"
                                             [style.left.px]="placement.x * 0.5"
                                             [style.top.px]="placement.y * 0.5"

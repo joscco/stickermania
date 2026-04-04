@@ -388,6 +388,8 @@ export interface StickerDefinition {
 }
 
 export interface StickerPlacement {
+  /** Unique instance id (allows same sticker multiple times) */
+  instanceId: string;
   stickerId: string;
   x: number;
   y: number;
