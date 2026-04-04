@@ -4,7 +4,7 @@ import type {SessionService} from "../session/sessionService.js";
 import type {BackendConfig} from "../config.js";
 import {disconnectSessionClients} from "./wsPlugin.js";
 
-const VALID_MODES: GameModeId[] = ["draw-search", "garden-coop", "team-graffiti"];
+const VALID_MODES: GameModeId[] = ["draw-search", "garden-coop", "team-graffiti", "sticker-collage"];
 
 function buildBaseUrl(protocol: string, hostname: string, port: number): string {
     return `${protocol}://${hostname.includes(":") ? hostname : `${hostname}:${port}`}`;

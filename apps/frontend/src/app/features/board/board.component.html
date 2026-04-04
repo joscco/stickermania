@@ -39,6 +39,11 @@
               ▶ Starten
             </button>
           }
+          @if (activeMode() === 'sticker-collage') {
+            <button class="rounded-lg border border-black/10 bg-white px-3 py-2 text-stone-600 hover:bg-stone-50 inline-flex items-center gap-2" (click)="startMode()">
+              ▶ Runde starten
+            </button>
+          }
           <button class="rounded-lg border border-black/10 bg-white px-3 py-2 text-stone-600 hover:bg-stone-50 inline-flex items-center gap-2" (click)="toggleSetupDrawer()">
             <img src="assets/icons/settings.svg" class="h-4 w-4" alt="" /> Einstellungen
           </button>
@@ -64,6 +69,9 @@
             }
             @case ('team-graffiti') {
               <app-graffiti-scene class="block h-full w-full"></app-graffiti-scene>
+            }
+            @case ('sticker-collage') {
+              <app-sticker-board-scene class="block h-full w-full"></app-sticker-board-scene>
             }
           }
         }

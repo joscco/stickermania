@@ -5,6 +5,7 @@ import type {SessionRepository} from "../infra/sessionRepository.js";
 import {DrawSearchEngine} from "../game-modes/draw-search/drawSearchEngine.js";
 import {GardenCoopEngine} from "../game-modes/garden-coop/gardenCoopEngine.js";
 import {TeamGraffitiEngine} from "../game-modes/team-graffiti/teamGraffitiEngine.js";
+import {StickerCollageEngine} from "../game-modes/sticker-collage/stickerCollageEngine.js";
 import {GameModeRegistry} from "../game-modes/gameModeRegistry.js";
 import {SessionStateFactory} from "./sessionStateFactory.js";
 import type {ConnectedClientSession, RuntimeEntry} from "./sessionRuntimeTypes.js";
@@ -41,6 +42,7 @@ export class SessionService {
         this.gameModeRegistry.register(new DrawSearchEngine(config, assetRepository));
         this.gameModeRegistry.register(new GardenCoopEngine());
         this.gameModeRegistry.register(new TeamGraffitiEngine(config));
+        this.gameModeRegistry.register(new StickerCollageEngine(config));
 
         this.sessionStateFactory = new SessionStateFactory(config, this.gameModeRegistry);
 

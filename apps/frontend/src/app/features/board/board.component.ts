@@ -6,6 +6,7 @@ import type {
   GameModeId,
   GardenServerEvent,
   ServerToClientMessage,
+  StickerCollageServerEvent,
   TeamGraffitiServerEvent,
 } from "@birthday/shared";
 import * as QRCode from "qrcode";
@@ -20,13 +21,14 @@ import { BoardSetupDrawerComponent } from "./setup/board-setup-drawer.component"
 import {MuseumSceneComponent} from '../museum-game/board/museum-scene.component';
 import {GardenSceneComponent} from '../garden-game/board/garden-scene.component';
 import {GraffitiSceneComponent} from '../graffiti-game/board/graffiti-scene.component';
+import {StickerBoardSceneComponent} from '../sticker-game/board/sticker-board-scene.component';
 
 const EVENT_TOAST_DURATION_MS = 3000;
 
 @Component({
   selector: "app-board",
   standalone: true,
-  imports: [CommonModule, EventToastsComponent, BoardLobbyComponent, MuseumSceneComponent, GardenSceneComponent, GraffitiSceneComponent, BoardSidebarComponent, BoardSetupDrawerComponent],
+  imports: [CommonModule, EventToastsComponent, BoardLobbyComponent, MuseumSceneComponent, GardenSceneComponent, GraffitiSceneComponent, StickerBoardSceneComponent, BoardSidebarComponent, BoardSetupDrawerComponent],
   templateUrl: "./board.component.html",
 })
 export class BoardComponent implements OnInit, OnDestroy {
@@ -54,6 +56,7 @@ export class BoardComponent implements OnInit, OnDestroy {
       case "draw-search": return "Künstler & Kenner";
       case "garden-coop": return "Gemeinschaftsgarten";
       case "team-graffiti": return "Tag-Spiel";
+      case "sticker-collage": return "Sticker-Collage";
       default: return this.activeMode();
     }
   });
@@ -64,6 +67,10 @@ export class BoardComponent implements OnInit, OnDestroy {
 
     if (this.activeMode() === "team-graffiti") {
       return this.worldStore.teamGraffitiModeState()?.roundEndsAt ?? 0;
+    }
+
+    if (this.activeMode() === "sticker-collage") {
+      return this.worldStore.stickerCollageModeState()?.roundEndsAt ?? 0;
     }
 
     return 0;
@@ -236,6 +243,8 @@ export class BoardComponent implements OnInit, OnDestroy {
           this.handleGardenEvent(message.event);
         } else if (message.mode === "team-graffiti") {
           this.handleTeamGraffitiEvent(message.event);
+        } else if (message.mode === "sticker-collage") {
+          this.handleStickerCollageEvent(message.event);
         }
         break;
       }
@@ -325,6 +334,36 @@ export class BoardComponent implements OnInit, OnDestroy {
         // Silent — no toast needed for action accrual
         break;
       }
+    }
+  }
+
+  private handleStickerCollageEvent(event: StickerCollageServerEvent): void {
+    switch (event.type) {
+      case "round-started": {
+        this.pushEvent(`🎨 Neue Runde: ${event.prompt}`, Date.now());
+        break;
+      }
+      case "collage-submitted": {
+        const playerName = this.worldStore.players()[event.playerId]?.name || "Jemand";
+        this.pushEvent(`🖼️ ${playerName} hat eine Collage eingereicht!`, Date.now());
+        break;
+      }
+      case "round-ended": {
+        const top = event.results[0];
+        if (top) {
+          const winnerName = this.worldStore.players()[top.playerId]?.name || "Jemand";
+          this.pushEvent(`🏆 ${winnerName} gewinnt die Runde mit ${top.voteCount} Stimmen!`, Date.now());
+        }
+        break;
+      }
+      case "score-update": {
+        const playerName = this.worldStore.players()[event.playerId]?.name || "Jemand";
+        this.pushEvent(`⭐ ${playerName} hat jetzt ${event.newScore} Punkte.`, Date.now());
+        break;
+      }
+      case "hand-dealt":
+      case "vote-registered":
+        break;
     }
   }
 

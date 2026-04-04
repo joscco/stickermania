@@ -8,6 +8,7 @@ import { WorldStore } from "../../core/world.store";
 import {DrawSearchEventHandler} from '../museum-game/services/draw-search-event-handler';
 import {GardenEventHandler} from '../garden-game/services/garden-event-handler';
 import {GraffitiEventHandler} from '../graffiti-game/services/graffiti-event-handler';
+import {StickerEventHandler} from '../sticker-game/services/sticker-event-handler';
 
 @Injectable()
 export class PlayerMessageHandler {
@@ -19,6 +20,7 @@ export class PlayerMessageHandler {
   private readonly drawSearchHandler = inject(DrawSearchEventHandler);
   private readonly gardenHandler = inject(GardenEventHandler);
   private readonly graffitiHandler = inject(GraffitiEventHandler);
+  private readonly stickerHandler = inject(StickerEventHandler);
 
   /** Expose the playerId so the component can read it after 'welcome'. */
   public readonly playerId = signal<string | null>(null);
@@ -47,6 +49,8 @@ export class PlayerMessageHandler {
           this.gardenHandler.handleEvent(message.event);
         } else if (message.mode === "team-graffiti") {
           this.graffitiHandler.handleEvent(message.event);
+        } else if (message.mode === "sticker-collage") {
+          this.stickerHandler.handleEvent(message.event);
         }
         break;
       case "error":
@@ -141,6 +145,9 @@ export class PlayerMessageHandler {
         return;
       case "team-graffiti":
         this.graffitiHandler.syncMode();
+        return;
+      case "sticker-collage":
+        this.stickerHandler.syncMode();
         return;
     }
   }

@@ -31,6 +31,17 @@ export interface TeamGraffitiGameConfig {
   initialActions: number;
 }
 
+export interface StickerCollageGameConfig {
+  roundDurationSec: number;
+  handSize: number;
+  maxStickersOnCanvas: number;
+  swapCount: number;
+  votesPerPlayer: number;
+  pointsByPlacement: number[];
+  requiredCategories: string[];
+  prompts: string[];
+}
+
 export interface GameConfig {
   // General
   drawingsPath: string;
@@ -41,6 +52,7 @@ export interface GameConfig {
   drawSearch: DrawSearchGameConfig;
   gardenCoop: GardenCoopGameConfig;
   teamGraffiti: TeamGraffitiGameConfig;
+  stickerCollage: StickerCollageGameConfig;
 }
 
 function parseSubObject(raw: Record<string, unknown>, key: string): Record<string, unknown> {
@@ -55,6 +67,7 @@ export function parseGameConfig(raw: unknown): GameConfig {
   const ds = parseSubObject(r, "drawSearch");
   const gc = parseSubObject(r, "gardenCoop");
   const tg = parseSubObject(r, "teamGraffiti");
+  const sc = parseSubObject(r, "stickerCollage");
 
   return {
     drawingsPath: typeof r["drawingsPath"] === "string" ? r["drawingsPath"] : "./drawings",
@@ -80,12 +93,22 @@ export function parseGameConfig(raw: unknown): GameConfig {
       maxActions: typeof tg["maxActions"] === "number" ? tg["maxActions"] : 5,
       initialActions: typeof tg["initialActions"] === "number" ? tg["initialActions"] : 2,
     },
+    stickerCollage: {
+      roundDurationSec: typeof sc["roundDurationSec"] === "number" ? sc["roundDurationSec"] : 600,
+      handSize: typeof sc["handSize"] === "number" ? sc["handSize"] : 8,
+      maxStickersOnCanvas: typeof sc["maxStickersOnCanvas"] === "number" ? sc["maxStickersOnCanvas"] : 12,
+      swapCount: typeof sc["swapCount"] === "number" ? sc["swapCount"] : 2,
+      votesPerPlayer: typeof sc["votesPerPlayer"] === "number" ? sc["votesPerPlayer"] : 3,
+      pointsByPlacement: Array.isArray(sc["pointsByPlacement"]) ? sc["pointsByPlacement"] as number[] : [100, 60, 30],
+      requiredCategories: Array.isArray(sc["requiredCategories"]) ? sc["requiredCategories"] as string[] : ["eyes"],
+      prompts: Array.isArray(sc["prompts"]) ? sc["prompts"] as string[] : ["Bau ein Monster", "Mach eine Geburtstagstorte"],
+    },
   };
 }
 
 export type ClientKind = "player" | "board";
 
-export type GameModeId = "draw-search" | "garden-coop" | "team-graffiti";
+export type GameModeId = "draw-search" | "garden-coop" | "team-graffiti" | "sticker-collage";
 
 export interface SessionPlayer {
   id: string;
@@ -356,27 +379,111 @@ export type TeamGraffitiServerEvent =
     | { type: "team-score-updated"; teamId: TeamGraffitiTeamId; newScore: number }
     | { type: "actions-updated"; playerId: string; actions: number };
 
+// ─── Sticker-Collage types ─────────────────────────────────────
+
+export interface StickerDefinition {
+  id: string;
+  imageUrl: string;
+  categories: string[];
+}
+
+export interface StickerPlacement {
+  stickerId: string;
+  x: number;
+  y: number;
+  rotation: number;
+  scale: number;
+  zIndex: number;
+}
+
+export interface StickerHand {
+  stickerIds: string[];
+  swapsRemaining: number;
+}
+
+export interface StickerCollage {
+  id: string;
+  playerId: string;
+  roundIndex: number;
+  placements: StickerPlacement[];
+  submittedAt: number;
+}
+
+export type StickerCollageRoundPhase = "BUILDING" | "REVIEWING";
+
+export interface StickerCollageVoteResult {
+  collageId: string;
+  playerId: string;
+  voteCount: number;
+  pointsAwarded: number;
+}
+
+export interface StickerCollageModeState {
+  mode: "sticker-collage";
+  currentRoundIndex: number;
+  phase: StickerCollageRoundPhase;
+  currentPrompt: string;
+  roundStartedAt: number | null;
+  roundEndsAt: number | null;
+  /** All available stickers for the game */
+  stickerCatalog: StickerDefinition[];
+  /** Player hands for the current round */
+  playerHands: Record<string, StickerHand>;
+  /** Submissions grouped by round index */
+  submissions: Record<number, StickerCollage[]>;
+  /** Votes for previous round: voterId → collageId[] */
+  currentVotes: Record<string, string[]>;
+  /** Results from the last completed voting */
+  lastVoteResults: StickerCollageVoteResult[];
+  /** Prompt history (index → prompt) */
+  promptHistory: Record<number, string>;
+  /** Config echoed into state for client use */
+  handSize: number;
+  maxStickersOnCanvas: number;
+  swapCount: number;
+  votesPerPlayer: number;
+}
+
+export type StickerCollageClientAction =
+    | { type: "request-hand" }
+    | { type: "swap-sticker"; handIndex: number; newStickerId: string }
+    | { type: "submit-collage"; placements: StickerPlacement[] }
+    | { type: "cast-vote"; collageId: string }
+    | { type: "start-round" };
+
+export type StickerCollageServerEvent =
+    | { type: "hand-dealt"; targetPlayerId: string; hand: StickerHand }
+    | { type: "round-started"; roundIndex: number; prompt: string; endsAt: number }
+    | { type: "collage-submitted"; playerId: string; collageId: string }
+    | { type: "vote-registered"; voterId: string; collageId: string }
+    | { type: "round-ended"; roundIndex: number; results: StickerCollageVoteResult[] }
+    | { type: "score-update"; playerId: string; newScore: number };
+
 export type GameClientActionMap = {
   "draw-search": DrawSearchClientAction;
   "garden-coop": GardenClientAction;
   "team-graffiti": TeamGraffitiClientAction;
+  "sticker-collage": StickerCollageClientAction;
 };
 
 export type GameServerEventMap = {
   "draw-search": DrawSearchServerEvent;
   "garden-coop": GardenServerEvent;
   "team-graffiti": TeamGraffitiServerEvent;
+  "sticker-collage": StickerCollageServerEvent;
 };
 
 export type GameClientEnvelope =
     | { type: "game-action"; mode: "draw-search"; action: DrawSearchClientAction }
     | { type: "game-action"; mode: "garden-coop"; action: GardenClientAction }
-    | { type: "game-action"; mode: "team-graffiti"; action: TeamGraffitiClientAction };
+    | { type: "game-action"; mode: "team-graffiti"; action: TeamGraffitiClientAction }
+    | { type: "game-action"; mode: "sticker-collage"; action: StickerCollageClientAction };
 
 export type GameServerEnvelope =
     | { type: "game-event"; mode: "draw-search"; event: DrawSearchServerEvent; targetPlayerId?: string }
     | { type: "game-event"; mode: "garden-coop"; event: GardenServerEvent; targetPlayerId?: string }
-    | { type: "game-event"; mode: "team-graffiti"; event: TeamGraffitiServerEvent; targetPlayerId?: string };
+    | { type: "game-event"; mode: "team-graffiti"; event: TeamGraffitiServerEvent; targetPlayerId?: string }
+    | { type: "game-event"; mode: "sticker-collage"; event: StickerCollageServerEvent; targetPlayerId?: string };
 
 export type ClientToServerMessage = SessionClientToServerMessage | GameClientEnvelope;
 export type ServerToClientMessage = SessionServerToClientMessage | GameServerEnvelope;

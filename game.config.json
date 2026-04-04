@@ -121,6 +121,37 @@
     "actionAccrualIntervalSec": 1,
     "maxActions": 5,
     "initialActions": 5
+  },
+  "stickerCollage": {
+    "roundDurationSec": 600,
+    "handSize": 8,
+    "maxStickersOnCanvas": 12,
+    "swapCount": 2,
+    "votesPerPlayer": 3,
+    "pointsByPlacement": [100, 60, 30],
+    "requiredCategories": ["eyes"],
+    "prompts": [
+      "Bau ein Monster",
+      "Mach eine Geburtstagstorte",
+      "Erschaffe ein neues Haustier",
+      "Baue einen Roboter",
+      "Kreiere ein Fantasie-Tier",
+      "Gestalte ein Traumhaus",
+      "Erfinde ein neues Fahrzeug",
+      "Baue einen Alien",
+      "Mach ein Gesicht das Angst macht",
+      "Kreiere den perfekten Burger",
+      "Erschaffe einen Superhelden",
+      "Baue eine verrückte Maschine",
+      "Gestalte einen Unterwasser-Freund",
+      "Erfinde eine neue Frucht",
+      "Baue ein Raumschiff",
+      "Kreiere ein Fabelwesen",
+      "Mach das süßeste Tier der Welt",
+      "Gestalte einen freundlichen Geist",
+      "Baue einen Schneemann mal anders",
+      "Erschaffe den König des Dschungels"
+    ]
   }
 }
 

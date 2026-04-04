@@ -6,6 +6,7 @@ import type {
   GameModeId,
   SessionPlayer,
   SessionState,
+  StickerCollageModeState,
   TeamGraffitiModeState,
 } from "@birthday/shared";
 
@@ -67,6 +68,16 @@ export class WorldStore {
     }
 
     return sessionState.modeState as TeamGraffitiModeState;
+  });
+
+  public readonly stickerCollageModeState = computed<StickerCollageModeState | null>(() => {
+    const sessionState = this.sessionState();
+
+    if (!sessionState || sessionState.activeMode !== "sticker-collage") {
+      return null;
+    }
+
+    return sessionState.modeState as StickerCollageModeState;
   });
 
   public readonly drawings = computed<Record<string, DrawSearchDrawing>>(() => this.drawSearchModeState()?.drawings ?? {});
