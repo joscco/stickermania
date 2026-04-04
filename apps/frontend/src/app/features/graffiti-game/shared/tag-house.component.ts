@@ -28,16 +28,14 @@ export class TagHouseComponent implements OnDestroy {
 
   private squishTimeline: gsap.core.Timeline | null = null;
   private previousOwner: string | null | undefined = undefined;
-  private shownOwner = signal<string | null | undefined>(undefined);
-  private isFirstRender = true;
 
   public readonly imageUrl = computed(() => {
     const house = this.house();
     const houseType = house.houseType.toLowerCase();
-    if (!this.shownOwner()) {
+    if (!house.owner) {
       return `assets/png/tag_house_${houseType}_default.png`;
     }
-    const teamName = this.shownOwner() === "DIAMOND" ? "diamond" : "heart";
+    const teamName = house.owner === "DIAMOND" ? "diamond" : "heart";
     return `assets/png/tag_house_${houseType}_${teamName}_${house.tagVariant}.png`;
   });
 
@@ -50,13 +48,6 @@ export class TagHouseComponent implements OnDestroy {
       this.previousOwner = currentHouse.owner;
     });
 
-    effect(() => {
-      if (this.isFirstRender) {
-        // On first render, show the current owner without animation.
-        this.shownOwner.set(this.house().owner);
-        this.isFirstRender = false;
-      }
-    });
   }
 
   public ngOnDestroy(): void {
@@ -70,19 +61,16 @@ export class TagHouseComponent implements OnDestroy {
 
     this.squishTimeline = gsap.timeline()
       .to(el, {
-        scaleX: 0.5,
-        scaleY: 1.1,
+        scaleX: 0.6,
+        scaleY: 1.15,
         duration: 0.1,
-        ease: "back.out(2)",
-      })
-      .call(() => {
-        this.shownOwner.set(this.house().owner);
+        ease: "power2.in",
       })
       .to(el, {
         scaleX: 1,
         scaleY: 1,
         duration: 0.1,
-        ease: "back.out(2)",
+        ease: "back.out(3)",
       });
   }
 

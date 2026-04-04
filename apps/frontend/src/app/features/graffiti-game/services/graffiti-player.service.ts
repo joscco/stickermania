@@ -1,8 +1,8 @@
-import { computed, inject, Injectable } from "@angular/core";
-import type { TeamGraffitiModeState, TeamGraffitiTeamId, TeamGraffitiHouse } from "@birthday/shared";
-import { WebSocketService } from "../../../core/websocket.service";
-import { WorldStore } from "../../../core/world.store";
-import { GameSessionStore } from "../../../core/challenge.store";
+import {computed, inject, Injectable} from "@angular/core";
+import type {TeamGraffitiHouse, TeamGraffitiModeState, TeamGraffitiTeamId} from "@birthday/shared";
+import {WebSocketService} from "../../../core/websocket.service";
+import {WorldStore} from "../../../core/world.store";
+import {GameSessionStore} from "../../../core/challenge.store";
 
 @Injectable()
 export class GraffitiPlayerService {
@@ -95,17 +95,5 @@ export class GraffitiPlayerService {
       // Opponent house — tag over it (claims it for your team)
       this.tagHouse(house.id);
     }
-  }
-
-  /**
-   * Returns the PNG path for a house based on its type and owner.
-   */
-  public houseImageUrl(house: TeamGraffitiHouse): string {
-    const typeKey = house.houseType.toLowerCase();
-    if (!house.owner) {
-      return `assets/png/tag_house_${typeKey}_default.png`;
-    }
-    const teamKey = house.owner === "DIAMOND" ? "diamond" : "heart";
-    return `assets/png/tag_house_${typeKey}_${teamKey}_${house.tagVariant}.png`;
   }
 }

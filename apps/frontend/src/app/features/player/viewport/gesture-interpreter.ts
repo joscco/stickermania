@@ -181,7 +181,17 @@ export class GestureInterpreter {
       y: this.panVelocityPxPerMs.y * (1 - alpha) + vy * alpha
     };
 
-    this.didApplyPanDuringGesture = true;
+    // Only mark as "panned" when the finger has moved beyond the tap threshold.
+    // This prevents tiny sub-pixel movements from killing valid taps.
+    if (this.tapStartClient) {
+      const totalDx = event.clientX - this.tapStartClient.x;
+      const totalDy = event.clientY - this.tapStartClient.y;
+      if (Math.hypot(totalDx, totalDy) > this.tapMoveThresholdPx) {
+        this.didApplyPanDuringGesture = true;
+      }
+    } else {
+      this.didApplyPanDuringGesture = true;
+    }
 
     if (this.callbacks.onPan) {
       this.callbacks.onPan({ x: dx, y: dy }, this.panVelocityPxPerMs);
