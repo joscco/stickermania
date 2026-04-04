@@ -32,68 +32,10 @@ interface ActivePointer {
     selector: "app-sticker-canvas",
     standalone: true,
     imports: [CommonModule],
-    template: `
-        <div
-            #canvasArea
-            class="w-full h-full relative overflow-hidden bg-white rounded-lg"
-            [class.border-2]="interactive"
-            [class.border-dashed]="interactive"
-            [class.border-purple-200]="interactive"
-        >
-            <!-- Grid background -->
-            <div class="absolute inset-0 opacity-5 pointer-events-none"
-                 style="background-image: radial-gradient(circle, #6b7280 1px, transparent 1px); background-size: 20px 20px;">
-            </div>
-
-            @for (placement of placements; track placement.instanceId) {
-                <div
-                    class="absolute select-none"
-                    [class.ring-2]="interactive && selectedInstanceId() === placement.instanceId"
-                    [class.ring-purple-400]="interactive && selectedInstanceId() === placement.instanceId"
-                    [class.rounded-lg]="interactive && selectedInstanceId() === placement.instanceId"
-                    [style.left.px]="placement.x"
-                    [style.top.px]="placement.y"
-                    [style.transform]="'rotate(' + placement.rotation + 'deg) scale(' + placement.scale + ')'"
-                    [style.z-index]="placement.zIndex"
-                    [style.transform-origin]="'center center'"
-                    [attr.data-instance-id]="placement.instanceId"
-                >
-                    <img
-                        [src]="getStickerUrl(placement.stickerId)"
-                        [alt]="placement.stickerId"
-                        class="w-16 h-16 object-contain pointer-events-none"
-                        draggable="false"
-                    />
-                </div>
-            }
-
-            @if (interactive && placements.length === 0) {
-                <div class="absolute inset-0 flex items-center justify-center text-stone-300 pointer-events-none">
-                    <div class="text-center">
-                        <div class="text-4xl mb-2">👆</div>
-                        <p class="text-sm">Tippe auf einen Sticker unten,<br/>um ihn aufs Canvas zu legen</p>
-                    </div>
-                </div>
-            }
-
-            @if (interactive && selectedInstanceId()) {
-                <div class="absolute bottom-2 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-white/90 backdrop-blur rounded-full px-2 py-1 shadow-lg border border-black/10"
-                     (touchstart)="$event.stopPropagation()"
-                     (touchmove)="$event.stopPropagation()"
-                     (touchend)="$event.stopPropagation()">
-                    <button class="w-9 h-9 flex items-center justify-center text-base rounded-full active:bg-stone-100" (click)="rotateSelected(-15)" title="Links drehen">↺</button>
-                    <button class="w-9 h-9 flex items-center justify-center text-base rounded-full active:bg-stone-100" (click)="rotateSelected(15)" title="Rechts drehen">↻</button>
-                    <button class="w-9 h-9 flex items-center justify-center text-base rounded-full active:bg-stone-100" (click)="scaleSelected(0.85)" title="Kleiner">➖</button>
-                    <button class="w-9 h-9 flex items-center justify-center text-base rounded-full active:bg-stone-100" (click)="scaleSelected(1.18)" title="Größer">➕</button>
-                    <button class="w-9 h-9 flex items-center justify-center text-base rounded-full active:bg-stone-100" (click)="duplicateSelected()" title="Duplizieren">📋</button>
-                    <button class="w-9 h-9 flex items-center justify-center text-base rounded-full active:bg-stone-100 text-red-400" (click)="removeSelected()" title="Entfernen">🗑️</button>
-                </div>
-            }
-        </div>
-    `,
+    templateUrl: "./sticker-canvas.component.html",
 })
 export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
-    @Input() placements: StickerPlacement[] = [];
+    @Input() stickers: StickerPlacement[] = [];
     @Input() stickerCatalog: StickerDefinition[] = [];
     @Input() maxStickers: number = 12;
     @Input() interactive: boolean = false;
@@ -167,7 +109,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
     private installTouchHandlers(): void {
         const el = this.canvasArea?.nativeElement;
-        if (!el) return;
+        if (!el) {
+          return;
+        }
 
         // Disable any native touch behavior
         el.style.touchAction = "none";
@@ -256,16 +200,16 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
                 this.selectedInstanceId.set(instanceId);
                 this.dragInstanceId = instanceId;
 
-                const placement = this.placements.find(p => p.instanceId === instanceId);
+                const placement = this.stickers.find(p => p.instanceId === instanceId);
                 if (placement) {
                     const rect = this.canvasArea.nativeElement.getBoundingClientRect();
                     this.dragOffsetX = clientX - rect.left - placement.x;
                     this.dragOffsetY = clientY - rect.top - placement.y;
 
                     // Bring to front
-                    const maxZ = Math.max(0, ...this.placements.map(p => p.zIndex));
+                    const maxZ = Math.max(0, ...this.stickers.map(p => p.zIndex));
                     if (placement.zIndex < maxZ) {
-                        this.emitUpdate(this.placements.map(p =>
+                        this.emitUpdate(this.stickers.map(p =>
                             p.instanceId === instanceId ? {...p, zIndex: maxZ + 1} : p
                         ));
                     }
@@ -304,7 +248,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
             const rect = this.canvasArea.nativeElement.getBoundingClientRect();
             const newX = clientX - rect.left - this.dragOffsetX;
             const newY = clientY - rect.top - this.dragOffsetY;
-            this.emitUpdate(this.placements.map(p =>
+            this.emitUpdate(this.stickers.map(p =>
                 p.instanceId === this.dragInstanceId ? {...p, x: newX, y: newY} : p
             ));
         }
@@ -329,7 +273,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         if (this.pointers.length === 1 && this.dragInstanceId) {
             // Went from 2 → 1 finger: re-anchor drag from the remaining finger
             const remaining = this.pointers[0];
-            const placement = this.placements.find(p => p.instanceId === this.dragInstanceId);
+            const placement = this.stickers.find(p => p.instanceId === this.dragInstanceId);
             if (placement) {
                 const rect = this.canvasArea.nativeElement.getBoundingClientRect();
                 this.dragOffsetX = remaining.x - rect.left - placement.x;
@@ -348,7 +292,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         this.pinchBaseCenterX = (a.x + b.x) / 2;
         this.pinchBaseCenterY = (a.y + b.y) / 2;
 
-        const placement = this.placements.find(p => p.instanceId === this.dragInstanceId);
+        const placement = this.stickers.find(p => p.instanceId === this.dragInstanceId);
         if (placement) {
             this.pinchBaseScale = placement.scale;
             this.pinchBaseRotation = placement.rotation;
@@ -378,7 +322,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         const newX = this.pinchBaseX + centerDx;
         const newY = this.pinchBaseY + centerDy;
 
-        this.emitUpdate(this.placements.map(p =>
+        this.emitUpdate(this.stickers.map(p =>
             p.instanceId === this.dragInstanceId
                 ? {...p, scale: newScale, rotation: newRotation, x: newX, y: newY}
                 : p
@@ -393,7 +337,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         const localY = clientY - rect.top;
 
         // Test from highest z-index to lowest
-        const sorted = [...this.placements].sort((a, b) => b.zIndex - a.zIndex);
+        const sorted = [...this.stickers].sort((a, b) => b.zIndex - a.zIndex);
         const hitSize = 64; // matches w-16 h-16
 
         for (const p of sorted) {
@@ -414,8 +358,10 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
     public rotateSelected(degrees: number): void {
         const id = this.selectedInstanceId();
-        if (!id) return;
-        this.emitUpdate(this.placements.map(p =>
+        if (!id) {
+          return;
+        }
+        this.emitUpdate(this.stickers.map(p =>
             p.instanceId === id ? {...p, rotation: p.rotation + degrees} : p
         ));
     }
@@ -423,7 +369,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     public scaleSelected(factor: number): void {
         const id = this.selectedInstanceId();
         if (!id) return;
-        this.emitUpdate(this.placements.map(p =>
+        this.emitUpdate(this.stickers.map(p =>
             p.instanceId === id ? {...p, scale: Math.max(0.2, Math.min(4, p.scale * factor))} : p
         ));
     }
@@ -431,10 +377,10 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     public duplicateSelected(): void {
         const id = this.selectedInstanceId();
         if (!id) return;
-        if (this.placements.length >= this.maxStickers) return;
-        const source = this.placements.find(p => p.instanceId === id);
+        if (this.stickers.length >= this.maxStickers) return;
+        const source = this.stickers.find(p => p.instanceId === id);
         if (!source) return;
-        const maxZ = Math.max(0, ...this.placements.map(p => p.zIndex));
+        const maxZ = Math.max(0, ...this.stickers.map(p => p.zIndex));
         const newPlacement: StickerPlacement = {
             instanceId: this.generateInstanceId(),
             stickerId: source.stickerId,
@@ -444,13 +390,15 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
             scale: source.scale,
             zIndex: maxZ + 1,
         };
-        this.emitUpdate([...this.placements, newPlacement]);
+        this.emitUpdate([...this.stickers, newPlacement]);
         this.selectedInstanceId.set(newPlacement.instanceId);
     }
 
     public removeSelected(): void {
         const id = this.selectedInstanceId();
-        if (!id) return;
+        if (!id) {
+          return;
+        }
         this.selectedInstanceId.set(null);
         this.stickerRemoved.emit(id);
     }

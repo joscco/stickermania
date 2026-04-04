@@ -4,9 +4,6 @@ import {GameSessionStore} from "../../../core/challenge.store";
 import {WorldStore} from "../../../core/world.store";
 import {WebSocketService} from "../../../core/websocket.service";
 
-/**
- * Service for sticker-collage player interactions.
- */
 @Injectable()
 export class StickerPlayerService {
     private readonly sessionStore = inject(GameSessionStore);

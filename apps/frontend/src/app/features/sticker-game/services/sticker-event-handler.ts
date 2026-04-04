@@ -3,9 +3,6 @@ import type {StickerCollageServerEvent} from "@birthday/shared";
 import {GameSessionStore} from "../../../core/challenge.store";
 import {WorldStore} from "../../../core/world.store";
 
-/**
- * Handles sticker-collage game events and reconnect state-sync.
- */
 @Injectable()
 export class StickerEventHandler {
     private readonly sessionStore = inject(GameSessionStore);
