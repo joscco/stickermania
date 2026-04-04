@@ -4,7 +4,7 @@ import type {SessionService} from "../session/sessionService.js";
 import type {BackendConfig} from "../config.js";
 import {disconnectSessionClients} from "./wsPlugin.js";
 
-const VALID_MODES: GameModeId[] = ["draw-search", "garden-coop", "team-graffiti", "sticker-collage"];
+const VALID_MODES: GameModeId[] = ["sticker-collage"];
 
 function buildBaseUrl(protocol: string, hostname: string, port: number): string {
     return `${protocol}://${hostname.includes(":") ? hostname : `${hostname}:${port}`}`;
@@ -33,7 +33,7 @@ export async function registerApiRoutes(
     app.post<{Body: {mode?: string}}>("/api/sessions", async (request, reply) => {
         const mode = (typeof request.body?.mode === "string" && VALID_MODES.includes(request.body.mode as GameModeId))
             ? request.body.mode as GameModeId
-            : "draw-search";
+            : "sticker-collage";
 
         const baseUrl = buildBaseUrl(request.protocol, request.hostname, backendConfig.gameConfig.port);
         const createdSession = await sessionService.createSession({baseUrl, initialMode: mode});

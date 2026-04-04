@@ -1,21 +1,12 @@
-import { Injectable, computed, signal } from "@angular/core";
-import type {
-  DrawSearchDrawing,
-  DrawSearchModeState,
-  GardenModeState,
-  GameModeId,
-  SessionPlayer,
-  SessionState,
-  StickerCollageModeState,
-  TeamGraffitiModeState,
-} from "@birthday/shared";
+import {computed, Injectable, signal} from "@angular/core";
+import type {GameModeId, SessionPlayer, SessionState, StickerCollageModeState} from "@birthday/shared";
 
 @Injectable({ providedIn: "root" })
 export class WorldStore {
 
   public readonly sessionState = signal<SessionState | null>(null);
   public readonly lastError = signal<string | null>(null);
-  public readonly activeMode = computed<GameModeId>(() => this.sessionState()?.activeMode ?? "draw-search");
+  public readonly activeMode = computed<GameModeId>(() => this.sessionState()?.activeMode ?? "sticker-collage");
   public readonly players = computed<Record<string, SessionPlayer>>(() => this.sessionState()?.players ?? {});
 
   /** All players including those without a name, sorted by score desc then join time asc */
@@ -40,36 +31,6 @@ export class WorldStore {
       });
   });
 
-  public readonly drawSearchModeState = computed<DrawSearchModeState | null>(() => {
-    const sessionState = this.sessionState();
-
-    if (!sessionState || sessionState.activeMode !== "draw-search") {
-      return null;
-    }
-
-    return sessionState.modeState as DrawSearchModeState;
-  });
-
-  public readonly gardenModeState = computed<GardenModeState | null>(() => {
-    const sessionState = this.sessionState();
-
-    if (!sessionState || sessionState.activeMode !== "garden-coop") {
-      return null;
-    }
-
-    return sessionState.modeState as GardenModeState;
-  });
-
-  public readonly teamGraffitiModeState = computed<TeamGraffitiModeState | null>(() => {
-    const sessionState = this.sessionState();
-
-    if (!sessionState || sessionState.activeMode !== "team-graffiti") {
-      return null;
-    }
-
-    return sessionState.modeState as TeamGraffitiModeState;
-  });
-
   public readonly stickerCollageModeState = computed<StickerCollageModeState | null>(() => {
     const sessionState = this.sessionState();
 
@@ -79,12 +40,6 @@ export class WorldStore {
 
     return sessionState.modeState as StickerCollageModeState;
   });
-
-  public readonly drawings = computed<Record<string, DrawSearchDrawing>>(() => this.drawSearchModeState()?.drawings ?? {});
-  public readonly drawingsList = computed<DrawSearchDrawing[]>(() => {
-    return Object.values(this.drawings()).sort((leftDrawing, rightDrawing) => leftDrawing.placedAt - rightDrawing.placedAt);
-  });
-
 
   public setSessionState(state: SessionState): void {
     this.sessionState.set(state);

@@ -27,7 +27,7 @@ export class ApiService {
     return firstValueFrom(this.httpClient.get<SessionSummary[]>("/api/sessions"));
   }
 
-  public createSession(mode: GameModeId = "draw-search"): Promise<SessionInfo> {
+  public createSession(mode: GameModeId = "sticker-collage"): Promise<SessionInfo> {
     return firstValueFrom(this.httpClient.post<SessionInfo>("/api/sessions", { mode }));
   }
 

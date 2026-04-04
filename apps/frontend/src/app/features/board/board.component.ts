@@ -1,26 +1,16 @@
-import { CommonModule } from "@angular/common";
-import { Component, OnDestroy, OnInit, computed, signal } from "@angular/core";
-import { ActivatedRoute, Router } from "@angular/router";
-import type {
-  DrawSearchServerEvent,
-  GameModeId,
-  GardenServerEvent,
-  ServerToClientMessage,
-  StickerCollageServerEvent,
-  TeamGraffitiServerEvent,
-} from "@birthday/shared";
+import {CommonModule} from "@angular/common";
+import {Component, computed, OnDestroy, OnInit, signal} from "@angular/core";
+import {ActivatedRoute, Router} from "@angular/router";
+import type {GameModeId, ServerToClientMessage, StickerCollageServerEvent,} from "@birthday/shared";
 import * as QRCode from "qrcode";
-import { Subscription } from "rxjs";
-import { ApiService } from "../../core/api.service";
-import { WebSocketService } from "../../core/websocket.service";
-import { WorldStore } from "../../core/world.store";
-import { EventToastsComponent, type UiEvent } from "./events/event-toasts.component";
-import { BoardLobbyComponent } from "./lobby/board-lobby.component";
-import { BoardSidebarComponent } from "./sidebar/board-sidebar.component";
-import { BoardSetupDrawerComponent } from "./setup/board-setup-drawer.component";
-import {MuseumSceneComponent} from '../museum-game/board/museum-scene.component';
-import {GardenSceneComponent} from '../garden-game/board/garden-scene.component';
-import {GraffitiSceneComponent} from '../graffiti-game/board/graffiti-scene.component';
+import {Subscription} from "rxjs";
+import {ApiService} from "../../core/api.service";
+import {WebSocketService} from "../../core/websocket.service";
+import {WorldStore} from "../../core/world.store";
+import {EventToastsComponent, type UiEvent} from "./events/event-toasts.component";
+import {BoardLobbyComponent} from "./lobby/board-lobby.component";
+import {BoardSidebarComponent} from "./sidebar/board-sidebar.component";
+import {BoardSetupDrawerComponent} from "./setup/board-setup-drawer.component";
 import {StickerBoardSceneComponent} from '../sticker-game/board/sticker-board-scene.component';
 
 const EVENT_TOAST_DURATION_MS = 3000;
@@ -28,7 +18,7 @@ const EVENT_TOAST_DURATION_MS = 3000;
 @Component({
   selector: "app-board",
   standalone: true,
-  imports: [CommonModule, EventToastsComponent, BoardLobbyComponent, MuseumSceneComponent, GardenSceneComponent, GraffitiSceneComponent, StickerBoardSceneComponent, BoardSidebarComponent, BoardSetupDrawerComponent],
+  imports: [CommonModule, EventToastsComponent, BoardLobbyComponent, StickerBoardSceneComponent, BoardSidebarComponent, BoardSetupDrawerComponent],
   templateUrl: "./board.component.html",
 })
 export class BoardComponent implements OnInit, OnDestroy {
@@ -53,21 +43,13 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly activeMode = computed<GameModeId>(() => this.worldStore.activeMode());
   public readonly modeLabel = computed(() => {
     switch (this.activeMode()) {
-      case "draw-search": return "Künstler & Kenner";
-      case "garden-coop": return "Gemeinschaftsgarten";
-      case "team-graffiti": return "Tag-Spiel";
       case "sticker-collage": return "Sticker-Collage";
       default: return this.activeMode();
     }
   });
   public readonly leaderboard = computed(() => this.worldStore.leaderboard());
   public readonly allPlayers = computed(() => this.worldStore.allPlayers());
-  public readonly drawingCount = computed(() => this.worldStore.drawingsList().length);
   public readonly roundEndsAt = computed(() => {
-
-    if (this.activeMode() === "team-graffiti") {
-      return this.worldStore.teamGraffitiModeState()?.roundEndsAt ?? 0;
-    }
 
     if (this.activeMode() === "sticker-collage") {
       return this.worldStore.stickerCollageModeState()?.roundEndsAt ?? 0;
@@ -237,13 +219,7 @@ export class BoardComponent implements OnInit, OnDestroy {
       }
 
       case "game-event": {
-        if (message.mode === "draw-search") {
-          this.handleDrawSearchEvent(message.event);
-        } else if (message.mode === "garden-coop") {
-          this.handleGardenEvent(message.event);
-        } else if (message.mode === "team-graffiti") {
-          this.handleTeamGraffitiEvent(message.event);
-        } else if (message.mode === "sticker-collage") {
+        if (message.mode === "sticker-collage") {
           this.handleStickerCollageEvent(message.event);
         }
         break;
@@ -251,87 +227,6 @@ export class BoardComponent implements OnInit, OnDestroy {
 
       case "error": {
         this.pushEvent(message.message, Date.now());
-        break;
-      }
-    }
-  }
-
-  private handleDrawSearchEvent(event: DrawSearchServerEvent): void {
-    switch (event.type) {
-      case "score-update": {
-        const playerName = this.worldStore.players()[event.playerId]?.name || "Jemand";
-        this.pushEvent(`⭐ ${playerName} ${event.reason} (${event.newScore} Punkte)`, Date.now());
-        break;
-      }
-
-      case "round-phase": {
-        this.pushEvent(event.phase === "ACTIVE" ? "Spiel gestartet! 🎨" : "Lobby.", Date.now());
-        break;
-      }
-
-      case "guess-result": {
-        // Show on the board when someone guesses
-        break;
-      }
-
-      case "assign-task": {
-        break;
-      }
-    }
-  }
-
-  private handleGardenEvent(event: GardenServerEvent): void {
-    switch (event.type) {
-      case "garden-level-up": {
-        this.pushEvent(`🌱 Garten-Level ${event.newLevel} erreicht.`, Date.now());
-        break;
-      }
-
-      case "garden-plot-ready": {
-        this.pushEvent(`🧺 Plot ${event.plotId} ist erntereif.`, Date.now());
-        break;
-      }
-
-      case "garden-plot-needs-water": {
-        this.pushEvent(`💧 Plot ${event.plotId} braucht Wasser.`, Date.now());
-        break;
-      }
-
-      case "garden-pest-spawned": {
-        this.pushEvent(`🐛 Ungeziefer auf ${event.plotId}.`, Date.now());
-        break;
-      }
-
-      case "garden-order-fulfilled": {
-        this.pushEvent(`📦 Auftrag erfüllt (+${event.experienceGained} XP).`, Date.now());
-        break;
-      }
-    }
-  }
-
-  private handleTeamGraffitiEvent(event: TeamGraffitiServerEvent): void {
-    switch (event.type) {
-      case "team-assigned": {
-        const playerName = this.worldStore.players()[event.playerId]?.name || "Jemand";
-        this.pushEvent(`${playerName} ist jetzt Team ${event.teamId === 'DIAMOND' ? '♦️ Karo' : '♥️ Herz'}.`, Date.now());
-        break;
-      }
-
-      case "house-tagged": {
-        const teamLabel = event.teamId === 'DIAMOND' ? '♦️ Karo' : '♥️ Herz';
-        this.pushEvent(`🏷️ ${teamLabel} hat ein Haus getaggt!`, Date.now());
-        break;
-      }
-
-
-      case "team-score-updated": {
-        const teamLabel = event.teamId === 'DIAMOND' ? '♦️ Karo' : '♥️ Herz';
-        this.pushEvent(`🏁 ${teamLabel} hat jetzt ${event.newScore} Punkte.`, Date.now());
-        break;
-      }
-
-      case "actions-updated": {
-        // Silent — no toast needed for action accrual
         break;
       }
     }

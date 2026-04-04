@@ -9,16 +9,9 @@ export class PlayerTimerService {
 
   public readonly timeLeft = signal<string>("");
 
-  public readonly roundEndsAt = computed(() => {
-    if (this.worldStore.activeMode() === "team-graffiti") {
-      return this.worldStore.teamGraffitiModeState()?.roundEndsAt ?? 0;
-    }
-    return 0;
-  });
-
   constructor() {
     effect(() => {
-      const endsAt = this.roundEndsAt();
+      const endsAt = 0
       this.clearTimer();
 
       if (endsAt <= 0) {

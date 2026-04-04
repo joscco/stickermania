@@ -5,9 +5,6 @@ import { GameSessionStore } from "../../core/challenge.store";
 import { ReconnectService } from "../../core/reconnect.service";
 import { WebSocketService } from "../../core/websocket.service";
 import { WorldStore } from "../../core/world.store";
-import {DrawSearchEventHandler} from '../museum-game/services/draw-search-event-handler';
-import {GardenEventHandler} from '../garden-game/services/garden-event-handler';
-import {GraffitiEventHandler} from '../graffiti-game/services/graffiti-event-handler';
 import {StickerEventHandler} from '../sticker-game/services/sticker-event-handler';
 
 @Injectable()
@@ -17,9 +14,6 @@ export class PlayerMessageHandler {
   private readonly wsService = inject(WebSocketService);
   private readonly reconnectService = inject(ReconnectService);
   private readonly router = inject(Router);
-  private readonly drawSearchHandler = inject(DrawSearchEventHandler);
-  private readonly gardenHandler = inject(GardenEventHandler);
-  private readonly graffitiHandler = inject(GraffitiEventHandler);
   private readonly stickerHandler = inject(StickerEventHandler);
 
   /** Expose the playerId so the component can read it after 'welcome'. */
@@ -43,13 +37,7 @@ export class PlayerMessageHandler {
         this.syncPlayerModeFromState();
         break;
       case "game-event":
-        if (message.mode === "draw-search") {
-          this.drawSearchHandler.handleEvent(message.event);
-        } else if (message.mode === "garden-coop") {
-          this.gardenHandler.handleEvent(message.event);
-        } else if (message.mode === "team-graffiti") {
-          this.graffitiHandler.handleEvent(message.event);
-        } else if (message.mode === "sticker-collage") {
+        if (message.mode === "sticker-collage") {
           this.stickerHandler.handleEvent(message.event);
         }
         break;
@@ -137,15 +125,6 @@ export class PlayerMessageHandler {
 
     // Delegate mode-specific sync to the respective handler
     switch (sessionState.activeMode) {
-      case "draw-search":
-        this.drawSearchHandler.syncMode(sessionState);
-        return;
-      case "garden-coop":
-        this.gardenHandler.syncMode();
-        return;
-      case "team-graffiti":
-        this.graffitiHandler.syncMode();
-        return;
       case "sticker-collage":
         this.stickerHandler.syncMode();
         return;

@@ -12,16 +12,13 @@ import { ApiService, type SessionSummary } from "../../../core/api.service";
 export class BoardLobbyComponent implements OnInit {
   public readonly sessionCreated = output<string>();
 
-  public readonly selectedMode = signal<GameModeId>("draw-search");
+  public readonly selectedMode = signal<GameModeId>("sticker-collage");
   public readonly isCreating = signal(false);
   public readonly errorText = signal<string | null>(null);
   public readonly sessions = signal<SessionSummary[]>([]);
   public readonly isLoadingSessions = signal(true);
 
   public readonly gameModes: { id: GameModeId; icon: string; label: string; description: string }[] = [
-    { id: "draw-search", icon: "assets/png/select_icon_draw_game.png", label: "Künstler & Kenner", description: "Bilder zeichnen und finden" },
-    { id: "team-graffiti", icon: "assets/png/select_icon_tag_game.png", label: "Team-Graffiti", description: "Zwei Teams taggen die Stadt" },
-    { id: "garden-coop", icon: "assets/png/select_icon_garden_game.png", label: "Gruppen-Garten", description: "Gemeinsam einen Garten pflegen" },
     { id: "sticker-collage", icon: "assets/png/select_icon_sticker_game.png", label: "Sticker-Collage", description: "Sticker-Collagen bauen & bewerten" },
   ];
 
@@ -66,9 +63,6 @@ export class BoardLobbyComponent implements OnInit {
 
   public modeEmoji(mode: string): string {
     switch (mode) {
-      case "draw-search": return "🖼️";
-      case "garden-coop": return "🌱";
-      case "team-graffiti": return "🎨";
       case "sticker-collage": return "🧩";
       default: return "🎮";
     }

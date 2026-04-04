@@ -14,7 +14,7 @@ export class SessionStateFactory {
         now?: number;
     }): SessionState {
         const now = args.now ?? Date.now();
-        const initialMode = args.initialMode ?? "draw-search";
+        const initialMode = args.initialMode ?? "sticker-collage";
 
         return {
             sessionId: args.sessionId,

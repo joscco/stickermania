@@ -2,9 +2,6 @@ import crypto from "node:crypto";
 import type {ClientKind, ClientToServerMessage, GameConfig, GameModeId, GameServerEnvelope, SessionInfo, SessionPlayer, SessionState,} from "@birthday/shared";
 import type {AssetRepository} from "../infra/assetRepository.js";
 import type {SessionRepository} from "../infra/sessionRepository.js";
-import {DrawSearchEngine} from "../game-modes/draw-search/drawSearchEngine.js";
-import {GardenCoopEngine} from "../game-modes/garden-coop/gardenCoopEngine.js";
-import {TeamGraffitiEngine} from "../game-modes/team-graffiti/teamGraffitiEngine.js";
 import {StickerCollageEngine} from "../game-modes/sticker-collage/stickerCollageEngine.js";
 import {GameModeRegistry} from "../game-modes/gameModeRegistry.js";
 import {SessionStateFactory} from "./sessionStateFactory.js";
@@ -39,9 +36,6 @@ export class SessionService {
         private readonly sessionRepository: SessionRepository,
         private readonly assetRepository: AssetRepository,
     ) {
-        this.gameModeRegistry.register(new DrawSearchEngine(config, assetRepository));
-        this.gameModeRegistry.register(new GardenCoopEngine());
-        this.gameModeRegistry.register(new TeamGraffitiEngine(config));
         this.gameModeRegistry.register(new StickerCollageEngine(config));
 
         this.sessionStateFactory = new SessionStateFactory(config, this.gameModeRegistry);
@@ -82,7 +76,7 @@ export class SessionService {
         const state = this.sessionStateFactory.createEmpty({
             sessionId,
             sessionCode,
-            initialMode: args.initialMode ?? "draw-search",
+            initialMode: args.initialMode ?? "sticker-collage",
         });
 
         await this.sessionRepository.create(state);

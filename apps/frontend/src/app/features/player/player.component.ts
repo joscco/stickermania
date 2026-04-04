@@ -8,17 +8,9 @@ import {WebSocketService} from "../../core/websocket.service";
 import {WorldStore} from "../../core/world.store";
 import {PlayerMessageHandler} from "./player-message-handler.service";
 import {PlayerTimerService} from "./player-timer.service";
-import {DrawSearchPlayerViewComponent} from "../museum-game/player/draw-search-player-view.component";
-import {GardenPlayerViewComponent} from "../garden-game/player/garden-player-view.component";
-import {GraffitiPlayerViewComponent} from "../graffiti-game/player/graffiti-player-view.component";
 import {StickerPlayerViewComponent} from "../sticker-game/player/sticker-player-view.component";
 import {LobbyAvatarComponent} from "./lobby/lobby-avatar.component";
 import {LobbyNameComponent} from "./lobby/lobby-name.component";
-import {GardenPlayerService} from '../garden-game/services/garden-player.service';
-import {GraffitiEventHandler} from '../graffiti-game/services/graffiti-event-handler';
-import {DrawSearchEventHandler} from '../museum-game/services/draw-search-event-handler';
-import {GraffitiPlayerService} from '../graffiti-game/services/graffiti-player.service';
-import {GardenEventHandler} from '../garden-game/services/garden-event-handler';
 import {StickerEventHandler} from '../sticker-game/services/sticker-event-handler';
 import {StickerPlayerService} from '../sticker-game/services/sticker-player.service';
 
@@ -29,20 +21,12 @@ import {StickerPlayerService} from '../sticker-game/services/sticker-player.serv
     CommonModule,
     LobbyNameComponent,
     LobbyAvatarComponent,
-    DrawSearchPlayerViewComponent,
-    GardenPlayerViewComponent,
-    GraffitiPlayerViewComponent,
     StickerPlayerViewComponent,
   ],
   providers: [
     PlayerMessageHandler,
     PlayerTimerService,
-    GardenPlayerService,
-    GraffitiPlayerService,
     StickerPlayerService,
-    DrawSearchEventHandler,
-    GardenEventHandler,
-    GraffitiEventHandler,
     StickerEventHandler,
   ],
   templateUrl: "./player.component.html",
@@ -117,9 +101,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   protected readonly activeTitle = computed(() => {
     switch (this.activeMode()) {
-      case "draw-search": return "Zeichnen & Finden";
-      case "garden-coop": return "Gemeinschaftsgarten";
-      case "team-graffiti": return "Tag-Spiel";
       case "sticker-collage": return "Sticker-Collage";
       default: return "";
     }

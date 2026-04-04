@@ -1,7 +1,7 @@
 import { Injectable, signal } from "@angular/core";
 import type { DrawSearchPlayerTask } from "@birthday/shared";
 
-export type PlayerUiMode = "LOBBY" | "DRAW" | "CAPTION" | "GUESS" | "IDLE" | "GARDEN" | "TEAM_GRAFFITI" | "STICKER_COLLAGE";
+export type PlayerUiMode = "LOBBY" | "DRAW" |  "IDLE" | "STICKER_COLLAGE";
 
 export interface GuessResultInfo {
   correct: boolean;
@@ -53,32 +53,6 @@ export class GameSessionStore {
   public clearTask(nextMode: PlayerUiMode = "IDLE"): void {
     this.currentTask.set(null);
     this.currentMode.set(nextMode);
-  }
-
-  public setGuessResult(result: GuessResultInfo): void {
-    this.guessResult.set(result);
-    this.pendingTask = null;
-
-    // Auto-dismiss after delay and apply pending task
-    if (this.guessResultTimer) clearTimeout(this.guessResultTimer);
-    this.guessResultTimer = setTimeout(() => {
-      this.dismissGuessResult();
-    }, 2500);
-  }
-
-  public dismissGuessResult(): void {
-    if (this.guessResultTimer) {
-      clearTimeout(this.guessResultTimer);
-      this.guessResultTimer = null;
-    }
-    this.guessResult.set(null);
-    // Apply the buffered task if any
-    if (this.pendingTask) {
-      const task = this.pendingTask;
-      this.pendingTask = null;
-      this.currentTask.set(task);
-      this.currentMode.set(task.mode);
-    }
   }
 
   public showFeedback(text: string, type: "success" | "error"): void {
