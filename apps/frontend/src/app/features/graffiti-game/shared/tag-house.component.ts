@@ -4,7 +4,7 @@ import {
   effect,
   ElementRef,
   input,
-  OnDestroy,
+  OnDestroy, signal,
   ViewChild,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
@@ -28,15 +28,17 @@ export class TagHouseComponent implements OnDestroy {
 
   private squishTimeline: gsap.core.Timeline | null = null;
   private previousOwner: string | null | undefined = undefined;
+  private shownOwner = signal<string | null | undefined>(undefined);
+  private isFirstRender = true;
 
   public readonly imageUrl = computed(() => {
-    const h = this.house();
-    const houseType = h.houseType.toLowerCase();
-    if (!h.owner) {
+    const house = this.house();
+    const houseType = house.houseType.toLowerCase();
+    if (!this.shownOwner()) {
       return `assets/png/tag_house_${houseType}_default.png`;
     }
-    const teamName = h.owner === "DIAMOND" ? "diamond" : "heart";
-    return `assets/png/tag_house_${houseType}_${teamName}_${h.tagVariant}.png`;
+    const teamName = this.shownOwner() === "DIAMOND" ? "diamond" : "heart";
+    return `assets/png/tag_house_${houseType}_${teamName}_${house.tagVariant}.png`;
   });
 
   constructor() {
@@ -46,6 +48,14 @@ export class TagHouseComponent implements OnDestroy {
         this.playSquish();
       }
       this.previousOwner = currentHouse.owner;
+    });
+
+    effect(() => {
+      if (this.isFirstRender) {
+        // On first render, show the current owner without animation.
+        this.shownOwner.set(this.house().owner);
+        this.isFirstRender = false;
+      }
     });
   }
 
@@ -60,16 +70,19 @@ export class TagHouseComponent implements OnDestroy {
 
     this.squishTimeline = gsap.timeline()
       .to(el, {
-        scaleX: 1.15,
-        scaleY: 0.9,
-        duration: 0.15,
+        scaleX: 0.5,
+        scaleY: 1.1,
+        duration: 0.1,
         ease: "back.out(2)",
+      })
+      .call(() => {
+        this.shownOwner.set(this.house().owner);
       })
       .to(el, {
         scaleX: 1,
         scaleY: 1,
-        duration: 0.25,
-        ease: "elastic.out(1, 0.4)",
+        duration: 0.1,
+        ease: "back.out(2)",
       });
   }
 

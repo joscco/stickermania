@@ -21,6 +21,12 @@ const NUMBER_ROWS: string[][] = [
   ["ABC", ",", "SPACE", ".", "!"],
 ];
 
+const CODE_ROWS: string[][] = [
+  ["Q", "W", "E", "R", "T", "Z", "U", "I", "O", "P"],
+  ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+  ["Y", "X", "C", "V", "B", "N", "M", "DEL"],
+];
+
 @Component({
   selector: "app-on-screen-keyboard",
   standalone: true,
@@ -29,6 +35,7 @@ const NUMBER_ROWS: string[][] = [
 export class OnScreenKeyboardComponent {
   public readonly maxLength = input<number>(80);
   public readonly value = input<string>("");
+  public readonly mode = input<"full" | "code">("full");
   public readonly valueChange = output<string>();
 
   public readonly numbersMode = signal(false);
@@ -78,6 +85,7 @@ export class OnScreenKeyboardComponent {
   }
 
   public currentRows(): string[][] {
+    if (this.mode() === "code") return CODE_ROWS;
     if (this.numbersMode()) return NUMBER_ROWS;
     return this.shifted() ? UPPER_ROWS : LOWER_ROWS;
   }

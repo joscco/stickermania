@@ -32,8 +32,9 @@
   </div>
 
   <app-on-screen-keyboard
+    mode="code"
     [value]="sessionCode()"
-    [maxLength]="5"
+    [maxLength]="4"
     (valueChange)="onKeyboardInput($event)"
   />
 </div>
