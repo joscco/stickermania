@@ -112,11 +112,11 @@ export class PlayerManager {
         return result?.state ?? null;
     }
 
-    public async saveAvatar(sessionId: string, playerId: string, avatarDataUrl: string): Promise<SessionState | null> {
+    public async saveAvatar(sessionId: string, playerId: string, avatarDataUrl: string): Promise<{state: SessionState; gameEvents: any[]} | null> {
         // Avatar saving involves an async I/O call, so we use the async callback form
-        const result = await this.mutator.mutate(sessionId, async (state) => {
+        const result = await this.mutator.mutate<{gameEvents: any[]}>(sessionId, async (state) => {
             const player = state.players[playerId];
-            if (!player) return {stateChanged: false, extra: undefined};
+            if (!player) return {stateChanged: false, extra: {gameEvents: []}};
 
             const savedAsset = await this.assetRepository.saveAvatar({
                 sessionId,
@@ -128,9 +128,40 @@ export class PlayerManager {
             player.avatarUrl = savedAsset.publicUrl;
             player.avatarAssetPath = savedAsset.assetPath;
 
-            return {stateChanged: true, extra: undefined};
+            // If the player now has name + avatar, notify the engine so it can
+            // assign an initial task (e.g. draw-search DRAW task).
+            let gameEvents: any[] = [];
+            if (player.name.trim() && player.avatarUrl) {
+                const runtime = this.runtimes.get(sessionId);
+                const connectedClient = runtime
+                    ? Array.from(runtime.sessionRuntime.connectedClients.values()).find(c => c.playerId === playerId)
+                    : undefined;
+
+                if (connectedClient) {
+                    const engine = this.gameModeRegistry.get(state.activeMode);
+                    const engineResult = engine.onPlayerJoined({
+                        sessionState: state as never,
+                        player,
+                        connectedClient,
+                        now: Date.now(),
+                    });
+                    gameEvents = engineResult.emittedEvents as any[];
+                }
+            }
+
+            return {
+                stateChanged: true,
+                gameEvents: gameEvents.length > 0
+                    ? {mode: state.activeMode, events: gameEvents}
+                    : undefined,
+                extra: {gameEvents},
+            };
         });
-        return result?.state ?? null;
+
+        if (!result) {
+            return null;
+        }
+        return {state: result.state, gameEvents: result.extra.gameEvents};
     }
 
     public removeConnection(sessionId: string, clientId: string): void {

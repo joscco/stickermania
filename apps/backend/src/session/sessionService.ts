@@ -148,7 +148,19 @@ export class SessionService {
     }
 
     public async saveAvatar(sessionId: string, playerId: string, avatarDataUrl: string): Promise<SessionState | null> {
-        return this.playerManager.saveAvatar(sessionId, playerId, avatarDataUrl);
+        const result = await this.playerManager.saveAvatar(sessionId, playerId, avatarDataUrl);
+        if (!result) return null;
+
+        // Publish game events (e.g. assign-task after profile complete)
+        if (result.gameEvents.length > 0) {
+            await this.eventPublisher.publishGameEvents(
+                sessionId,
+                result.state.activeMode,
+                result.gameEvents,
+            );
+        }
+
+        return result.state;
     }
 
     public removeConnectionSession(sessionId: string, clientId: string): void {

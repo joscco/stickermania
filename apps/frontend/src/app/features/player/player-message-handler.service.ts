@@ -93,7 +93,9 @@ export class PlayerMessageHandler {
 
     const player = sessionState.players[playerId];
     if (!player) {
-      window.location.reload();
+      // Player not yet in state — can happen during initial join.
+      // The isReady computed will keep showing a loading spinner;
+      // the next session-state push should include us.
       return;
     }
 
@@ -131,7 +133,7 @@ export class PlayerMessageHandler {
     this.sessionStore.showFeedback(message, "error");
 
     // Session-fatal errors → stop reconnect, clear data, redirect to /join
-    const fatal = /session|nicht gefunden|abgelaufen|gelöscht|closed|deleted/i.test(message);
+    const fatal = /nicht gefunden|abgelaufen|gelöscht|wurde gelöscht|closed|deleted/i.test(message);
     if (fatal) {
       this.wsService.disconnect();      // stop reconnect loop → status stays "disconnected"
       this.reconnectService.clear();
