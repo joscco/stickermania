@@ -40,18 +40,4 @@
       </div>
     </div>
   }
-
-  @if (interactive && selectedInstanceId()) {
-    <div class="absolute bottom-2 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-white/90 backdrop-blur rounded-full px-2 py-1 shadow-lg border border-black/10"
-         (touchstart)="$event.stopPropagation()"
-         (touchmove)="$event.stopPropagation()"
-         (touchend)="$event.stopPropagation()">
-      <button class="w-9 h-9 flex items-center justify-center text-base rounded-full active:bg-stone-100" (click)="rotateSelected(-15)" title="Links drehen">↺</button>
-      <button class="w-9 h-9 flex items-center justify-center text-base rounded-full active:bg-stone-100" (click)="rotateSelected(15)" title="Rechts drehen">↻</button>
-      <button class="w-9 h-9 flex items-center justify-center text-base rounded-full active:bg-stone-100" (click)="scaleSelected(0.85)" title="Kleiner">➖</button>
-      <button class="w-9 h-9 flex items-center justify-center text-base rounded-full active:bg-stone-100" (click)="scaleSelected(1.18)" title="Größer">➕</button>
-      <button class="w-9 h-9 flex items-center justify-center text-base rounded-full active:bg-stone-100" (click)="duplicateSelected()" title="Duplizieren">📋</button>
-      <button class="w-9 h-9 flex items-center justify-center text-base rounded-full active:bg-stone-100 text-red-400" (click)="removeSelected()" title="Entfernen">🗑️</button>
-    </div>
-  }
 </div>
