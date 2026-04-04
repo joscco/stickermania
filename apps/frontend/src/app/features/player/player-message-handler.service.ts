@@ -99,15 +99,33 @@ export class PlayerMessageHandler {
       return;
     }
 
-    // Restore name
+    // ── Name ──────────────────────────────────────────────────
     if (player.name.trim().length > 0) {
+      // Server already knows our name → use it
       this.sessionStore.playerName.set(player.name);
       this.reconnectService.update({ playerName: player.name });
     } else if (this.sessionStore.playerName().trim().length > 0) {
+      // Server doesn't know our name yet → send device-level name
       this.wsService.send({ type: "set-name", name: this.sessionStore.playerName() });
     }
 
-    // If name or avatar missing → lobby
+    // ── Avatar ────────────────────────────────────────────────
+    if (!player.avatarUrl) {
+      // Server has no avatar yet → try re-uploading from device cache
+      const cachedAvatar = this.reconnectService.loadDeviceAvatar();
+      if (cachedAvatar) {
+        this.sessionStore.avatarAutoUploading.set(true);
+        this.wsService.send({ type: "submit-avatar", avatarDataUrl: cachedAvatar });
+        // The server will broadcast an updated session-state once it processes the
+        // avatar. syncPlayerModeFromState will run again on that update.
+        return;
+      }
+    } else {
+      // Avatar confirmed on server → clear uploading flag
+      this.sessionStore.avatarAutoUploading.set(false);
+    }
+
+    // If name or avatar still missing → lobby
     if (this.sessionStore.playerName().trim().length === 0 || !player.avatarUrl) {
       this.sessionStore.currentMode.set("LOBBY");
       return;

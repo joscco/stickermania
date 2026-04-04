@@ -2,6 +2,8 @@ import { Injectable } from "@angular/core";
 import type { ActivatedRoute } from "@angular/router";
 
 const RECONNECT_STORAGE_KEY = "birthday_reconnect";
+const DEVICE_NAME_KEY = "birthday_device_player_name";
+const DEVICE_AVATAR_KEY = "birthday_device_avatar_data_url";
 
 export interface ReconnectPayload {
   playerId: string;
@@ -58,6 +60,24 @@ export class ReconnectService {
       return routeCode.trim().toUpperCase();
     }
     return localStorage.getItem("birthday_last_session_code")?.trim().toUpperCase() ?? null;
+  }
+
+  // ── Device-level identity (survives session changes) ──────
+
+  public saveDeviceName(name: string): void {
+    localStorage.setItem(DEVICE_NAME_KEY, name);
+  }
+
+  public loadDeviceName(): string | null {
+    return localStorage.getItem(DEVICE_NAME_KEY) || null;
+  }
+
+  public saveDeviceAvatar(dataUrl: string): void {
+    localStorage.setItem(DEVICE_AVATAR_KEY, dataUrl);
+  }
+
+  public loadDeviceAvatar(): string | null {
+    return localStorage.getItem(DEVICE_AVATAR_KEY) || null;
   }
 }
 

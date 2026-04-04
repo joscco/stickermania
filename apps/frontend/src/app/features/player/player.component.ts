@@ -67,9 +67,10 @@ export class PlayerComponent implements OnInit, OnDestroy {
     public readonly timer: PlayerTimerService,
     private readonly messageHandler: PlayerMessageHandler,
   ) {
-    const reconnect = this.reconnectService.load();
-    if (reconnect?.playerName) {
-      this.sessionStore.playerName.set(reconnect.playerName);
+    // Pre-fill name from device-level storage (survives session changes)
+    const deviceName = this.reconnectService.loadDeviceName();
+    if (deviceName) {
+      this.sessionStore.playerName.set(deviceName);
     }
   }
 
@@ -111,7 +112,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   public async ngOnInit(): Promise<void> {
     const reconnect = this.reconnectService.load();
-    const playerId = reconnect?.playerId ?? localStorage.getItem("birthday_player_id") ?? null;
     const sessionCode = this.reconnectService.resolveSessionCode(this.route);
 
     if (!sessionCode) {
@@ -121,6 +121,17 @@ export class PlayerComponent implements OnInit, OnDestroy {
       }
       await this.router.navigate(["/join"]);
       return;
+    }
+
+    // Determine whether this is a reconnect to the SAME session or a session change.
+    const isSameSession = reconnect?.sessionCode?.toUpperCase() === sessionCode.toUpperCase();
+    const playerId = isSameSession
+        ? (reconnect?.playerId ?? localStorage.getItem("birthday_player_id") ?? null)
+        : null;
+
+    // If switching sessions, clear stale reconnect data
+    if (!isSameSession) {
+      this.reconnectService.clear();
     }
 
     // ⚠️ Safari iOS: WebSocket-Verbindung MUSS vor dem ersten `await` gestartet werden.
@@ -154,6 +165,8 @@ export class PlayerComponent implements OnInit, OnDestroy {
       });
 
     } catch {
+      this.wsService.disconnect();
+      this.reconnectService.clear();
       this.sessionStore.showFeedback("Session wurde nicht gefunden oder ist abgelaufen.", "error");
       setTimeout(() => this.router.navigate(["/join"]), 2500);
     }
@@ -177,11 +190,13 @@ export class PlayerComponent implements OnInit, OnDestroy {
     this.wsService.send({ type: "set-name", name });
     this.sessionStore.playerName.set(name);
     this.reconnectService.update({ playerName: name });
+    this.reconnectService.saveDeviceName(name);
     this.isEditingName.set(false);
   }
 
   public onAvatarSubmitted(dataUrl: string): void {
     this.wsService.send({ type: "submit-avatar", avatarDataUrl: dataUrl });
+    this.reconnectService.saveDeviceAvatar(dataUrl);
     this.sessionStore.clearTask();
     this.isEditingAvatar.set(false);
   }

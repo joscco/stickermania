@@ -1,5 +1,14 @@
 <div class="h-dvh overflow-hidden bg-white text-stone-900 overscroll-none flex flex-col no-select"
      style="padding-bottom: env(safe-area-inset-bottom);">
+  <!-- Feedback toast -->
+  @if (sessionStore.feedback(); as fb) {
+    <div class="fixed top-14 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl shadow-lg text-sm font-medium text-white animate-bounce-in"
+         [class.bg-emerald-500]="fb.type === 'success'"
+         [class.bg-red-500]="fb.type === 'error'">
+      {{ fb.text }}
+    </div>
+  }
+
   <!-- Header -->
   <div class="sticky top-0 z-30 bg-white backdrop-blur border-b border-black/6">
     <div class="mx-auto w-full max-w-lg px-3 py-2">
@@ -73,6 +82,12 @@
         <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
           <div class="w-8 h-8 border-3 border-stone-200 border-t-stone-500 rounded-full animate-spin"></div>
           <span class="text-xs">Lade Spielstand...</span>
+        </div>
+      } @else if (!hasAvatar() && sessionStore.avatarAutoUploading()) {
+        <!-- Avatar is being auto-uploaded from device cache -->
+        <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
+          <div class="w-8 h-8 border-3 border-stone-200 border-t-stone-500 rounded-full animate-spin"></div>
+          <span class="text-xs">Avatar wird übertragen...</span>
         </div>
       } @else if (!hasAvatar()) {
         <app-lobby-avatar

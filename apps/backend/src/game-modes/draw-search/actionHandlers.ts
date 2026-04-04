@@ -106,11 +106,32 @@ export function handleSubmitCaption(
         return {stateChanged: false, emittedEvents: []};
     }
 
+    const trimmed = text.trim();
+
+    // ── Duplicate check: compare against real title and existing captions ──
+    const existingCaptions = Object.values(ms.captions)
+        .filter((c) => c.drawingId === drawingId);
+
+    const normalize = (s: string) => s.trim().toLowerCase();
+    const isDuplicate = existingCaptions.some(
+        (c) => normalize(c.text) === normalize(trimmed),
+    );
+
+    if (isDuplicate) {
+        const events: DrawSearchServerEvent[] = [{
+            type: "caption-rejected",
+            targetPlayerId: context.playerId,
+            drawingId,
+            reason: "Dieser Titel existiert bereits – denk dir einen anderen aus!",
+        }];
+        return {stateChanged: false, emittedEvents: events};
+    }
+
     const captionId = crypto.randomUUID();
     ms.captions[captionId] = {
         id: captionId,
         drawingId,
-        text: text.trim(),
+        text: trimmed,
         authorId: context.playerId,
         isReal: false,
     };

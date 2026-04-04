@@ -1,4 +1,4 @@
-import {Component, input, output, signal} from "@angular/core";
+import {Component, HostListener, input, output, signal} from "@angular/core";
 
 const UPPER_ROWS: string[][] = [
   ["Q", "W", "E", "R", "T", "Z", "U", "I", "O", "P", "Ü"],
@@ -52,7 +52,37 @@ export class OnScreenKeyboardComponent {
   private deleteInterval: ReturnType<typeof setInterval> | null = null;
   private deleteTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  // ...existing code...
+  // ── Physical keyboard support ─────────────────────────────
+
+  @HostListener("document:keydown", ["$event"])
+  public onPhysicalKey(event: KeyboardEvent): void {
+    // Ignore if focus is on an actual input/textarea
+    const tag = (event.target as HTMLElement)?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+    const current = this.value();
+
+    if (event.key === "Backspace") {
+      event.preventDefault();
+      if (current.length > 0) {
+        this.valueChange.emit(current.slice(0, -1));
+      }
+      return;
+    }
+
+    if (event.key === "Enter") {
+      // Let Enter bubble up so forms can submit
+      return;
+    }
+
+    // Only accept single printable characters
+    if (event.key.length === 1 && !event.ctrlKey && !event.metaKey) {
+      event.preventDefault();
+      if (current.length < this.maxLength()) {
+        this.valueChange.emit(current + event.key);
+      }
+    }
+  }
 
   public startDelete(event: Event): void {
     event.preventDefault();

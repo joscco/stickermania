@@ -236,7 +236,8 @@ export type DrawSearchServerEvent =
     | { type: "assign-task"; targetPlayerId: string; task: DrawSearchPlayerTask }
     | { type: "score-update"; playerId: string; newScore: number; reason: string }
     | { type: "round-phase"; phase: DrawSearchGamePhase }
-    | { type: "guess-result"; targetPlayerId: string; drawingId: string; correct: boolean; message: string; correctTitle: string };
+    | { type: "guess-result"; targetPlayerId: string; drawingId: string; correct: boolean; message: string; correctTitle: string }
+    | { type: "caption-rejected"; targetPlayerId: string; drawingId: string; reason: string };
 
 export interface GardenInventoryItem {
   plantId: string;

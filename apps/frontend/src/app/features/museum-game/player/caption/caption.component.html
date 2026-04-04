@@ -13,6 +13,15 @@
       Schreib einen lustigen Fake-Titel!
     </div>
 
+    <!-- Rejection feedback -->
+    @if (feedback(); as fb) {
+      @if (fb.type === 'error') {
+        <div class="text-xs text-red-500 font-medium text-center max-w-xs">
+          {{ fb.text }}
+        </div>
+      }
+    }
+
     <!-- Text display (no native input → no mobile keyboard) -->
     <div class="w-full max-w-xs">
       <div
@@ -25,10 +34,10 @@
 
     <button
       class="rounded-xl bg-amber-500 text-white font-semibold px-6 py-3 text-sm disabled:opacity-40 transition-all active:scale-95"
-      [disabled]="captionText().trim().length === 0"
+      [disabled]="captionText().trim().length === 0 || isSubmitting()"
       (click)="submit()"
     >
-      Absenden
+      {{ isSubmitting() ? 'Wird geprüft…' : 'Absenden' }}
     </button>
   </div>
 

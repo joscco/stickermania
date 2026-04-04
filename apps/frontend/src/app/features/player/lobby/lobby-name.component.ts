@@ -1,5 +1,6 @@
-import { Component, output, signal } from "@angular/core";
+import { Component, inject, output, signal } from "@angular/core";
 import { OnScreenKeyboardComponent } from "../shared/keyboard/on-screen-keyboard.component";
+import { GameSessionStore } from "../../../core/challenge.store";
 
 @Component({
   selector: "app-lobby-name",
@@ -8,7 +9,8 @@ import { OnScreenKeyboardComponent } from "../shared/keyboard/on-screen-keyboard
   templateUrl: './lobby-name.component.html',
 })
 export class LobbyNameComponent {
-  public readonly nameInput = signal("");
+  private readonly sessionStore = inject(GameSessionStore);
+  public readonly nameInput = signal(this.sessionStore.playerName());
   public readonly nameSubmitted = output<string>();
 
   public submit(): void {

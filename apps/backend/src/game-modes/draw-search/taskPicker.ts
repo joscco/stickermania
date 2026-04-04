@@ -36,21 +36,27 @@ export function pickNextTask(
 
     // ── Candidate sets ──────────────────────────────────────────
 
+    const namedPlayerIds = Object.keys(sessionState.players)
+        .filter((pid) => sessionState.players[pid]?.name.trim());
+
     const needsCaptions = Object.values(ms.drawings).filter((d) => {
         if (d.artistId === playerId) return false;
         if (playerCaptionedDrawingIds.has(d.id)) return false;
         const fakeCaptionCount = Object.values(ms.captions)
             .filter((c) => c.drawingId === d.id && !c.isReal).length;
-        return fakeCaptionCount < ds.fakeCaptionsPerDrawing;
+        // Cap required captions by number of non-artist players (each can write at most 1)
+        const nonArtistCount = namedPlayerIds.filter((pid) => pid !== d.artistId).length;
+        const effectiveRequired = Math.min(ds.fakeCaptionsPerDrawing, nonArtistCount);
+        return fakeCaptionCount < effectiveRequired;
     });
 
     const guessable = Object.values(ms.drawings).filter((d) => {
         if (d.artistId === playerId) return false;
-        if (playerCaptionedDrawingIds.has(d.id)) return false;
         if (playerGuessedDrawingIds.has(d.id)) return false;
-        const fakeCaptionCount = Object.values(ms.captions)
-            .filter((c) => c.drawingId === d.id && !c.isReal).length;
-        return fakeCaptionCount >= 1;
+        // Require at least 1 fake caption from ANOTHER player (not our own)
+        const otherFakeCaptionCount = Object.values(ms.captions)
+            .filter((c) => c.drawingId === d.id && !c.isReal && c.authorId !== playerId).length;
+        return otherFakeCaptionCount >= 1;
     });
 
     // ── Task builders ───────────────────────────────────────────
@@ -64,8 +70,9 @@ export function pickNextTask(
     const tryGuess = (): DrawSearchPlayerTask | null => {
         if (guessable.length === 0) return null;
         const drawing = pickRandom(guessable);
+        // Include real caption + fake captions from OTHER players (exclude own fakes)
         const drawingCaptions = Object.values(ms.captions)
-            .filter((c) => c.drawingId === drawing.id);
+            .filter((c) => c.drawingId === drawing.id && (c.isReal || c.authorId !== playerId));
         const shuffled = shuffleArray(
             drawingCaptions.map((c) => ({id: c.id, text: c.text})),
         );

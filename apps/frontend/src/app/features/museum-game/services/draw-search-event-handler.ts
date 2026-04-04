@@ -22,11 +22,16 @@ export class DrawSearchEventHandler {
                 break;
 
             case "guess-result":
-                if (event.correct) {
-                    this.sessionStore.showFeedback(`${event.message}`, "success");
-                } else {
-                    this.sessionStore.showFeedback(`${event.message} Richtig war: „${event.correctTitle}"`, "error");
-                }
+                this.sessionStore.setGuessResult({
+                    correct: event.correct,
+                    message: event.message,
+                    correctTitle: event.correctTitle,
+                    drawingId: event.drawingId,
+                });
+                break;
+
+            case "caption-rejected":
+                this.sessionStore.showFeedback(event.reason, "error");
                 break;
 
             case "round-phase":
@@ -39,7 +44,6 @@ export class DrawSearchEventHandler {
      * Restore the correct player UI mode after a reconnect / session-state update.
      */
     public syncMode(sessionState: SessionState): void {
-
         // In ACTIVE phase the server re-sends the task via onPlayerJoined.
         // Don't overwrite an existing task or an active draw-search UI mode.
         if (this.sessionStore.currentTask()) {
