@@ -1,5 +1,5 @@
 import {inject, Injectable} from "@angular/core";
-import type {DrawSearchModeState, DrawSearchServerEvent, SessionState} from "@birthday/shared";
+import type {DrawSearchServerEvent, SessionState} from "@birthday/shared";
 import {GameSessionStore} from "../../../core/challenge.store";
 
 /**
@@ -30,9 +30,7 @@ export class DrawSearchEventHandler {
                 break;
 
             case "round-phase":
-                if (event.phase === "LOBBY") {
-                    this.sessionStore.clearTask("LOBBY");
-                }
+                // Phase is always ACTIVE now — nothing to do
                 break;
         }
     }
@@ -41,19 +39,17 @@ export class DrawSearchEventHandler {
      * Restore the correct player UI mode after a reconnect / session-state update.
      */
     public syncMode(sessionState: SessionState): void {
-        const modeState = sessionState.modeState as DrawSearchModeState;
-
-        if (modeState.phase === "LOBBY") {
-            this.sessionStore.clearTask("LOBBY");
-            return;
-        }
 
         // In ACTIVE phase the server re-sends the task via onPlayerJoined.
         // Don't overwrite an existing task or an active draw-search UI mode.
-        if (this.sessionStore.currentTask()) return;
+        if (this.sessionStore.currentTask()) {
+          return;
+        }
 
         const current = this.sessionStore.currentMode();
-        if (current === "DRAW" || current === "CAPTION" || current === "GUESS") return;
+        if (current === "DRAW" || current === "CAPTION" || current === "GUESS") {
+          return;
+        }
 
         this.sessionStore.clearTask("IDLE");
     }

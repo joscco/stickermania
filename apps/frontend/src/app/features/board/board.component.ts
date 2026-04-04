@@ -60,7 +60,6 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly leaderboard = computed(() => this.worldStore.leaderboard());
   public readonly allPlayers = computed(() => this.worldStore.allPlayers());
   public readonly drawingCount = computed(() => this.worldStore.drawingsList().length);
-  public readonly roundPhase = computed(() => this.worldStore.drawSearchPhase());
   public readonly roundEndsAt = computed(() => {
 
     if (this.activeMode() === "team-graffiti") {

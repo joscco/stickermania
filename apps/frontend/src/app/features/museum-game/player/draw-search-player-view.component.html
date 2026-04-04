@@ -1,37 +1,33 @@
-@if (gamePhase() === 'LOBBY') {
-  <app-lobby-ready [playerName]="sessionStore.playerName()" />
-} @else {
-  @switch (sessionStore.currentMode()) {
-    @case ('DRAW') {
-      @if (sessionStore.currentTask(); as task) {
-        <app-draw
-          [prompt]="$any(task).prompt"
-          [drawIndex]="0"
-          [drawTotal]="0"
-          [timeLeft]="''"
-          (drawingSubmitted)="onDrawingSubmitted($event)"
-        />
-      }
+@switch (sessionStore.currentMode()) {
+  @case ('DRAW') {
+    @if (sessionStore.currentTask(); as task) {
+      <app-draw
+        [prompt]="$any(task).prompt"
+        [drawIndex]="0"
+        [drawTotal]="0"
+        [timeLeft]="''"
+        (drawingSubmitted)="onDrawingSubmitted($event)"
+      />
     }
-    @case ('CAPTION') {
-      @if (sessionStore.currentTask(); as task) {
-        <app-caption
-          [task]="$any(task)"
-          (captionSubmitted)="onCaptionSubmitted($event)"
-        />
-      }
+  }
+  @case ('CAPTION') {
+    @if (sessionStore.currentTask(); as task) {
+      <app-caption
+        [task]="$any(task)"
+        (captionSubmitted)="onCaptionSubmitted($event)"
+      />
     }
-    @case ('GUESS') {
-      @if (sessionStore.currentTask(); as task) {
-        <app-guess
-          [task]="$any(task)"
-          (guessSubmitted)="onGuessSubmitted($event)"
-        />
-      }
+  }
+  @case ('GUESS') {
+    @if (sessionStore.currentTask(); as task) {
+      <app-guess
+        [task]="$any(task)"
+        (guessSubmitted)="onGuessSubmitted($event)"
+      />
     }
-    @default {
-      <app-idle-search-waiting [timeLeft]="''" />
-    }
+  }
+  @default {
+    <app-idle-search-waiting [timeLeft]="''" />
   }
 }
 

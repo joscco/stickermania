@@ -15,8 +15,8 @@
         @if (worldStore.sessionState()) {
           <div class="flex items-center gap-3">
             <span class="text-sm font-semibold text-stone-800">{{ modeLabel() }}</span>
-            @if (activeMode() === 'draw-search' && roundPhase() !== 'LOBBY') {
-              <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">{{ roundPhase() }} · {{ drawingCount() }} Bilder</span>
+            @if (activeMode() === 'draw-search') {
+              <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">{{ drawingCount() }} Bilder</span>
             }
           </div>
         } @else {
@@ -27,9 +27,11 @@
           @if (timeLeft()) {
             <span class="rounded-lg bg-stone-100 px-2 py-1 font-mono text-stone-600">{{ timeLeft() }}</span>
           }
-          <button class="rounded-lg border border-black/10 bg-white px-3 py-2 text-stone-600 hover:bg-stone-50 inline-flex items-center gap-2" (click)="startMode()">
-            ▶ Starten
-          </button>
+          @if (activeMode() === 'team-graffiti') {
+            <button class="rounded-lg border border-black/10 bg-white px-3 py-2 text-stone-600 hover:bg-stone-50 inline-flex items-center gap-2" (click)="startMode()">
+              ▶ Starten
+            </button>
+          }
           <button class="rounded-lg border border-black/10 bg-white px-3 py-2 text-stone-600 hover:bg-stone-50 inline-flex items-center gap-2" (click)="toggleSetupDrawer()">
             <img src="assets/icons/settings.svg" class="h-4 w-4" alt="" /> Einstellungen
           </button>

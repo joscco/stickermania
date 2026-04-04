@@ -1,14 +1,12 @@
-import {Component, computed, inject} from "@angular/core";
+import {Component, inject} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import {GameSessionStore} from "../../../core/challenge.store";
 import {WebSocketService} from "../../../core/websocket.service";
-import {WorldStore} from "../../../core/world.store";
 import {PlayerMessageHandler} from "../../player/player-message-handler.service";
 import {PlayerTimerService} from "../../player/player-timer.service";
 import {DrawComponent} from "./draw/draw.component";
 import {CaptionComponent} from "./caption/caption.component";
 import {GuessComponent} from "./guess/guess.component";
-import {LobbyReadyComponent} from "../../player/lobby/lobby-ready.component";
 import {IdleSearchWaitingComponent} from "../../player/idle/idle-search-waiting.component";
 
 @Component({
@@ -19,7 +17,6 @@ import {IdleSearchWaitingComponent} from "../../player/idle/idle-search-waiting.
     DrawComponent,
     CaptionComponent,
     GuessComponent,
-    LobbyReadyComponent,
     IdleSearchWaitingComponent,
   ],
   templateUrl: "./draw-search-player-view.component.html",
@@ -27,11 +24,9 @@ import {IdleSearchWaitingComponent} from "../../player/idle/idle-search-waiting.
 export class DrawSearchPlayerViewComponent {
   private readonly ws = inject(WebSocketService);
   public readonly sessionStore = inject(GameSessionStore);
-  private readonly worldStore = inject(WorldStore);
   public readonly messageHandler = inject(PlayerMessageHandler);
   public readonly timer = inject(PlayerTimerService);
 
-  public readonly gamePhase = computed(() => this.worldStore.drawSearchPhase());
 
   public onDrawingSubmitted(dataUrl: string): void {
     this.ws.send({

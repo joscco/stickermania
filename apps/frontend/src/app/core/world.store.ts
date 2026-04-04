@@ -1,7 +1,6 @@
 import { Injectable, computed, signal } from "@angular/core";
 import type {
   DrawSearchDrawing,
-  DrawSearchGamePhase,
   DrawSearchModeState,
   GardenModeState,
   GameModeId,
@@ -70,7 +69,6 @@ export class WorldStore {
     return sessionState.modeState as TeamGraffitiModeState;
   });
 
-  public readonly drawSearchPhase = computed<DrawSearchGamePhase>(() => this.drawSearchModeState()?.phase ?? "LOBBY");
   public readonly drawings = computed<Record<string, DrawSearchDrawing>>(() => this.drawSearchModeState()?.drawings ?? {});
   public readonly drawingsList = computed<DrawSearchDrawing[]>(() => {
     return Object.values(this.drawings()).sort((leftDrawing, rightDrawing) => leftDrawing.placedAt - rightDrawing.placedAt);

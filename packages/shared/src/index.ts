@@ -155,8 +155,8 @@ export type SessionServerToClientMessage =
     | { type: "error"; message: string }
     | { type: "pong"; t: number; serverTime: number };
 
-/** Global game phase — just LOBBY or ACTIVE. Each player progresses individually. */
-export type DrawSearchGamePhase = "LOBBY" | "ACTIVE";
+/** Game phase for draw-search. Always ACTIVE (kept for backwards compatibility). */
+export type DrawSearchGamePhase = "ACTIVE";
 
 // ─── Drawing ─────────────────────────────────────────────────
 
@@ -228,8 +228,7 @@ export type DrawSearchPlayerTask = DrawSearchDrawTask | DrawSearchCaptionTask | 
 export type DrawSearchClientAction =
     | { type: "submit-drawing"; imageDataUrl: string }
     | { type: "submit-caption"; drawingId: string; text: string }
-    | { type: "submit-guess"; drawingId: string; captionId: string }
-    | { type: "start-round" };
+    | { type: "submit-guess"; drawingId: string; captionId: string };
 
 // ─── Server events ───────────────────────────────────────────
 

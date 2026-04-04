@@ -38,17 +38,23 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
     // ─── Initial state ───────────────────────────────────────────────
 
     public createInitialState(): DrawSearchModeState {
-        return {
+        const ms: DrawSearchModeState = {
             mode: "draw-search",
-            phase: "LOBBY",
+            phase: "ACTIVE",
             drawings: {},
             captions: {},
             playerGuesses: {},
         };
+
+        // Seed test drawings so there's immediately something to caption/guess
+        if (this.ds.seedTestDrawings > 0) {
+            injectTestDrawings(ms, this.ds.seedTestDrawings, Date.now());
+        }
+
+        return ms;
     }
 
     // ─── Player joined ───────────────────────────────────────────────
-
     public onPlayerJoined(args: {
         sessionState: SessionState<DrawSearchModeState>;
         player: { id: string };
@@ -60,18 +66,16 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
 
         events.push({type: "round-phase", phase: ms.phase});
 
-        if (ms.phase === "ACTIVE") {
-            const player = args.sessionState.players[playerId];
-            if (player?.name.trim()) {
-                const existingTask = this.playerCurrentTask.get(playerId);
-                if (existingTask) {
-                    events.push({type: "assign-task", targetPlayerId: playerId, task: existingTask});
-                } else {
-                    const task = pickNextTask(playerId, args.sessionState, undefined, this.ds);
-                    if (task) {
-                        this.playerCurrentTask.set(playerId, task);
-                        events.push({type: "assign-task", targetPlayerId: playerId, task});
-                    }
+        const player = args.sessionState.players[playerId];
+        if (player?.name.trim()) {
+            const existingTask = this.playerCurrentTask.get(playerId);
+            if (existingTask) {
+                events.push({type: "assign-task", targetPlayerId: playerId, task: existingTask});
+            } else {
+                const task = pickNextTask(playerId, args.sessionState, undefined, this.ds);
+                if (task) {
+                    this.playerCurrentTask.set(playerId, task);
+                    events.push({type: "assign-task", targetPlayerId: playerId, task});
                 }
             }
         }
@@ -87,12 +91,9 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
     }): GameActionResult<"draw-search"> {
         const ms = args.sessionState.modeState;
         ms.phase = "ACTIVE";
-        ms.drawings = {};
-        ms.captions = {};
-        ms.playerGuesses = {};
         this.playerCurrentTask.clear();
 
-        if (this.ds.seedTestDrawings > 0) {
+        if (this.ds.seedTestDrawings > 0 && Object.keys(ms.drawings).length === 0) {
             injectTestDrawings(ms, this.ds.seedTestDrawings, args.now);
         }
 
@@ -120,10 +121,24 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
     }): GameActionResult<"draw-search"> {
         args.sessionState.modeState = this.createInitialState();
         this.playerCurrentTask.clear();
-        return {
-            stateChanged: true,
-            emittedEvents: [{type: "round-phase", phase: "LOBBY"}],
-        };
+
+        const events: DrawSearchServerEvent[] = [
+            {type: "round-phase", phase: "ACTIVE"},
+        ];
+
+        // Re-assign tasks to all named players
+        for (const playerId of Object.keys(args.sessionState.players)) {
+            const player = args.sessionState.players[playerId];
+            if (!player?.name.trim()) continue;
+
+            const task = pickNextTask(playerId, args.sessionState, undefined, this.ds);
+            if (task) {
+                this.playerCurrentTask.set(playerId, task);
+                events.push({type: "assign-task", targetPlayerId: playerId, task});
+            }
+        }
+
+        return {stateChanged: true, emittedEvents: events};
     }
 
     // ─── Apply action ────────────────────────────────────────────────
@@ -134,8 +149,6 @@ export class DrawSearchEngine implements GameModeEngine<"draw-search", DrawSearc
         context: GameActionContext;
     }): Promise<GameActionResult<"draw-search">> {
         switch (args.action.type) {
-            case "start-round":
-                return this.startMode({sessionState: args.sessionState, now: args.context.now});
 
             case "submit-drawing":
                 return handleSubmitDrawing(

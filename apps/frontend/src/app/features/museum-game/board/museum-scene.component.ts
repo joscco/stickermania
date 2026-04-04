@@ -9,7 +9,7 @@ import {
   signal,
   ViewChild,
 } from "@angular/core";
-import type { DrawSearchDrawing, DrawSearchGamePhase } from "@birthday/shared";
+import type { DrawSearchDrawing } from "@birthday/shared";
 import { WorldStore } from "../../../core/world.store";
 import { FramedDrawingComponent } from "../shared/framed-drawing.component";
 
@@ -42,7 +42,6 @@ export class MuseumSceneComponent implements AfterViewInit, OnDestroy {
 
   // ...existing code...
   public readonly modeState = computed(() => this.worldStore.drawSearchModeState());
-  public readonly phase = computed<DrawSearchGamePhase>(() => this.modeState()?.phase ?? "LOBBY");
 
   public readonly drawingsList = computed<DrawSearchDrawing[]>(() => {
     const state = this.modeState();
