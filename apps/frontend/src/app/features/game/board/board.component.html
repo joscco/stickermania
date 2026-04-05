@@ -6,11 +6,12 @@
     </div>
   </div>
 } @else if (!isBoardReady()) {
-  <app-board-lobby (sessionCreated)="onSessionSelected($event)" />
+  <app-board-lobby (sessionCreated)="onSessionSelected($event)"/>
 } @else {
   <div class="h-screen w-screen overflow-hidden bg-white text-stone-900 relative flex flex-col">
     <!-- Thin header bar -->
-    <div class="flex items-center justify-between gap-3 px-4 py-2 bg-white/80 border-b border-black/6 backdrop-blur shrink-0">
+    <div
+      class="flex items-center justify-between gap-3 px-4 py-2 bg-white/80 border-b border-black/6 backdrop-blur shrink-0">
       @if (worldStore.sessionState()) {
         <div class="flex items-center gap-3">
           <button
@@ -18,9 +19,9 @@
             (click)="backToLobby()"
             title="Zurück zur Session-Lobby"
           >
-            <img src="assets/icons/home.svg" class="h-4 w-4" alt="" />
+            <img src="assets/icons/home.svg" class="h-4 w-4" alt=""/>
           </button>
-          <span class="text-sm font-semibold text-stone-800">{{ modeLabel() }}</span>
+          <span class="text-sm font-semibold text-stone-800">Stickermania</span>
         </div>
       } @else {
         <div></div>
@@ -30,8 +31,10 @@
         @if (timeLeft()) {
           <span class="rounded-lg bg-stone-100 px-2 py-1 font-mono text-stone-600">{{ timeLeft() }}</span>
         }
-        <button class="rounded-lg border border-black/10 bg-white px-3 py-2 text-stone-600 hover:bg-stone-50 inline-flex items-center gap-2" (click)="toggleSetupDrawer()">
-          <img src="assets/icons/settings.svg" class="h-4 w-4" alt="" /> Einstellungen
+        <button
+          class="rounded-lg border border-black/10 bg-white px-3 py-2 text-stone-600 hover:bg-stone-50 inline-flex items-center gap-2"
+          (click)="toggleSetupDrawer()">
+          <img src="assets/icons/settings.svg" class="h-4 w-4" alt=""/> Einstellungen
         </button>
       </div>
     </div>
@@ -46,16 +49,12 @@
           <span class="text-sm">Verbinde mit Session…</span>
         </div>
       } @else {
-        @switch (activeMode()) {
-          @case ('sticker-collage') {
-            <app-sticker-board-scene
-              class="block h-full w-full"
-              [sessionCode]="sessionCode()"
-              [playerQrDataUrl]="playerQrDataUrl()"
-              [wifiQrDataUrl]="wifiQrDataUrl()"
-            />
-          }
-        }
+        <app-sticker-board-scene
+          class="block h-full w-full"
+          [sessionCode]="sessionCode()"
+          [playerQrDataUrl]="playerQrDataUrl()"
+          [wifiQrDataUrl]="wifiQrDataUrl()"
+        />
       }
     </div>
 

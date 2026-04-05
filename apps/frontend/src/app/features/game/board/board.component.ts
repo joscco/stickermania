@@ -39,23 +39,12 @@ export class BoardComponent implements OnInit, OnDestroy {
   private unsubscribeWs: (() => void) | null = null;
   private timerInterval: ReturnType<typeof setInterval> | null = null;
 
-  public readonly activeMode = computed<GameModeId>(() => this.worldStore.activeMode());
-  public readonly modeLabel = computed(() => {
-    switch (this.activeMode()) {
-      case "sticker-collage": return "Stickermania";
-      default: return this.activeMode();
-    }
-  });
-  public readonly leaderboard = computed(() => this.worldStore.leaderboard());
-  public readonly allPlayers = computed(() => this.worldStore.allPlayers());
   public readonly currentTimerEndsAt = computed(() => {
-    if (this.activeMode() === "sticker-collage") {
-      const ms = this.worldStore.stickerCollageModeState();
-      if (!ms) return 0;
-      return ms.roundEndsAt ?? ms.votingEndsAt ?? ms.resultsEndsAt ?? 0;
+    const ms = this.worldStore.stickerCollageModeState();
+    if (!ms) {
+      return 0;
     }
-
-    return 0;
+    return ms.roundEndsAt ?? ms.votingEndsAt ?? ms.resultsEndsAt ?? 0;
   });
 
   public constructor(
@@ -117,7 +106,7 @@ export class BoardComponent implements OnInit, OnDestroy {
 
 
   public startMode(): void {
-    this.wsService.send({ type: "start-mode" });
+    this.wsService.send({type: "start-mode"});
   }
 
   public async backToLobby(): Promise<void> {
@@ -126,7 +115,7 @@ export class BoardComponent implements OnInit, OnDestroy {
   }
 
   public resetSession(): void {
-    this.wsService.send({ type: "reset-session" });
+    this.wsService.send({type: "reset-session"});
     this.pushEvent("Spiel zurückgesetzt. 🔄", Date.now());
   }
 
@@ -161,7 +150,7 @@ export class BoardComponent implements OnInit, OnDestroy {
 
       const playerPageUrl = `${window.location.origin}/#/player?session=${encodeURIComponent(resolvedSession.sessionCode)}`;
       this.playerUrl.set(playerPageUrl);
-      this.playerQrDataUrl.set(await QRCode.toDataURL(playerPageUrl, { margin: 1, scale: 6 }));
+      this.playerQrDataUrl.set(await QRCode.toDataURL(playerPageUrl, {margin: 1, scale: 6}));
 
       this.startTimerTick();
       this.unsubscribeWs = this.wsService.onMessage((message) => this.handleMessage(message));
@@ -169,7 +158,7 @@ export class BoardComponent implements OnInit, OnDestroy {
 
       const joinCheckInterval = setInterval(() => {
         if (this.wsService.status() === "connected" && this.sessionId) {
-          this.wsService.send({ type: "join", kind: "board", sessionId: this.sessionId });
+          this.wsService.send({type: "join", kind: "board", sessionId: this.sessionId});
           clearInterval(joinCheckInterval);
         }
       }, 200);
@@ -302,7 +291,7 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   private pushEvent(text: string, createdAt: number): void {
     const eventId = `${createdAt}-${Math.random().toString(16).slice(2)}`;
-    const uiEvent: UiEvent = { id: eventId, text, createdAt };
+    const uiEvent: UiEvent = {id: eventId, text, createdAt};
 
     this.events.set([uiEvent, ...this.events()]);
 
