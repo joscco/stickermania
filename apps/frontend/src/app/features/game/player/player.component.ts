@@ -64,7 +64,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
     }
   }
 
-  public readonly activeMode = computed(() => this.worldStore.activeMode());
   public readonly myScore = computed(() => {
     const id = this.sessionStore.playerId();
     return id ? (this.worldStore.players()[id]?.score ?? 0) : 0;
@@ -97,13 +96,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
     const playerId = this.sessionStore.playerId();
     if (!playerId) return false;
     return !!state.players[playerId];
-  });
-
-  protected readonly activeTitle = computed(() => {
-    switch (this.activeMode()) {
-      case "sticker-collage": return "Stickermania";
-      default: return "";
-    }
   });
 
   // ── Lifecycle ──────────────────────────────────────────────

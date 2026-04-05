@@ -1,11 +1,12 @@
 <div class="h-dvh overflow-hidden bg-white text-stone-900 overscroll-none flex flex-col no-select"
      style="padding-bottom: env(safe-area-inset-bottom);">
   <!-- Feedback toast -->
-  @if (sessionStore.feedback(); as fb) {
-    <div class="fixed top-14 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl shadow-lg text-sm font-medium text-white animate-bounce-in"
-         [class.bg-emerald-500]="fb.type === 'success'"
-         [class.bg-red-500]="fb.type === 'error'">
-      {{ fb.text }}
+  @if (sessionStore.feedback(); as feedback) {
+    <div
+      class="fixed top-14 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl shadow-lg text-sm font-medium text-white animate-bounce-in"
+      [class.bg-emerald-500]="feedback.type === 'success'"
+      [class.bg-red-500]="feedback.type === 'error'">
+      {{ feedback.text }}
     </div>
   }
 
@@ -14,7 +15,7 @@
     <div class="mx-auto w-full max-w-lg px-3 py-2">
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2">
-          <span class="text-sm font-semibold">{{ activeTitle() }}</span>
+          <span class="text-sm font-semibold">Stickermania</span>
           @if (sessionStore.playerName()) {
             <button
               class="text-xs text-stone-400 hover:text-stone-600 transition-colors underline decoration-dotted underline-offset-2"
@@ -31,8 +32,7 @@
               class="w-6 h-6 rounded-full border border-black/10 bg-stone-50 flex items-center justify-center text-xs hover:bg-stone-100 transition-colors"
               (click)="startEditAvatar()"
               title="Avatar ändern"
-            >✏️
-            </button>
+            >✏️</button>
           }
           @if (timer.timeLeft()) {
             <span
@@ -50,7 +50,6 @@
 
   <!-- Content -->
   <div class="flex-1 overflow-hidden">
-
     @if (isConnecting()) {
       <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
         <div class="w-8 h-8 border-3 border-stone-200 border-t-stone-500 rounded-full animate-spin"></div>
@@ -58,7 +57,7 @@
           <span class="text-xs font-medium text-stone-500">Verbindung verloren</span>
           <span class="text-xs">Versuche erneut zu verbinde...</span>
         } @else {
-          <span class="text-xs">Verbind...</span>
+          <span class="text-xs">Verbinde...</span>
         }
       </div>
     } @else if (isDisconnected()) {
@@ -98,11 +97,7 @@
           (skipped)="onAvatarSkipped()"
         />
       } @else {
-        @switch (activeMode()) {
-          @case ('sticker-collage') {
-            <app-sticker-player-view class="block h-full w-full"/>
-          }
-        }
+        <app-sticker-player-view class="block h-full w-full"/>
       }
     }
   </div>
