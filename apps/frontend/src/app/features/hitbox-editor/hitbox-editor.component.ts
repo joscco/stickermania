@@ -26,8 +26,11 @@ import {autoDetectHitbox} from './helper/auto-hitbox.util';
 export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     @ViewChild("editorArea") editorArea!: ElementRef<HTMLDivElement>;
 
-    /** Padding (in px) around the fitted image so edge points are reachable */
-    public readonly edgePadding = 40;
+    /**
+     * How far beyond the image edge (as a fraction of the image size)
+     * points can be placed. 0.05 = 5 % overflow on each side.
+     */
+    public readonly overflowFraction = 0.05;
 
     /** Auto-detect UI state */
     public readonly autoDetecting = signal(false);
@@ -42,40 +45,48 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly containerWidth = signal(600);
     private readonly containerHeight = signal(400);
 
-    /** Fitted image width (fills available space minus padding, preserves aspect ratio) */
+    /** Pixel padding derived from fitted image size and overflowFraction */
+    public readonly edgePaddingX = computed(() =>
+        Math.ceil(this.fittedWidth() * this.overflowFraction));
+
+    public readonly edgePaddingY = computed(() =>
+        Math.ceil(this.fittedHeight() * this.overflowFraction));
+
+    /** Fitted image width (fills available space minus overflow margins, preserves aspect ratio) */
     public readonly fittedWidth = computed(() => {
         const aspect = this.imgNatWidth() / this.imgNatHeight();
-        const pad = this.edgePadding * 2;
-        const cw = this.containerWidth() - pad;
-        const ch = this.containerHeight() - pad;
-        if (cw <= 0 || ch <= 0) {
-          return 100;
-        }
+        const shrink = 1 + this.overflowFraction * 2; // leave room for overflow on each side
+        const cw = Math.floor(this.containerWidth() / shrink);
+        const ch = Math.floor(this.containerHeight() / shrink);
+        if (cw <= 0 || ch <= 0) return 100;
         return cw / ch > aspect ? Math.floor(ch * aspect) : cw;
     });
 
     /** Fitted image height */
     public readonly fittedHeight = computed(() => {
         const aspect = this.imgNatWidth() / this.imgNatHeight();
-        const pad = this.edgePadding * 2;
-        const cw = this.containerWidth() - pad;
-        const ch = this.containerHeight() - pad;
+        const shrink = 1 + this.overflowFraction * 2;
+        const cw = Math.floor(this.containerWidth() / shrink);
+        const ch = Math.floor(this.containerHeight() / shrink);
         if (cw <= 0 || ch <= 0) return 100;
         return cw / ch > aspect ? ch : Math.floor(cw / aspect);
     });
 
-    /** Interactive wrapper width (image + padding on each side) */
-    public readonly wrapperWidth = computed(() => this.fittedWidth() + this.edgePadding * 2);
+    /** Interactive wrapper width (image + overflow padding on each side) */
+    public readonly wrapperWidth = computed(() =>
+        this.fittedWidth() + this.edgePaddingX() * 2);
 
-    /** Interactive wrapper height (image + padding on each side) */
-    public readonly wrapperHeight = computed(() => this.fittedHeight() + this.edgePadding * 2);
+    /** Interactive wrapper height (image + overflow padding on each side) */
+    public readonly wrapperHeight = computed(() =>
+        this.fittedHeight() + this.edgePaddingY() * 2);
 
-    /** SVG points string in pixel coordinates (offset by edgePadding) */
+    /** SVG points string in pixel coordinates (offset by edge padding) */
     public readonly svgPixelPoints = computed(() => {
         const w = this.fittedWidth();
         const h = this.fittedHeight();
-        const pad = this.edgePadding;
-        return this.poly.polygon().map(p => `${p.x * w + pad},${p.y * h + pad}`).join(" ");
+        const px = this.edgePaddingX();
+        const py = this.edgePaddingY();
+        return this.poly.polygon().map(p => `${p.x * w + px},${p.y * h + py}`).join(" ");
     });
 
     private resizeObserver: ResizeObserver | null = null;

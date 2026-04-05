@@ -11,10 +11,10 @@ export class EditorInteractionHandler {
     private draggingVertex = -1;
 
     /**
-     * Padding (px) around the image inside the interactive wrapper.
-     * Must match the component's edgePadding value.
+     * How far beyond the image (as fraction) points can be placed.
+     * Must match the component's overflowFraction.
      */
-    public edgePadding = 40;
+    public overflowFraction = 0.05;
 
     constructor(private readonly polygonEdit: PolygonEditService) {}
 
@@ -27,9 +27,7 @@ export class EditorInteractionHandler {
     public onMouseDown(event: MouseEvent): void {
         const {x, y} = this.getNormCoords(event);
         const pts = this.polygonEdit.polygon();
-        const target = event.currentTarget as HTMLElement;
-        const imgW = target.clientWidth - this.edgePadding * 2;
-        const imgH = target.clientHeight - this.edgePadding * 2;
+        const {imgW, imgH} = this.getImagePixelSize(event);
 
         // 1. Vertex hit?
         for (let i = 0; i < pts.length; i++) {
@@ -97,15 +95,37 @@ export class EditorInteractionHandler {
         event.preventDefault();
     }
 
+    /**
+     * Compute the image pixel size from the wrapper element.
+     * The wrapper is (1 + 2*overflowFraction) × imageSize, so:
+     *   imageSize = wrapperSize / (1 + 2*overflowFraction)
+     */
+    private getImagePixelSize(event: MouseEvent): {imgW: number; imgH: number} {
+        const target = event.currentTarget as HTMLElement;
+        const divisor = 1 + this.overflowFraction * 2;
+        return {
+            imgW: target.clientWidth / divisor,
+            imgH: target.clientHeight / divisor,
+        };
+    }
+
+    /**
+     * Convert a mouse event to normalised image coordinates.
+     * (0,0) = top-left of image, (1,1) = bottom-right.
+     * Values can be slightly outside [0,1] in the overflow zone.
+     */
     private getNormCoords(event: MouseEvent): {x: number; y: number} {
         const target = event.currentTarget as HTMLElement;
         const rect = target.getBoundingClientRect();
-        const pad = this.edgePadding;
-        const imgW = rect.width - pad * 2;
-        const imgH = rect.height - pad * 2;
+        const of = this.overflowFraction;
+        const divisor = 1 + of * 2;
+        const imgW = rect.width / divisor;
+        const imgH = rect.height / divisor;
+        const padX = imgW * of;
+        const padY = imgH * of;
         return {
-            x: Math.max(-0.05, Math.min(1.05, (event.clientX - rect.left - pad) / imgW)),
-            y: Math.max(-0.05, Math.min(1.05, (event.clientY - rect.top - pad) / imgH)),
+            x: Math.max(-of, Math.min(1 + of, (event.clientX - rect.left - padX) / imgW)),
+            y: Math.max(-of, Math.min(1 + of, (event.clientY - rect.top - padY) / imgH)),
         };
     }
 }

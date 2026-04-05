@@ -116,8 +116,8 @@
               [src]="persistence.selectedSticker()!.imageUrl"
               [alt]="persistence.selectedSticker()!.id"
               class="absolute block"
-              [style.left.px]="edgePadding"
-              [style.top.px]="edgePadding"
+              [style.left.px]="edgePaddingX()"
+              [style.top.px]="edgePaddingY()"
               [style.width.px]="fittedWidth()"
               [style.height.px]="fittedHeight()"
               style="background: repeating-conic-gradient(#e8e8e8 0% 25%, #d4d4d4 0% 50%) 50% / 20px 20px;"
@@ -145,10 +145,10 @@
               <!-- Edge lines (for 1-2 points) -->
               @if (poly.polygon().length === 2) {
                 <line
-                  [attr.x1]="poly.polygon()[0].x * fittedWidth() + edgePadding"
-                  [attr.y1]="poly.polygon()[0].y * fittedHeight() + edgePadding"
-                  [attr.x2]="poly.polygon()[1].x * fittedWidth() + edgePadding"
-                  [attr.y2]="poly.polygon()[1].y * fittedHeight() + edgePadding"
+                  [attr.x1]="poly.polygon()[0].x * fittedWidth() + edgePaddingX()"
+                  [attr.y1]="poly.polygon()[0].y * fittedHeight() + edgePaddingY()"
+                  [attr.x2]="poly.polygon()[1].x * fittedWidth() + edgePaddingX()"
+                  [attr.y2]="poly.polygon()[1].y * fittedHeight() + edgePaddingY()"
                   stroke="rgba(168, 85, 247, 0.7)" stroke-width="2"
                 />
               }
@@ -157,8 +157,8 @@
               @if (poly.polygon().length >= 2) {
                 @for (pt of poly.polygon(); track $index) {
                   <circle
-                    [attr.cx]="(pt.x + poly.polygon()[($index + 1) % poly.polygon().length].x) / 2 * fittedWidth() + edgePadding"
-                    [attr.cy]="(pt.y + poly.polygon()[($index + 1) % poly.polygon().length].y) / 2 * fittedHeight() + edgePadding"
+                    [attr.cx]="(pt.x + poly.polygon()[($index + 1) % poly.polygon().length].x) / 2 * fittedWidth() + edgePaddingX()"
+                    [attr.cy]="(pt.y + poly.polygon()[($index + 1) % poly.polygon().length].y) / 2 * fittedHeight() + edgePaddingY()"
                     r="5"
                     fill="rgba(168, 85, 247, 0.35)"
                   />
@@ -168,15 +168,15 @@
               <!-- Vertices -->
               @for (pt of poly.polygon(); track $index) {
                 <circle
-                  [attr.cx]="pt.x * fittedWidth() + edgePadding"
-                  [attr.cy]="pt.y * fittedHeight() + edgePadding"
+                  [attr.cx]="pt.x * fittedWidth() + edgePaddingX()"
+                  [attr.cy]="pt.y * fittedHeight() + edgePaddingY()"
                   [attr.r]="poly.selectedVertex() === $index ? 10 : 8"
                   [attr.fill]="poly.selectedVertex() === $index ? '#ef4444' : ($index === 0 ? '#22c55e' : '#a855f7')"
                   stroke="white" stroke-width="2"
                 />
                 <text
-                  [attr.x]="pt.x * fittedWidth() + edgePadding"
-                  [attr.y]="pt.y * fittedHeight() + edgePadding"
+                  [attr.x]="pt.x * fittedWidth() + edgePaddingX()"
+                  [attr.y]="pt.y * fittedHeight() + edgePaddingY()"
                   text-anchor="middle" dominant-baseline="central"
                   fill="white" font-size="9" font-weight="bold"
                 >{{ $index }}</text>
