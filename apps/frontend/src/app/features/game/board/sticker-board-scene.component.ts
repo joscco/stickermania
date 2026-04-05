@@ -7,11 +7,12 @@ import {BoardVotingSceneComponent} from './scenes/voting/board-voting-scene.comp
 import {BoardResultsSceneComponent} from './scenes/results/board-results-scene.component';
 import {WorldStore} from '../../../core/world.store';
 import {BoardQrPanelComponent} from './qr-panel/board-qr-panel.component';
+import {AnimGroupDirective, AnimOnInitDirective} from '../../shared/animations/anim-on-init.directive';
 
 @Component({
     selector: "app-sticker-board-scene",
     standalone: true,
-    imports: [CommonModule, BoardLobbySceneComponent, BoardBuildingSceneComponent, BoardVotingSceneComponent, BoardResultsSceneComponent, BoardQrPanelComponent],
+  imports: [CommonModule, BoardLobbySceneComponent, BoardBuildingSceneComponent, BoardVotingSceneComponent, BoardResultsSceneComponent, BoardQrPanelComponent, AnimGroupDirective, AnimOnInitDirective],
     templateUrl: "./sticker-board-scene.component.html",
 })
 export class StickerBoardSceneComponent {

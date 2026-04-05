@@ -17,8 +17,7 @@
     }
   }
 
-  <!-- Persistent join info (bottom-right, hidden in LOBBY where it's already shown) -->
-  <div class="absolute bottom-3 right-3 z-10">
+  <div animOnInit="item" class="absolute bottom-3 right-3 z-10">
     <app-board-qr-panel
       [sessionCode]="sessionCode()"
       [playerQrDataUrl]="playerQrDataUrl()"

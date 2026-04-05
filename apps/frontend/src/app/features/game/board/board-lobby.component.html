@@ -32,7 +32,9 @@
       </div>
 
       @if (isLoadingSessions()) {
-        <div animOnInit="item" [animDelay]="0.25" class="shrink-0 text-sm text-stone-400 text-center py-8">Lade Sessions...</div>
+        <div animOnInit="item" [animDelay]="0.25" class="shrink-0 text-sm text-stone-400 text-center py-8">Lade
+          Sessions...
+        </div>
       } @else if (sessions().length === 0) {
         <div animOnInit="item" [animDelay]="0.25"
              class="shrink-0 text-sm text-stone-400 text-center py-4 px-4 rounded-2xl border border-dashed border-stone-300 bg-white">
@@ -49,7 +51,8 @@
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
                   <span class="font-bold tracking-widest text-stone-900">{{ session.sessionCode }}</span>
-                  <span class="text-xs px-2 py-0.5 rounded-full bg-stone-100 text-stone-500">{{ modeLabel(session.activeMode) }}</span>
+                  <span
+                    class="text-xs px-2 py-0.5 rounded-full bg-stone-100 text-stone-500">{{ modeLabel(session.activeMode) }}</span>
                 </div>
                 <div class="text-xs text-stone-400 mt-0.5">
                   {{ session.playerCount }} Spieler · {{ timeAgo(session.createdAt) }}
