@@ -9,25 +9,22 @@ import {SessionService} from "./session/sessionService.js";
 import {FileSessionRepository} from "./infra/local/fileSessionRepository.js";
 import {LocalAssetRepository} from "./infra/local/localAssetRepository.js";
 import {registerApiRoutes} from "./http/apiRoutes.js";
+import {registerEditorApiRoutes} from "./http/editorApiRoutes.js";
 import {registerWebSocket} from "./http/wsPlugin.js";
 
 // ─── Bootstrap ──────────────────────────────────────────────────
 
 const backendConfig = loadBackendConfig({argv: process.argv, cwd: process.cwd()});
-const serverSessionId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-const sessionRepository = new FileSessionRepository(backendConfig.sessionsPath);
-const assetRepository = new LocalAssetRepository(backendConfig.dataRoot);
-const sessionService = new SessionService(backendConfig.gameConfig, sessionRepository, assetRepository);
-
-// ─── Fastify instance ───────────────────────────────────────────
+const {appMode} = backendConfig;
 
 const app = Fastify({logger: false, bodyLimit: 10 * 1024 * 1024}); // 10 MB for collage image uploads
 
 // ─── Plugins ────────────────────────────────────────────────────
 
 // WebSocket support (must be registered before routes that use it)
-await app.register(fastifyWebSocket);
+if (appMode !== "dev") {
+    await app.register(fastifyWebSocket);
+}
 
 // Serve user-generated assets (avatars, drawings, collages) from data directory
 const assetsRoot = path.resolve(backendConfig.dataRoot, "assets");
@@ -58,8 +55,19 @@ if (fs.existsSync(frontendDist)) {
 
 // ─── Routes ─────────────────────────────────────────────────────
 
-await registerApiRoutes(app, sessionService, backendConfig, assetRepository);
-await registerWebSocket(app, sessionService, serverSessionId);
+// Editor routes are available in all modes (party + dev)
+await registerEditorApiRoutes(app, backendConfig);
+
+if (appMode !== "dev") {
+    // Game routes + WebSocket only in party/cloud modes
+    const serverSessionId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const sessionRepository = new FileSessionRepository(backendConfig.sessionsPath);
+    const assetRepository = new LocalAssetRepository(backendConfig.dataRoot);
+    const sessionService = new SessionService(backendConfig.gameConfig, sessionRepository, assetRepository);
+
+    await registerApiRoutes(app, sessionService, backendConfig, assetRepository);
+    await registerWebSocket(app, sessionService, serverSessionId);
+}
 
 // SPA fallback: serve index.html for non-API, non-asset routes
 app.setNotFoundHandler(async (request, reply) => {
@@ -89,16 +97,24 @@ for (const [, entries] of Object.entries(os.networkInterfaces())) {
     }
 }
 
-console.log(`[backend] Birthday Party Game Platform`);
+const modeLabel = appMode === "dev" ? "🛠️  DEV (Editors only)" : appMode === "cloud" ? "☁️  CLOUD" : "🎉 PARTY";
+console.log(`[backend] Birthday Party Game Platform — ${modeLabel}`);
 console.log(`[backend] listening on port ${backendConfig.gameConfig.port}`);
-console.log(`[backend] sessions stored in: ${backendConfig.sessionsPath}`);
-console.log(`[backend] assets stored in: ${backendConfig.assetsPath}`);
-console.log(`[backend] serving static frontend from ${frontendDist}`);
-console.log(`\nOpen board to create a session:\n  http://${mdnsHost}:${backendConfig.gameConfig.port}/#/board`);
-if (lanIps.length > 0) {
-    console.log(`\nOpen (LAN IPv4):`);
-    for (const ipAddress of lanIps) {
-        console.log(`  http://${ipAddress}:${backendConfig.gameConfig.port}/#/board`);
-        console.log(`  http://${ipAddress}:${backendConfig.gameConfig.port}/#/player`);
+
+if (appMode === "dev") {
+    console.log(`\nEditors available at:`);
+    console.log(`  http://localhost:${backendConfig.gameConfig.port}/#/editor`);
+    console.log(`  http://localhost:${backendConfig.gameConfig.port}/#/hitbox-editor`);
+} else {
+    console.log(`[backend] sessions stored in: ${backendConfig.sessionsPath}`);
+    console.log(`[backend] assets stored in: ${backendConfig.assetsPath}`);
+    console.log(`[backend] serving static frontend from ${frontendDist}`);
+    console.log(`\nOpen board to create a session:\n  http://${mdnsHost}:${backendConfig.gameConfig.port}/#/board`);
+    if (lanIps.length > 0) {
+        console.log(`\nOpen (LAN IPv4):`);
+        for (const ipAddress of lanIps) {
+            console.log(`  http://${ipAddress}:${backendConfig.gameConfig.port}/#/board`);
+            console.log(`  http://${ipAddress}:${backendConfig.gameConfig.port}/#/player`);
+        }
     }
 }
