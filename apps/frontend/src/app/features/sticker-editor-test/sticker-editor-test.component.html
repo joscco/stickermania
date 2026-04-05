@@ -30,10 +30,12 @@
         <h2 class="text-xs font-semibold text-stone-500 mb-2 px-1">Sticker-Palette</h2>
         <div class="grid grid-cols-3 gap-1.5">
           @for (sticker of testCatalog(); track sticker.id) {
-            <button
-              class="aspect-square rounded-lg border-2 border-stone-200 hover:border-purple-400 hover:shadow-md bg-white flex items-center justify-center transition-all active:scale-90 relative"
+            <div
+              class="aspect-square rounded-lg border-2 border-stone-200 hover:border-purple-400 hover:shadow-md bg-white flex items-center justify-center transition-all active:scale-90 relative cursor-grab"
               [class.opacity-40]="placements().length >= maxStickers"
               [title]="sticker.id"
+              draggable="true"
+              (dragstart)="$event.dataTransfer?.setData('application/x-sticker-id', sticker.id)"
               (click)="addStickerToCanvas(sticker.id)"
             >
               <img
@@ -45,7 +47,7 @@
               @if (sticker.hitboxPolygon) {
                 <div class="absolute top-0.5 right-0.5 w-2 h-2 bg-green-400 rounded-full" title="Hat Polygon-Hitbox"></div>
               }
-            </button>
+            </div>
           }
         </div>
 
@@ -74,6 +76,7 @@
           [interactive]="true"
           (placementsChanged)="onPlacementsChanged($event)"
           (stickerRemoved)="onStickerRemoved($event)"
+          (stickerDropped)="onStickerDropped($event)"
         />
       </div>
     </div>

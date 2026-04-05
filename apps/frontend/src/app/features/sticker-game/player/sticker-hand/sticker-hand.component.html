@@ -12,13 +12,15 @@
   </div>
   <div class="flex gap-2 overflow-x-auto pb-1">
     @for (stickerId of hand.stickerIds; track $index) {
-      <button
-        class="shrink-0 w-14 h-14 rounded-lg border-2 flex items-center justify-center bg-white transition-all active:scale-90"
+      <div
+        class="shrink-0 w-14 h-14 rounded-lg border-2 flex items-center justify-center bg-white transition-all active:scale-90 cursor-grab"
         [class.border-purple-300]="canAddMore"
         [class.border-stone-200]="!canAddMore"
         [class.opacity-50]="!canAddMore"
         [class.hover:border-purple-400]="canAddMore"
         [class.hover:shadow-md]="canAddMore"
+        [attr.draggable]="canAddMore"
+        (dragstart)="onDragStart($event, stickerId)"
         (click)="onStickerTap(stickerId)"
         (contextmenu)="onStickerLongPress($event, $index, stickerId)"
       >
@@ -28,7 +30,7 @@
           class="w-10 h-10 object-contain pointer-events-none"
           draggable="false"
         />
-      </button>
+      </div>
     }
   </div>
 </div>

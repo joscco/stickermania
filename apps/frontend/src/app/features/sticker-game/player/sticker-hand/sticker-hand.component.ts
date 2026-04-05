@@ -38,6 +38,22 @@ export class StickerHandComponent {
         this.stickerTapped.emit(stickerId);
     }
 
+    public onDragStart(event: DragEvent, stickerId: string): void {
+        if (!this.canAddMore) {
+            event.preventDefault();
+            return;
+        }
+        event.dataTransfer?.setData("application/x-sticker-id", stickerId);
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = "copy";
+            // Use the img inside the drag source as drag image
+            const img = (event.target as HTMLElement).querySelector("img");
+            if (img) {
+                event.dataTransfer.setDragImage(img, 20, 20);
+            }
+        }
+    }
+
     public onStickerLongPress(event: Event, index: number, stickerId: string): void {
         event.preventDefault();
         if (this.hand.swapsRemaining > 0) {

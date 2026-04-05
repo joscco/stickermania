@@ -42,6 +42,8 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     @Input() interactive: boolean = false;
     @Output() placementsChanged = new EventEmitter<StickerPlacement[]>();
     @Output() stickerRemoved = new EventEmitter<string>();
+    /** Emitted when a sticker is dropped onto the canvas via drag & drop */
+    @Output() stickerDropped = new EventEmitter<{stickerId: string; x: number; y: number}>();
 
     @ViewChild("canvasArea") canvasArea!: ElementRef<HTMLDivElement>;
 
@@ -127,7 +129,13 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         (el.style as any).webkitTouchCallout = "none";
         (el.style as any).webkitUserSelect = "none";
 
+        const isToolbarClick = (ev: Event): boolean => {
+            const target = ev.target as HTMLElement;
+            return !!target.closest("[data-canvas-toolbar]");
+        };
+
         const onTouchStart = (ev: TouchEvent): void => {
+            if (isToolbarClick(ev)) return; // let toolbar buttons work
             ev.preventDefault();
             ev.stopPropagation();
             for (const t of Array.from(ev.changedTouches)) {
@@ -136,6 +144,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         };
 
         const onTouchMove = (ev: TouchEvent): void => {
+            if (this.pointers.length === 0) return;
             ev.preventDefault();
             ev.stopPropagation();
             for (const t of Array.from(ev.changedTouches)) {
@@ -144,6 +153,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         };
 
         const onTouchEnd = (ev: TouchEvent): void => {
+            if (this.pointers.length === 0) return;
             ev.preventDefault();
             ev.stopPropagation();
             for (const t of Array.from(ev.changedTouches)) {
@@ -154,6 +164,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         let removeMouseListeners: (() => void) | null = null;
         const onMouseDown = (ev: MouseEvent): void => {
             if (ev.button !== 0) return;
+            if (isToolbarClick(ev)) return; // let toolbar buttons work
             ev.preventDefault();
             this.handlePointerDown(-1, ev.clientX, ev.clientY);
             const onMouseMove = (mev: MouseEvent): void => {
@@ -508,5 +519,28 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
     public generateInstanceId(): string {
         return `inst_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    // ── Drag & Drop support ──────────────────────────────────────
+
+    public onDragOver(event: DragEvent): void {
+        if (event.dataTransfer?.types.includes("application/x-sticker-id")) {
+            event.preventDefault(); // allow drop
+            if (event.dataTransfer) {
+                event.dataTransfer.dropEffect = "copy";
+            }
+        }
+    }
+
+    public onDrop(event: DragEvent): void {
+        const stickerId = event.dataTransfer?.getData("application/x-sticker-id");
+        if (!stickerId) return;
+        event.preventDefault();
+
+        const rect = this.canvasArea.nativeElement.getBoundingClientRect();
+        const x = event.clientX - rect.left - 32; // offset by half sticker size
+        const y = event.clientY - rect.top - 32;
+
+        this.stickerDropped.emit({stickerId, x: Math.max(0, x), y: Math.max(0, y)});
     }
 }

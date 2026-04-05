@@ -43,6 +43,23 @@ export class StickerPlayerViewComponent {
         this.canvasPlacements.set([...current, newPlacement]);
     }
 
+    public onStickerDropped(event: {stickerId: string; x: number; y: number}): void {
+        const current = this.canvasPlacements();
+        if (current.length >= this.stickerService.maxStickersOnCanvas()) return;
+
+        const maxZ = current.length > 0 ? Math.max(...current.map(p => p.zIndex)) : 0;
+        const newPlacement: StickerPlacement = {
+            instanceId: this.stickerCanvas?.generateInstanceId() ?? `inst_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            stickerId: event.stickerId,
+            x: event.x,
+            y: event.y,
+            rotation: 0,
+            scale: 1,
+            zIndex: maxZ + 1,
+        };
+        this.canvasPlacements.set([...current, newPlacement]);
+    }
+
     public onPlacementsChanged(placements: StickerPlacement[]): void {
         this.canvasPlacements.set(placements);
     }

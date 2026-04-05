@@ -4,6 +4,8 @@
   [class.border-2]="interactive"
   [class.border-dashed]="interactive"
   [class.border-purple-200]="interactive"
+  (dragover)="onDragOver($event)"
+  (drop)="onDrop($event)"
 >
   <!-- Grid background -->
   <div class="absolute inset-0 opacity-5 pointer-events-none"
@@ -56,7 +58,7 @@
 
   <!-- Selection toolbar (z-index + transform controls) -->
   @if (interactive && selectedInstanceId()) {
-    <div class="absolute bottom-2 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-white/90 backdrop-blur border border-black/10 rounded-full px-2 py-1 shadow-lg">
+    <div data-canvas-toolbar class="absolute bottom-2 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-white/90 backdrop-blur border border-black/10 rounded-full px-2 py-1 shadow-lg">
       <!-- Z-index controls -->
       <button
         class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-purple-100 active:scale-90 transition-all text-sm"
