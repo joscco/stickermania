@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
 /*
  * Load Darumadrop One from the bundled TTF so it works offline / in LAN.
  * The Google-Fonts <link> in index.html still wins when online because

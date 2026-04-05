@@ -3,6 +3,8 @@ import { Component, OnInit, signal } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import {OnScreenKeyboardComponent} from '../../../shared/keyboard/on-screen-keyboard.component';
 import {AnimOnInitDirective} from '../../../shared/animations/anim-on-init.directive';
+import {PageRootDirective} from '../../../shared/animations/page-root.directive';
+import {PageTransitionService} from '../../../shared/animations/page-transition.service';
 
 const LAST_SESSION_CODE_STORAGE_KEY = "birthday_last_session_code";
 const RECONNECT_STORAGE_KEY = "birthday_reconnect";
@@ -10,7 +12,7 @@ const RECONNECT_STORAGE_KEY = "birthday_reconnect";
 @Component({
   selector: "app-join",
   standalone: true,
-  imports: [CommonModule, OnScreenKeyboardComponent, AnimOnInitDirective],
+  imports: [CommonModule, OnScreenKeyboardComponent, AnimOnInitDirective, PageRootDirective],
   templateUrl: "./join.component.html",
 })
 export class JoinComponent implements OnInit {
@@ -22,6 +24,7 @@ export class JoinComponent implements OnInit {
   public constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
+    private readonly transitions: PageTransitionService,
   ) {}
 
   public ngOnInit(): void {
@@ -63,18 +66,14 @@ export class JoinComponent implements OnInit {
     }
   }
 
-  public async continue(): Promise<void> {
+  public continue(): void {
     const normalizedCode = this.sessionCode();
-
-    if (normalizedCode.length < 4) {
-      return;
-    }
+    if (normalizedCode.length < 4) return;
 
     localStorage.setItem(LAST_SESSION_CODE_STORAGE_KEY, normalizedCode);
-
-    await this.router.navigate(["/player"], {
-      queryParams: { session: normalizedCode },
-    });
+    this.transitions.leaveAndNavigate(() =>
+      this.router.navigate(["/player"], { queryParams: { session: normalizedCode } })
+    );
   }
 
   private normalizeSessionCode(rawValue: string): string {

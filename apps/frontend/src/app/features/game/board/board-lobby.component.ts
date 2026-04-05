@@ -3,11 +3,13 @@ import { Component, OnInit, output, signal } from "@angular/core";
 import type { GameModeId } from "@birthday/shared";
 import { ApiService, type SessionSummary } from '../../../core/api.service';
 import {AnimOnInitDirective, AnimGroupDirective} from '../../shared/animations/anim-on-init.directive';
+import {PageRootDirective} from '../../shared/animations/page-root.directive';
+import {PageTransitionService} from '../../shared/animations/page-transition.service';
 
 @Component({
   selector: "app-board-lobby",
   standalone: true,
-  imports: [CommonModule, AnimOnInitDirective, AnimGroupDirective],
+  imports: [CommonModule, AnimOnInitDirective, AnimGroupDirective, PageRootDirective],
   templateUrl: "./board-lobby.component.html",
 })
 export class BoardLobbyComponent implements OnInit {
@@ -23,14 +25,13 @@ export class BoardLobbyComponent implements OnInit {
     { id: "sticker-collage", icon: "assets/png/select_icon_sticker_game.png", label: "Sticker-Collage", description: "Sticker-Collagen bauen & bewerten" },
   ];
 
-  public constructor(private readonly api: ApiService) {}
+  public constructor(
+    private readonly api: ApiService,
+    private readonly transitions: PageTransitionService,
+  ) {}
 
   public async ngOnInit(): Promise<void> {
     await this.loadSessions();
-  }
-
-  public selectMode(mode: GameModeId): void {
-    this.selectedMode.set(mode);
   }
 
   public async createSession(): Promise<void> {
@@ -38,16 +39,15 @@ export class BoardLobbyComponent implements OnInit {
     this.errorText.set(null);
     try {
       const session = await this.api.createSession(this.selectedMode());
-      this.sessionCreated.emit(session.sessionCode);
+      this.transitions.leaveAndNavigate(() => this.sessionCreated.emit(session.sessionCode));
     } catch {
       this.errorText.set("Session konnte nicht erstellt werden.");
-    } finally {
       this.isCreating.set(false);
     }
   }
 
   public openSession(code: string): void {
-    this.sessionCreated.emit(code);
+    this.transitions.leaveAndNavigate(() => this.sessionCreated.emit(code));
   }
 
   public async deleteSession(sessionId: string, event: Event): Promise<void> {
@@ -60,13 +60,6 @@ export class BoardLobbyComponent implements OnInit {
 
   public modeLabel(mode: string): string {
     return this.gameModes.find((m) => m.id === mode)?.label ?? mode;
-  }
-
-  public modeEmoji(mode: string): string {
-    switch (mode) {
-      case "sticker-collage": return "🧩";
-      default: return "🎮";
-    }
   }
 
   public timeAgo(timestamp: number): string {
