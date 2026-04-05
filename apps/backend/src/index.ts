@@ -22,22 +22,21 @@ const sessionService = new SessionService(backendConfig.gameConfig, sessionRepos
 
 // ─── Fastify instance ───────────────────────────────────────────
 
-const app = Fastify({logger: false});
+const app = Fastify({logger: false, bodyLimit: 10 * 1024 * 1024}); // 10 MB for collage image uploads
 
 // ─── Plugins ────────────────────────────────────────────────────
 
 // WebSocket support (must be registered before routes that use it)
 await app.register(fastifyWebSocket);
 
-// Serve user-generated assets (avatars, drawings) from data directory
+// Serve user-generated assets (avatars, drawings, collages) from data directory
 const assetsRoot = path.resolve(backendConfig.dataRoot, "assets");
-if (fs.existsSync(assetsRoot)) {
-    await app.register(fastifyStatic, {
-        root: assetsRoot,
-        prefix: "/api/assets/",
-        decorateReply: false,
-    });
-}
+fs.mkdirSync(assetsRoot, {recursive: true}); // ensure it exists before registering
+await app.register(fastifyStatic, {
+    root: assetsRoot,
+    prefix: "/api/assets/",
+    decorateReply: false,
+});
 
 // Serve Angular frontend from dist directory
 function resolveFrontendDistPath(): string {
@@ -59,7 +58,7 @@ if (fs.existsSync(frontendDist)) {
 
 // ─── Routes ─────────────────────────────────────────────────────
 
-await registerApiRoutes(app, sessionService, backendConfig);
+await registerApiRoutes(app, sessionService, backendConfig, assetRepository);
 await registerWebSocket(app, sessionService, serverSessionId);
 
 // SPA fallback: serve index.html for non-API, non-asset routes

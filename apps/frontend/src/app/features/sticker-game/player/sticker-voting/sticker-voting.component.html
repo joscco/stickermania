@@ -8,27 +8,38 @@
   <div class="grid grid-cols-2 gap-3">
     @for (submission of submissions; track submission.id) {
       <button
-        class="relative rounded-xl border-2 p-1 bg-white transition-all active:scale-95"
+        class="relative rounded-xl border-2 p-1 bg-white transition-all"
         [class.border-amber-400]="myVotes.includes(submission.id)"
         [class.shadow-amber-200]="myVotes.includes(submission.id)"
         [class.shadow-md]="myVotes.includes(submission.id)"
-        [class.border-stone-200]="!myVotes.includes(submission.id)"
-        [disabled]="votesRemaining <= 0 && !myVotes.includes(submission.id)"
-        [class.opacity-50]="votesRemaining <= 0 && !myVotes.includes(submission.id)"
+        [class.border-stone-200]="!myVotes.includes(submission.id) && !isOwnSubmission(submission)"
+        [class.border-purple-200]="isOwnSubmission(submission) && !myVotes.includes(submission.id)"
+        [class.active:scale-95]="!isOwnSubmission(submission)"
+        [disabled]="isOwnSubmission(submission) || (votesRemaining <= 0 && !myVotes.includes(submission.id))"
+        [class.opacity-50]="!isOwnSubmission(submission) && votesRemaining <= 0 && !myVotes.includes(submission.id)"
         (click)="onVote(submission.id)"
       >
         <!-- Mini canvas preview -->
         <div class="relative w-full aspect-square bg-stone-50 rounded-lg overflow-hidden">
-          @for (placement of submission.placements; track placement.instanceId) {
+          @if (submission.snapshotUrl) {
             <img
-              [src]="getStickerUrl(placement.stickerId)"
-              [alt]="placement.stickerId"
-              class="absolute w-8 h-8 object-contain"
-              [style.left.px]="placement.x * 0.4"
-              [style.top.px]="placement.y * 0.4"
-              [style.transform]="'rotate(' + placement.rotation + 'deg) scale(' + (placement.scale * 0.4) + ')'"
+              [src]="submission.snapshotUrl"
+              alt="Collage"
+              class="w-full h-full object-contain"
               draggable="false"
             />
+          } @else {
+            @for (placement of submission.placements; track placement.instanceId) {
+              <img
+                [src]="getStickerUrl(placement.stickerId)"
+                [alt]="placement.stickerId"
+                class="absolute w-8 h-8 object-contain"
+                [style.left.px]="placement.x * 0.4"
+                [style.top.px]="placement.y * 0.4"
+                [style.transform]="'rotate(' + placement.rotation + 'deg) scale(' + (placement.scale * 0.4) + ')'"
+                draggable="false"
+              />
+            }
           }
         </div>
         <div class="mt-1 text-xs text-stone-600 font-medium truncate px-1">
@@ -37,6 +48,11 @@
         @if (myVotes.includes(submission.id)) {
           <div class="absolute top-1 right-1 bg-amber-400 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold">
             ⭐
+          </div>
+        }
+        @if (isOwnSubmission(submission)) {
+          <div class="absolute top-1 left-1 bg-purple-400 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+            Deine
           </div>
         }
       </button>

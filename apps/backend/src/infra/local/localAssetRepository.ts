@@ -42,6 +42,20 @@ export class LocalAssetRepository implements AssetRepository {
     };
   }
 
+  public async saveCollage(args: { sessionId: string; playerId: string; playerName: string; collageId: string; imageDataUrl: string }): Promise<SavedAsset> {
+    const relativePath = path.posix.join(
+      "assets",
+      args.sessionId,
+      "collages",
+      `${sanitize(args.playerName)}-${args.collageId}.png`,
+    );
+    await this.writeBuffer(relativePath, decodePngDataUrl(args.imageDataUrl));
+    return {
+      assetPath: relativePath,
+      publicUrl: `/api/assets/${relativePath.replace(/^assets\//u, "")}`,
+    };
+  }
+
   private async writeBuffer(relativePath: string, buffer: Buffer): Promise<void> {
     const absolutePath = path.resolve(this.dataRoot, relativePath);
     await fs.promises.mkdir(path.dirname(absolutePath), { recursive: true });

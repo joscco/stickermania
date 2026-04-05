@@ -16,16 +16,25 @@
                [class.ring-2]="i === 0"
                [class.ring-amber-400]="i === 0">
             <div class="relative aspect-square bg-stone-50 overflow-hidden">
-              @for (placement of getCollage(result.collageId)?.placements ?? []; track placement.instanceId) {
+              @if (getCollage(result.collageId)?.snapshotUrl) {
                 <img
-                  [src]="getStickerUrl(placement.stickerId)"
-                  [alt]="placement.stickerId"
-                  class="absolute w-10 h-10 object-contain"
-                  [style.left.px]="placement.x * 0.5"
-                  [style.top.px]="placement.y * 0.5"
-                  [style.transform]="'rotate(' + placement.rotation + 'deg) scale(' + (placement.scale * 0.5) + ')'"
+                  [src]="getCollage(result.collageId)!.snapshotUrl"
+                  alt="Collage"
+                  class="w-full h-full object-contain"
                   draggable="false"
                 />
+              } @else {
+                @for (placement of getCollage(result.collageId)?.placements ?? []; track placement.instanceId) {
+                  <img
+                    [src]="getStickerUrl(placement.stickerId)"
+                    [alt]="placement.stickerId"
+                    class="absolute w-10 h-10 object-contain"
+                    [style.left.px]="placement.x * 0.5"
+                    [style.top.px]="placement.y * 0.5"
+                    [style.transform]="'rotate(' + placement.rotation + 'deg) scale(' + (placement.scale * 0.5) + ')'"
+                    draggable="false"
+                  />
+                }
               }
             </div>
             <div class="px-3 py-2 flex items-center justify-between">

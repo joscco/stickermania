@@ -34,6 +34,7 @@ interface ActivePointer {
     standalone: true,
     imports: [CommonModule],
     templateUrl: "./sticker-canvas.component.html",
+    host: { style: "display: block; width: 100%; height: 100%;" },
 })
 export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     @Input() stickers: StickerPlacement[] = [];
@@ -86,6 +87,74 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
     ngOnDestroy(): void {
         this.removeTouchHandlers?.();
+    }
+
+    // ── Snapshot ─────────────────────────────────────────────────
+
+    /**
+     * Render the sticker canvas to a PNG data URL using native Canvas 2D API.
+     * The canvas is always square, so we use its width as the definitive size.
+     */
+    public async toDataUrl(): Promise<string> {
+        const el = this.canvasArea.nativeElement;
+        const size = el.clientWidth; // square → width === height
+        const pixelScale = 2; // 2× for good quality
+
+        const canvas = document.createElement("canvas");
+        canvas.width = size * pixelScale;
+        canvas.height = size * pixelScale;
+        const ctx = canvas.getContext("2d")!;
+        ctx.scale(pixelScale, pixelScale);
+
+        // White background
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, size, size);
+
+        // Pre-load all sticker images
+        const imageCache = new Map<string, HTMLImageElement>();
+        await Promise.all(
+            this.stickers.map(p => {
+                const url = this.getStickerUrl(p.stickerId);
+                if (!url || imageCache.has(url)) return Promise.resolve();
+                return new Promise<void>((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = "anonymous";
+                    img.onload = () => { imageCache.set(url, img); resolve(); };
+                    img.onerror = () => resolve();
+                    img.src = url;
+                });
+            }),
+        );
+
+        // Sort by z-index (lowest first = painted behind)
+        const sorted = [...this.stickers].sort((a, b) => a.zIndex - b.zIndex);
+
+        for (const placement of sorted) {
+            const url = this.getStickerUrl(placement.stickerId);
+            const img = imageCache.get(url);
+            if (!img) continue;
+
+            // Read the actual rendered size from the DOM (h-16 w-auto → aspect preserved)
+            const domImg = el.querySelector(
+                `[data-instance-id="${placement.instanceId}"] img`,
+            ) as HTMLImageElement | null;
+            const drawW = domImg ? domImg.offsetWidth : 64;
+            const drawH = domImg ? domImg.offsetHeight : 64;
+
+            // CSS transform-origin: center center on the unscaled box
+            const cx = placement.x + drawW / 2;
+            const cy = placement.y + drawH / 2;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate((placement.rotation * Math.PI) / 180);
+            ctx.scale(placement.scale, placement.scale);
+            ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+            ctx.restore();
+        }
+
+        console.log("[toDataUrl] rendered", sorted.length, "stickers to", canvas.width, "×", canvas.height);
+        return canvas.toDataURL("image/png");
     }
 
     // ── Catalog ──────────────────────────────────────────────────

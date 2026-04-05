@@ -17,6 +17,7 @@ export class StickerVotingComponent {
     @Input() myVotes: string[] = [];
     @Input() votesRemaining: number = 0;
     @Input() players: Record<string, SessionPlayer> = {};
+    @Input() myPlayerId: string = "";
     @Output() voteClicked = new EventEmitter<string>();
 
     private catalogMap = new Map<string, StickerDefinition>();
@@ -35,7 +36,15 @@ export class StickerVotingComponent {
         return this.players[playerId]?.name ?? "Anonym";
     }
 
+    public isOwnSubmission(submission: StickerCollage): boolean {
+        return !!this.myPlayerId && submission.playerId === this.myPlayerId;
+    }
+
     public onVote(collageId: string): void {
+        const submission = this.submissions.find(s => s.id === collageId);
+        if (!submission) return;
+        // Block self-voting
+        if (this.isOwnSubmission(submission)) return;
         if (this.votesRemaining > 0 && !this.myVotes.includes(collageId)) {
             this.voteClicked.emit(collageId);
         }

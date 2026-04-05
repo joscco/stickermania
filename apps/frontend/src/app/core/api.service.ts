@@ -40,4 +40,13 @@ export class ApiService {
   public deleteSession(sessionId: string): Promise<void> {
     return firstValueFrom(this.httpClient.delete<void>(`/api/sessions/${encodeURIComponent(sessionId)}`));
   }
+
+  public uploadCollageImage(sessionId: string, playerId: string, collageId: string, imageDataUrl: string): Promise<{ok: boolean; publicUrl: string}> {
+    return firstValueFrom(
+      this.httpClient.post<{ok: boolean; publicUrl: string}>(
+        `/api/sessions/${encodeURIComponent(sessionId)}/collage-image`,
+        {playerId, collageId, imageDataUrl},
+      ),
+    );
+  }
 }

@@ -4,6 +4,7 @@ import type {FastifyInstance} from "fastify";
 import type {GameModeId, StickerDefinition} from "@birthday/shared";
 import type {SessionService} from "../session/sessionService.js";
 import type {BackendConfig} from "../config.js";
+import type {AssetRepository} from "../infra/assetRepository.js";
 import {disconnectSessionClients} from "./wsPlugin.js";
 import {DEFAULT_STICKER_CATALOG} from "../game-modes/sticker-collage/stickerCatalog.js";
 
@@ -17,6 +18,7 @@ export async function registerApiRoutes(
     app: FastifyInstance,
     sessionService: SessionService,
     backendConfig: BackendConfig,
+    assetRepository: AssetRepository,
 ): Promise<void> {
 
     // ─── Sessions CRUD ──────────────────────────────────────────
@@ -179,6 +181,39 @@ export async function registerApiRoutes(
             }
             return sticker;
         });
+    });
+
+    // ─── Collage image upload ───────────────────────────────────
+
+    app.post<{
+        Params: {id: string};
+        Body: {playerId: string; collageId: string; imageDataUrl: string};
+    }>("/api/sessions/:id/collage-image", async (request, reply) => {
+        const sessionId = request.params.id;
+        const {playerId, collageId, imageDataUrl} = request.body ?? {};
+
+        console.log(`[collage-image] POST for session=${sessionId}, player=${playerId}, collage=${collageId}, dataLen=${imageDataUrl?.length ?? 0}`);
+
+        if (!playerId || !collageId || !imageDataUrl) {
+            return reply.status(400).send({message: "Missing playerId, collageId, or imageDataUrl"});
+        }
+
+        const state = await sessionService.loadState(sessionId);
+        if (!state) {
+            return reply.status(404).send({message: "Session not found"});
+        }
+
+        const playerName = state.players[playerId]?.name ?? "anon";
+
+        // Save the image asset
+        const saved = await assetRepository.saveCollage({
+            sessionId, playerId, playerName, collageId, imageDataUrl,
+        });
+
+        // Update snapshotUrl on the matching collage in session state
+        await sessionService.updateCollageSnapshot(sessionId, collageId, playerId, saved.publicUrl);
+
+        return {ok: true, publicUrl: saved.publicUrl};
     });
 }
 

@@ -195,6 +195,8 @@ export interface StickerCollage {
     roundIndex: number;
     placements: StickerPlacement[];
     submittedAt: number;
+    /** URL to a pre-rendered PNG snapshot of the collage (set after upload) */
+    snapshotUrl?: string;
 }
 
 export type StickerCollageRoundPhase = "BUILDING" | "REVIEWING";

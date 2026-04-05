@@ -286,4 +286,32 @@ export class SessionService {
         }
         throw new Error("Could not generate unique session code");
     }
+
+    // ─── Collage snapshot ───────────────────────────────────────────
+
+    /**
+     * Set the snapshotUrl on a submitted collage (called after the PNG is uploaded).
+     */
+    public async updateCollageSnapshot(
+        sessionId: string,
+        collageId: string,
+        playerId: string,
+        snapshotUrl: string,
+    ): Promise<SessionState | null> {
+        const result = await this.mutator.mutate(sessionId, (state) => {
+            const ms = state.modeState as any;
+            if (!ms?.submissions) return {stateChanged: false, extra: undefined};
+
+            for (const roundSubs of Object.values(ms.submissions) as any[]) {
+                for (const collage of roundSubs) {
+                    if (collage.id === collageId && collage.playerId === playerId) {
+                        collage.snapshotUrl = snapshotUrl;
+                        return {stateChanged: true, extra: undefined};
+                    }
+                }
+            }
+            return {stateChanged: false, extra: undefined};
+        });
+        return result?.state ?? null;
+    }
 }

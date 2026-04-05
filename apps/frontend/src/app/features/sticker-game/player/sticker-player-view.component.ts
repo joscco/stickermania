@@ -3,6 +3,8 @@ import {CommonModule} from "@angular/common";
 import type {StickerPlacement} from "@birthday/shared";
 import {StickerPlayerService} from "../services/sticker-player.service";
 import {WorldStore} from "../../../core/world.store";
+import {GameSessionStore} from "../../../core/challenge.store";
+import {ApiService} from "../../../core/api.service";
 import {StickerHandComponent} from './sticker-hand/sticker-hand.component';
 import {StickerCanvasComponent} from './sticker-canvas/sticker-canvas.component';
 import {StickerVotingComponent} from './sticker-voting/sticker-voting.component';
@@ -17,6 +19,8 @@ import {StickerSwapModalComponent} from './sticker-swap-modal/sticker-swap-modal
 export class StickerPlayerViewComponent {
     public readonly stickerService = inject(StickerPlayerService);
     public readonly worldStore = inject(WorldStore);
+    public readonly sessionStore = inject(GameSessionStore);
+    private readonly apiService = inject(ApiService);
 
     @ViewChild("stickerCanvas") stickerCanvas!: StickerCanvasComponent;
 
@@ -68,8 +72,70 @@ export class StickerPlayerViewComponent {
         this.canvasPlacements.set(this.canvasPlacements().filter(p => p.instanceId !== instanceId));
     }
 
-    public submitCollage(): void {
-        this.stickerService.submitCollage(this.canvasPlacements());
+    public async submitCollage(): Promise<void> {
+        const placements = this.canvasPlacements();
+        if (placements.length === 0) return;
+
+        // 1. Capture the canvas as PNG *before* submitting (UI will change after submit)
+        let imageDataUrl: string | null = null;
+        try {
+            console.log("[collage] capturing canvas snapshot…");
+            imageDataUrl = await this.stickerCanvas.toDataUrl();
+            console.log("[collage] snapshot captured:", imageDataUrl?.length, "chars");
+        } catch (err) {
+            console.error("[collage] snapshot capture failed:", err);
+        }
+
+        // 2. Submit placements via WebSocket
+        this.stickerService.submitCollage(placements);
+        console.log("[collage] placements submitted via WS");
+
+        // 3. Upload the PNG snapshot in the background (if captured)
+        if (imageDataUrl) {
+            this.uploadSnapshot(imageDataUrl);
+        } else {
+            console.warn("[collage] no imageDataUrl, skipping upload");
+        }
+    }
+
+    /**
+     * Wait for the collageId to appear in state, then upload the snapshot.
+     */
+    private async uploadSnapshot(imageDataUrl: string): Promise<void> {
+        const sessionId = this.sessionStore.sessionId();
+        const playerId = this.sessionStore.playerId();
+        if (!sessionId || !playerId) {
+            console.warn("[collage] missing sessionId or playerId, skipping upload");
+            return;
+        }
+
+        // Wait for the submission to appear in state (poll briefly)
+        let collageId: string | null = null;
+        for (let attempt = 0; attempt < 30; attempt++) {
+            const ms = this.stickerService.modeState();
+            if (ms) {
+                const roundSubs = ms.submissions[ms.currentRoundIndex] ?? [];
+                const mine = roundSubs.find(s => s.playerId === playerId);
+                if (mine) {
+                    collageId = mine.id;
+                    break;
+                }
+            }
+            await new Promise(r => setTimeout(r, 200));
+        }
+
+        if (!collageId) {
+            console.warn("[collage] could not find collageId in state after 6s, skipping upload");
+            return;
+        }
+
+        console.log("[collage] uploading snapshot for collageId:", collageId, "dataLen:", imageDataUrl.length);
+        try {
+            const result = await this.apiService.uploadCollageImage(sessionId, playerId, collageId, imageDataUrl);
+            console.log("[collage] upload done:", result);
+        } catch (err) {
+            console.error("[collage] upload failed:", err);
+        }
     }
 
     public openSwapModal(args: {index: number; stickerId: string}): void {
