@@ -141,11 +141,13 @@ export class PlayerMessageHandler {
   // ─── Error handling ─────────────────────────────────────────
 
   private handleError(message: string): void {
+    console.warn("[player-msg] error from server:", message);
     this.sessionStore.showFeedback(message, "error");
 
     // Session-fatal errors → stop reconnect, clear data, redirect to /join
     const fatal = /nicht gefunden|abgelaufen|gelöscht|wurde gelöscht|closed|deleted/i.test(message);
     if (fatal) {
+      console.warn("[player-msg] fatal error — disconnecting and redirecting to /join");
       this.wsService.disconnect();      // stop reconnect loop → status stays "disconnected"
       this.reconnectService.clear();
       setTimeout(() => this.router.navigate(["/join"]), 2000);

@@ -39,7 +39,7 @@ interface ActivePointer {
 export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     @Input() stickers: StickerPlacement[] = [];
     @Input() stickerCatalog: StickerDefinition[] = [];
-    @Input() maxStickers: number = 12;
+    @Input() maxStickers: number = 20;
     @Input() interactive: boolean = false;
     @Output() placementsChanged = new EventEmitter<StickerPlacement[]>();
     @Output() stickerRemoved = new EventEmitter<string>();
@@ -106,9 +106,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         const ctx = canvas.getContext("2d")!;
         ctx.scale(pixelScale, pixelScale);
 
-        // White background
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, size, size);
+        // Transparent background (no fill)
 
         // Pre-load all sticker images
         const imageCache = new Map<string, HTMLImageElement>();
