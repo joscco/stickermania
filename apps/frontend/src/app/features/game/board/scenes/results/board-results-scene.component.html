@@ -1,11 +1,11 @@
 <div class="h-full flex flex-col">
   <!-- Results header -->
-  <div class="bg-linear-to-r from-yellow-400 to-amber-500 text-white px-8 py-5 text-center rounded-2xl mx-4 mt-4 shadow-lg anim-banner">
+  <div animOnInit="medal" class="bg-linear-to-r from-yellow-400 to-amber-500 text-white px-8 py-5 text-center rounded-2xl mx-4 mt-4 shadow-lg">
     <h1 class="text-3xl font-black">🏆 Ergebnisse</h1>
   </div>
 
   <!-- Podium -->
-  <div class="flex-1 flex items-end justify-center gap-4 pb-8 px-4 mt-4 anim-podium">
+  <div animOnInit="item" [animDelay]="0.3" class="flex-1 flex items-end justify-center gap-4 pb-8 px-4 mt-4">
     <!-- 2nd place -->
     @if (topResults().length > 1) {
       <div class="flex flex-col items-center">
@@ -68,7 +68,7 @@
   </div>
 
   <!-- Winner action status -->
-  <div class="mx-4 mb-4 p-4 bg-stone-50 rounded-2xl border border-stone-200 anim-item">
+  <div animOnInit="item" [animDelay]="0.7" class="mx-4 mb-4 p-4 bg-stone-50 rounded-2xl border border-stone-200">
     @if (winnerId() && !winnerChoicesDone()) {
       <div class="text-center">
         <p class="text-lg font-bold text-stone-800">
@@ -109,7 +109,7 @@
   </div>
 
   <!-- Advance button -->
-  <div class="text-center pb-6 anim-item">
+  <div animOnInit="item" [animDelay]="0.85" class="text-center pb-6">
     <button
       class="bg-purple-600 text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-purple-700 active:scale-95 transition-all"
       (click)="advanceFromResults()"

@@ -1,10 +1,11 @@
 import { Component, input, output, ViewChild } from "@angular/core";
 import { DrawingCanvasComponent } from '../../../shared/paint-canvas/drawing-canvas.component';
+import {AnimOnInitDirective, AnimGroupDirective} from '../../../shared/animations/anim-on-init.directive';
 
 @Component({
   selector: "app-lobby-avatar",
   standalone: true,
-  imports: [DrawingCanvasComponent],
+  imports: [DrawingCanvasComponent, AnimOnInitDirective, AnimGroupDirective],
   templateUrl: './lobby-avatar.component.html',
 })
 export class LobbyAvatarComponent {

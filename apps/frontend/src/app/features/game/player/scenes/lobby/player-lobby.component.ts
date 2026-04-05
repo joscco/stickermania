@@ -1,19 +1,12 @@
-import {Component, AfterViewInit, ElementRef, inject} from "@angular/core";
+import {Component} from "@angular/core";
 import {CommonModule} from "@angular/common";
-import gsap from "gsap";
+import {AnimOnInitDirective, AnimGroupDirective} from '../../../../shared/animations/anim-on-init.directive';
 
 @Component({
     selector: "app-player-lobby",
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, AnimOnInitDirective, AnimGroupDirective],
     templateUrl: "./player-lobby.component.html",
 })
-export class PlayerLobbyComponent implements AfterViewInit {
-    private readonly el = inject(ElementRef);
-
-    public ngAfterViewInit(): void {
-        const items = this.el.nativeElement.querySelectorAll(".p-anim");
-        gsap.fromTo(items, {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.35, stagger: 0.08, ease: "power2.out"});
-    }
-}
+export class PlayerLobbyComponent {}
 

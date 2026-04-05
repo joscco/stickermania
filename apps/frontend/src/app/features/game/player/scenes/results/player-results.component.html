@@ -1,12 +1,12 @@
 <div class="flex-1 flex flex-col overflow-y-auto">
   <!-- Results header -->
-  <div class="bg-linear-to-r from-yellow-400 to-amber-500 text-white px-4 py-3 text-center p-anim-banner">
+  <div animOnInit="banner" class="bg-linear-to-r from-yellow-400 to-amber-500 text-white px-4 py-3 text-center">
     <h2 class="text-lg font-bold">🏆 Ergebnisse</h2>
   </div>
 
   <!-- My placement -->
   @if (stickerService.myPlacement(); as placement) {
-    <div class="text-center py-4 p-anim-medal">
+    <div animOnInit="medal" [animDelay]="0.15" class="text-center py-4">
       @if (placement === 1) {
         <div class="text-5xl">🥇</div>
         <p class="text-lg font-bold text-amber-600 mt-1">Du hast gewonnen!</p>
@@ -22,7 +22,7 @@
       }
     </div>
   } @else {
-    <div class="text-center py-4 p-anim">
+    <div animOnInit="item" [animDelay]="0.15" class="text-center py-4">
       <p class="text-stone-400 text-sm">Du hast diese Runde nicht teilgenommen.</p>
     </div>
   }
@@ -31,7 +31,7 @@
   @if (stickerService.isWinner() && !stickerService.winnerChoicesDone()) {
     <div class="px-4 pb-4 space-y-4">
       <!-- Progress dots -->
-      <div class="flex justify-center gap-3 py-2 p-anim-choice">
+      <div animOnInit="choice" [animDelay]="0.2" class="flex justify-center gap-3 py-2">
         <div class="w-8 h-8 rounded-full grid place-items-center text-sm shadow-sm"
              [class.bg-emerald-100]="stickerService.hasChosenPrompt()"
              [class.text-emerald-600]="stickerService.hasChosenPrompt()"
@@ -53,7 +53,7 @@
 
       <!-- Step 1: Pick prompt -->
       @if (!stickerService.hasChosenPrompt() && stickerService.promptChoices().length > 0) {
-        <div class="p-anim-choice">
+        <div animOnInit="choice" [animDelay]="0.3">
           <h3 class="text-sm font-semibold text-stone-700 mb-2">🎯 Wähle den nächsten Prompt:</h3>
           <div class="space-y-2">
             @for (prompt of stickerService.promptChoices(); track prompt) {
@@ -70,7 +70,7 @@
 
       <!-- Step 2: Unlock pack -->
       @if (stickerService.hasChosenPrompt() && !stickerService.hasUnlockedPack() && stickerService.packUnlockChoices().length > 0) {
-        <div class="p-anim-choice">
+        <div animOnInit="choice" [animDelay]="0.3">
           <h3 class="text-sm font-semibold text-stone-700 mb-2">🔓 Schalte ein Sticker-Pack frei:</h3>
           <div class="grid grid-cols-2 gap-2">
             @for (pack of stickerService.packUnlockChoices(); track pack.id) {
@@ -88,7 +88,7 @@
 
       <!-- Step 3: Guaranteed pack -->
       @if (stickerService.hasChosenPrompt() && (stickerService.hasUnlockedPack() || !stickerService.hasLockedPacks()) && stickerService.guaranteedPackChoices().length > 0) {
-        <div class="p-anim-choice">
+        <div animOnInit="choice" [animDelay]="0.3">
           <h3 class="text-sm font-semibold text-stone-700 mb-2">⭐ "Auf jeden Fall dabei"-Pack:</h3>
           <div class="grid grid-cols-2 gap-2">
             @for (pack of stickerService.guaranteedPackChoices(); track pack.id) {
@@ -104,11 +104,11 @@
       }
     </div>
   } @else if (stickerService.isWinner() && stickerService.winnerChoicesDone()) {
-    <div class="text-center py-4 p-anim">
+    <div animOnInit="item" [animDelay]="0.2" class="text-center py-4">
       <p class="text-emerald-600 font-medium text-sm">✅ Auswahl getroffen! Warte auf die nächste Runde…</p>
     </div>
   } @else if (stickerService.winnerId()) {
-    <div class="text-center py-4 px-6 p-anim">
+    <div animOnInit="item" [animDelay]="0.2" class="text-center py-4 px-6">
       <p class="text-stone-500 text-sm">
         {{ worldStore.players()[stickerService.winnerId()!]?.name ?? 'Der Gewinner' }} wählt die nächste Runde…
       </p>

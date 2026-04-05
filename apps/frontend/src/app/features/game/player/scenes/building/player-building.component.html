@@ -1,16 +1,17 @@
 <!-- Prompt banner -->
-<div class="bg-linear-to-r from-purple-500 to-pink-500 text-white px-4 py-2 text-center p-anim-banner">
+<div animOnInit="banner" class="bg-linear-to-r from-purple-500 to-pink-500 text-white px-4 py-2 text-center">
   <span class="text-xs font-medium opacity-80">Runde {{ stickerService.currentRoundIndex() }}</span>
   <h2 class="text-base font-bold">{{ stickerService.currentPrompt() }}</h2>
 </div>
 
 @if (!stickerService.myHand()) {
   <!-- No hand yet → request one -->
-  <div class="flex-1 flex flex-col items-center justify-center gap-4 p-6">
-    <div class="text-6xl p-anim">🎨</div>
-    <p class="text-stone-600 text-center text-sm p-anim">Bereit mitzumachen?<br/>Hol dir deine Sticker-Hand!</p>
+  <div animGroup="item" [animDelay]="0.1" class="flex-1 flex flex-col items-center justify-center gap-4 p-6">
+    <div animOnInit="item" class="text-6xl">🎨</div>
+    <p animOnInit="item" class="text-stone-600 text-center text-sm">Bereit mitzumachen?<br/>Hol dir deine Sticker-Hand!</p>
     <button
-      class="bg-purple-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform p-anim"
+      animOnInit="item"
+      class="bg-purple-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
       (click)="stickerService.requestHand()"
     >
       Sticker austeilen 🃏
@@ -18,10 +19,10 @@
   </div>
 } @else if (stickerService.hasSubmittedThisRound()) {
   <!-- Already submitted -->
-  <div class="flex-1 flex flex-col items-center justify-center gap-4 p-6">
-    <div class="text-6xl p-anim">✅</div>
-    <p class="text-stone-600 text-center font-medium p-anim">Eingereicht! 🎉</p>
-    <p class="text-stone-400 text-center text-sm p-anim">Warte auf das Ende der Runde…</p>
+  <div animGroup="item" [animDelay]="0.1" class="flex-1 flex flex-col items-center justify-center gap-4 p-6">
+    <div animOnInit="item" class="text-6xl">✅</div>
+    <p animOnInit="item" class="text-stone-600 text-center font-medium">Eingereicht! 🎉</p>
+    <p animOnInit="item" class="text-stone-400 text-center text-sm">Warte auf das Ende der Runde…</p>
   </div>
 } @else {
   <!-- Building mode: canvas + hand -->

@@ -1,26 +1,25 @@
-import {Component, AfterViewInit, ElementRef, inject, signal, ViewChild} from "@angular/core";
+import {Component, inject, signal, ViewChild} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {StickerPlacement} from "@birthday/shared";
 import {StickerPlayerService} from '../../../services/sticker-player.service';
 import {StickerCanvasComponent} from '../../canvas/sticker-canvas.component';
 import {StickerHandComponent} from '../../hand/sticker-hand.component';
 import {StickerSwapModalComponent} from '../../swap-modal/sticker-swap-modal.component';
-import gsap from "gsap";
 import {GameSessionStore} from '../../../../../core/challenge.store';
 import {ApiService} from '../../../../../core/api.service';
+import {AnimOnInitDirective, AnimGroupDirective} from '../../../../shared/animations/anim-on-init.directive';
 
 @Component({
     selector: "app-player-building",
     standalone: true,
-    imports: [CommonModule, StickerCanvasComponent, StickerHandComponent, StickerSwapModalComponent],
+    imports: [CommonModule, StickerCanvasComponent, StickerHandComponent, StickerSwapModalComponent, AnimOnInitDirective, AnimGroupDirective],
     templateUrl: "./player-building.component.html",
     host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })
-export class PlayerBuildingComponent implements AfterViewInit {
+export class PlayerBuildingComponent {
     public readonly stickerService = inject(StickerPlayerService);
     private readonly sessionStore = inject(GameSessionStore);
     private readonly apiService = inject(ApiService);
-    private readonly el = inject(ElementRef);
 
     @ViewChild("stickerCanvas") stickerCanvas!: StickerCanvasComponent;
 
@@ -28,13 +27,6 @@ export class PlayerBuildingComponent implements AfterViewInit {
     public readonly showSwapModal = signal(false);
     public readonly swapTargetStickerId = signal<string | null>(null);
     public readonly swapTargetIndex = signal<number | null>(null);
-
-    public ngAfterViewInit(): void {
-        const banner = this.el.nativeElement.querySelector(".p-anim-banner");
-        const items = this.el.nativeElement.querySelectorAll(".p-anim");
-        if (banner) gsap.fromTo(banner, {opacity: 0, y: -20}, {opacity: 1, y: 0, duration: 0.4, ease: "power2.out"});
-        if (items.length) gsap.fromTo(items, {opacity: 0, y: 18}, {opacity: 1, y: 0, duration: 0.35, stagger: 0.06, ease: "power2.out"});
-    }
 
     public onStickerAddedFromHand(stickerId: string): void {
         const current = this.canvasPlacements();

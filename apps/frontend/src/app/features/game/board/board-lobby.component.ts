@@ -2,11 +2,12 @@ import { CommonModule } from "@angular/common";
 import { Component, OnInit, output, signal } from "@angular/core";
 import type { GameModeId } from "@birthday/shared";
 import { ApiService, type SessionSummary } from '../../../core/api.service';
+import {AnimOnInitDirective, AnimGroupDirective} from '../../shared/animations/anim-on-init.directive';
 
 @Component({
   selector: "app-board-lobby",
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AnimOnInitDirective, AnimGroupDirective],
   templateUrl: "./board-lobby.component.html",
 })
 export class BoardLobbyComponent implements OnInit {

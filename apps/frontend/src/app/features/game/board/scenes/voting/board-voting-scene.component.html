@@ -1,12 +1,12 @@
 <div class="h-full flex flex-col">
   <!-- Voting banner -->
-  <div class="bg-linear-to-r from-amber-500 to-orange-500 text-white px-8 py-5 text-center rounded-2xl mx-4 mt-4 shadow-lg anim-banner">
+  <div animOnInit="banner" class="bg-linear-to-r from-amber-500 to-orange-500 text-white px-8 py-5 text-center rounded-2xl mx-4 mt-4 shadow-lg">
     <span class="text-sm font-medium opacity-70 uppercase tracking-wider">Abstimmung</span>
     <h1 class="text-3xl font-black mt-1">{{ modeState()?.currentPrompt ?? '' }}</h1>
   </div>
 
   <!-- Slideshow strip -->
-  <div class="flex-1 flex items-center overflow-hidden mt-4 anim-strip">
+  <div animOnInit="strip" [animDelay]="0.2" class="flex-1 flex items-center overflow-hidden mt-4">
     <div class="flex gap-6 animate-scroll-left px-4"
          [style.animation-duration]="scrollDuration()">
       @for (sub of doubledSubmissions(); track $index) {
@@ -36,7 +36,7 @@
   </div>
 
   <!-- End voting button -->
-  <div class="text-center pb-6 anim-item">
+  <div animOnInit="item" [animDelay]="0.4" class="text-center pb-6">
     <button
       class="bg-orange-500 text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-orange-600 active:scale-95 transition-all"
       (click)="endVotingEarly()"

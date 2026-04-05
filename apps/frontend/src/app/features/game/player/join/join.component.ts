@@ -2,6 +2,7 @@ import { CommonModule } from "@angular/common";
 import { Component, OnInit, signal } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import {OnScreenKeyboardComponent} from '../../../shared/keyboard/on-screen-keyboard.component';
+import {AnimOnInitDirective} from '../../../shared/animations/anim-on-init.directive';
 
 const LAST_SESSION_CODE_STORAGE_KEY = "birthday_last_session_code";
 const RECONNECT_STORAGE_KEY = "birthday_reconnect";
@@ -9,7 +10,7 @@ const RECONNECT_STORAGE_KEY = "birthday_reconnect";
 @Component({
   selector: "app-join",
   standalone: true,
-  imports: [CommonModule, OnScreenKeyboardComponent],
+  imports: [CommonModule, OnScreenKeyboardComponent, AnimOnInitDirective],
   templateUrl: "./join.component.html",
 })
 export class JoinComponent implements OnInit {
@@ -51,10 +52,6 @@ export class JoinComponent implements OnInit {
     } catch { /* ignore */ }
   }
 
-  public onInput(rawValue: string): void {
-    this.sessionCode.set(this.normalizeSessionCode(rawValue));
-  }
-
   public onKeyboardInput(rawValue: string): void {
     this.sessionCode.set(this.normalizeSessionCode(rawValue));
   }
@@ -84,6 +81,6 @@ export class JoinComponent implements OnInit {
     return rawValue
       .toUpperCase()
       .replace(/[^A-Z2-9]/g, "")
-      .slice(0, 5);
+      .slice(0, 4);
   }
 }

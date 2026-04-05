@@ -1,4 +1,4 @@
-import {Component, computed, inject, input, AfterViewInit, ElementRef} from "@angular/core";
+import {Component, computed, inject, input} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {
     StickerCollageClientAction,
@@ -6,31 +6,22 @@ import type {
     StickerCollageVoteResult,
     SessionPlayer,
 } from "@birthday/shared";
-import gsap from "gsap";
 import {WorldStore} from '../../../../../core/world.store';
 import {WebSocketService} from '../../../../../core/websocket.service';
+import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 
 @Component({
     selector: "app-board-results-scene",
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, AnimOnInitDirective],
     templateUrl: "./board-results-scene.component.html",
 })
-export class BoardResultsSceneComponent implements AfterViewInit {
+export class BoardResultsSceneComponent {
     private readonly worldStore = inject(WorldStore);
     private readonly wsService = inject(WebSocketService);
-    private readonly el = inject(ElementRef);
 
     public readonly modeState = input<StickerCollageModeState | null>(null);
 
-    public ngAfterViewInit(): void {
-        const banner = this.el.nativeElement.querySelector('.anim-banner');
-        const podium = this.el.nativeElement.querySelector('.anim-podium');
-        const items = this.el.nativeElement.querySelectorAll('.anim-item');
-        if (banner) gsap.fromTo(banner, {opacity: 0, scale: 0.8}, {opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)"});
-        if (podium) gsap.fromTo(podium, {opacity: 0, y: 80}, {opacity: 1, y: 0, duration: 0.7, delay: 0.3, ease: "power3.out"});
-        if (items.length) gsap.fromTo(items, {opacity: 0, y: 20}, {opacity: 1, y: 0, duration: 0.4, stagger: 0.15, delay: 0.7, ease: "power2.out"});
-    }
 
     public readonly topResults = computed<StickerCollageVoteResult[]>(() => {
         return (this.modeState()?.lastVoteResults ?? []).slice(0, 3);

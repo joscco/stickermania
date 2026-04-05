@@ -1,13 +1,13 @@
 <div class="h-full flex flex-col">
   <!-- Prompt banner -->
-  <div class="bg-linear-to-r from-purple-600 to-pink-500 text-white px-8 py-6 text-center rounded-2xl mx-4 mt-4 shadow-lg anim-banner">
+  <div animOnInit="banner" class="bg-linear-to-r from-purple-600 to-pink-500 text-white px-8 py-6 text-center rounded-2xl mx-4 mt-4 shadow-lg">
     <span class="text-sm font-medium opacity-70 uppercase tracking-wider">Runde {{ modeState()?.currentRoundIndex ?? 0 }}</span>
     <h1 class="text-3xl font-black mt-1">{{ modeState()?.currentPrompt ?? '' }}</h1>
   </div>
 
   <!-- Round info: newly unlocked pack + guaranteed pack -->
   @if (lastUnlockedPack() || guaranteedPack()) {
-    <div class="flex justify-center gap-6 mt-4 px-4 anim-item">
+    <div animOnInit="item" [animDelay]="0.1" class="flex justify-center gap-6 mt-4 px-4">
       @if (lastUnlockedPack(); as pack) {
         <div class="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2 text-center">
           <div class="text-xs text-emerald-600 font-semibold uppercase tracking-wider">Neu freigeschaltet</div>
@@ -25,7 +25,7 @@
 
   <!-- Player status -->
   <div class="flex-1 flex flex-col items-center justify-center px-8">
-    <div class="flex flex-wrap justify-center gap-4 max-w-3xl anim-players">
+    <div animOnInit="players" [animDelay]="0.2" class="flex flex-wrap justify-center gap-4 max-w-3xl">
       @for (player of connectedPlayers(); track player.id) {
         <div class="flex flex-col items-center gap-1.5 transition-all"
              [class.opacity-40]="!isDrawing(player.id) && !hasSubmitted(player.id)">
@@ -56,13 +56,13 @@
       }
     </div>
 
-    <div class="mt-8 text-center anim-item">
+    <div animOnInit="item" [animDelay]="0.35" class="mt-8 text-center">
       <p class="text-lg font-medium text-stone-600">{{ submissionCount() }}/{{ connectedPlayers().length }} eingereicht</p>
     </div>
   </div>
 
   <!-- End round button -->
-  <div class="text-center pb-6 anim-item">
+  <div animOnInit="item" [animDelay]="0.45" class="text-center pb-6">
     <button
       class="bg-orange-500 text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-orange-600 active:scale-95 transition-all"
       (click)="endRoundEarly()"

@@ -1,11 +1,12 @@
 import { Component, inject, output, signal } from "@angular/core";
 import { OnScreenKeyboardComponent } from '../../../shared/keyboard/on-screen-keyboard.component';
 import {GameSessionStore} from '../../../../core/challenge.store';
+import {AnimOnInitDirective, AnimGroupDirective} from '../../../shared/animations/anim-on-init.directive';
 
 @Component({
   selector: "app-lobby-name",
   standalone: true,
-  imports: [OnScreenKeyboardComponent],
+  imports: [OnScreenKeyboardComponent, AnimOnInitDirective, AnimGroupDirective],
   templateUrl: './lobby-name.component.html',
 })
 export class LobbyNameComponent {

@@ -194,7 +194,6 @@ Für Cloud: Repository-Pattern vorbereitet (`SessionRepository`, `AssetRepositor
 ├── packages/
 │   └── shared/                     # Shared Types, Config-Parser
 ├── scripts/
-│   ├── capture-screens.ts          # Playwright Screenshot-Generator
 │   └── check-sticker-assets.mjs   # Asset-Validierung
 ├── game.config.json                # Spielkonfiguration
 ├── hitbox-data.json                # Hitbox-Polygone (generiert)
