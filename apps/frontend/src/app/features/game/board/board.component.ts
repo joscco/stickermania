@@ -42,7 +42,7 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly activeMode = computed<GameModeId>(() => this.worldStore.activeMode());
   public readonly modeLabel = computed(() => {
     switch (this.activeMode()) {
-      case "sticker-collage": return "Sticker-Collage";
+      case "sticker-collage": return "Stickermania";
       default: return this.activeMode();
     }
   });

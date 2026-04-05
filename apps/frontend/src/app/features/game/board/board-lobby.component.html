@@ -21,7 +21,7 @@
       <div class="flex flex-row items-center justify-center gap-3 mb-6">
         @for (mode of gameModes; track mode.id) {
           <button
-            class="rounded-2xl p-4 text-center transition-all"
+            class="rounded-2xl p-4 text-center transition-[background-color]"
             [class.bg-stone-200]="selectedMode() === mode.id"
             [class.hover:bg-stone-100]="selectedMode() !== mode.id"
             (click)="selectMode(mode.id)"

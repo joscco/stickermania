@@ -4,11 +4,12 @@ import type {StickerCollageClientAction, SessionPlayer} from "@birthday/shared";
 import {WorldStore} from '../../../../../core/world.store';
 import {WebSocketService} from '../../../../../core/websocket.service';
 import {AnimOnInitDirective, AnimGroupDirective} from '../../../../shared/animations/anim-on-init.directive';
+import {BoardQrPanelComponent} from '../../qr-panel/board-qr-panel.component';
 
 @Component({
     selector: "app-board-lobby-scene",
     standalone: true,
-    imports: [CommonModule, AnimOnInitDirective, AnimGroupDirective],
+    imports: [CommonModule, AnimOnInitDirective, AnimGroupDirective, BoardQrPanelComponent],
     templateUrl: "./board-lobby-scene.component.html",
 })
 export class BoardLobbySceneComponent {

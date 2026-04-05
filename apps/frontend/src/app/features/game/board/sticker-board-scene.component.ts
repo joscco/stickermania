@@ -6,11 +6,12 @@ import {BoardBuildingSceneComponent} from './scenes/building/board-building-scen
 import {BoardVotingSceneComponent} from './scenes/voting/board-voting-scene.component';
 import {BoardResultsSceneComponent} from './scenes/results/board-results-scene.component';
 import {WorldStore} from '../../../core/world.store';
+import {BoardQrPanelComponent} from './qr-panel/board-qr-panel.component';
 
 @Component({
     selector: "app-sticker-board-scene",
     standalone: true,
-    imports: [CommonModule, BoardLobbySceneComponent, BoardBuildingSceneComponent, BoardVotingSceneComponent, BoardResultsSceneComponent],
+    imports: [CommonModule, BoardLobbySceneComponent, BoardBuildingSceneComponent, BoardVotingSceneComponent, BoardResultsSceneComponent, BoardQrPanelComponent],
     templateUrl: "./sticker-board-scene.component.html",
 })
 export class StickerBoardSceneComponent {

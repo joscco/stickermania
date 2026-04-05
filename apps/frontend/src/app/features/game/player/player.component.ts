@@ -101,7 +101,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   protected readonly activeTitle = computed(() => {
     switch (this.activeMode()) {
-      case "sticker-collage": return "Sticker-Collage";
+      case "sticker-collage": return "Stickermania";
       default: return "";
     }
   });
