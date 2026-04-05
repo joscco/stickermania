@@ -33,6 +33,8 @@ export interface TeamGraffitiGameConfig {
 
 export interface StickerCollageGameConfig {
     roundDurationSec: number;
+    votingDurationSec: number;
+    resultsDurationSec: number;
     handSize: number;
     maxStickersOnCanvas: number;
     swapCount: number;
@@ -40,6 +42,8 @@ export interface StickerCollageGameConfig {
     pointsByPlacement: number[];
     requiredCategories: string[];
     prompts: string[];
+    promptChoiceCount: number;
+    packUnlockChoiceCount: number;
 }
 
 export interface GameConfig {
@@ -70,6 +74,8 @@ export function parseGameConfig(raw: unknown): GameConfig {
         sessionTtlHours: typeof r["sessionTtlHours"] === "number" ? r["sessionTtlHours"] : 24,
         stickerCollage: {
             roundDurationSec: typeof sc["roundDurationSec"] === "number" ? sc["roundDurationSec"] : 600,
+            votingDurationSec: typeof sc["votingDurationSec"] === "number" ? sc["votingDurationSec"] : 120,
+            resultsDurationSec: typeof sc["resultsDurationSec"] === "number" ? sc["resultsDurationSec"] : 60,
             handSize: typeof sc["handSize"] === "number" ? sc["handSize"] : 8,
             maxStickersOnCanvas: typeof sc["maxStickersOnCanvas"] === "number" ? sc["maxStickersOnCanvas"] : 12,
             swapCount: typeof sc["swapCount"] === "number" ? sc["swapCount"] : 2,
@@ -77,6 +83,8 @@ export function parseGameConfig(raw: unknown): GameConfig {
             pointsByPlacement: Array.isArray(sc["pointsByPlacement"]) ? sc["pointsByPlacement"] as number[] : [100, 60, 30],
             requiredCategories: Array.isArray(sc["requiredCategories"]) ? sc["requiredCategories"] as string[] : ["eyes"],
             prompts: Array.isArray(sc["prompts"]) ? sc["prompts"] as string[] : ["Bau ein Monster", "Mach eine Geburtstagstorte"],
+            promptChoiceCount: typeof sc["promptChoiceCount"] === "number" ? sc["promptChoiceCount"] : 3,
+            packUnlockChoiceCount: typeof sc["packUnlockChoiceCount"] === "number" ? sc["packUnlockChoiceCount"] : 3,
         },
     };
 }
@@ -161,10 +169,18 @@ export interface DrawSearchDrawTask {
 export type DrawSearchPlayerTask = DrawSearchDrawTask
 // ─── Sticker-Collage types ─────────────────────────────────────
 
+export interface StickerPack {
+    id: string;
+    name: string;
+    stickerIds: string[];
+    unlockedAtStart: boolean;
+}
+
 export interface StickerDefinition {
     id: string;
     imageUrl: string;
     categories: string[];
+    packId?: string;
     /**
      * Optional polygon hitbox, defined as an array of {x, y} points
      * where coordinates are normalized 0–1 relative to the sticker's bounding box.
@@ -199,7 +215,7 @@ export interface StickerCollage {
     snapshotUrl?: string;
 }
 
-export type StickerCollageRoundPhase = "BUILDING" | "REVIEWING";
+export type StickerCollageRoundPhase = "LOBBY" | "BUILDING" | "VOTING" | "RESULTS" | "NEXT_ROUND_SETUP";
 
 export interface StickerCollageVoteResult {
     collageId: string;
@@ -215,16 +231,36 @@ export interface StickerCollageModeState {
     currentPrompt: string;
     roundStartedAt: number | null;
     roundEndsAt: number | null;
+    votingEndsAt: number | null;
+    resultsEndsAt: number | null;
     /** All available stickers for the game */
     stickerCatalog: StickerDefinition[];
+    /** Sticker pack definitions */
+    stickerPacks: StickerPack[];
+    /** Which packs are currently unlocked */
+    unlockedPackIds: string[];
+    /** Pack guaranteed to appear in next round's hands */
+    guaranteedPackId: string | null;
     /** Player hands for the current round */
     playerHands: Record<string, StickerHand>;
     /** Submissions grouped by round index */
     submissions: Record<number, StickerCollage[]>;
-    /** Votes for previous round: voterId → collageId[] */
+    /** Votes for current round: voterId → collageId[] */
     currentVotes: Record<string, string[]>;
     /** Results from the last completed voting */
     lastVoteResults: StickerCollageVoteResult[];
+    /** Winner of the current/last round */
+    winnerId: string | null;
+    /** Prompt choices offered to the winner */
+    promptChoices: string[];
+    /** Locked pack IDs offered to the winner for unlocking */
+    packUnlockChoices: string[];
+    /** Unlocked pack IDs offered for guaranteed pick */
+    guaranteedPackChoices: string[];
+    /** The pack that was just unlocked (for display in NEXT_ROUND_SETUP) */
+    lastUnlockedPackId: string | null;
+    /** Whether the winner has made all their choices */
+    winnerChoicesDone: boolean;
     /** Prompt history (index → prompt) */
     promptHistory: Record<number, string>;
     /** Config echoed into state for client use */
@@ -239,13 +275,25 @@ export type StickerCollageClientAction =
     | { type: "swap-sticker"; handIndex: number; newStickerId: string }
     | { type: "submit-collage"; placements: StickerPlacement[] }
     | { type: "cast-vote"; collageId: string }
-    | { type: "start-round" };
+    | { type: "start-game" }
+    | { type: "end-round-early" }
+    | { type: "end-voting-early" }
+    | { type: "pick-prompt"; prompt: string }
+    | { type: "unlock-pack"; packId: string }
+    | { type: "pick-guaranteed-pack"; packId: string }
+    | { type: "advance-from-results" };
 
 export type StickerCollageServerEvent =
     | { type: "hand-dealt"; targetPlayerId: string; hand: StickerHand }
+    | { type: "game-started" }
     | { type: "round-started"; roundIndex: number; prompt: string; endsAt: number }
     | { type: "collage-submitted"; playerId: string; collageId: string }
+    | { type: "voting-started"; votingEndsAt: number }
     | { type: "vote-registered"; voterId: string; collageId: string }
+    | { type: "results-ready"; winnerId: string | null; results: StickerCollageVoteResult[] }
+    | { type: "pack-unlocked"; packId: string; packName: string }
+    | { type: "prompt-chosen"; prompt: string }
+    | { type: "guaranteed-pack-chosen"; packId: string; packName: string }
     | { type: "round-ended"; roundIndex: number; results: StickerCollageVoteResult[] }
     | { type: "score-update"; playerId: string; newScore: number };
 

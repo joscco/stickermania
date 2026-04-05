@@ -9,14 +9,24 @@ import type {
     StickerDefinition,
 } from "@birthday/shared";
 import type {GameActionResult, GameModeEngine} from "../gameModeEngine.js";
-import {DEFAULT_STICKER_CATALOG} from "./stickerCatalog.js";
-import {startNewRound, endRound} from "./roundManager.js";
-import {handleRequestHand, handleSwapSticker, handleSubmitCollage, handleCastVote} from "./actionHandlers.js";
+import {DEFAULT_STICKER_CATALOG, DEFAULT_STICKER_PACKS} from "./stickerCatalog.js";
+import {startVoting, startResults, advanceFromResults} from "./roundManager.js";
+import {
+    handleRequestHand,
+    handleSwapSticker,
+    handleSubmitCollage,
+    handleCastVote,
+    handleStartGame,
+    handleEndRoundEarly,
+    handleEndVotingEarly,
+    handlePickPrompt,
+    handleUnlockPack,
+    handlePickGuaranteedPack,
+    handleAdvanceFromResults,
+} from "./actionHandlers.js";
 
 /**
- * Merge hitbox polygon data from hitbox-data.json (created by the Hitbox-Editor dev tool)
- * into the default sticker catalog. This allows hitboxes to be defined visually
- * and picked up at runtime without hardcoding them in the catalog source.
+ * Merge hitbox polygon data from hitbox-data.json into the sticker catalog.
  */
 function buildCatalogWithHitboxes(): StickerDefinition[] {
     let hitboxData: Record<string, Array<{x: number; y: number}>> = {};
@@ -42,18 +52,32 @@ export class StickerCollageEngine implements GameModeEngine<"sticker-collage", S
     public constructor(private readonly config: GameConfig) {}
 
     public createInitialState(): StickerCollageModeState {
+        const packs = DEFAULT_STICKER_PACKS;
+        const unlockedPackIds = packs.filter(p => p.unlockedAtStart).map(p => p.id);
+
         return {
             mode: "sticker-collage",
             currentRoundIndex: 0,
-            phase: "BUILDING",
+            phase: "LOBBY",
             currentPrompt: "",
             roundStartedAt: null,
             roundEndsAt: null,
+            votingEndsAt: null,
+            resultsEndsAt: null,
             stickerCatalog: buildCatalogWithHitboxes(),
+            stickerPacks: packs,
+            unlockedPackIds,
+            guaranteedPackId: null,
             playerHands: {},
             submissions: {},
             currentVotes: {},
             lastVoteResults: [],
+            winnerId: null,
+            promptChoices: [],
+            packUnlockChoices: [],
+            guaranteedPackChoices: [],
+            lastUnlockedPackId: null,
+            winnerChoicesDone: false,
             promptHistory: {},
             handSize: this.config.stickerCollage.handSize,
             maxStickersOnCanvas: this.config.stickerCollage.maxStickersOnCanvas,
@@ -67,7 +91,6 @@ export class StickerCollageEngine implements GameModeEngine<"sticker-collage", S
         player: {id: string};
         now: number;
     }): GameActionResult<"sticker-collage"> {
-        // No-op: hands are dealt on demand via "request-hand" action
         return {stateChanged: false, emittedEvents: []};
     }
 
@@ -75,18 +98,9 @@ export class StickerCollageEngine implements GameModeEngine<"sticker-collage", S
         sessionState: SessionState<StickerCollageModeState>;
         now: number;
     }): GameActionResult<"sticker-collage"> {
-        startNewRound(args.sessionState, this.config.stickerCollage, args.now);
-
-        const ms = args.sessionState.modeState;
-        return {
-            stateChanged: true,
-            emittedEvents: [{
-                type: "round-started",
-                roundIndex: ms.currentRoundIndex,
-                prompt: ms.currentPrompt,
-                endsAt: ms.roundEndsAt!,
-            }],
-        };
+        // startMode puts us in LOBBY — the actual game starts via "start-game" action
+        args.sessionState.modeState.phase = "LOBBY";
+        return {stateChanged: true, emittedEvents: []};
     }
 
     public resetMode(args: {
@@ -105,30 +119,49 @@ export class StickerCollageEngine implements GameModeEngine<"sticker-collage", S
 
         switch (action.type) {
             case "request-hand": {
-                const result = handleRequestHand(sessionState, context.playerId, this.config);
-                return {stateChanged: result.stateChanged, emittedEvents: result.events};
+                const r = handleRequestHand(sessionState, context.playerId, this.config);
+                return {stateChanged: r.stateChanged, emittedEvents: r.events};
             }
-
             case "swap-sticker": {
-                const result = handleSwapSticker(sessionState, context.playerId, action.handIndex, action.newStickerId);
-                return {stateChanged: result.stateChanged, emittedEvents: result.events};
+                const r = handleSwapSticker(sessionState, context.playerId, action.handIndex, action.newStickerId);
+                return {stateChanged: r.stateChanged, emittedEvents: r.events};
             }
-
             case "submit-collage": {
-                const result = handleSubmitCollage(sessionState, context.playerId, action.placements, this.config, context.now);
-                return {stateChanged: result.stateChanged, emittedEvents: result.events};
+                const r = handleSubmitCollage(sessionState, context.playerId, action.placements, this.config, context.now);
+                return {stateChanged: r.stateChanged, emittedEvents: r.events};
             }
-
             case "cast-vote": {
-                const result = handleCastVote(sessionState, context.playerId, action.collageId, this.config);
-                return {stateChanged: result.stateChanged, emittedEvents: result.events};
+                const r = handleCastVote(sessionState, context.playerId, action.collageId, this.config);
+                return {stateChanged: r.stateChanged, emittedEvents: r.events};
             }
-
-            case "start-round": {
-                // Admin/host action: manually advance to next round
-                return this.advanceRound(sessionState, context.now);
+            case "start-game": {
+                const r = handleStartGame(sessionState, this.config, context.now);
+                return {stateChanged: r.stateChanged, emittedEvents: r.events};
             }
-
+            case "end-round-early": {
+                const r = handleEndRoundEarly(sessionState, this.config, context.now);
+                return {stateChanged: r.stateChanged, emittedEvents: r.events};
+            }
+            case "end-voting-early": {
+                const r = handleEndVotingEarly(sessionState, this.config, context.now);
+                return {stateChanged: r.stateChanged, emittedEvents: r.events};
+            }
+            case "pick-prompt": {
+                const r = handlePickPrompt(sessionState, context.playerId, action.prompt);
+                return {stateChanged: r.stateChanged, emittedEvents: r.events};
+            }
+            case "unlock-pack": {
+                const r = handleUnlockPack(sessionState, context.playerId, action.packId);
+                return {stateChanged: r.stateChanged, emittedEvents: r.events};
+            }
+            case "pick-guaranteed-pack": {
+                const r = handlePickGuaranteedPack(sessionState, context.playerId, action.packId);
+                return {stateChanged: r.stateChanged, emittedEvents: r.events};
+            }
+            case "advance-from-results": {
+                const r = handleAdvanceFromResults(sessionState, this.config, context.now);
+                return {stateChanged: r.stateChanged, emittedEvents: r.events};
+            }
             default:
                 return {stateChanged: false, emittedEvents: []};
         }
@@ -139,9 +172,17 @@ export class StickerCollageEngine implements GameModeEngine<"sticker-collage", S
         now: number;
     }): number | null {
         const ms = args.sessionState.modeState;
-        if (ms.roundEndsAt && args.now < ms.roundEndsAt) {
+
+        if (ms.phase === "BUILDING" && ms.roundEndsAt && args.now < ms.roundEndsAt) {
             return ms.roundEndsAt;
         }
+        if (ms.phase === "VOTING" && ms.votingEndsAt && args.now < ms.votingEndsAt) {
+            return ms.votingEndsAt;
+        }
+        if (ms.phase === "RESULTS" && ms.resultsEndsAt && args.now < ms.resultsEndsAt) {
+            return ms.resultsEndsAt;
+        }
+
         return null;
     }
 
@@ -149,48 +190,53 @@ export class StickerCollageEngine implements GameModeEngine<"sticker-collage", S
         sessionState: SessionState<StickerCollageModeState>;
         now: number;
     }): GameActionResult<"sticker-collage"> {
-        return this.advanceRound(args.sessionState, args.now);
-    }
+        const ms = args.sessionState.modeState;
 
-    private advanceRound(
-        state: SessionState<StickerCollageModeState>,
-        now: number,
-    ): GameActionResult<"sticker-collage"> {
-        const ms = state.modeState;
-        const previousRound = ms.currentRoundIndex;
-
-        // End current round (tallies votes, awards points, starts next round)
-        endRound(state, this.config.stickerCollage, now);
-
-        const events: StickerCollageServerEvent[] = [];
-
-        // Emit score updates for point winners
-        for (const result of ms.lastVoteResults) {
-            if (result.pointsAwarded > 0 && state.players[result.playerId]) {
-                events.push({
-                    type: "score-update",
-                    playerId: result.playerId,
-                    newScore: state.players[result.playerId].score,
-                });
-            }
+        if (ms.phase === "BUILDING") {
+            // Building timer expired → move to voting
+            startVoting(args.sessionState, this.config.stickerCollage, args.now);
+            return {
+                stateChanged: true,
+                emittedEvents: [{type: "voting-started", votingEndsAt: ms.votingEndsAt!}],
+            };
         }
 
-        // Emit round-ended for the previous round
-        events.push({
-            type: "round-ended",
-            roundIndex: previousRound,
-            results: ms.lastVoteResults,
-        });
+        if (ms.phase === "VOTING") {
+            // Voting timer expired → tally and show results
+            startResults(args.sessionState, this.config.stickerCollage, args.now);
 
-        // Emit round-started for the new round
-        events.push({
-            type: "round-started",
-            roundIndex: ms.currentRoundIndex,
-            prompt: ms.currentPrompt,
-            endsAt: ms.roundEndsAt!,
-        });
+            const events: StickerCollageServerEvent[] = [];
+            for (const result of ms.lastVoteResults) {
+                if (result.pointsAwarded > 0 && args.sessionState.players[result.playerId]) {
+                    events.push({
+                        type: "score-update",
+                        playerId: result.playerId,
+                        newScore: args.sessionState.players[result.playerId].score,
+                    });
+                }
+            }
+            events.push({
+                type: "results-ready",
+                winnerId: ms.winnerId,
+                results: ms.lastVoteResults,
+            });
+            return {stateChanged: true, emittedEvents: events};
+        }
 
-        return {stateChanged: true, emittedEvents: events};
+        if (ms.phase === "RESULTS") {
+            // Results timer expired → auto-advance to next round
+            advanceFromResults(args.sessionState, this.config.stickerCollage, args.now);
+            return {
+                stateChanged: true,
+                emittedEvents: [{
+                    type: "round-started",
+                    roundIndex: ms.currentRoundIndex,
+                    prompt: ms.currentPrompt,
+                    endsAt: ms.roundEndsAt!,
+                }],
+            };
+        }
+
+        return {stateChanged: false, emittedEvents: []};
     }
 }
-

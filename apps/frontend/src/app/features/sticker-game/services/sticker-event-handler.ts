@@ -15,8 +15,11 @@ export class StickerEventHandler {
                     this.sessionStore.showFeedback("Deine Sticker-Hand ist da! 🎨", "success");
                 }
                 break;
+            case "game-started":
+                this.sessionStore.showFeedback("Das Spiel beginnt! 🎉", "success");
+                break;
             case "round-started":
-                this.sessionStore.showFeedback(`Neue Runde: ${event.prompt}`, "success");
+                this.sessionStore.showFeedback(`Runde ${event.roundIndex}: ${event.prompt}`, "success");
                 break;
             case "collage-submitted": {
                 const players = this.worldStore.players();
@@ -26,7 +29,22 @@ export class StickerEventHandler {
                 }
                 break;
             }
+            case "voting-started":
+                this.sessionStore.showFeedback("Abstimmung gestartet! 🗳️", "success");
+                break;
             case "vote-registered":
+                break;
+            case "results-ready":
+                this.sessionStore.showFeedback("Ergebnisse sind da! 🏆", "success");
+                break;
+            case "pack-unlocked":
+                this.sessionStore.showFeedback(`${event.packName} freigeschaltet! 🔓`, "success");
+                break;
+            case "prompt-chosen":
+                this.sessionStore.showFeedback(`Nächster Prompt: ${event.prompt}`, "success");
+                break;
+            case "guaranteed-pack-chosen":
+                this.sessionStore.showFeedback(`${event.packName} ist auf jeden Fall dabei! ⭐`, "success");
                 break;
             case "round-ended":
                 break;
@@ -42,4 +60,3 @@ export class StickerEventHandler {
         this.sessionStore.clearTask("STICKER_COLLAGE");
     }
 }
-

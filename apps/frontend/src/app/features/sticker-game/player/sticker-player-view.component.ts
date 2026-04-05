@@ -25,7 +25,6 @@ export class StickerPlayerViewComponent {
     @ViewChild("stickerCanvas") stickerCanvas!: StickerCanvasComponent;
 
     public readonly canvasPlacements = signal<StickerPlacement[]>([]);
-    public readonly showVotingPanel = signal(false);
     public readonly showSwapModal = signal(false);
     public readonly swapTargetStickerId = signal<string | null>(null);
     public readonly swapTargetIndex = signal<number | null>(null);

@@ -4,6 +4,8 @@
   "adminPassword": null,
   "stickerCollage": {
     "roundDurationSec": 600,
+    "votingDurationSec": 120,
+    "resultsDurationSec": 60,
     "handSize": 8,
     "maxStickersOnCanvas": 12,
     "swapCount": 2,
