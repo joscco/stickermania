@@ -1,4 +1,4 @@
-import {Component, computed, inject, input} from "@angular/core";
+import {Component, computed, inject, input, AfterViewInit, ElementRef} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import {WorldStore} from "../../../../core/world.store";
 import {WebSocketService} from "../../../../core/websocket.service";
@@ -9,6 +9,7 @@ import type {
     StickerCollage,
     SessionPlayer,
 } from "@birthday/shared";
+import gsap from "gsap";
 
 @Component({
     selector: "app-board-results-scene",
@@ -17,12 +18,12 @@ import type {
     template: `
         <div class="h-full flex flex-col">
             <!-- Results header -->
-            <div class="bg-linear-to-r from-yellow-400 to-amber-500 text-white px-8 py-5 text-center rounded-2xl mx-4 mt-4 shadow-lg">
+            <div class="bg-linear-to-r from-yellow-400 to-amber-500 text-white px-8 py-5 text-center rounded-2xl mx-4 mt-4 shadow-lg anim-banner">
                 <h1 class="text-3xl font-black">🏆 Ergebnisse</h1>
             </div>
 
             <!-- Podium -->
-            <div class="flex-1 flex items-end justify-center gap-4 pb-8 px-4 mt-4">
+            <div class="flex-1 flex items-end justify-center gap-4 pb-8 px-4 mt-4 anim-podium">
                 <!-- 2nd place -->
                 @if (topResults().length > 1) {
                     <div class="flex flex-col items-center">
@@ -87,7 +88,7 @@ import type {
             </div>
 
             <!-- Winner action status -->
-            <div class="mx-4 mb-4 p-4 bg-stone-50 rounded-2xl border border-stone-200">
+            <div class="mx-4 mb-4 p-4 bg-stone-50 rounded-2xl border border-stone-200 anim-item">
                 @if (winnerId() && !winnerChoicesDone()) {
                     <div class="text-center">
                         <p class="text-lg font-bold text-stone-800">
@@ -139,8 +140,7 @@ import type {
                 }
             </div>
 
-            <!-- Advance button -->
-            <div class="text-center pb-6">
+            <div class="text-center pb-6 anim-item">
                 <button
                     class="bg-purple-600 text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-purple-700 active:scale-95 transition-all"
                     (click)="advanceFromResults()"
@@ -151,11 +151,21 @@ import type {
         </div>
     `,
 })
-export class BoardResultsSceneComponent {
+export class BoardResultsSceneComponent implements AfterViewInit {
     private readonly worldStore = inject(WorldStore);
     private readonly wsService = inject(WebSocketService);
+    private readonly el = inject(ElementRef);
 
     public readonly modeState = input<StickerCollageModeState | null>(null);
+
+    public ngAfterViewInit(): void {
+        const banner = this.el.nativeElement.querySelector('.anim-banner');
+        const podium = this.el.nativeElement.querySelector('.anim-podium');
+        const items = this.el.nativeElement.querySelectorAll('.anim-item');
+        if (banner) gsap.fromTo(banner, {opacity: 0, scale: 0.8}, {opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)"});
+        if (podium) gsap.fromTo(podium, {opacity: 0, y: 80}, {opacity: 1, y: 0, duration: 0.7, delay: 0.3, ease: "power3.out"});
+        if (items.length) gsap.fromTo(items, {opacity: 0, y: 20}, {opacity: 1, y: 0, duration: 0.4, stagger: 0.15, delay: 0.7, ease: "power2.out"});
+    }
 
     public readonly topResults = computed<StickerCollageVoteResult[]>(() => {
         return (this.modeState()?.lastVoteResults ?? []).slice(0, 3);

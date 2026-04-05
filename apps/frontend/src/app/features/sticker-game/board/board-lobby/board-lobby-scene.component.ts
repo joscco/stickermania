@@ -1,23 +1,24 @@
-import {Component, computed, inject, input} from "@angular/core";
+import {Component, computed, inject, input, AfterViewInit, ElementRef} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import {WorldStore} from "../../../../core/world.store";
 import {WebSocketService} from "../../../../core/websocket.service";
 import type {StickerCollageClientAction, SessionPlayer} from "@birthday/shared";
+import gsap from "gsap";
 
 @Component({
     selector: "app-board-lobby-scene",
     standalone: true,
     imports: [CommonModule],
     template: `
-        <div class="h-full flex flex-col items-center justify-center gap-8">
+        <div class="h-full flex flex-col items-center justify-center gap-8 scene-enter">
             <!-- Title -->
-            <div class="text-center">
+            <div class="text-center anim-item">
                 <div class="text-8xl mb-4">🎨</div>
                 <h1 class="text-5xl font-black text-stone-800">Sticker-Collage</h1>
             </div>
 
             <!-- Connected players -->
-            <div class="flex flex-wrap justify-center gap-3 max-w-2xl">
+            <div class="flex flex-wrap justify-center gap-3 max-w-2xl anim-item">
                 @for (player of connectedPlayers(); track player.id) {
                     <div class="flex flex-col items-center gap-1">
                         <div class="w-16 h-16 rounded-2xl border-2 bg-stone-100 shadow-md overflow-hidden grid place-items-center text-2xl"
@@ -36,10 +37,10 @@ import type {StickerCollageClientAction, SessionPlayer} from "@birthday/shared";
                 }
             </div>
 
-            <p class="text-xl text-stone-500">{{ connectedPlayers().length }} Spieler verbunden</p>
+            <p class="text-xl text-stone-500 anim-item">{{ connectedPlayers().length }} Spieler verbunden</p>
 
             <!-- QR codes + session code -->
-            <div class="flex items-center gap-6">
+            <div class="flex items-center gap-6 anim-item">
                 @if (playerQrDataUrl()) {
                     <img [src]="playerQrDataUrl()!" alt="QR"
                          class="w-32 h-32 rounded-2xl border border-black/10 bg-white p-1 shadow-lg" />
@@ -56,7 +57,7 @@ import type {StickerCollageClientAction, SessionPlayer} from "@birthday/shared";
 
             <!-- Start button -->
             <button
-                class="bg-purple-600 text-white px-10 py-5 rounded-2xl text-2xl font-bold shadow-xl hover:bg-purple-700 active:scale-95 transition-all"
+                class="bg-purple-600 text-white px-10 py-5 rounded-2xl text-2xl font-bold shadow-xl hover:bg-purple-700 active:scale-95 transition-all anim-item"
                 (click)="startGame()"
             >
                 Spiel starten 🚀
@@ -64,9 +65,10 @@ import type {StickerCollageClientAction, SessionPlayer} from "@birthday/shared";
         </div>
     `,
 })
-export class BoardLobbySceneComponent {
+export class BoardLobbySceneComponent implements AfterViewInit {
     private readonly worldStore = inject(WorldStore);
     private readonly wsService = inject(WebSocketService);
+    private readonly el = inject(ElementRef);
 
     public readonly sessionCode = input<string | null>(null);
     public readonly playerQrDataUrl = input<string | null>(null);
@@ -75,6 +77,11 @@ export class BoardLobbySceneComponent {
     public readonly connectedPlayers = computed<SessionPlayer[]>(() => {
         return Object.values(this.worldStore.players()).filter(p => p.connected);
     });
+
+    public ngAfterViewInit(): void {
+        const items = this.el.nativeElement.querySelectorAll('.anim-item');
+        gsap.fromTo(items, {opacity: 0, y: 30}, {opacity: 1, y: 0, duration: 0.5, stagger: 0.08, ease: "power2.out"});
+    }
 
     public startGame(): void {
         const action: StickerCollageClientAction = {type: "start-game"};

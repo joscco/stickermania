@@ -10,6 +10,7 @@
   "scripts": {
     "party": "npm run _build:party && node apps/backend/dist/index.js",
     "cloud": "npm run _build:cloud && PORT=8080 node apps/backend/dist/index.js",
+    "screenshots": "npx tsx scripts/capture-screens.ts",
     "_build:shared": "npm run build -w @birthday/shared",
     "_build:party": "npm run _build:shared && npm run build -w @birthday/frontend && npm run build -w @birthday/backend",
     "_build:cloud": "npm run _build:shared && npm run build:cloud -w @birthday/frontend && npm run build -w @birthday/backend"
@@ -19,6 +20,7 @@
     "ws": "^8.19.0"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "playwright": "^1.59.1"
   }
 }
