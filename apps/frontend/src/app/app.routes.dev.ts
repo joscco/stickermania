@@ -1,7 +1,7 @@
 import {Routes} from "@angular/router";
-import {StickerEditorTestComponent} from "./features/sticker-editor-test/sticker-editor-test.component";
-import {HitboxEditorComponent} from "./features/hitbox-editor/hitbox-editor.component";
-import {DevLandingComponent} from "./features/dev-landing/dev-landing.component";
+import {DevLandingComponent} from './features/editors/dev-landing/dev-landing.component';
+import {StickerEditorTestComponent} from './features/editors/sticker-editor/sticker-editor-test.component';
+import {HitboxEditorComponent} from './features/editors/hitbox-editor/hitbox-editor.component';
 
 /**
  * Routes for dev mode — editors only, no game.
