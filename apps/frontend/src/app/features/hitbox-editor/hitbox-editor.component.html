@@ -1,0 +1,156 @@
+<div class="h-screen flex flex-col bg-stone-100 select-none">
+  <!-- Header -->
+  <div class="bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white px-4 py-2.5 flex items-center justify-between shrink-0">
+    <div>
+      <h1 class="text-base font-bold">🎯 Hitbox-Editor</h1>
+    </div>
+    <div class="flex items-center gap-2">
+      <a routerLink="/editor" class="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">
+        🧪 Canvas-Test
+      </a>
+      <a routerLink="/" class="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">
+        ← Zurück
+      </a>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="flex-1 flex overflow-hidden min-h-0">
+
+    <!-- LEFT: Sticker catalog list -->
+    <div class="w-52 shrink-0 bg-white border-r border-black/10 overflow-y-auto">
+      <div class="p-2">
+        <h2 class="text-xs font-semibold text-stone-500 mb-2 px-1">Sticker-Katalog</h2>
+        <div class="space-y-0.5">
+          @for (sticker of catalog; track sticker.id) {
+            <button
+              class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs transition-all hover:bg-stone-50"
+              [class.bg-violet-50]="selectedSticker()?.id === sticker.id"
+              [class.ring-1]="selectedSticker()?.id === sticker.id"
+              [class.ring-violet-300]="selectedSticker()?.id === sticker.id"
+              (click)="selectSticker(sticker)"
+            >
+              <img
+                [src]="sticker.imageUrl"
+                [alt]="sticker.id"
+                class="w-8 h-8 object-contain shrink-0"
+                draggable="false"
+              />
+              <div class="flex-1 min-w-0">
+                <div class="font-medium text-stone-700 truncate">{{ sticker.id }}</div>
+              </div>
+              @if (hasSavedHitbox(sticker.id)) {
+                <div class="w-2 h-2 bg-green-400 rounded-full shrink-0" title="Hitbox gespeichert"></div>
+              } @else if (sticker.hitboxPolygon) {
+                <div class="w-2 h-2 bg-amber-400 rounded-full shrink-0" title="Hitbox im Code"></div>
+              }
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER: Canvas fills all available space -->
+    <div class="flex-1 flex flex-col min-h-0 min-w-0">
+      @if (selectedSticker()) {
+        <!-- Toolbar above canvas -->
+        <div class="shrink-0 bg-white border-b border-black/10 px-4 py-2 flex items-center gap-2 flex-wrap">
+          <span class="text-sm font-semibold text-stone-700">{{ selectedSticker()!.id }}</span>
+          <span class="text-xs text-stone-400">{{ polygon().length }} Punkte</span>
+
+          <div class="h-5 w-px bg-black/10 mx-1"></div>
+
+          <button
+            class="px-3 py-1.5 bg-violet-600 text-white rounded-lg font-medium text-xs hover:bg-violet-700 active:scale-95 transition-all disabled:opacity-50"
+            [disabled]="autoDetecting()"
+            (click)="runAutoDetect()"
+          >
+            @if (autoDetecting()) { ⏳ ... } @else { 🪄 Auto-Detect }
+          </button>
+
+          <button
+            class="px-3 py-1.5 bg-stone-100 text-stone-600 rounded-lg font-medium text-xs hover:bg-stone-200 active:scale-95 transition-all disabled:opacity-30"
+            [disabled]="polygon().length === 0"
+            (click)="clearPolygon()"
+          >🗑️ Löschen</button>
+
+          <div class="h-5 w-px bg-black/10 mx-1"></div>
+
+          <!-- Tolerance -->
+          <label class="text-xs text-stone-500">Toleranz:</label>
+          <input
+            type="range" [min]="0.005" [max]="0.08" [step]="0.005"
+            [ngModel]="tolerance()" (ngModelChange)="tolerance.set($event)"
+            class="w-16 accent-violet-500"
+          />
+          <span class="text-xs text-stone-400 w-6">{{ tolerance() }}</span>
+
+          <!-- Alpha -->
+          <label class="text-xs text-stone-500 ml-1">Alpha:</label>
+          <input
+            type="range" [min]="1" [max]="128" [step]="1"
+            [ngModel]="alphaThreshold()" (ngModelChange)="alphaThreshold.set($event)"
+            class="w-16 accent-violet-500"
+          />
+          <span class="text-xs text-stone-400 w-6">{{ alphaThreshold() }}</span>
+
+          <div class="flex-1"></div>
+
+          <!-- Save button -->
+          <button
+            class="px-4 py-1.5 bg-green-600 text-white rounded-lg font-medium text-xs hover:bg-green-700 active:scale-95 transition-all disabled:opacity-50"
+            [disabled]="saving() || !hasPolygon()"
+            (click)="saveCurrentHitbox()"
+          >
+            @if (saving()) { ⏳ ... } @else { 💾 Speichern }
+          </button>
+          @if (saveStatus()) {
+            <span class="text-xs">{{ saveStatus() }}</span>
+          }
+
+          <!-- Copy snippet -->
+          <button
+            class="px-3 py-1.5 bg-stone-100 text-stone-600 rounded-lg font-medium text-xs hover:bg-stone-200 active:scale-95 transition-all disabled:opacity-30"
+            [disabled]="!hasPolygon()"
+            (click)="copySnippet()"
+            title="Code kopieren"
+          >📋</button>
+        </div>
+
+        <!-- Canvas area: fills remaining space, keeps square aspect -->
+        <div #canvasWrapper class="flex-1 min-h-0 flex items-center justify-center p-3 bg-stone-50">
+          <canvas
+            #editorCanvas
+            class="cursor-crosshair rounded-lg shadow-lg border border-black/10"
+            [style.width.px]="canvasDisplaySize"
+            [style.height.px]="canvasDisplaySize"
+            (mousedown)="onCanvasMouseDown($event)"
+            (mousemove)="onCanvasMouseMove($event)"
+            (mouseup)="onCanvasMouseUp()"
+            (mouseleave)="onCanvasMouseUp()"
+          ></canvas>
+        </div>
+      } @else {
+        <!-- No sticker selected -->
+        <div class="flex-1 flex items-center justify-center">
+          <div class="text-center text-stone-400">
+            <div class="text-6xl mb-4">🎯</div>
+            <p class="text-sm">Wähle links einen Sticker aus,<br/>um die Hitbox zu bearbeiten.</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="bg-white border-t border-black/10 px-4 py-1.5 shrink-0">
+    <div class="flex items-center justify-center gap-6 text-xs text-stone-400">
+      <span>🖱️ Klick = Punkt setzen</span>
+      <span>✋ Ziehen = Punkt verschieben</span>
+      <span>📍 Linie klicken = Punkt einfügen</span>
+      <span>🔴 × = Punkt löschen</span>
+      <span>🪄 Auto-Detect = Kontur aus Alpha</span>
+    </div>
+  </div>
+</div>
+

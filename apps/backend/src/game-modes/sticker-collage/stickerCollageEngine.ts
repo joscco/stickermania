@@ -1,14 +1,40 @@
+import fs from "node:fs";
+import path from "node:path";
 import type {
     GameConfig,
     SessionState,
     StickerCollageClientAction,
     StickerCollageModeState,
     StickerCollageServerEvent,
+    StickerDefinition,
 } from "@birthday/shared";
 import type {GameActionResult, GameModeEngine} from "../gameModeEngine.js";
 import {DEFAULT_STICKER_CATALOG} from "./stickerCatalog.js";
 import {startNewRound, endRound} from "./roundManager.js";
 import {handleRequestHand, handleSwapSticker, handleSubmitCollage, handleCastVote} from "./actionHandlers.js";
+
+/**
+ * Merge hitbox polygon data from hitbox-data.json (created by the Hitbox-Editor dev tool)
+ * into the default sticker catalog. This allows hitboxes to be defined visually
+ * and picked up at runtime without hardcoding them in the catalog source.
+ */
+function buildCatalogWithHitboxes(): StickerDefinition[] {
+    let hitboxData: Record<string, Array<{x: number; y: number}>> = {};
+    try {
+        const hitboxPath = path.resolve(process.cwd(), "hitbox-data.json");
+        hitboxData = JSON.parse(fs.readFileSync(hitboxPath, "utf-8"));
+    } catch {
+        // File doesn't exist or is invalid — use catalog as-is
+    }
+
+    return DEFAULT_STICKER_CATALOG.map(sticker => {
+        const polygon = hitboxData[sticker.id];
+        if (polygon && Array.isArray(polygon) && polygon.length >= 3) {
+            return {...sticker, hitboxPolygon: polygon};
+        }
+        return sticker;
+    });
+}
 
 export class StickerCollageEngine implements GameModeEngine<"sticker-collage", StickerCollageModeState> {
     public readonly mode = "sticker-collage" as const;
@@ -23,7 +49,7 @@ export class StickerCollageEngine implements GameModeEngine<"sticker-collage", S
             currentPrompt: "",
             roundStartedAt: null,
             roundEndsAt: null,
-            stickerCatalog: DEFAULT_STICKER_CATALOG,
+            stickerCatalog: buildCatalogWithHitboxes(),
             playerHands: {},
             submissions: {},
             currentVotes: {},
