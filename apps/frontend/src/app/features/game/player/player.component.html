@@ -1,31 +1,36 @@
 <div class="h-dvh overflow-hidden bg-white text-stone-900 overscroll-none flex flex-col no-select"
      style="padding-bottom: env(safe-area-inset-bottom);">
-  <!-- Feedback toast -->
-  @if (sessionStore.feedback(); as feedback) {
-    <div
-      class="fixed top-14 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl shadow-lg text-sm font-medium text-white animate-bounce-in"
-      [class.bg-emerald-500]="feedback.type === 'success'"
-      [class.bg-red-500]="feedback.type === 'error'">
-      {{ feedback.text }}
-    </div>
-  }
 
   <!-- Header -->
   <div class="sticky top-0 z-30 bg-white backdrop-blur border-b border-black/6">
     <div class="mx-auto w-full max-w-lg px-3 py-2">
       <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2">
-          <span class="text-sm font-semibold">Stickermania</span>
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="text-sm font-semibold shrink-0">Stickermania</span>
           @if (sessionStore.playerName()) {
             <button
-              class="text-xs text-stone-400 hover:text-stone-600 transition-colors underline decoration-dotted underline-offset-2"
+              class="text-xs text-stone-400 hover:text-stone-600 transition-colors underline decoration-dotted underline-offset-2 truncate"
               (click)="startEditName()"
               title="Name ändern"
             >{{ sessionStore.playerName() }}
             </button>
           }
         </div>
-        <div class="flex items-center gap-2">
+
+        <!-- Inline feedback pill (centred, fades in/out) -->
+        <div class="flex-1 flex justify-center px-1 pointer-events-none">
+          @if (sessionStore.feedback(); as feedback) {
+            <span
+              class="text-[11px] font-medium px-2 py-0.5 rounded-full transition-all duration-300"
+              [class.bg-emerald-100]="feedback.type === 'success'"
+              [class.text-emerald-700]="feedback.type === 'success'"
+              [class.bg-red-100]="feedback.type === 'error'"
+              [class.text-red-600]="feedback.type === 'error'"
+            >{{ feedback.text }}</span>
+          }
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
           <!-- Edit avatar button -->
           @if (isNameSet() && hasAvatar() && !isEditingName() && !isEditingAvatar()) {
             <button

@@ -13,21 +13,27 @@ import {CommonModule} from "@angular/common";
 import type {StickerPlacement, StickerDefinition} from "@birthday/shared";
 import {pointInPolygon} from "./sticker-hit-test.util";
 
-interface ActivePointer {
-    id: number;
-    x: number;
-    y: number;
+interface ActivePointer { id: number; x: number; y: number; }
+
+/** Baseline snapshot for a single sticker during a group-transform gesture */
+interface GroupBaseline {
+    instanceId: string;
+    baseX: number;
+    baseY: number;
+    baseScale: number;
+    baseRotation: number;
+    /** vector from gesture-center to sticker center at gesture start */
+    relCx: number;
+    relCy: number;
 }
 
 /**
- * Interactive sticker canvas with proper touch gesture handling
- * and polygon-based hit-testing for accurate sticker selection.
- *
- * - **One finger on a sticker**: drag to reposition
- * - **Two fingers on a sticker**: pinch to scale, rotate by angle between fingers
- * - **Tap on empty area**: deselect
- * - **Tap on a sticker**: select it (keeps focus during drag/scale/rotate)
- * - **Z-index controls**: bring forward / send backward via toolbar
+ * Interactive sticker canvas:
+ * - 1 finger on sticker → drag
+ * - 2 fingers anywhere (with sticker selected) → pinch/rotate selected sticker
+ * - 1 finger on empty area → start lasso selection
+ * - Lasso confirms → multi-select; then 1 finger drags group, 2 fingers transforms group
+ * - Toolbar: z-order, rotate, scale, delete
  */
 @Component({
     selector: "app-sticker-canvas",
@@ -43,29 +49,41 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     @Input() interactive: boolean = false;
     @Output() placementsChanged = new EventEmitter<StickerPlacement[]>();
     @Output() stickerRemoved = new EventEmitter<string>();
-    /** Emitted when a sticker is dropped onto the canvas via drag & drop */
     @Output() stickerDropped = new EventEmitter<{stickerId: string; x: number; y: number}>();
 
     @ViewChild("canvasArea") canvasArea!: ElementRef<HTMLDivElement>;
 
     public readonly selectedInstanceId = signal<string | null>(null);
+    /** Set of instanceIds currently in the lasso selection */
+    public readonly lassoSelection = signal<Set<string>>(new Set());
+    /** Lasso rect in canvas-local px, null when not drawing */
+    public readonly lassoRect = signal<{x: number; y: number; w: number; h: number} | null>(null);
 
     // ── Gesture state ────────────────────────────────────────────
-
     private pointers: ActivePointer[] = [];
     private dragInstanceId: string | null = null;
     private dragOffsetX = 0;
     private dragOffsetY = 0;
 
+    /** true when dragging a lasso */
+    private lassoActive = false;
+    private lassoStartX = 0;
+    private lassoStartY = 0;
+
+    /** true when dragging the lasso-selected group with one finger */
+    private groupDragActive = false;
+    private groupDragOffsetX = 0;
+    private groupDragOffsetY = 0;
+    /** Per-sticker baseline for group drag (anchor = pointer-down position) */
+    private groupDragBaselines: {instanceId: string; baseX: number; baseY: number}[] = [];
+
     /** Two-finger gesture baseline values */
     private pinchBaseDistance = 0;
     private pinchBaseAngle = 0;
-    private pinchBaseScale = 1;
-    private pinchBaseRotation = 0;
     private pinchBaseCenterX = 0;
     private pinchBaseCenterY = 0;
-    private pinchBaseX = 0;
-    private pinchBaseY = 0;
+    /** Baselines for all stickers involved in pinch (single or group) */
+    private pinchGroupBaselines: GroupBaseline[] = [];
 
     /** Tap detection */
     private tapStartX = 0;
@@ -80,9 +98,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
     ngAfterViewInit(): void {
         this.buildCatalogMap();
-        if (this.interactive) {
-            this.installTouchHandlers();
-        }
+        if (this.interactive) this.installTouchHandlers();
     }
 
     ngOnDestroy(): void {
@@ -184,54 +200,49 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         return def.hitboxPolygon.map(p => `${p.x},${p.y}`).join(" ");
     }
 
-    // ── Touch handler installation (Safari-safe) ─────────────────
+    /** Whether a given instanceId is in the lasso selection */
+    public isLassoSelected(instanceId: string): boolean {
+        return this.lassoSelection().has(instanceId);
+    }
+
+    // ── Touch handler installation ───────────────────────────────
 
     private installTouchHandlers(): void {
         const el = this.canvasArea?.nativeElement;
-        if (!el) {
-          return;
-        }
+        if (!el) return;
 
         el.style.touchAction = "none";
         (el.style as any).webkitTouchCallout = "none";
         (el.style as any).webkitUserSelect = "none";
 
-        const isToolbarClick = (ev: Event): boolean => {
-            const target = ev.target as HTMLElement;
-            return !!target.closest("[data-canvas-toolbar]");
-        };
+        const isToolbarClick = (ev: Event): boolean =>
+            !!(ev.target as HTMLElement).closest("[data-canvas-toolbar]");
 
         const onTouchStart = (ev: TouchEvent): void => {
-            if (isToolbarClick(ev)) return; // let toolbar buttons work
+            if (isToolbarClick(ev)) return;
             ev.preventDefault();
             ev.stopPropagation();
-            for (const t of Array.from(ev.changedTouches)) {
+            for (const t of Array.from(ev.changedTouches))
                 this.handlePointerDown(t.identifier, t.clientX, t.clientY);
-            }
         };
-
         const onTouchMove = (ev: TouchEvent): void => {
             if (this.pointers.length === 0) return;
             ev.preventDefault();
             ev.stopPropagation();
-            for (const t of Array.from(ev.changedTouches)) {
+            for (const t of Array.from(ev.changedTouches))
                 this.handlePointerMove(t.identifier, t.clientX, t.clientY);
-            }
         };
-
         const onTouchEnd = (ev: TouchEvent): void => {
             if (this.pointers.length === 0) return;
             ev.preventDefault();
             ev.stopPropagation();
-            for (const t of Array.from(ev.changedTouches)) {
+            for (const t of Array.from(ev.changedTouches))
                 this.handlePointerUp(t.identifier, t.clientX, t.clientY);
-            }
         };
 
         let removeMouseListeners: (() => void) | null = null;
         const onMouseDown = (ev: MouseEvent): void => {
-            if (ev.button !== 0) return;
-            if (isToolbarClick(ev)) return; // let toolbar buttons work
+            if (ev.button !== 0 || isToolbarClick(ev)) return;
             ev.preventDefault();
             this.handlePointerDown(-1, ev.clientX, ev.clientY);
             const onMouseMove = (mev: MouseEvent): void => {
@@ -273,34 +284,73 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     private handlePointerDown(id: number, clientX: number, clientY: number): void {
         this.pointers.push({id, x: clientX, y: clientY});
 
-        if (this.pointers.length === 1) {
-            // First finger: start drag or tap
-            this.tapStartX = clientX;
-            this.tapStartY = clientY;
-            this.tapStartTime = performance.now();
-            this.tapMoved = false;
+        // ── Second finger → always start pinch on whatever is selected / in group ──
+        if (this.pointers.length === 2) {
+            this.tapMoved = true;
+            this.lassoActive = false;
+            this.lassoRect.set(null);
 
-            const instanceId = this.hitTestSticker(clientX, clientY);
-            if (instanceId) {
-                this.selectedInstanceId.set(instanceId);
-                this.dragInstanceId = instanceId;
+            const hasGroup = this.lassoSelection().size > 1;
+            const hasSingle = !!this.selectedInstanceId() && !hasGroup;
 
-                const placement = this.stickers.find(p => p.instanceId === instanceId);
-                if (placement) {
-                    const rect = this.canvasArea.nativeElement.getBoundingClientRect();
-                    this.dragOffsetX = clientX - rect.left - placement.x;
-                    this.dragOffsetY = clientY - rect.top - placement.y;
-                    // No auto-bring-to-front; use explicit z-index controls instead
-                }
-            } else {
-                this.dragInstanceId = null;
+            if (hasGroup || hasSingle) {
+                // Determine which stickers to pinch
+                const ids = hasGroup
+                    ? [...this.lassoSelection()]
+                    : [this.selectedInstanceId()!];
+                // Ensure dragInstanceId is set so applyPinch knows what to target
+                if (hasSingle) this.dragInstanceId = this.selectedInstanceId();
+                this.initPinchBaseline(ids);
             }
+            return;
         }
 
-        if (this.pointers.length === 2 && this.dragInstanceId) {
-            // Second finger arrived: start pinch/rotate on the selected sticker
-            this.tapMoved = true; // prevent tap
-            this.initPinchBaseline();
+        // ── First finger ──────────────────────────────────────────
+        this.tapStartX = clientX;
+        this.tapStartY = clientY;
+        this.tapStartTime = performance.now();
+        this.tapMoved = false;
+
+        const rect = this.canvasArea.nativeElement.getBoundingClientRect();
+        const localX = clientX - rect.left;
+        const localY = clientY - rect.top;
+
+        const hitId = this.hitTestSticker(clientX, clientY);
+
+        // If we have a lasso group and the finger is on one of them → start group drag
+        if (!hitId && this.lassoSelection().size > 1) {
+            // Tap outside group → clear group
+            this.lassoSelection.set(new Set());
+            this.selectedInstanceId.set(null);
+            this.dragInstanceId = null;
+        } else if (hitId && this.lassoSelection().size > 1 && this.lassoSelection().has(hitId)) {
+            // Start group drag
+            this.groupDragActive = true;
+            this.groupDragBaselines = this.stickers
+                .filter(p => this.lassoSelection().has(p.instanceId))
+                .map(p => ({instanceId: p.instanceId, baseX: p.x, baseY: p.y}));
+            this.groupDragOffsetX = localX;
+            this.groupDragOffsetY = localY;
+            this.dragInstanceId = hitId; // used as anchor for pinch
+        } else if (hitId) {
+            // Single sticker select + drag
+            this.lassoSelection.set(new Set());
+            this.selectedInstanceId.set(hitId);
+            this.dragInstanceId = hitId;
+            const placement = this.stickers.find(p => p.instanceId === hitId);
+            if (placement) {
+                this.dragOffsetX = localX - placement.x;
+                this.dragOffsetY = localY - placement.y;
+            }
+        } else {
+            // Empty area → start lasso
+            this.selectedInstanceId.set(null);
+            this.lassoSelection.set(new Set());
+            this.dragInstanceId = null;
+            this.lassoActive = true;
+            this.lassoStartX = localX;
+            this.lassoStartY = localY;
+            this.lassoRect.set({x: localX, y: localY, w: 0, h: 0});
         }
     }
 
@@ -309,26 +359,51 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         if (idx < 0) return;
         this.pointers[idx] = {id, x: clientX, y: clientY};
 
-        // Tap detection
         if (!this.tapMoved) {
             const dx = clientX - this.tapStartX;
             const dy = clientY - this.tapStartY;
-            if (Math.hypot(dx, dy) > 8) {
-                this.tapMoved = true;
-            }
+            if (Math.hypot(dx, dy) > 8) this.tapMoved = true;
         }
 
-        if (this.pointers.length === 2 && this.dragInstanceId) {
-            // Two-finger: pinch to scale + rotate
+        const rect = this.canvasArea.nativeElement.getBoundingClientRect();
+        const localX = clientX - rect.left;
+        const localY = clientY - rect.top;
+
+        // ── Two-finger pinch ──────────────────────────────────────
+        if (this.pointers.length === 2 && this.pinchGroupBaselines.length > 0) {
             this.applyPinch();
-        } else if (this.pointers.length === 1 && this.dragInstanceId) {
-            // One-finger drag
-            const rect = this.canvasArea.nativeElement.getBoundingClientRect();
-            const newX = clientX - rect.left - this.dragOffsetX;
-            const newY = clientY - rect.top - this.dragOffsetY;
+            return;
+        }
+
+        // ── Group drag ────────────────────────────────────────────
+        if (this.groupDragActive && this.pointers.length === 1) {
+            const dx = localX - this.groupDragOffsetX;
+            const dy = localY - this.groupDragOffsetY;
+            this.emitUpdate(this.stickers.map(p => {
+                const base = this.groupDragBaselines.find(b => b.instanceId === p.instanceId);
+                if (!base) return p;
+                return {...p, x: base.baseX + dx, y: base.baseY + dy};
+            }));
+            return;
+        }
+
+        // ── Single sticker drag ───────────────────────────────────
+        if (this.pointers.length === 1 && this.dragInstanceId && !this.groupDragActive) {
+            const newX = localX - this.dragOffsetX;
+            const newY = localY - this.dragOffsetY;
             this.emitUpdate(this.stickers.map(p =>
                 p.instanceId === this.dragInstanceId ? {...p, x: newX, y: newY} : p
             ));
+            return;
+        }
+
+        // ── Lasso drawing ─────────────────────────────────────────
+        if (this.lassoActive && this.pointers.length === 1) {
+            const x = Math.min(localX, this.lassoStartX);
+            const y = Math.min(localY, this.lassoStartY);
+            const w = Math.abs(localX - this.lassoStartX);
+            const h = Math.abs(localY - this.lassoStartY);
+            this.lassoRect.set({x, y, w, h});
         }
     }
 
@@ -336,20 +411,38 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         this.pointers = this.pointers.filter(p => p.id !== id);
 
         if (this.pointers.length === 0) {
-            // Check for tap
-            const duration = performance.now() - this.tapStartTime;
-            if (!this.tapMoved && duration < 300) {
-                if (!this.dragInstanceId) {
-                    // Tapped on empty area → deselect
-                    this.selectedInstanceId.set(null);
+            // ── Finalise lasso ──────────────────────────────────
+            if (this.lassoActive) {
+                const rect = this.lassoRect();
+                if (rect && (rect.w > 8 || rect.h > 8)) {
+                    const selected = this.stickers.filter(p => this.stickerIntersectsLasso(p, rect));
+                    if (selected.length > 1) {
+                        this.lassoSelection.set(new Set(selected.map(p => p.instanceId)));
+                        this.selectedInstanceId.set(null);
+                    } else if (selected.length === 1) {
+                        this.selectedInstanceId.set(selected[0].instanceId);
+                        this.lassoSelection.set(new Set());
+                    }
                 }
-                // Tapped on a sticker → it's already selected from pointerDown
+                this.lassoRect.set(null);
+                this.lassoActive = false;
             }
+
+            // ── Tap detection ───────────────────────────────────
+            const duration = performance.now() - this.tapStartTime;
+            if (!this.tapMoved && duration < 300 && !this.dragInstanceId && !this.groupDragActive) {
+                this.selectedInstanceId.set(null);
+                this.lassoSelection.set(new Set());
+            }
+
             this.dragInstanceId = null;
+            this.groupDragActive = false;
+            this.groupDragBaselines = [];
+            this.pinchGroupBaselines = [];
         }
 
-        if (this.pointers.length === 1 && this.dragInstanceId) {
-            // Went from 2 → 1 finger: re-anchor drag from the remaining finger
+        // Re-anchor single drag if going 2→1 finger
+        if (this.pointers.length === 1 && this.dragInstanceId && !this.groupDragActive) {
             const remaining = this.pointers[0];
             const placement = this.stickers.find(p => p.instanceId === this.dragInstanceId);
             if (placement) {
@@ -357,12 +450,29 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
                 this.dragOffsetX = remaining.x - rect.left - placement.x;
                 this.dragOffsetY = remaining.y - rect.top - placement.y;
             }
+            this.pinchGroupBaselines = [];
+        }
+
+        // Re-anchor group drag if going 2→1 finger
+        if (this.pointers.length === 1 && this.groupDragActive) {
+            const remaining = this.pointers[0];
+            const rect = this.canvasArea.nativeElement.getBoundingClientRect();
+            this.groupDragOffsetX = remaining.x - rect.left;
+            this.groupDragOffsetY = remaining.y - rect.top;
+            this.groupDragBaselines = this.stickers
+                .filter(p => this.lassoSelection().has(p.instanceId))
+                .map(p => ({instanceId: p.instanceId, baseX: p.x, baseY: p.y}));
+            this.pinchGroupBaselines = [];
         }
     }
 
     // ── Pinch / rotate ───────────────────────────────────────────
 
-    private initPinchBaseline(): void {
+    /**
+     * Initialise pinch baseline for a set of sticker instanceIds.
+     * The gesture center is the midpoint of the two active pointers.
+     */
+    private initPinchBaseline(ids: string[]): void {
         if (this.pointers.length < 2) return;
         const [a, b] = this.pointers;
         this.pinchBaseDistance = Math.hypot(a.x - b.x, a.y - b.y) || 1;
@@ -370,110 +480,139 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         this.pinchBaseCenterX = (a.x + b.x) / 2;
         this.pinchBaseCenterY = (a.y + b.y) / 2;
 
-        const placement = this.stickers.find(p => p.instanceId === this.dragInstanceId);
-        if (placement) {
-            this.pinchBaseScale = placement.scale;
-            this.pinchBaseRotation = placement.rotation;
-            this.pinchBaseX = placement.x;
-            this.pinchBaseY = placement.y;
-        }
+        const rect = this.canvasArea.nativeElement.getBoundingClientRect();
+        const canvasCx = this.pinchBaseCenterX - rect.left;
+        const canvasCy = this.pinchBaseCenterY - rect.top;
+
+        this.pinchGroupBaselines = ids
+            .map(iid => this.stickers.find(p => p.instanceId === iid))
+            .filter(Boolean)
+            .map(p => {
+                const img = this.canvasArea.nativeElement.querySelector(
+                    `[data-instance-id="${p!.instanceId}"] img`
+                ) as HTMLImageElement | null;
+                const imgW = (img?.offsetWidth ?? 64) * p!.scale;
+                const imgH = (img?.offsetHeight ?? 64) * p!.scale;
+                return {
+                    instanceId: p!.instanceId,
+                    baseX: p!.x,
+                    baseY: p!.y,
+                    baseScale: p!.scale,
+                    baseRotation: p!.rotation,
+                    relCx: (p!.x + imgW / 2) - canvasCx,
+                    relCy: (p!.y + imgH / 2) - canvasCy,
+                } as GroupBaseline;
+            });
     }
 
     private applyPinch(): void {
-        if (this.pointers.length < 2 || !this.dragInstanceId) return;
+        if (this.pointers.length < 2 || this.pinchGroupBaselines.length === 0) return;
         const [a, b] = this.pointers;
 
         const newDist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
         const newAngle = Math.atan2(b.y - a.y, b.x - a.x);
-
         const scaleFactor = newDist / this.pinchBaseDistance;
         const angleDelta = (newAngle - this.pinchBaseAngle) * (180 / Math.PI);
+        const angleRad = (newAngle - this.pinchBaseAngle);
 
-        // Center delta for panning during pinch
         const newCenterX = (a.x + b.x) / 2;
         const newCenterY = (a.y + b.y) / 2;
-        const centerDx = newCenterX - this.pinchBaseCenterX;
-        const centerDy = newCenterY - this.pinchBaseCenterY;
+        const rect = this.canvasArea.nativeElement.getBoundingClientRect();
+        const canvasCx = newCenterX - rect.left;
+        const canvasCy = newCenterY - rect.top;
 
-        const newScale = Math.max(0.2, Math.min(4, this.pinchBaseScale * scaleFactor));
-        const newRotation = this.pinchBaseRotation + angleDelta;
-        const newX = this.pinchBaseX + centerDx;
-        const newY = this.pinchBaseY + centerDy;
+        this.emitUpdate(this.stickers.map(p => {
+            const base = this.pinchGroupBaselines.find(b => b.instanceId === p.instanceId);
+            if (!base) return p;
 
-        this.emitUpdate(this.stickers.map(p =>
-            p.instanceId === this.dragInstanceId
-                ? {...p, scale: newScale, rotation: newRotation, x: newX, y: newY}
-                : p
-        ));
+            const newScale = Math.max(0.2, Math.min(4, base.baseScale * scaleFactor));
+            const newRotation = base.baseRotation + angleDelta;
+
+            // Rotate the relative center vector
+            const cos = Math.cos(angleRad);
+            const sin = Math.sin(angleRad);
+            const newRelCx = (base.relCx * cos - base.relCy * sin) * scaleFactor;
+            const newRelCy = (base.relCx * sin + base.relCy * cos) * scaleFactor;
+
+            const img = this.canvasArea.nativeElement.querySelector(
+                `[data-instance-id="${p.instanceId}"] img`
+            ) as HTMLImageElement | null;
+            const imgW = (img?.offsetWidth ?? 64) * newScale;
+            const imgH = (img?.offsetHeight ?? 64) * newScale;
+
+            const newX = canvasCx + newRelCx - imgW / 2;
+            const newY = canvasCy + newRelCy - imgH / 2;
+
+            return {...p, scale: newScale, rotation: newRotation, x: newX, y: newY};
+        }));
     }
 
-    // ── Hit testing (polygon-aware, rotation-aware) ──────────────
+    // ── Lasso hit detection ──────────────────────────────────────
+
+    private stickerIntersectsLasso(
+        placement: StickerPlacement,
+        lasso: {x: number; y: number; w: number; h: number},
+    ): boolean {
+        const el = this.canvasArea.nativeElement.querySelector(
+            `[data-instance-id="${placement.instanceId}"] img`
+        ) as HTMLImageElement | null;
+        const imgW = (el?.offsetWidth ?? 64) * placement.scale;
+        const imgH = (el?.offsetHeight ?? 64) * placement.scale;
+
+        // Sticker bounding box (axis-aligned, ignoring rotation for simplicity)
+        const sx = placement.x;
+        const sy = placement.y;
+        return sx < lasso.x + lasso.w &&
+               sx + imgW > lasso.x &&
+               sy < lasso.y + lasso.h &&
+               sy + imgH > lasso.y;
+    }
+
+    // ── Hit testing ──────────────────────────────────────────────
 
     private hitTestSticker(clientX: number, clientY: number): string | null {
-        if (this.catalogMap.size !== this.stickerCatalog.length) {
-            this.buildCatalogMap();
-        }
+        if (this.catalogMap.size !== this.stickerCatalog.length) this.buildCatalogMap();
 
-        // Sort by z-index descending so topmost sticker wins
         const sorted = [...this.stickers].sort((a, b) => b.zIndex - a.zIndex);
-
         for (const placement of sorted) {
-            // Find the actual DOM element for this sticker
             const el = this.canvasArea.nativeElement.querySelector(
                 `[data-instance-id="${placement.instanceId}"]`
             ) as HTMLElement | null;
             if (!el) continue;
-
             const img = el.querySelector("img");
             if (!img) continue;
-
-            // Get the rendered size of the image (accounts for aspect ratio)
             const imgW = img.offsetWidth;
             const imgH = img.offsetHeight;
             if (imgW === 0 || imgH === 0) continue;
 
             const scaledW = imgW * placement.scale;
             const scaledH = imgH * placement.scale;
-
-            // Sticker center
             const cx = placement.x + scaledW / 2;
             const cy = placement.y + scaledH / 2;
 
-            // Canvas-local click coordinates
             const rect = this.canvasArea.nativeElement.getBoundingClientRect();
             const clickX = clientX - rect.left;
             const clickY = clientY - rect.top;
 
-            // Translate to sticker center
             let dx = clickX - cx;
             let dy = clickY - cy;
-
-            // Inverse-rotate
             const rad = (-placement.rotation * Math.PI) / 180;
             const cos = Math.cos(rad);
             const sin = Math.sin(rad);
             const rx = dx * cos - dy * sin;
             const ry = dx * sin + dy * cos;
 
-            // Normalise to 0–1 within the sticker's bounds
             const localX = (rx + scaledW / 2) / scaledW;
             const localY = (ry + scaledH / 2) / scaledH;
-
             if (localX < 0 || localX > 1 || localY < 0 || localY > 1) continue;
 
-            // Polygon hit-test if available
             const def = this.catalogMap.get(placement.stickerId);
             if (def?.hitboxPolygon && def.hitboxPolygon.length >= 3) {
-                if (pointInPolygon(localX, localY, def.hitboxPolygon)) {
-                    return placement.instanceId;
-                }
+                if (pointInPolygon(localX, localY, def.hitboxPolygon)) return placement.instanceId;
                 continue;
             }
-
-            // Bounding box passed
             return placement.instanceId;
         }
-
         return null;
     }
 
@@ -484,7 +623,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         if (!id) return;
         const current = this.stickers.find(p => p.instanceId === id);
         if (!current) return;
-
         const sorted = [...this.stickers].sort((a, b) => a.zIndex - b.zIndex);
         const currentIdx = sorted.findIndex(p => p.instanceId === id);
         if (currentIdx < sorted.length - 1) {
@@ -502,7 +640,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         if (!id) return;
         const current = this.stickers.find(p => p.instanceId === id);
         if (!current) return;
-
         const sorted = [...this.stickers].sort((a, b) => a.zIndex - b.zIndex);
         const currentIdx = sorted.findIndex(p => p.instanceId === id);
         if (currentIdx > 0) {
@@ -519,35 +656,37 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         const id = this.selectedInstanceId();
         if (!id) return;
         const maxZ = Math.max(0, ...this.stickers.map(p => p.zIndex));
-        this.emitUpdate(this.stickers.map(p =>
-            p.instanceId === id ? {...p, zIndex: maxZ + 1} : p
-        ));
+        this.emitUpdate(this.stickers.map(p => p.instanceId === id ? {...p, zIndex: maxZ + 1} : p));
     }
 
     public sendToBack(): void {
         const id = this.selectedInstanceId();
         if (!id) return;
         const minZ = Math.min(0, ...this.stickers.map(p => p.zIndex));
-        this.emitUpdate(this.stickers.map(p =>
-            p.instanceId === id ? {...p, zIndex: minZ - 1} : p
-        ));
+        this.emitUpdate(this.stickers.map(p => p.instanceId === id ? {...p, zIndex: minZ - 1} : p));
     }
 
     // ── Toolbar actions ──────────────────────────────────────────
 
     public rotateSelected(degrees: number): void {
         const id = this.selectedInstanceId();
-        if (!id) return;
+        const group = this.lassoSelection();
+        const ids = group.size > 1 ? [...group] : id ? [id] : [];
+        if (ids.length === 0) return;
         this.emitUpdate(this.stickers.map(p =>
-            p.instanceId === id ? {...p, rotation: p.rotation + degrees} : p
+            ids.includes(p.instanceId) ? {...p, rotation: p.rotation + degrees} : p
         ));
     }
 
     public scaleSelected(factor: number): void {
         const id = this.selectedInstanceId();
-        if (!id) return;
+        const group = this.lassoSelection();
+        const ids = group.size > 1 ? [...group] : id ? [id] : [];
+        if (ids.length === 0) return;
         this.emitUpdate(this.stickers.map(p =>
-            p.instanceId === id ? {...p, scale: Math.max(0.2, Math.min(4, p.scale * factor))} : p
+            ids.includes(p.instanceId)
+                ? {...p, scale: Math.max(0.2, Math.min(4, p.scale * factor))}
+                : p
         ));
     }
 
@@ -573,6 +712,14 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
     public removeSelected(): void {
         const id = this.selectedInstanceId();
+        const group = this.lassoSelection();
+        if (group.size > 1) {
+            // Remove all in group
+            const ids = new Set(group);
+            this.lassoSelection.set(new Set());
+            this.emitUpdate(this.stickers.filter(p => !ids.has(p.instanceId)));
+            return;
+        }
         if (!id) return;
         this.selectedInstanceId.set(null);
         this.stickerRemoved.emit(id);
@@ -588,14 +735,11 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         return `inst_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     }
 
-    // ── Drag & Drop support ──────────────────────────────────────
-
+    // ── Legacy drag & drop (desktop fallback, kept for compatibility) ──
     public onDragOver(event: DragEvent): void {
         if (event.dataTransfer?.types.includes("application/x-sticker-id")) {
-            event.preventDefault(); // allow drop
-            if (event.dataTransfer) {
-                event.dataTransfer.dropEffect = "copy";
-            }
+            event.preventDefault();
+            if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
         }
     }
 
@@ -603,9 +747,8 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         const stickerId = event.dataTransfer?.getData("application/x-sticker-id");
         if (!stickerId) return;
         event.preventDefault();
-
         const rect = this.canvasArea.nativeElement.getBoundingClientRect();
-        const x = event.clientX - rect.left - 32; // offset by half sticker size
+        const x = event.clientX - rect.left - 32;
         const y = event.clientY - rect.top - 32;
 
         this.stickerDropped.emit({stickerId, x: Math.max(0, x), y: Math.max(0, y)});

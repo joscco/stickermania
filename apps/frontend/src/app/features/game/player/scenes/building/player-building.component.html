@@ -29,7 +29,7 @@
   <div class="flex-1 flex flex-col overflow-hidden relative">
     <!-- Canvas area -->
     <div class="flex-1 min-h-0 relative bg-stone-50 flex items-center justify-center p-2 overflow-hidden">
-      <div class="h-full aspect-square max-w-full">
+      <div #canvasWrapper class="h-full aspect-square max-w-full rounded-lg overflow-hidden">
         <app-sticker-canvas
           #stickerCanvas
           class="block w-full h-full"
@@ -55,6 +55,7 @@
         [canAddMore]="canvasPlacements().length < stickerService.maxStickersOnCanvas()"
         (stickerTapped)="onStickerAddedFromHand($event)"
         (swapRequested)="openSwapModal($event)"
+        (dragStarted)="onDragStarted($event)"
       />
       <div class="px-4 pb-3 flex gap-2">
         <button
