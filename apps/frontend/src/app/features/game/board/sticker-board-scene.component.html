@@ -1,34 +1,28 @@
 <div class="h-full relative">
   @switch (phase()) {
     @case ("LOBBY") {
-      <app-board-lobby-scene
-        [sessionCode]="sessionCode()"
-        [playerQrDataUrl]="playerQrDataUrl()"
-        [wifiQrDataUrl]="wifiQrDataUrl()"
-      />
+      <app-board-lobby-scene/>
     }
     @case ("BUILDING") {
-      <app-board-building-scene [modeState]="modeState()" />
+      <app-board-building-scene [modeState]="modeState()"/>
     }
     @case ("VOTING") {
-      <app-board-voting-scene [modeState]="modeState()" />
+      <app-board-voting-scene [modeState]="modeState()"/>
     }
     @case ("RESULTS") {
-      <app-board-results-scene [modeState]="modeState()" />
+      <app-board-results-scene [modeState]="modeState()"/>
     }
     @case ("NEXT_ROUND_SETUP") {
-      <app-board-building-scene [modeState]="modeState()" />
+      <app-board-building-scene [modeState]="modeState()"/>
     }
   }
 
   <!-- Persistent join info (bottom-right, hidden in LOBBY where it's already shown) -->
-  @if (phase() !== 'LOBBY') {
-    <div class="absolute bottom-3 right-3 z-10">
-      <app-board-qr-panel
-        [sessionCode]="sessionCode()"
-        [playerQrDataUrl]="playerQrDataUrl()"
-        [wifiQrDataUrl]="wifiQrDataUrl()"
-      />
-    </div>
-  }
+  <div class="absolute bottom-3 right-3 z-10">
+    <app-board-qr-panel
+      [sessionCode]="sessionCode()"
+      [playerQrDataUrl]="playerQrDataUrl()"
+      [wifiQrDataUrl]="wifiQrDataUrl()"
+    />
+  </div>
 </div>

@@ -16,10 +16,6 @@ export class BoardLobbySceneComponent {
     private readonly worldStore = inject(WorldStore);
     private readonly wsService = inject(WebSocketService);
 
-    public readonly sessionCode = input<string | null>(null);
-    public readonly playerQrDataUrl = input<string | null>(null);
-    public readonly wifiQrDataUrl = input<string | null>(null);
-
     public readonly connectedPlayers = computed<SessionPlayer[]>(() => {
         return Object.values(this.worldStore.players()).filter(p => p.connected);
     });

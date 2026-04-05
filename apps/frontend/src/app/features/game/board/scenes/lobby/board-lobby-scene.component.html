@@ -27,14 +27,6 @@
 
   <p animOnInit="item" class="text-xl text-stone-500">{{ connectedPlayers().length }} Spieler verbunden</p>
 
-  <!-- QR codes + session code -->
-  <app-board-qr-panel
-    animOnInit="item"
-    [sessionCode]="sessionCode()"
-    [playerQrDataUrl]="playerQrDataUrl()"
-    [wifiQrDataUrl]="wifiQrDataUrl()"
-  />
-
   <!-- Start button -->
   <button
     animOnInit="item"
