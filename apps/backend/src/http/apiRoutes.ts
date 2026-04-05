@@ -1,10 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import type {FastifyInstance} from "fastify";
-import type {GameModeId} from "@birthday/shared";
+import type {GameModeId, StickerDefinition} from "@birthday/shared";
 import type {SessionService} from "../session/sessionService.js";
 import type {BackendConfig} from "../config.js";
 import {disconnectSessionClients} from "./wsPlugin.js";
+import {DEFAULT_STICKER_CATALOG} from "../game-modes/sticker-collage/stickerCatalog.js";
 
 const VALID_MODES: GameModeId[] = ["sticker-collage"];
 
@@ -165,6 +166,19 @@ export async function registerApiRoutes(
         delete data[request.params.stickerId];
         saveHitboxData(data);
         return {ok: true};
+    });
+
+    // ─── Sticker catalog (dev tool) ─────────────────────────────
+
+    app.get("/api/sticker-catalog", async () => {
+        const hitboxData = loadHitboxData();
+        return DEFAULT_STICKER_CATALOG.map((sticker): StickerDefinition => {
+            const polygon = hitboxData[sticker.id];
+            if (polygon && Array.isArray(polygon) && polygon.length >= 3) {
+                return {...sticker, hitboxPolygon: polygon};
+            }
+            return sticker;
+        });
     });
 }
 

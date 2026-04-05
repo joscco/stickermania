@@ -1,12 +1,14 @@
-import {Component, signal, ViewChild} from "@angular/core";
+import {Component, signal, ViewChild, OnInit} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import {RouterModule} from "@angular/router";
+import {HttpClient} from "@angular/common/http";
 import type {StickerPlacement, StickerDefinition} from "@birthday/shared";
 import {StickerCanvasComponent} from "../sticker-game/player/sticker-canvas/sticker-canvas.component";
+import {firstValueFrom} from "rxjs";
 
 /**
  * Standalone test editor for the sticker canvas.
- * No WebSocket or session required — fully self-contained with a hardcoded catalog.
+ * Loads the full sticker catalog (with hitbox data) from the backend.
  * Navigate to /editor to use.
  */
 @Component({
@@ -15,47 +17,29 @@ import {StickerCanvasComponent} from "../sticker-game/player/sticker-canvas/stic
     imports: [CommonModule, RouterModule, StickerCanvasComponent],
     templateUrl: "./sticker-editor-test.component.html",
 })
-export class StickerEditorTestComponent {
+export class StickerEditorTestComponent implements OnInit {
     @ViewChild("stickerCanvas") stickerCanvas!: StickerCanvasComponent;
 
     public readonly placements = signal<StickerPlacement[]>([]);
     public readonly maxStickers = 20;
 
-    /**
-     * Built-in test catalog with placeholder stickers.
-     * Uses the same assets as the real game — no server needed.
-     */
-    public readonly testCatalog: StickerDefinition[] = [
-        // Eyes
-        {id: "eyes_round", imageUrl: "assets/png/sticker_eye_round.png", categories: ["eyes"]},
-        {id: "eyes_cute", imageUrl: "assets/png/sticker_eye_cute.png", categories: ["eyes"]},
-        {id: "eyes_angry", imageUrl: "assets/png/sticker_eye_angry.png", categories: ["eyes"]},
-        {id: "eyes_heart", imageUrl: "assets/png/sticker_eye_heart.png", categories: ["eyes"],
-            hitboxPolygon: [{x:0.5,y:0},{x:0.62,y:0.38},{x:1,y:0.38},{x:0.69,y:0.6},{x:0.81,y:1},{x:0.5,y:0.75},{x:0.19,y:1},{x:0.31,y:0.6},{x:0,y:0.38},{x:0.38,y:0.38}]},
-        // Mouths
-        {id: "mouth_smile", imageUrl: "assets/png/sticker_mouth_smile.png", categories: ["mouth"]},
-        {id: "mouth_open", imageUrl: "assets/png/sticker_mouth_open.png", categories: ["mouth"]},
-        // Noses
-        {id: "nose_round", imageUrl: "assets/png/sticker_nose_round.png", categories: ["nose"]},
-        {id: "nose_pointy", imageUrl: "assets/png/sticker_nose_pointy.png", categories: ["nose"],
-            hitboxPolygon: [{x:0.5,y:0},{x:1,y:1},{x:0,y:1}]},
-        // Shapes
-        {id: "shape_circle", imageUrl: "assets/png/sticker_shape_circle.png", categories: ["shape"]},
-        {id: "shape_triangle", imageUrl: "assets/png/sticker_shape_triangle.png", categories: ["shape"],
-            hitboxPolygon: [{x:0.5,y:0},{x:1,y:1},{x:0,y:1}]},
-        {id: "shape_star", imageUrl: "assets/png/sticker_shape_star.png", categories: ["shape"],
-            hitboxPolygon: [{x:0.5,y:0},{x:0.62,y:0.38},{x:1,y:0.38},{x:0.69,y:0.6},{x:0.81,y:1},{x:0.5,y:0.75},{x:0.19,y:1},{x:0.31,y:0.6},{x:0,y:0.38},{x:0.38,y:0.38}]},
-        {id: "shape_blob", imageUrl: "assets/png/sticker_shape_blob.png", categories: ["shape"]},
-        // Accessories
-        {id: "acc_hat", imageUrl: "assets/png/sticker_acc_hat.png", categories: ["accessory"]},
-        {id: "acc_crown", imageUrl: "assets/png/sticker_acc_crown.png", categories: ["accessory"],
-            hitboxPolygon: [{x:0.1,y:1},{x:0,y:0.4},{x:0.25,y:0.7},{x:0.5,y:0},{x:0.75,y:0.7},{x:1,y:0.4},{x:0.9,y:1}]},
-        {id: "acc_bowtie", imageUrl: "assets/png/sticker_acc_bowtie.png", categories: ["accessory"],
-            hitboxPolygon: [{x:0.5,y:0.3},{x:1,y:0},{x:1,y:1},{x:0.5,y:0.7},{x:0,y:1},{x:0,y:0}]},
-        // Fruits
-        {id: "fruit_apple", imageUrl: "assets/png/sticker_fruit_apple.png", categories: ["fruit"]},
-        {id: "fruit_banana", imageUrl: "assets/png/sticker_fruit_banana.png", categories: ["fruit"]},
-    ];
+    /** Full catalog — loaded from backend dynamically */
+    public readonly testCatalog = signal<StickerDefinition[]>([]);
+
+    constructor(private readonly http: HttpClient) {}
+
+    async ngOnInit(): Promise<void> {
+        try {
+            const catalog = await firstValueFrom(
+                this.http.get<StickerDefinition[]>("/api/sticker-catalog")
+            );
+            if (catalog && catalog.length > 0) {
+                this.testCatalog.set(catalog);
+            }
+        } catch {
+            // Backend not available — catalog stays empty
+        }
+    }
 
     public addStickerToCanvas(stickerId: string): void {
         const current = this.placements();
@@ -88,7 +72,6 @@ export class StickerEditorTestComponent {
     }
 
     public getStickerUrl(stickerId: string): string {
-        return this.testCatalog.find(s => s.id === stickerId)?.imageUrl ?? "";
+        return this.testCatalog().find(s => s.id === stickerId)?.imageUrl ?? "";
     }
 }
-

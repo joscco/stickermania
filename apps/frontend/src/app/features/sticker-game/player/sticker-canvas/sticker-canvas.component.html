@@ -13,9 +13,9 @@
   @for (sticker of stickers; track sticker.instanceId) {
     <div
       class="absolute select-none"
-      [class.ring-2]="interactive && selectedInstanceId() === sticker.instanceId"
-      [class.ring-purple-400]="interactive && selectedInstanceId() === sticker.instanceId"
-      [class.rounded-lg]="interactive && selectedInstanceId() === sticker.instanceId"
+      [class.ring-2]="interactive && selectedInstanceId() === sticker.instanceId && !getHitboxSvgPoints(sticker.stickerId)"
+      [class.ring-purple-400]="interactive && selectedInstanceId() === sticker.instanceId && !getHitboxSvgPoints(sticker.stickerId)"
+      [class.rounded-lg]="interactive && selectedInstanceId() === sticker.instanceId && !getHitboxSvgPoints(sticker.stickerId)"
       [style.left.px]="sticker.x"
       [style.top.px]="sticker.y"
       [style.transform]="'rotate(' + sticker.rotation + 'deg) scale(' + sticker.scale + ')'"
@@ -29,6 +29,18 @@
         class="w-16 h-16 object-contain pointer-events-none"
         draggable="false"
       />
+      <!-- Polygon hitbox outline (shown when selected) -->
+      @if (interactive && selectedInstanceId() === sticker.instanceId && getHitboxSvgPoints(sticker.stickerId)) {
+        <svg class="absolute inset-0 w-16 h-16 pointer-events-none" viewBox="0 0 64 64">
+          <polygon
+            [attr.points]="getHitboxSvgPoints(sticker.stickerId)"
+            fill="none"
+            stroke="#a855f7"
+            stroke-width="2"
+            stroke-linejoin="round"
+          />
+        </svg>
+      }
     </div>
   }
 

@@ -102,6 +102,19 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         return this.catalogMap.get(stickerId)?.imageUrl ?? "";
     }
 
+    /**
+     * Returns the SVG polygon `points` attribute string for a sticker's hitbox,
+     * scaled to the 64×64 render size. Returns empty string if no polygon hitbox.
+     */
+    public getHitboxSvgPoints(stickerId: string): string {
+        if (this.catalogMap.size !== this.stickerCatalog.length) {
+            this.buildCatalogMap();
+        }
+        const def = this.catalogMap.get(stickerId);
+        if (!def?.hitboxPolygon || def.hitboxPolygon.length < 3) return "";
+        return def.hitboxPolygon.map(p => `${p.x * 64},${p.y * 64}`).join(" ");
+    }
+
     // ── Touch handler installation (Safari-safe) ─────────────────
 
     private installTouchHandlers(): void {
