@@ -9,7 +9,6 @@ import {WebSocketService} from "../../core/websocket.service";
 import {WorldStore} from "../../core/world.store";
 import {EventToastsComponent, type UiEvent} from "./event-toast/event-toasts.component";
 import {BoardLobbyComponent} from "./board-lobby/board-lobby.component";
-import {BoardSidebarComponent} from "./board-sidebar/board-sidebar.component";
 import {BoardSetupDrawerComponent} from "./setup-drawer/board-setup-drawer.component";
 import {StickerBoardSceneComponent} from '../sticker-game/board/sticker-board-scene.component';
 
@@ -18,7 +17,7 @@ const EVENT_TOAST_DURATION_MS = 3000;
 @Component({
   selector: "app-board",
   standalone: true,
-  imports: [CommonModule, EventToastsComponent, BoardLobbyComponent, StickerBoardSceneComponent, BoardSidebarComponent, BoardSetupDrawerComponent],
+  imports: [CommonModule, EventToastsComponent, BoardLobbyComponent, StickerBoardSceneComponent, BoardSetupDrawerComponent],
   templateUrl: "./board.component.html",
 })
 export class BoardComponent implements OnInit, OnDestroy {
@@ -49,10 +48,11 @@ export class BoardComponent implements OnInit, OnDestroy {
   });
   public readonly leaderboard = computed(() => this.worldStore.leaderboard());
   public readonly allPlayers = computed(() => this.worldStore.allPlayers());
-  public readonly roundEndsAt = computed(() => {
-
+  public readonly currentTimerEndsAt = computed(() => {
     if (this.activeMode() === "sticker-collage") {
-      return this.worldStore.stickerCollageModeState()?.roundEndsAt ?? 0;
+      const ms = this.worldStore.stickerCollageModeState();
+      if (!ms) return 0;
+      return ms.roundEndsAt ?? ms.votingEndsAt ?? ms.resultsEndsAt ?? 0;
     }
 
     return 0;
@@ -234,6 +234,9 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   private handleStickerCollageEvent(event: StickerCollageServerEvent): void {
     switch (event.type) {
+      case "game-started":
+        this.pushEvent("🎉 Das Spiel beginnt!", Date.now());
+        break;
       case "round-started": {
         this.pushEvent(`🎨 Neue Runde: ${event.prompt}`, Date.now());
         break;
@@ -243,19 +246,32 @@ export class BoardComponent implements OnInit, OnDestroy {
         this.pushEvent(`🖼️ ${playerName} hat eine Collage eingereicht!`, Date.now());
         break;
       }
-      case "round-ended": {
-        const top = event.results[0];
-        if (top) {
-          const winnerName = this.worldStore.players()[top.playerId]?.name || "Jemand";
-          this.pushEvent(`🏆 ${winnerName} gewinnt die Runde mit ${top.voteCount} Stimmen!`, Date.now());
+      case "voting-started":
+        this.pushEvent("🗳️ Abstimmung läuft!", Date.now());
+        break;
+      case "results-ready": {
+        if (event.winnerId) {
+          const winnerName = this.worldStore.players()[event.winnerId]?.name || "Jemand";
+          this.pushEvent(`🏆 ${winnerName} gewinnt die Runde!`, Date.now());
         }
         break;
       }
+      case "round-ended":
+        break;
       case "score-update": {
         const playerName = this.worldStore.players()[event.playerId]?.name || "Jemand";
         this.pushEvent(`⭐ ${playerName} hat jetzt ${event.newScore} Punkte.`, Date.now());
         break;
       }
+      case "pack-unlocked":
+        this.pushEvent(`🔓 ${event.packName} freigeschaltet!`, Date.now());
+        break;
+      case "prompt-chosen":
+        this.pushEvent(`🎯 Nächster Prompt: ${event.prompt}`, Date.now());
+        break;
+      case "guaranteed-pack-chosen":
+        this.pushEvent(`⭐ ${event.packName} ist auf jeden Fall dabei!`, Date.now());
+        break;
       case "hand-dealt":
       case "vote-registered":
         break;
@@ -269,7 +285,7 @@ export class BoardComponent implements OnInit, OnDestroy {
     }
 
     this.timerInterval = setInterval(() => {
-      const endsAt = this.roundEndsAt();
+      const endsAt = this.currentTimerEndsAt();
 
       if (endsAt <= 0) {
         this.timeLeft.set("");

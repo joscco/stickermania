@@ -112,7 +112,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
     const reconnect = this.reconnectService.load();
     const sessionCode = this.reconnectService.resolveSessionCode(this.route);
 
-    console.log("[player] ngOnInit — sessionCode:", sessionCode, "reconnect:", reconnect);
 
     if (!sessionCode) {
       if (reconnect?.sessionCode) {
@@ -129,7 +128,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
         ? (reconnect?.playerId ?? localStorage.getItem("birthday_player_id") ?? null)
         : null;
 
-    console.log("[player] isSameSession:", isSameSession, "playerId:", playerId);
 
     // If switching sessions, clear stale reconnect data
     if (!isSameSession) {
@@ -156,9 +154,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     this.wsService.connect();
 
     try {
-      console.log("[player] resolving session code:", sessionCode);
       const resolved = await this.apiService.resolveSessionByCode(sessionCode);
-      console.log("[player] resolved session:", resolved.sessionId, "wsStatus:", this.wsService.status());
       this.sessionStore.setSession(resolved.sessionId);
       // Update to the canonical code returned by the server
       this.messageHandler.sessionCode = resolved.sessionCode ?? sessionCode;

@@ -96,10 +96,7 @@ export class WebSocketService {
 
       // Re-send the join message so the server re-registers us
       if (this.pendingJoinMsg) {
-        console.log("[ws] onopen — re-sending pendingJoinMsg:", (this.pendingJoinMsg as any).sessionId);
         this.sendRaw(this.pendingJoinMsg);
-      } else {
-        console.log("[ws] onopen — no pendingJoinMsg (waiting for send())");
       }
     };
 

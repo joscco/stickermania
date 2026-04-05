@@ -1,149 +1,41 @@
-<div class="h-full flex flex-col p-4">
-
+<div class="h-full relative">
   @switch (phase()) {
-
-    <!-- ═══ LOBBY ═══ -->
     @case ("LOBBY") {
-      <div class="flex-1 flex flex-col items-center justify-center gap-6">
-        <div class="text-8xl">🎨</div>
-        <h1 class="text-4xl font-bold text-stone-800">Sticker-Collage</h1>
-        <p class="text-xl text-stone-500">{{ playerCount() }} Spieler verbunden</p>
-        <button
-          class="bg-purple-600 text-white px-8 py-4 rounded-2xl text-xl font-bold shadow-xl hover:bg-purple-700 active:scale-95 transition-all"
-          (click)="startGame()"
-        >
-          Spiel starten 🚀
-        </button>
-      </div>
+      <app-board-lobby-scene
+        [sessionCode]="sessionCode()"
+        [playerQrDataUrl]="playerQrDataUrl()"
+        [wifiQrDataUrl]="wifiQrDataUrl()"
+      />
     }
-
-    <!-- ═══ BUILDING ═══ -->
     @case ("BUILDING") {
-      <!-- Prompt header -->
-      <div class="bg-stone-400 text-white px-6 py-4 text-center rounded-xl mb-4">
-        <span class="text-sm font-medium opacity-70">Runde {{ modeState()?.currentRoundIndex ?? 0 }}</span>
-        <h1 class="text-2xl font-bold mt-1">{{ modeState()?.currentPrompt ?? '' }}</h1>
-        <span class="text-xs opacity-60 mt-1 block">🎨 Baut eure Collagen!</span>
-      </div>
-
-      <div class="flex-1 flex flex-col items-center justify-center text-stone-400">
-        <div class="text-6xl mb-4">🎨</div>
-        <p class="text-lg font-medium text-stone-600">{{ currentRoundSubmissionCount() }} Einreichungen</p>
-        <p class="text-sm text-stone-400 mt-1">{{ playerCount() }} Spieler online</p>
-      </div>
-
-      <!-- End round button -->
-      <div class="text-center mt-4">
-        <button
-          class="bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:bg-orange-600 active:scale-95 transition-all"
-          (click)="endRoundEarly()"
-        >
-          Runde beenden ⏩
-        </button>
-      </div>
+      <app-board-building-scene [modeState]="modeState()" />
     }
-
-    <!-- ═══ VOTING ═══ -->
     @case ("VOTING") {
-      <div class="bg-amber-500 text-white px-6 py-4 text-center rounded-xl mb-4">
-        <span class="text-sm font-medium opacity-70">Abstimmung</span>
-        <h1 class="text-2xl font-bold mt-1">{{ modeState()?.currentPrompt ?? '' }}</h1>
-        <span class="text-xs opacity-60 mt-1 block">🗳️ Stimmt ab!</span>
-      </div>
-
-      <div class="flex-1 flex flex-col items-center justify-center text-stone-400">
-        <div class="text-6xl mb-4">🗳️</div>
-        <p class="text-lg font-medium text-stone-600">Abstimmung läuft…</p>
-        <p class="text-sm text-stone-400 mt-1">{{ currentRoundSubmissionCount() }} Collagen zur Auswahl</p>
-      </div>
-
-      <div class="text-center mt-4">
-        <button
-          class="bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:bg-orange-600 active:scale-95 transition-all"
-          (click)="endVotingEarly()"
-        >
-          Abstimmung beenden ⏩
-        </button>
-      </div>
+      <app-board-voting-scene [modeState]="modeState()" />
     }
-
-    <!-- ═══ RESULTS ═══ -->
     @case ("RESULTS") {
-      <div class="bg-amber-400 text-white px-6 py-4 text-center rounded-xl mb-4">
-        <h1 class="text-2xl font-bold">🏆 Ergebnisse</h1>
-      </div>
-
-      <!-- Podium -->
-      @if (topResults().length > 0) {
-        <div class="grid grid-cols-3 gap-3 mb-4">
-          @for (result of topResults(); track result.collageId; let i = $index) {
-            <div class="bg-white rounded-xl border border-black/6 overflow-hidden shadow-sm"
-                 [class.ring-2]="i === 0"
-                 [class.ring-amber-400]="i === 0">
-              <div class="relative aspect-square bg-stone-50 overflow-hidden">
-                @if (getCollage(result.collageId)?.snapshotUrl) {
-                  <img
-                    [src]="getCollage(result.collageId)!.snapshotUrl"
-                    alt="Collage"
-                    class="w-full h-full object-contain"
-                    draggable="false"
-                  />
-                }
-              </div>
-              <div class="px-3 py-2 flex items-center justify-between">
-                <div>
-                  <div class="text-xs font-semibold text-stone-700">{{ getPlayerName(result.playerId) }}</div>
-                  <div class="text-xs text-stone-400">{{ result.voteCount }} Stimmen</div>
-                </div>
-                <div class="text-right">
-                  @if (i === 0) { <span class="text-lg">🥇</span> }
-                  @else if (i === 1) { <span class="text-lg">🥈</span> }
-                  @else if (i === 2) { <span class="text-lg">🥉</span> }
-                  @if (result.pointsAwarded > 0) {
-                    <div class="text-xs font-bold text-amber-600">+{{ result.pointsAwarded }}</div>
-                  }
-                </div>
-              </div>
-            </div>
-          }
-        </div>
-      }
-
-      <!-- Winner choosing state -->
-      <div class="flex-1 flex flex-col items-center justify-center">
-        @if (winnerId() && !winnerChoicesDone()) {
-          <p class="text-stone-600 text-lg font-medium">
-            {{ getPlayerName(winnerId()!) }} wählt die nächste Runde…
-          </p>
-          <div class="animate-pulse text-4xl mt-3">⏳</div>
-        } @else if (winnerChoicesDone()) {
-          <p class="text-emerald-600 text-lg font-medium">✅ Auswahl getroffen!</p>
-        }
-      </div>
-
-      <!-- Advance button -->
-      <div class="text-center mt-4">
-        <button
-          class="bg-purple-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:bg-purple-700 active:scale-95 transition-all"
-          (click)="advanceFromResults()"
-        >
-          Nächste Runde ⏩
-        </button>
-      </div>
+      <app-board-results-scene [modeState]="modeState()" />
     }
-
-    <!-- ═══ NEXT_ROUND_SETUP ═══ -->
     @case ("NEXT_ROUND_SETUP") {
-      <div class="flex-1 flex flex-col items-center justify-center gap-4">
-        <div class="text-6xl">🚀</div>
-        <h1 class="text-2xl font-bold text-stone-800">Nächste Runde!</h1>
-        @if (lastUnlockedPackName()) {
-          <p class="text-lg text-emerald-600 font-medium">🔓 {{ lastUnlockedPackName() }} freigeschaltet!</p>
-        }
-        @if (guaranteedPackName()) {
-          <p class="text-sm text-amber-600">⭐ Auf jeden Fall dabei: {{ guaranteedPackName() }}</p>
-        }
-      </div>
+      <app-board-building-scene [modeState]="modeState()" />
     }
+  }
+
+  <!-- Persistent join info (bottom-right, hidden in LOBBY where it's already shown) -->
+  @if (phase() !== 'LOBBY') {
+    <div class="absolute bottom-3 right-3 flex items-end gap-2 bg-white/90 backdrop-blur rounded-2xl border border-black/6 shadow-lg px-3 py-2.5 z-10">
+      @if (playerQrDataUrl()) {
+        <img [src]="playerQrDataUrl()!" alt="Mitspielen QR"
+             class="w-20 h-20 rounded-xl border border-black/6 bg-white p-0.5" />
+      }
+      <div class="text-center px-1">
+        <div class="text-[10px] uppercase tracking-widest text-stone-400 font-semibold">Mitspielen</div>
+        <div class="text-xl font-black tracking-[0.15em] text-stone-800 mt-0.5">{{ sessionCode() }}</div>
+      </div>
+      @if (wifiQrDataUrl()) {
+        <img [src]="wifiQrDataUrl()!" alt="WLAN QR"
+             class="w-20 h-20 rounded-xl border border-black/6 bg-white p-0.5" />
+      }
+    </div>
   }
 </div>

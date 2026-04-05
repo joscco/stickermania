@@ -82,6 +82,23 @@ export class StickerPlayerService {
     });
     public readonly winnerChoicesDone = computed(() => this.modeState()?.winnerChoicesDone ?? false);
 
+    /** Whether the winner has already chosen a prompt */
+    public readonly hasChosenPrompt = computed(() => {
+        const ms = this.modeState();
+        if (!ms) return false;
+        return !!ms.promptHistory[ms.currentRoundIndex + 1];
+    });
+
+    /** Whether the winner has already unlocked a pack */
+    public readonly hasUnlockedPack = computed(() => {
+        return !!this.modeState()?.lastUnlockedPackId;
+    });
+
+    /** Whether there are any locked packs left to unlock */
+    public readonly hasLockedPacks = computed(() => {
+        return (this.modeState()?.packUnlockChoices ?? []).length > 0;
+    });
+
     /** My placement in last vote results (1-indexed, null if not found) */
     public readonly myPlacement = computed<number | null>(() => {
         const playerId = this.sessionStore.playerId();
