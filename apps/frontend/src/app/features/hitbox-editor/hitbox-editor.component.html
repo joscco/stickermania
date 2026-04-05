@@ -22,13 +22,13 @@
       <div class="p-2">
         <h2 class="text-xs font-semibold text-stone-500 mb-2 px-1">Sticker-Katalog</h2>
         <div class="space-y-0.5">
-          @for (sticker of catalog(); track sticker.id) {
+          @for (sticker of persistence.catalog(); track sticker.id) {
             <button
               class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs transition-all hover:bg-stone-50"
-              [class.bg-violet-50]="selectedSticker()?.id === sticker.id"
-              [class.ring-1]="selectedSticker()?.id === sticker.id"
-              [class.ring-violet-300]="selectedSticker()?.id === sticker.id"
-              (click)="selectSticker(sticker)"
+              [class.bg-violet-50]="persistence.selectedSticker()?.id === sticker.id"
+              [class.ring-1]="persistence.selectedSticker()?.id === sticker.id"
+              [class.ring-violet-300]="persistence.selectedSticker()?.id === sticker.id"
+              (click)="persistence.selectSticker(sticker)"
             >
               <img
                 [src]="sticker.imageUrl"
@@ -39,7 +39,7 @@
               <div class="flex-1 min-w-0">
                 <div class="font-medium text-stone-700 truncate">{{ sticker.id }}</div>
               </div>
-              @if (hasSavedHitbox(sticker)) {
+              @if (persistence.hasSavedHitbox(sticker)) {
                 <div class="w-2 h-2 bg-green-400 rounded-full shrink-0" title="Hat Hitbox"></div>
               }
             </button>
@@ -50,11 +50,11 @@
 
     <!-- CENTER -->
     <div class="flex-1 flex flex-col min-h-0 min-w-0">
-      @if (selectedSticker()) {
+      @if (persistence.selectedSticker()) {
         <!-- Toolbar -->
         <div class="shrink-0 bg-white border-b border-black/10 px-4 py-2 flex items-center gap-2 flex-wrap">
-          <span class="text-sm font-semibold text-stone-700">{{ selectedSticker()!.id }}</span>
-          <span class="text-xs text-stone-400">{{ polygon().length }} Punkte</span>
+          <span class="text-sm font-semibold text-stone-700">{{ persistence.selectedSticker()!.id }}</span>
+          <span class="text-xs text-stone-400">{{ poly.polygon().length }} Punkte</span>
 
           <div class="h-5 w-px bg-black/10 mx-1"></div>
 
@@ -68,8 +68,8 @@
 
           <button
             class="px-3 py-1.5 bg-stone-100 text-stone-600 rounded-lg font-medium text-xs hover:bg-stone-200 active:scale-95 transition-all disabled:opacity-30"
-            [disabled]="polygon().length === 0"
-            (click)="clearPolygon()"
+            [disabled]="poly.polygon().length === 0"
+            (click)="poly.clear()"
           >🗑️ Löschen</button>
 
           <div class="h-5 w-px bg-black/10 mx-1"></div>
@@ -88,23 +88,12 @@
 
           <div class="flex-1"></div>
 
-          <button
-            class="px-4 py-1.5 bg-green-600 text-white rounded-lg font-medium text-xs hover:bg-green-700 active:scale-95 transition-all disabled:opacity-50"
-            [disabled]="saving() || !hasPolygon()"
-            (click)="saveCurrentHitbox()"
-          >
-            @if (saving()) { ⏳ } @else { 💾 Speichern }
-          </button>
-          @if (saveStatus()) {
-            <span class="text-xs">{{ saveStatus() }}</span>
+          @if (persistence.saving()) {
+            <span class="text-xs text-stone-400">⏳ Speichert…</span>
           }
-
-          <button
-            class="px-3 py-1.5 bg-stone-100 text-stone-600 rounded-lg font-medium text-xs hover:bg-stone-200 active:scale-95 transition-all disabled:opacity-30"
-            [disabled]="!hasPolygon()"
-            (click)="copySnippet()"
-            title="Code kopieren"
-          >📋</button>
+          @if (persistence.saveStatus()) {
+            <span class="text-xs">{{ persistence.saveStatus() }}</span>
+          }
         </div>
 
         <!-- Editor area: outer container that we measure for available space -->
@@ -112,92 +101,85 @@
           #editorArea
           class="flex-1 min-h-0 relative bg-stone-50 overflow-hidden flex items-center justify-center"
         >
-          <!-- Inner wrapper: sized exactly to the visible image (respecting aspect ratio) -->
+          <!-- Interactive wrapper: image + padding around it for edge points -->
           <div
             class="relative cursor-crosshair"
-            [style.width.px]="fittedWidth()"
-            [style.height.px]="fittedHeight()"
-            (mousedown)="onEditorMouseDown($event)"
-            (mousemove)="onEditorMouseMove($event)"
-            (mouseup)="onEditorMouseUp()"
-            (mouseleave)="onEditorMouseUp()"
+            [style.width.px]="wrapperWidth()"
+            [style.height.px]="wrapperHeight()"
+            (mousedown)="interaction.onMouseDown($event)"
+            (mousemove)="interaction.onMouseMove($event)"
+            (mouseup)="interaction.onMouseUp()"
+            (mouseleave)="interaction.onMouseUp()"
           >
-            <!-- Sticker image — fills this wrapper exactly -->
+            <!-- Sticker image — centered inside wrapper with padding offset -->
             <img
-              [src]="selectedSticker()!.imageUrl"
-              [alt]="selectedSticker()!.id"
-              class="block w-full h-full"
+              [src]="persistence.selectedSticker()!.imageUrl"
+              [alt]="persistence.selectedSticker()!.id"
+              class="absolute block"
+              [style.left.px]="edgePadding"
+              [style.top.px]="edgePadding"
+              [style.width.px]="fittedWidth()"
+              [style.height.px]="fittedHeight()"
               style="background: repeating-conic-gradient(#e8e8e8 0% 25%, #d4d4d4 0% 50%) 50% / 20px 20px;"
               draggable="false"
               (load)="onImageLoaded($event)"
             />
 
-            <!-- SVG overlay — exactly same size as the image -->
+            <!-- SVG overlay — covers full wrapper including padding area -->
             <svg
               class="absolute inset-0 w-full h-full pointer-events-none"
-              viewBox="0 0 1000 1000"
+              [attr.viewBox]="'0 0 ' + wrapperWidth() + ' ' + wrapperHeight()"
               preserveAspectRatio="none"
             >
               <!-- Polygon fill -->
-              @if (polygon().length >= 3) {
+              @if (poly.polygon().length >= 3) {
                 <polygon
-                  [attr.points]="svgPoints()"
+                  [attr.points]="svgPixelPoints()"
                   fill="rgba(168, 85, 247, 0.12)"
                   stroke="rgba(168, 85, 247, 0.7)"
-                  stroke-width="4"
+                  stroke-width="2"
                   stroke-linejoin="round"
                 />
               }
 
               <!-- Edge lines (for 1-2 points) -->
-              @if (polygon().length === 2) {
+              @if (poly.polygon().length === 2) {
                 <line
-                  [attr.x1]="vc(polygon()[0].x)" [attr.y1]="vc(polygon()[0].y)"
-                  [attr.x2]="vc(polygon()[1].x)" [attr.y2]="vc(polygon()[1].y)"
-                  stroke="rgba(168, 85, 247, 0.7)" stroke-width="3"
+                  [attr.x1]="poly.polygon()[0].x * fittedWidth() + edgePadding"
+                  [attr.y1]="poly.polygon()[0].y * fittedHeight() + edgePadding"
+                  [attr.x2]="poly.polygon()[1].x * fittedWidth() + edgePadding"
+                  [attr.y2]="poly.polygon()[1].y * fittedHeight() + edgePadding"
+                  stroke="rgba(168, 85, 247, 0.7)" stroke-width="2"
                 />
               }
 
               <!-- Edge midpoint indicators -->
-              @if (polygon().length >= 2) {
-                @for (pt of polygon(); track $index) {
+              @if (poly.polygon().length >= 2) {
+                @for (pt of poly.polygon(); track $index) {
                   <circle
-                    [attr.cx]="vc((pt.x + polygon()[($index + 1) % polygon().length].x) / 2)"
-                    [attr.cy]="vc((pt.y + polygon()[($index + 1) % polygon().length].y) / 2)"
-                    r="8"
+                    [attr.cx]="(pt.x + poly.polygon()[($index + 1) % poly.polygon().length].x) / 2 * fittedWidth() + edgePadding"
+                    [attr.cy]="(pt.y + poly.polygon()[($index + 1) % poly.polygon().length].y) / 2 * fittedHeight() + edgePadding"
+                    r="5"
                     fill="rgba(168, 85, 247, 0.35)"
                   />
                 }
               }
 
               <!-- Vertices -->
-              @for (pt of polygon(); track $index) {
+              @for (pt of poly.polygon(); track $index) {
                 <circle
-                  [attr.cx]="vc(pt.x)" [attr.cy]="vc(pt.y)"
-                  [attr.r]="selectedVertex() === $index ? 20 : 16"
-                  [attr.fill]="selectedVertex() === $index ? '#ef4444' : ($index === 0 ? '#22c55e' : '#a855f7')"
-                  stroke="white" stroke-width="3"
+                  [attr.cx]="pt.x * fittedWidth() + edgePadding"
+                  [attr.cy]="pt.y * fittedHeight() + edgePadding"
+                  [attr.r]="poly.selectedVertex() === $index ? 10 : 8"
+                  [attr.fill]="poly.selectedVertex() === $index ? '#ef4444' : ($index === 0 ? '#22c55e' : '#a855f7')"
+                  stroke="white" stroke-width="2"
                 />
                 <text
-                  [attr.x]="vc(pt.x)" [attr.y]="vc(pt.y)"
+                  [attr.x]="pt.x * fittedWidth() + edgePadding"
+                  [attr.y]="pt.y * fittedHeight() + edgePadding"
                   text-anchor="middle" dominant-baseline="central"
-                  fill="white" font-size="18" font-weight="bold"
+                  fill="white" font-size="9" font-weight="bold"
                 >{{ $index }}</text>
-              }
-
-              <!-- Delete icon on selected vertex -->
-              @if (selectedVertex() >= 0 && selectedVertex() < polygon().length) {
-                <circle
-                  [attr.cx]="vc(deleteIconX(polygon()[selectedVertex()]))"
-                  [attr.cy]="vc(deleteIconY(polygon()[selectedVertex()]))"
-                  r="20" fill="#ef4444" stroke="white" stroke-width="2"
-                />
-                <text
-                  [attr.x]="vc(deleteIconX(polygon()[selectedVertex()]))"
-                  [attr.y]="vc(deleteIconY(polygon()[selectedVertex()]))"
-                  text-anchor="middle" dominant-baseline="central"
-                  fill="white" font-size="26" font-weight="bold"
-                >×</text>
               }
             </svg>
           </div>
@@ -219,7 +201,7 @@
       <span>🖱️ Klick = Punkt setzen</span>
       <span>✋ Ziehen = Punkt verschieben</span>
       <span>📍 Linie klicken = Punkt einfügen</span>
-      <span>🔴 × = Punkt löschen</span>
+      <span>⌫ Entf/Backspace = Punkt löschen</span>
       <span>🪄 Auto-Detect = Kontur aus Alpha</span>
     </div>
   </div>
