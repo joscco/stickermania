@@ -10,8 +10,9 @@ import {firstValueFrom} from "rxjs";
 /**
  * Visual hitbox polygon editor for stickers.
  *
- * Uses an <img> + SVG overlay approach (no canvas) so the image aspect ratio
- * is handled natively by the browser with zero layout shift.
+ * Uses an <img> + SVG overlay inside a precisely-sized wrapper div.
+ * The wrapper is computed to fill available space while preserving
+ * the image's natural aspect ratio — no object-contain mismatch.
  *
  * Route: /hitbox-editor
  */
@@ -22,6 +23,7 @@ import {firstValueFrom} from "rxjs";
     templateUrl: "./hitbox-editor.component.html",
 })
 export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
+    /** Outer container — we observe its size to compute fitted dimensions */
     @ViewChild("editorArea") editorArea!: ElementRef<HTMLDivElement>;
 
     /** Sticker catalog — loaded dynamically from backend */
@@ -36,32 +38,32 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     public readonly saving = signal(false);
     public readonly saveStatus = signal<string>("");
 
-    /** Natural image dimensions (updated on image load) */
+    /** Natural image dimensions — updated when a sticker image loads */
     private readonly imgNatWidth = signal(1);
     private readonly imgNatHeight = signal(1);
 
-    /** Available container size (updated via ResizeObserver) */
+    /** Available container dimensions — updated via ResizeObserver */
     private readonly containerWidth = signal(600);
     private readonly containerHeight = signal(400);
 
-    /** Fitted image dimensions that fill available space while preserving aspect ratio */
+    /** Fitted image width that fills available space while preserving aspect ratio */
     public readonly fittedWidth = computed(() => {
         const aspect = this.imgNatWidth() / this.imgNatHeight();
         const cw = this.containerWidth();
         const ch = this.containerHeight();
         if (cw / ch > aspect) {
-            // Container is wider than image → height-limited
             return Math.floor(ch * aspect);
         }
-        return Math.floor(cw);
+        return cw;
     });
 
+    /** Fitted image height */
     public readonly fittedHeight = computed(() => {
         const aspect = this.imgNatWidth() / this.imgNatHeight();
         const cw = this.containerWidth();
         const ch = this.containerHeight();
         if (cw / ch > aspect) {
-            return Math.floor(ch);
+            return ch;
         }
         return Math.floor(cw / aspect);
     });
@@ -81,7 +83,7 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
         return `hitboxPolygon: [${polyStr}]`;
     });
 
-    /** SVG points string for the current polygon (coordinates in 0–1000 viewBox) */
+    /** SVG points string for the polygon (coordinates in 0–1000 viewBox) */
     public readonly svgPoints = computed(() => {
         return this.polygon().map(p => `${p.x * 1000},${p.y * 1000}`).join(" ");
     });
@@ -94,7 +96,31 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
         await this.loadCatalog();
     }
 
-    ngOnDestroy(): void {}
+    ngAfterViewInit(): void {
+        this.resizeObserver = new ResizeObserver(entries => {
+            for (const entry of entries) {
+                this.containerWidth.set(Math.floor(entry.contentRect.width));
+                this.containerHeight.set(Math.floor(entry.contentRect.height));
+            }
+        });
+        if (this.editorArea?.nativeElement) {
+            this.resizeObserver.observe(this.editorArea.nativeElement);
+        }
+    }
+
+    ngOnDestroy(): void {
+        this.resizeObserver?.disconnect();
+    }
+
+    // ── Image load handler ───────────────────────────────────
+
+    public onImageLoaded(event: Event): void {
+        const img = event.target as HTMLImageElement;
+        if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+            this.imgNatWidth.set(img.naturalWidth);
+            this.imgNatHeight.set(img.naturalHeight);
+        }
+    }
 
     // ── Load catalog from backend ────────────────────────────
 
@@ -109,7 +135,6 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
             }
         } catch { /* fall through to fallback */ }
 
-        // Fallback: load hitbox-data and merge manually
         try {
             const hitboxData = await firstValueFrom(
                 this.http.get<Record<string, Point[]>>("/api/hitbox-data")
@@ -140,14 +165,9 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     public async runAutoDetect(): Promise<void> {
         const sticker = this.selectedSticker();
         if (!sticker) return;
-
         this.autoDetecting.set(true);
         try {
-            const result = await autoDetectHitbox(
-                sticker.imageUrl,
-                this.tolerance(),
-                this.alphaThreshold(),
-            );
+            const result = await autoDetectHitbox(sticker.imageUrl, this.tolerance(), this.alphaThreshold());
             if (result.length >= 3) {
                 this.polygon.set(result);
                 this.selectedVertex.set(-1);
@@ -163,14 +183,12 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
         const sticker = this.selectedSticker();
         if (!sticker) return;
         const pts = this.polygon();
-
         this.saving.set(true);
         this.saveStatus.set("");
         try {
             await firstValueFrom(
                 this.http.put(`/api/hitbox-data/${encodeURIComponent(sticker.id)}`, {polygon: pts})
             );
-            // Update catalog entry in-place so the sidebar dot updates
             const current = this.catalog();
             const idx = current.findIndex(s => s.id === sticker.id);
             if (idx >= 0) {
@@ -188,13 +206,16 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
         }
     }
 
-    // ── SVG mouse interaction ────────────────────────────────
+    // ── Mouse interaction ────────────────────────────────────
+    //
+    // Mouse events are on the inner wrapper div which is exactly
+    // fittedWidth × fittedHeight pixels. So normalised coords are
+    // simply (offsetX / wrapper.width, offsetY / wrapper.height)
+    // relative to that element.
 
-    /** Convert a mouse event on the editor area to normalised 0–1 coordinates */
     private getNormCoords(event: MouseEvent): {x: number; y: number} {
-        const el = this.editorArea?.nativeElement;
-        if (!el) return {x: 0, y: 0};
-        const rect = el.getBoundingClientRect();
+        const target = (event.currentTarget as HTMLElement);
+        const rect = target.getBoundingClientRect();
         return {
             x: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)),
             y: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height)),
@@ -204,21 +225,17 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     public onEditorMouseDown(event: MouseEvent): void {
         const {x, y} = this.getNormCoords(event);
         const pts = this.polygon();
-        const el = this.editorArea?.nativeElement;
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-        const hitPx = 14;
+        const target = event.currentTarget as HTMLElement;
+        const rect = target.getBoundingClientRect();
 
         const selIdx = this.selectedVertex();
 
         // 1. Delete icon hit?
         if (selIdx >= 0 && selIdx < pts.length) {
             const sp = pts[selIdx];
-            const iconNx = Math.min(0.96, Math.max(0.04, sp.x + 0.04));
-            const iconNy = Math.min(0.96, Math.max(0.04, sp.y - 0.04));
-            const dxPx = (iconNx - x) * rect.width;
-            const dyPx = (iconNy - y) * rect.height;
-            if (Math.hypot(dxPx, dyPx) < 20) {
+            const iconNx = this.deleteIconX(sp);
+            const iconNy = this.deleteIconY(sp);
+            if (Math.hypot((iconNx - x) * rect.width, (iconNy - y) * rect.height) < 20) {
                 this.removeVertex(selIdx);
                 event.preventDefault();
                 return;
@@ -227,9 +244,7 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
 
         // 2. Vertex hit?
         for (let i = 0; i < pts.length; i++) {
-            const dxPx = (pts[i].x - x) * rect.width;
-            const dyPx = (pts[i].y - y) * rect.height;
-            if (Math.hypot(dxPx, dyPx) < hitPx) {
+            if (Math.hypot((pts[i].x - x) * rect.width, (pts[i].y - y) * rect.height) < 14) {
                 this.selectedVertex.set(i);
                 this.draggingVertex = i;
                 event.preventDefault();
@@ -241,13 +256,11 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
         if (pts.length >= 2) {
             for (let i = 0; i < pts.length; i++) {
                 const j = (i + 1) % pts.length;
-                // Check midpoint
                 const mx = (pts[i].x + pts[j].x) / 2;
                 const my = (pts[i].y + pts[j].y) / 2;
                 if (Math.hypot((mx - x) * rect.width, (my - y) * rect.height) < 10) {
                     return this.insertVertex(j, mx, my, event);
                 }
-                // Check line
                 const dist = this.ptSegDistPx(x, y, pts[i], pts[j], rect);
                 if (dist < 10) {
                     const proj = this.projectOntoSeg(x, y, pts[i], pts[j]);
@@ -280,8 +293,7 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
 
     private insertVertex(atIndex: number, x: number, y: number, event: MouseEvent): void {
         const pts = [...this.polygon()];
-        const newPt = this.roundPoint({x, y});
-        pts.splice(atIndex, 0, newPt);
+        pts.splice(atIndex, 0, this.roundPoint({x, y}));
         this.polygon.set(pts);
         this.selectedVertex.set(atIndex);
         this.draggingVertex = atIndex;
@@ -310,10 +322,8 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // ── Helpers ──────────────────────────────────────────────
 
-    /** SVG viewBox coordinate (0–1000) for a normalised value */
     public vc(v: number): number { return v * 1000; }
 
-    /** Delete icon position in normalised coords, offset from vertex */
     public deleteIconX(pt: Point): number { return Math.min(0.96, Math.max(0.04, pt.x + 0.04)); }
     public deleteIconY(pt: Point): number { return Math.min(0.96, Math.max(0.04, pt.y - 0.04)); }
 

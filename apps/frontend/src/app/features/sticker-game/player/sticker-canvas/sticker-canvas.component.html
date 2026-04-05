@@ -26,16 +26,17 @@
       <img
         [src]="getStickerUrl(sticker.stickerId)"
         [alt]="sticker.stickerId"
-        class="w-16 h-16 object-contain pointer-events-none"
+        class="h-16 w-auto block pointer-events-none"
         draggable="false"
       />
       <!-- Polygon hitbox outline (shown when selected) -->
       @if (interactive && selectedInstanceId() === sticker.instanceId && getHitboxSvgPoints(sticker.stickerId)) {
-        <svg class="absolute inset-0 w-16 h-16 pointer-events-none" viewBox="0 0 64 64">
+        <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1 1" preserveAspectRatio="none">
           <polygon
             [attr.points]="getHitboxSvgPoints(sticker.stickerId)"
             fill="none"
             stroke="#a855f7"
+            vector-effect="non-scaling-stroke"
             stroke-width="2"
             stroke-linejoin="round"
           />

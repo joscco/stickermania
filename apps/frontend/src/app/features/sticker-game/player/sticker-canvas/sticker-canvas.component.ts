@@ -11,7 +11,7 @@ import {
 } from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {StickerPlacement, StickerDefinition} from "@birthday/shared";
-import {hitTestStickers} from "./sticker-hit-test.util";
+import {pointInPolygon} from "./sticker-hit-test.util";
 
 interface ActivePointer {
     id: number;
@@ -104,7 +104,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
     /**
      * Returns the SVG polygon `points` attribute string for a sticker's hitbox,
-     * scaled to the 64×64 render size. Returns empty string if no polygon hitbox.
+     * using normalised 0–1 coordinates. Returns empty string if no polygon hitbox.
      */
     public getHitboxSvgPoints(stickerId: string): string {
         if (this.catalogMap.size !== this.stickerCatalog.length) {
@@ -112,7 +112,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         }
         const def = this.catalogMap.get(stickerId);
         if (!def?.hitboxPolygon || def.hitboxPolygon.length < 3) return "";
-        return def.hitboxPolygon.map(p => `${p.x * 64},${p.y * 64}`).join(" ");
+        return def.hitboxPolygon.map(p => `${p.x},${p.y}`).join(" ");
     }
 
     // ── Touch handler installation (Safari-safe) ─────────────────
@@ -332,15 +332,71 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     // ── Hit testing (polygon-aware, rotation-aware) ──────────────
 
     private hitTestSticker(clientX: number, clientY: number): string | null {
-        const rect = this.canvasArea.nativeElement.getBoundingClientRect();
-        const localX = clientX - rect.left;
-        const localY = clientY - rect.top;
-
         if (this.catalogMap.size !== this.stickerCatalog.length) {
             this.buildCatalogMap();
         }
 
-        return hitTestStickers(localX, localY, this.stickers, this.catalogMap);
+        // Sort by z-index descending so topmost sticker wins
+        const sorted = [...this.stickers].sort((a, b) => b.zIndex - a.zIndex);
+
+        for (const placement of sorted) {
+            // Find the actual DOM element for this sticker
+            const el = this.canvasArea.nativeElement.querySelector(
+                `[data-instance-id="${placement.instanceId}"]`
+            ) as HTMLElement | null;
+            if (!el) continue;
+
+            const img = el.querySelector("img");
+            if (!img) continue;
+
+            // Get the rendered size of the image (accounts for aspect ratio)
+            const imgW = img.offsetWidth;
+            const imgH = img.offsetHeight;
+            if (imgW === 0 || imgH === 0) continue;
+
+            const scaledW = imgW * placement.scale;
+            const scaledH = imgH * placement.scale;
+
+            // Sticker center
+            const cx = placement.x + scaledW / 2;
+            const cy = placement.y + scaledH / 2;
+
+            // Canvas-local click coordinates
+            const rect = this.canvasArea.nativeElement.getBoundingClientRect();
+            const clickX = clientX - rect.left;
+            const clickY = clientY - rect.top;
+
+            // Translate to sticker center
+            let dx = clickX - cx;
+            let dy = clickY - cy;
+
+            // Inverse-rotate
+            const rad = (-placement.rotation * Math.PI) / 180;
+            const cos = Math.cos(rad);
+            const sin = Math.sin(rad);
+            const rx = dx * cos - dy * sin;
+            const ry = dx * sin + dy * cos;
+
+            // Normalise to 0–1 within the sticker's bounds
+            const localX = (rx + scaledW / 2) / scaledW;
+            const localY = (ry + scaledH / 2) / scaledH;
+
+            if (localX < 0 || localX > 1 || localY < 0 || localY > 1) continue;
+
+            // Polygon hit-test if available
+            const def = this.catalogMap.get(placement.stickerId);
+            if (def?.hitboxPolygon && def.hitboxPolygon.length >= 3) {
+                if (pointInPolygon(localX, localY, def.hitboxPolygon)) {
+                    return placement.instanceId;
+                }
+                continue;
+            }
+
+            // Bounding box passed
+            return placement.instanceId;
+        }
+
+        return null;
     }
 
     // ── Z-Index controls ─────────────────────────────────────────
