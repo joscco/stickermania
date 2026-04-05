@@ -68,12 +68,19 @@ export class PlayerMessageHandler {
       playerId: message.playerId,
     });
 
-    this.reconnectService.save({
-      playerId: message.playerId,
-      sessionId: message.sessionId,
-      sessionCode: this.sessionCode,
-      playerName: this.sessionStore.playerName(),
-    });
+    // Resolve session code: prefer the one set by the component, fall back to localStorage
+    const resolvedCode = this.sessionCode
+      || localStorage.getItem("birthday_last_session_code")
+      || "";
+
+    if (resolvedCode) {
+      this.reconnectService.save({
+        playerId: message.playerId,
+        sessionId: message.sessionId,
+        sessionCode: resolvedCode,
+        playerName: this.sessionStore.playerName(),
+      });
+    }
   }
 
   // ─── State sync on reconnect ────────────────────────────────

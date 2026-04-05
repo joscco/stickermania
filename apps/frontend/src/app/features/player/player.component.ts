@@ -132,6 +132,10 @@ export class PlayerComponent implements OnInit, OnDestroy {
       this.reconnectService.clear();
     }
 
+    // Set sessionCode on the message handler BEFORE connecting so that any
+    // incoming "welcome" message will have the correct code for reconnect storage.
+    this.messageHandler.sessionCode = sessionCode;
+
     // ⚠️ Safari iOS: WebSocket-Verbindung MUSS vor dem ersten `await` gestartet werden.
     //
     // Safari blockiert `new WebSocket()` wenn es innerhalb einer Promise-Continuation
@@ -150,17 +154,28 @@ export class PlayerComponent implements OnInit, OnDestroy {
     try {
       const resolved = await this.apiService.resolveSessionByCode(sessionCode);
       this.sessionStore.setSession(resolved.sessionId);
+      // Update to the canonical code returned by the server
       this.messageHandler.sessionCode = resolved.sessionCode ?? sessionCode;
 
       localStorage.setItem("birthday_last_session_code", resolved.sessionCode);
 
-      // send() stores join as pendingJoinMsg — auto-sent on onopen if WS isn't ready yet
-      this.wsService.send({
-        type: "join",
-        kind: "player",
+      const joinMsg = {
+        type: "join" as const,
+        kind: "player" as const,
         sessionId: resolved.sessionId,
         playerId: playerId ?? undefined,
-      });
+      };
+
+      // If the WebSocket is already connected, send immediately.
+      // Otherwise store as pending — the service re-sends on onopen.
+      if (this.wsService.status() === "connected") {
+        this.wsService.send(joinMsg);
+      } else {
+        // Pre-store as pending so it's sent when WS connects
+        this.wsService.send(joinMsg);
+        // Additionally wait for WS to be connected and re-send to be safe
+        this.waitForConnectionAndJoin(joinMsg);
+      }
 
     } catch {
       this.wsService.disconnect();
@@ -170,8 +185,31 @@ export class PlayerComponent implements OnInit, OnDestroy {
     }
   }
 
+  private joinRetryTimer: ReturnType<typeof setInterval> | null = null;
+
+  /**
+   * Polls until WS is connected, then re-sends the join message.
+   * This is a safety net: the WebSocketService's pendingJoinMsg mechanism
+   * should handle it, but we also guard against edge cases where the
+   * WS opened between send() and onopen re-sending (race window).
+   */
+  private waitForConnectionAndJoin(joinMsg: { type: "join"; kind: "player"; sessionId: string; playerId?: string }): void {
+    let attempts = 0;
+    this.joinRetryTimer = setInterval(() => {
+      attempts++;
+      if (this.wsService.status() === "connected") {
+        this.wsService.send(joinMsg);
+        if (this.joinRetryTimer) { clearInterval(this.joinRetryTimer); this.joinRetryTimer = null; }
+      } else if (attempts > 50) {
+        // Give up after ~5 s
+        if (this.joinRetryTimer) { clearInterval(this.joinRetryTimer); this.joinRetryTimer = null; }
+      }
+    }, 100);
+  }
+
   public ngOnDestroy(): void {
     this.unsubscribeWs?.();
+    if (this.joinRetryTimer) { clearInterval(this.joinRetryTimer); this.joinRetryTimer = null; }
   }
 
   // ── UI actions ─────────────────────────────────────────────

@@ -40,4 +40,58 @@
       </div>
     </div>
   }
+
+  <!-- Selection toolbar (z-index + transform controls) -->
+  @if (interactive && selectedInstanceId()) {
+    <div class="absolute bottom-2 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-white/90 backdrop-blur border border-black/10 rounded-full px-2 py-1 shadow-lg">
+      <!-- Z-index controls -->
+      <button
+        class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-purple-100 active:scale-90 transition-all text-sm"
+        title="Nach hinten"
+        (click)="sendBackward()"
+      >⬇️</button>
+      <button
+        class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-purple-100 active:scale-90 transition-all text-sm"
+        title="Nach vorne"
+        (click)="bringForward()"
+      >⬆️</button>
+
+      <div class="w-px h-5 bg-black/10 mx-0.5"></div>
+
+      <!-- Rotate controls -->
+      <button
+        class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-purple-100 active:scale-90 transition-all text-sm"
+        title="Links drehen"
+        (click)="rotateSelected(-15)"
+      >↩️</button>
+      <button
+        class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-purple-100 active:scale-90 transition-all text-sm"
+        title="Rechts drehen"
+        (click)="rotateSelected(15)"
+      >↪️</button>
+
+      <div class="w-px h-5 bg-black/10 mx-0.5"></div>
+
+      <!-- Scale controls -->
+      <button
+        class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-purple-100 active:scale-90 transition-all text-sm"
+        title="Kleiner"
+        (click)="scaleSelected(0.8)"
+      >➖</button>
+      <button
+        class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-purple-100 active:scale-90 transition-all text-sm"
+        title="Größer"
+        (click)="scaleSelected(1.25)"
+      >➕</button>
+
+      <div class="w-px h-5 bg-black/10 mx-0.5"></div>
+
+      <!-- Delete -->
+      <button
+        class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-100 active:scale-90 transition-all text-sm"
+        title="Löschen"
+        (click)="removeSelected()"
+      >🗑️</button>
+    </div>
+  }
 </div>

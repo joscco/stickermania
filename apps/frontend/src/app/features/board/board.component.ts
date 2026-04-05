@@ -7,10 +7,10 @@ import {Subscription} from "rxjs";
 import {ApiService} from "../../core/api.service";
 import {WebSocketService} from "../../core/websocket.service";
 import {WorldStore} from "../../core/world.store";
-import {EventToastsComponent, type UiEvent} from "./events/event-toasts.component";
-import {BoardLobbyComponent} from "./lobby/board-lobby.component";
-import {BoardSidebarComponent} from "./sidebar/board-sidebar.component";
-import {BoardSetupDrawerComponent} from "./setup/board-setup-drawer.component";
+import {EventToastsComponent, type UiEvent} from "./event-toast/event-toasts.component";
+import {BoardLobbyComponent} from "./board-lobby/board-lobby.component";
+import {BoardSidebarComponent} from "./board-sidebar/board-sidebar.component";
+import {BoardSetupDrawerComponent} from "./setup-drawer/board-setup-drawer.component";
 import {StickerBoardSceneComponent} from '../sticker-game/board/sticker-board-scene.component';
 
 const EVENT_TOAST_DURATION_MS = 3000;

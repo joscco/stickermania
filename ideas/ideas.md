@@ -1,11 +1,3 @@
-Cluster Bilden beim Tag Spiel
--> Sodass Gebiete "gesichert" werden
-
-Mii-Mäßige Figuren mit eigens erstellten Avatar.
-Fotos machen im Spiel mit Posen, Hintegründen
-Freischaltbare Accesoires, Kleindung, Posen
-
-
 Sticker-Game:
 - Eine Session den ganzen Abend – kein Reset, läuft durchgehend
 - Avatar-System – Jeder erstellt einmalig einen Avatar mit Name

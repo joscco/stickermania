@@ -15,7 +15,8 @@ export const DEFAULT_STICKER_CATALOG: StickerDefinition[] = [
     {id: "eyes_angry",      imageUrl: "assets/png/sticker_eye_angry.png",      categories: ["eyes"]},
     {id: "eyes_sleepy",     imageUrl: "assets/png/sticker_eye_sleepy.png",     categories: ["eyes"]},
     {id: "eyes_star",       imageUrl: "assets/png/sticker_eye_star.png",       categories: ["eyes"]},
-    {id: "eyes_heart",      imageUrl: "assets/png/sticker_eye_heart.png",      categories: ["eyes"]},
+    {id: "eyes_heart",      imageUrl: "assets/png/sticker_eye_heart.png",      categories: ["eyes"],
+        hitboxPolygon: [{x:0.5,y:0},{x:0.62,y:0.38},{x:1,y:0.38},{x:0.69,y:0.6},{x:0.81,y:1},{x:0.5,y:0.75},{x:0.19,y:1},{x:0.31,y:0.6},{x:0,y:0.38},{x:0.38,y:0.38}]},
 
     // ── Mouths ───────────────────────────────
     {id: "mouth_smile",     imageUrl: "assets/png/sticker_mouth_smile.png",     categories: ["mouth"]},
@@ -25,14 +26,17 @@ export const DEFAULT_STICKER_CATALOG: StickerDefinition[] = [
 
     // ── Noses ────────────────────────────────
     {id: "nose_round",      imageUrl: "assets/png/sticker_nose_round.png",      categories: ["nose"]},
-    {id: "nose_pointy",     imageUrl: "assets/png/sticker_nose_pointy.png",     categories: ["nose"]},
+    {id: "nose_pointy",     imageUrl: "assets/png/sticker_nose_pointy.png",     categories: ["nose"],
+        hitboxPolygon: [{x:0.5,y:0},{x:1,y:1},{x:0,y:1}]},
     {id: "nose_clown",      imageUrl: "assets/png/sticker_nose_clown.png",      categories: ["nose"]},
 
     // ── Shapes ───────────────────────────────
     {id: "shape_circle",    imageUrl: "assets/png/sticker_shape_circle.png",    categories: ["shape"]},
     {id: "shape_square",    imageUrl: "assets/png/sticker_shape_square.png",    categories: ["shape"]},
-    {id: "shape_triangle",  imageUrl: "assets/png/sticker_shape_triangle.png",  categories: ["shape"]},
-    {id: "shape_star",      imageUrl: "assets/png/sticker_shape_star.png",      categories: ["shape"]},
+    {id: "shape_triangle",  imageUrl: "assets/png/sticker_shape_triangle.png",  categories: ["shape"],
+        hitboxPolygon: [{x:0.5,y:0},{x:1,y:1},{x:0,y:1}]},
+    {id: "shape_star",      imageUrl: "assets/png/sticker_shape_star.png",      categories: ["shape"],
+        hitboxPolygon: [{x:0.5,y:0},{x:0.62,y:0.38},{x:1,y:0.38},{x:0.69,y:0.6},{x:0.81,y:1},{x:0.5,y:0.75},{x:0.19,y:1},{x:0.31,y:0.6},{x:0,y:0.38},{x:0.38,y:0.38}]},
     {id: "shape_blob",      imageUrl: "assets/png/sticker_shape_blob.png",      categories: ["shape"]},
     {id: "shape_cloud",     imageUrl: "assets/png/sticker_shape_cloud.png",     categories: ["shape"]},
 
@@ -44,9 +48,11 @@ export const DEFAULT_STICKER_CATALOG: StickerDefinition[] = [
 
     // ── Accessories ──────────────────────────
     {id: "acc_hat",         imageUrl: "assets/png/sticker_acc_hat.png",         categories: ["accessory"]},
-    {id: "acc_crown",       imageUrl: "assets/png/sticker_acc_crown.png",       categories: ["accessory"]},
+    {id: "acc_crown",       imageUrl: "assets/png/sticker_acc_crown.png",       categories: ["accessory"],
+        hitboxPolygon: [{x:0.1,y:1},{x:0,y:0.4},{x:0.25,y:0.7},{x:0.5,y:0},{x:0.75,y:0.7},{x:1,y:0.4},{x:0.9,y:1}]},
     {id: "acc_glasses",     imageUrl: "assets/png/sticker_acc_glasses.png",     categories: ["accessory"]},
-    {id: "acc_bowtie",      imageUrl: "assets/png/sticker_acc_bowtie.png",      categories: ["accessory"]},
+    {id: "acc_bowtie",      imageUrl: "assets/png/sticker_acc_bowtie.png",      categories: ["accessory"],
+        hitboxPolygon: [{x:0.5,y:0.3},{x:1,y:0},{x:1,y:1},{x:0.5,y:0.7},{x:0,y:1},{x:0,y:0}]},
 
     // ── Objects ──────────────────────────────
 

@@ -165,6 +165,12 @@ export interface StickerDefinition {
     id: string;
     imageUrl: string;
     categories: string[];
+    /**
+     * Optional polygon hitbox, defined as an array of {x, y} points
+     * where coordinates are normalized 0–1 relative to the sticker's bounding box.
+     * If absent, the full bounding rectangle is used for hit-testing.
+     */
+    hitboxPolygon?: Array<{ x: number; y: number }>;
 }
 
 export interface StickerPlacement {

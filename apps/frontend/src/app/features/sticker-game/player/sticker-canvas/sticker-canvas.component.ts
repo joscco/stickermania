@@ -11,6 +11,7 @@ import {
 } from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {StickerPlacement, StickerDefinition} from "@birthday/shared";
+import {hitTestStickers} from "./sticker-hit-test.util";
 
 interface ActivePointer {
     id: number;
@@ -19,14 +20,14 @@ interface ActivePointer {
 }
 
 /**
- * Interactive sticker canvas with proper touch gesture handling.
+ * Interactive sticker canvas with proper touch gesture handling
+ * and polygon-based hit-testing for accurate sticker selection.
  *
  * - **One finger on a sticker**: drag to reposition
  * - **Two fingers on a sticker**: pinch to scale, rotate by angle between fingers
  * - **Tap on empty area**: deselect
- *
- * Touch events are intercepted with `{ passive: false }` and `preventDefault()`
- * to prevent Safari from interpreting them as scroll / zoom / back-gestures.
+ * - **Tap on a sticker**: select it (keeps focus during drag/scale/rotate)
+ * - **Z-index controls**: bring forward / send backward via toolbar
  */
 @Component({
     selector: "app-sticker-canvas",
@@ -102,10 +103,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     }
 
     // ── Touch handler installation (Safari-safe) ─────────────────
-    //
-    // We install touch listeners directly on the element with
-    // { passive: false } to intercept ALL touch events before Safari
-    // can interpret them as scroll, pinch-to-zoom, or swipe-back.
 
     private installTouchHandlers(): void {
         const el = this.canvasArea?.nativeElement;
@@ -113,11 +110,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
           return;
         }
 
-        // Disable any native touch behavior
         el.style.touchAction = "none";
-        // Prevent iOS "callout" (long-press menu)
-        (el.style as any).webkitTouchCallout = "none";   // eslint-disable-line @typescript-eslint/no-explicit-any
-        (el.style as any).webkitUserSelect = "none";      // eslint-disable-line @typescript-eslint/no-explicit-any
+        (el.style as any).webkitTouchCallout = "none";
+        (el.style as any).webkitUserSelect = "none";
 
         const onTouchStart = (ev: TouchEvent): void => {
             ev.preventDefault();
@@ -143,7 +138,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
             }
         };
 
-        // Mouse fallback for desktop
         let removeMouseListeners: (() => void) | null = null;
         const onMouseDown = (ev: MouseEvent): void => {
             if (ev.button !== 0) return;
@@ -205,14 +199,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
                     const rect = this.canvasArea.nativeElement.getBoundingClientRect();
                     this.dragOffsetX = clientX - rect.left - placement.x;
                     this.dragOffsetY = clientY - rect.top - placement.y;
-
-                    // Bring to front
-                    const maxZ = Math.max(0, ...this.stickers.map(p => p.zIndex));
-                    if (placement.zIndex < maxZ) {
-                        this.emitUpdate(this.stickers.map(p =>
-                            p.instanceId === instanceId ? {...p, zIndex: maxZ + 1} : p
-                        ));
-                    }
+                    // No auto-bring-to-front; use explicit z-index controls instead
                 }
             } else {
                 this.dragInstanceId = null;
@@ -329,38 +316,81 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         ));
     }
 
-    // ── Hit testing ──────────────────────────────────────────────
+    // ── Hit testing (polygon-aware, rotation-aware) ──────────────
 
     private hitTestSticker(clientX: number, clientY: number): string | null {
         const rect = this.canvasArea.nativeElement.getBoundingClientRect();
         const localX = clientX - rect.left;
         const localY = clientY - rect.top;
 
-        // Test from highest z-index to lowest
-        const sorted = [...this.stickers].sort((a, b) => b.zIndex - a.zIndex);
-        const hitSize = 64; // matches w-16 h-16
-
-        for (const p of sorted) {
-            const halfW = (hitSize * p.scale) / 2;
-            const halfH = (hitSize * p.scale) / 2;
-            const cx = p.x + halfW;
-            const cy = p.y + halfH;
-
-            if (localX >= cx - halfW && localX <= cx + halfW &&
-                localY >= cy - halfH && localY <= cy + halfH) {
-                return p.instanceId;
-            }
+        if (this.catalogMap.size !== this.stickerCatalog.length) {
+            this.buildCatalogMap();
         }
-        return null;
+
+        return hitTestStickers(localX, localY, this.stickers, this.catalogMap);
+    }
+
+    // ── Z-Index controls ─────────────────────────────────────────
+
+    public bringForward(): void {
+        const id = this.selectedInstanceId();
+        if (!id) return;
+        const current = this.stickers.find(p => p.instanceId === id);
+        if (!current) return;
+
+        const sorted = [...this.stickers].sort((a, b) => a.zIndex - b.zIndex);
+        const currentIdx = sorted.findIndex(p => p.instanceId === id);
+        if (currentIdx < sorted.length - 1) {
+            const above = sorted[currentIdx + 1];
+            this.emitUpdate(this.stickers.map(p => {
+                if (p.instanceId === id) return {...p, zIndex: above.zIndex};
+                if (p.instanceId === above.instanceId) return {...p, zIndex: current.zIndex};
+                return p;
+            }));
+        }
+    }
+
+    public sendBackward(): void {
+        const id = this.selectedInstanceId();
+        if (!id) return;
+        const current = this.stickers.find(p => p.instanceId === id);
+        if (!current) return;
+
+        const sorted = [...this.stickers].sort((a, b) => a.zIndex - b.zIndex);
+        const currentIdx = sorted.findIndex(p => p.instanceId === id);
+        if (currentIdx > 0) {
+            const below = sorted[currentIdx - 1];
+            this.emitUpdate(this.stickers.map(p => {
+                if (p.instanceId === id) return {...p, zIndex: below.zIndex};
+                if (p.instanceId === below.instanceId) return {...p, zIndex: current.zIndex};
+                return p;
+            }));
+        }
+    }
+
+    public bringToFront(): void {
+        const id = this.selectedInstanceId();
+        if (!id) return;
+        const maxZ = Math.max(0, ...this.stickers.map(p => p.zIndex));
+        this.emitUpdate(this.stickers.map(p =>
+            p.instanceId === id ? {...p, zIndex: maxZ + 1} : p
+        ));
+    }
+
+    public sendToBack(): void {
+        const id = this.selectedInstanceId();
+        if (!id) return;
+        const minZ = Math.min(0, ...this.stickers.map(p => p.zIndex));
+        this.emitUpdate(this.stickers.map(p =>
+            p.instanceId === id ? {...p, zIndex: minZ - 1} : p
+        ));
     }
 
     // ── Toolbar actions ──────────────────────────────────────────
 
     public rotateSelected(degrees: number): void {
         const id = this.selectedInstanceId();
-        if (!id) {
-          return;
-        }
+        if (!id) return;
         this.emitUpdate(this.stickers.map(p =>
             p.instanceId === id ? {...p, rotation: p.rotation + degrees} : p
         ));
@@ -396,9 +426,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
     public removeSelected(): void {
         const id = this.selectedInstanceId();
-        if (!id) {
-          return;
-        }
+        if (!id) return;
         this.selectedInstanceId.set(null);
         this.stickerRemoved.emit(id);
     }
