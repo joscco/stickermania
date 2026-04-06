@@ -2,10 +2,15 @@ import {
     Component,
     ElementRef,
     Input,
+    OnChanges,
     OnDestroy,
     Output,
     EventEmitter,
     signal,
+    computed,
+    ViewChild,
+    AfterViewInit,
+    NgZone,
 } from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {StickerDefinition} from "@birthday/shared";
@@ -13,29 +18,12 @@ import {CANVAS_STICKER_PX} from '../sticker-editor/sticker-editor.component';
 
 export interface StickerDroppedEvent {
     stickerId: string;
-    /** clientX at the moment of drop */
     clientX: number;
-    /** clientY at the moment of drop */
     clientY: number;
-    /** Actual rendered width of the ghost image (px) — matches canvas rendering */
     renderedWidth: number;
-    /** Actual rendered height of the ghost image (px) — matches canvas rendering */
     renderedHeight: number;
 }
 
-/**
- * Shared sticker palette.
- *
- * Shows a scrollable grid of sticker thumbnails. Each sticker starts a
- * pointer-driven ghost drag on pointerdown — no tap-to-add.
- *
- * The parent is responsible for:
- *  - providing `stickers` (the subset the player may use)
- *  - providing `dropTarget` (an ElementRef to the canvas wrapper element)
- *  - listening to `stickerDropped` and placing the sticker
- *
- * When the ghost is released outside `dropTarget` it disappears silently.
- */
 @Component({
     selector: "app-sticker-palette",
     standalone: true,
@@ -43,29 +31,83 @@ export interface StickerDroppedEvent {
     templateUrl: "./sticker-palette.component.html",
     host: {"class": "flex flex-col"},
 })
-export class StickerPaletteComponent implements OnDestroy {
+export class StickerPaletteComponent implements AfterViewInit, OnChanges, OnDestroy {
     @Input() stickers: StickerDefinition[] = [];
     @Input() canAddMore: boolean = true;
-    /** The canvas wrapper — accepts ElementRef OR a raw HTML element (template ref variable). */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     @Input() dropTarget!: any;
 
     @Output() stickerDropped = new EventEmitter<StickerDroppedEvent>();
 
+    @ViewChild("rowEl") rowEl!: ElementRef<HTMLDivElement>;
+
     public readonly activeDragId = signal<string | null>(null);
 
+    // ── Paging ───────────────────────────────────────────────────
+    public readonly pageSize    = signal(6);
+    public readonly currentPage = signal(0);
+
+    public readonly pageCount = computed(() =>
+        Math.max(1, Math.ceil(this.stickers.length / this.pageSize()))
+    );
+    public readonly pageStickers = computed(() => {
+        const start = this.currentPage() * this.pageSize();
+        return this.stickers.slice(start, start + this.pageSize());
+    });
+    public readonly canPrev = computed(() => this.currentPage() > 0);
+    public readonly canNext = computed(() => this.currentPage() < this.pageCount() - 1);
+
+    // ── Drag state ───────────────────────────────────────────────
     private ghostEl: HTMLElement | null = null;
     private dragRenderedWidth  = CANVAS_STICKER_PX;
     private dragRenderedHeight = CANVAS_STICKER_PX;
     private dragStickerId: string | null = null;
     private activePointerId: number | null = null;
 
+    private resizeObserver: ResizeObserver | null = null;
     private boundMove = this.onGlobalMove.bind(this);
     private boundUp   = this.onGlobalUp.bind(this);
 
+    constructor(private zone: NgZone) {}
+
+    ngAfterViewInit(): void {
+        this.resizeObserver = new ResizeObserver(() => this.recalcPageSize());
+        if (this.rowEl?.nativeElement) this.resizeObserver.observe(this.rowEl.nativeElement);
+        this.recalcPageSize();
+    }
+
+    ngOnChanges(): void {
+        this.currentPage.set(0);
+        setTimeout(() => this.recalcPageSize(), 0);
+    }
+
+    ngOnDestroy(): void {
+        this.cleanup(this.canvasEl ?? undefined);
+        this.resizeObserver?.disconnect();
+    }
+
+    private recalcPageSize(): void {
+        const el = this.rowEl?.nativeElement;
+        if (!el) return;
+        // Each thumb: w-16 (64px) + gap-2 (8px) = 72px; minimum 3
+        const count = Math.max(3, Math.floor(el.clientWidth / 72));
+        this.zone.run(() => {
+            this.pageSize.set(count);
+            const maxPage = Math.max(0, Math.ceil(this.stickers.length / count) - 1);
+            if (this.currentPage() > maxPage) this.currentPage.set(maxPage);
+        });
+    }
+
+    public prevPage(): void { if (this.canPrev()) this.currentPage.update(p => p - 1); }
+    public nextPage(): void { if (this.canNext()) this.currentPage.update(p => p + 1); }
+
+    /** Returns [0, 1, …, n-1] — for use in @for loops in the template. */
+    public range(n: number): number[] {
+        return Array.from({length: Math.max(0, n)}, (_, i) => i);
+    }
+
     private get canvasEl(): HTMLElement | null {
         if (!this.dropTarget) return null;
-        // ElementRef has a nativeElement property; raw DOM elements don't
         return (this.dropTarget as ElementRef<HTMLElement>).nativeElement
             ?? (this.dropTarget as HTMLElement)
             ?? null;
@@ -75,21 +117,17 @@ export class StickerPaletteComponent implements OnDestroy {
         return this.stickers.find(s => s.id === stickerId)?.imageUrl ?? "";
     }
 
-    // ─── Pointer handlers (called from template) ──────────────────
+    // ── Pointer drag ─────────────────────────────────────────────
 
     public onPointerDown(event: PointerEvent, sticker: StickerDefinition, thumbEl: HTMLElement): void {
         if (!this.canAddMore) return;
         if (event.button !== 0 && event.button !== undefined) return;
-
         event.preventDefault();
 
         this.dragStickerId   = sticker.id;
         this.activePointerId = event.pointerId;
         this.activeDragId.set(sticker.id);
 
-        // Measure the actual canvas-render size from the thumbnail's natural dimensions.
-        // naturalWidth/Height are available immediately (image already loaded in the palette).
-        // Canvas renders with h-16 (64px) fixed height, width auto → same aspect ratio.
         const thumbImg = thumbEl.querySelector("img") as HTMLImageElement | null;
         if (thumbImg && thumbImg.naturalWidth > 0 && thumbImg.naturalHeight > 0) {
             this.dragRenderedHeight = CANVAS_STICKER_PX;
@@ -103,22 +141,17 @@ export class StickerPaletteComponent implements OnDestroy {
         this.ghostEl = ghost;
 
         try { thumbEl.setPointerCapture(event.pointerId); } catch {}
-
         window.addEventListener("pointermove",   this.boundMove, {passive: false});
         window.addEventListener("pointerup",     this.boundUp);
         window.addEventListener("pointercancel", this.boundUp);
     }
 
-    // ─── Global pointer tracking ──────────────────────────────────
-
     private onGlobalMove(event: PointerEvent): void {
         if (event.pointerId !== this.activePointerId) return;
         event.preventDefault();
         if (!this.ghostEl) return;
-
         this.ghostEl.style.left = `${event.clientX}px`;
         this.ghostEl.style.top  = `${event.clientY}px`;
-
         const canvasEl = this.canvasEl;
         if (canvasEl) {
             const r = canvasEl.getBoundingClientRect();
@@ -130,56 +163,30 @@ export class StickerPaletteComponent implements OnDestroy {
 
     private onGlobalUp(event: PointerEvent): void {
         if (event.pointerId !== this.activePointerId) return;
-
         const canvasEl = this.canvasEl;
         if (canvasEl && this.dragStickerId) {
             const r = canvasEl.getBoundingClientRect();
             if (event.clientX >= r.left && event.clientX <= r.right &&
                 event.clientY >= r.top  && event.clientY <= r.bottom) {
-                const renderedWidth  = this.dragRenderedWidth;
-                const renderedHeight = this.dragRenderedHeight;
-                // Hide ghost immediately before emitting so it doesn't flash
-                // alongside the newly placed sticker during Angular's change detection cycle
                 if (this.ghostEl) this.ghostEl.style.visibility = "hidden";
                 this.stickerDropped.emit({
-                    stickerId: this.dragStickerId,
-                    clientX:   event.clientX,
-                    clientY:   event.clientY,
-                    renderedWidth,
-                    renderedHeight,
+                    stickerId:      this.dragStickerId,
+                    clientX:        event.clientX,
+                    clientY:        event.clientY,
+                    renderedWidth:  this.dragRenderedWidth,
+                    renderedHeight: this.dragRenderedHeight,
                 });
             }
         }
-
         this.cleanup(canvasEl ?? undefined);
     }
 
-    // ─── Ghost helpers ─────────────────────────────────────────────
-
-    /**
-     * Creates a ghost that is visually identical to how the canvas renders the sticker:
-     * height fixed at CANVAS_STICKER_PX (h-16 = 64 px), width auto-sized by the image's
-     * natural aspect ratio — so there is zero size/shape jump on drop.
-     */
     private createGhost(imageUrl: string, x: number, y: number): {ghost: HTMLElement} {
         const ghost = document.createElement("div");
-        ghost.style.cssText = `
-            position: fixed;
-            pointer-events: none;
-            z-index: 9999;
-            transform: translate(-50%, -50%);
-            filter: drop-shadow(0 6px 16px rgba(0,0,0,0.35));
-            transition: none;
-        `;
+        ghost.style.cssText = `position:fixed;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);filter:drop-shadow(0 6px 16px rgba(0,0,0,0.35));transition:none;`;
         const img = document.createElement("img");
         img.src = imageUrl;
-        // Mirror exactly: height = CANVAS_STICKER_PX, width = auto (aspect-ratio preserved)
-        img.style.cssText = `
-            height: ${CANVAS_STICKER_PX}px;
-            width: auto;
-            display: block;
-            pointer-events: none;
-        `;
+        img.style.cssText = `height:${CANVAS_STICKER_PX}px;width:auto;display:block;pointer-events:none;`;
         img.draggable = false;
         ghost.appendChild(img);
         document.body.appendChild(ghost);
@@ -201,9 +208,4 @@ export class StickerPaletteComponent implements OnDestroy {
         window.removeEventListener("pointerup",     this.boundUp);
         window.removeEventListener("pointercancel", this.boundUp);
     }
-
-    ngOnDestroy(): void {
-        this.cleanup(this.canvasEl ?? undefined);
-    }
 }
-

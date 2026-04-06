@@ -1,29 +1,85 @@
-<div class="px-2 py-2">
+<div class="px-1 py-2">
   @if (!canAddMore) {
     <span class="block text-center text-xs text-red-400 font-medium mb-1">Max erreicht</span>
   }
-  <div class="flex gap-2 overflow-x-auto pb-1">
-    @for (sticker of stickers; track sticker.id) {
-      <div
-        #thumbEl
-        class="relative shrink-0 w-14 h-14 rounded-lg border-2 flex items-center justify-center bg-white select-none touch-none"
-        [class.border-purple-300]="canAddMore && activeDragId() !== sticker.id"
-        [class.border-purple-500]="activeDragId() === sticker.id"
-        [class.border-stone-200]="!canAddMore"
-        [class.opacity-40]="!canAddMore"
-        [class.opacity-30]="activeDragId() === sticker.id"
-        [class.cursor-grab]="canAddMore"
-        [class.cursor-not-allowed]="!canAddMore"
-        (pointerdown)="onPointerDown($event, sticker, thumbEl)"
-      >
-        <img
-          [src]="getStickerUrl(sticker.id)"
-          [alt]="sticker.id"
-          class="w-10 h-10 object-contain pointer-events-none select-none"
-          draggable="false"
-        />
-      </div>
-    }
+
+  <div class="flex items-center gap-1">
+
+    <!-- Prev page button -->
+    <button
+      class="shrink-0 w-10 h-16 flex items-center justify-center rounded-xl text-xl font-bold transition-all"
+      [class.text-stone-400]="canPrev()"
+      [class.bg-stone-100]="canPrev()"
+      [class.hover:bg-stone-200]="canPrev()"
+      [class.active:scale-90]="canPrev()"
+      [class.text-stone-200]="!canPrev()"
+      [class.cursor-default]="!canPrev()"
+      [disabled]="!canPrev()"
+      (click)="prevPage()"
+      (pointerdown)="$event.stopPropagation()"
+    >‹</button>
+
+    <!-- Sticker row (no overflow/scroll — items are paged) -->
+    <div
+      #rowEl
+      class="flex-1 flex items-center justify-center gap-2"
+    >
+      @for (sticker of pageStickers(); track sticker.id) {
+        <div
+          #thumbEl
+          class="relative shrink-0 w-16 h-16 rounded-xl border-2 flex items-center justify-center bg-white select-none touch-none transition-all"
+          [class.border-purple-300]="canAddMore && activeDragId() !== sticker.id"
+          [class.border-purple-500]="activeDragId() === sticker.id"
+          [class.shadow-md]="activeDragId() !== sticker.id && canAddMore"
+          [class.border-stone-200]="!canAddMore"
+          [class.opacity-40]="!canAddMore"
+          [class.opacity-20]="activeDragId() === sticker.id"
+          [class.cursor-grab]="canAddMore"
+          [class.cursor-not-allowed]="!canAddMore"
+          (pointerdown)="onPointerDown($event, sticker, thumbEl)"
+        >
+          <img
+            [src]="getStickerUrl(sticker.id)"
+            [alt]="sticker.id"
+            class="w-10 h-10 object-contain pointer-events-none select-none"
+            draggable="false"
+          />
+        </div>
+      }
+
+      <!-- Fill empty slots so layout stays stable -->
+      @for (empty of range(pageSize() - pageStickers().length); track empty) {
+        <div class="shrink-0 w-16 h-16"></div>
+      }
+    </div>
+
+    <!-- Next page button -->
+    <button
+      class="shrink-0 w-10 h-16 flex items-center justify-center rounded-xl text-xl font-bold transition-all"
+      [class.text-stone-400]="canNext()"
+      [class.bg-stone-100]="canNext()"
+      [class.hover:bg-stone-200]="canNext()"
+      [class.active:scale-90]="canNext()"
+      [class.text-stone-200]="!canNext()"
+      [class.cursor-default]="!canNext()"
+      [disabled]="!canNext()"
+      (click)="nextPage()"
+      (pointerdown)="$event.stopPropagation()"
+    >›</button>
+
   </div>
+
+  <!-- Page dots -->
+  @if (pageCount() > 1) {
+    <div class="flex justify-center gap-1 mt-1">
+      @for (i of range(pageCount()); track i) {
+        <div
+          class="w-1.5 h-1.5 rounded-full transition-colors"
+          [class.bg-purple-400]="currentPage() === i"
+          [class.bg-stone-200]="currentPage() !== i"
+        ></div>
+      }
+    </div>
+  }
 </div>
 
