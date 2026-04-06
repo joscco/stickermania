@@ -1,10 +1,13 @@
+import fs from "node:fs";
+import path from "node:path";
 import type {FastifyInstance} from "fastify";
 import type {GameModeId} from "@birthday/shared";
 import type {SessionService} from "../session/sessionService.js";
 import type {BackendConfig} from "../config.js";
+import type {AssetRepository} from "../infra/assetRepository.js";
 import {disconnectSessionClients} from "./wsPlugin.js";
 
-const VALID_MODES: GameModeId[] = ["draw-search", "garden-coop", "team-graffiti"];
+const VALID_MODES: GameModeId[] = ["sticker-collage"];
 
 function buildBaseUrl(protocol: string, hostname: string, port: number): string {
     return `${protocol}://${hostname.includes(":") ? hostname : `${hostname}:${port}`}`;
@@ -14,6 +17,7 @@ export async function registerApiRoutes(
     app: FastifyInstance,
     sessionService: SessionService,
     backendConfig: BackendConfig,
+    assetRepository: AssetRepository,
 ): Promise<void> {
 
     // ─── Sessions CRUD ──────────────────────────────────────────
@@ -33,7 +37,7 @@ export async function registerApiRoutes(
     app.post<{Body: {mode?: string}}>("/api/sessions", async (request, reply) => {
         const mode = (typeof request.body?.mode === "string" && VALID_MODES.includes(request.body.mode as GameModeId))
             ? request.body.mode as GameModeId
-            : "draw-search";
+            : "sticker-collage";
 
         const baseUrl = buildBaseUrl(request.protocol, request.hostname, backendConfig.gameConfig.port);
         const createdSession = await sessionService.createSession({baseUrl, initialMode: mode});
@@ -113,6 +117,40 @@ export async function registerApiRoutes(
             return backendConfig.wlanConfig;
         }
         return reply.status(404).send({message: "WLAN config not available"});
+    });
+
+
+    // ─── Collage image upload ───────────────────────────────────
+
+    app.post<{
+        Params: {id: string};
+        Body: {playerId: string; collageId: string; imageDataUrl: string};
+    }>("/api/sessions/:id/collage-image", async (request, reply) => {
+        const sessionId = request.params.id;
+        const {playerId, collageId, imageDataUrl} = request.body ?? {};
+
+        console.log(`[collage-image] POST for session=${sessionId}, player=${playerId}, collage=${collageId}, dataLen=${imageDataUrl?.length ?? 0}`);
+
+        if (!playerId || !collageId || !imageDataUrl) {
+            return reply.status(400).send({message: "Missing playerId, collageId, or imageDataUrl"});
+        }
+
+        const state = await sessionService.loadState(sessionId);
+        if (!state) {
+            return reply.status(404).send({message: "Session not found"});
+        }
+
+        const playerName = state.players[playerId]?.name ?? "anon";
+
+        // Save the image asset
+        const saved = await assetRepository.saveCollage({
+            sessionId, playerId, playerName, collageId, imageDataUrl,
+        });
+
+        // Update snapshotUrl on the matching collage in session state
+        await sessionService.updateCollageSnapshot(sessionId, collageId, playerId, saved.publicUrl);
+
+        return {ok: true, publicUrl: saved.publicUrl};
     });
 }
 

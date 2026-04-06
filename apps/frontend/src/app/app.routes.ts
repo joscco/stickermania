@@ -1,7 +1,7 @@
 import { Routes } from "@angular/router";
-import { PlayerComponent } from "./features/player/player.component";
-import { BoardComponent } from "./features/board/board.component";
-import {JoinComponent} from './features/player/join/join.component';
+import {BoardComponent} from './features/game/board/board.component';
+import {PlayerComponent} from './features/game/player/player.component';
+import {JoinComponent} from './features/game/player/join/join.component';
 
 export const routes: Routes = [
   { path: "", redirectTo: "board", pathMatch: "full" },

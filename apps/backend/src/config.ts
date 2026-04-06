@@ -12,7 +12,10 @@ export interface WlanConfig {
     };
 }
 
+export type AppMode = "party" | "cloud" | "dev";
+
 export interface BackendConfig {
+    appMode: AppMode;
     gameConfig: GameConfig;
     dataRoot: string;
     sessionsPath: string;
@@ -52,5 +55,8 @@ export function loadBackendConfig(args: { argv: string[]; cwd: string }): Backen
     const sessionsPath = path.resolve(dataRoot, "sessions");
     const assetsPath = path.resolve(dataRoot, "assets");
 
-    return { gameConfig, dataRoot, sessionsPath, assetsPath, wlanConfig };
+    const rawMode = process.env.APP_MODE ?? "party";
+    const appMode: AppMode = (rawMode === "dev" || rawMode === "cloud") ? rawMode : "party";
+
+    return { appMode, gameConfig, dataRoot, sessionsPath, assetsPath, wlanConfig };
 }

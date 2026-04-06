@@ -1,0 +1,129 @@
+<div
+  #canvasArea
+  class="w-full h-full relative overflow-hidden bg-white rounded-lg"
+  [class.border-2]="interactive"
+  [class.border-dashed]="interactive"
+  [class.border-purple-200]="interactive"
+>
+  <!-- Grid background -->
+  <div class="absolute inset-0 opacity-5 pointer-events-none"
+       style="background-image: radial-gradient(circle, #6b7280 1px, transparent 1px); background-size: 20px 20px;">
+  </div>
+
+  @for (sticker of stickers; track sticker.instanceId) {
+    <div
+      class="absolute select-none"
+      [class.ring-2]="interactive && (selectedInstanceId() === sticker.instanceId || isLassoSelected(sticker.instanceId)) && !getHitboxSvgPoints(sticker.stickerId)"
+      [class.ring-purple-400]="interactive && selectedInstanceId() === sticker.instanceId && !getHitboxSvgPoints(sticker.stickerId)"
+      [class.ring-amber-400]="interactive && isLassoSelected(sticker.instanceId) && !getHitboxSvgPoints(sticker.stickerId)"
+      [class.rounded-lg]="interactive && (selectedInstanceId() === sticker.instanceId || isLassoSelected(sticker.instanceId)) && !getHitboxSvgPoints(sticker.stickerId)"
+      [style.left.px]="sticker.x"
+      [style.top.px]="sticker.y"
+      [style.transform]="'rotate(' + sticker.rotation + 'deg) scale(' + sticker.scale + ')'"
+      [style.z-index]="sticker.zIndex"
+      [style.transform-origin]="'center center'"
+      [attr.data-instance-id]="sticker.instanceId"
+    >
+      <img
+        [src]="getStickerUrl(sticker.stickerId)"
+        [alt]="sticker.stickerId"
+        class="h-16 w-auto block pointer-events-none"
+        draggable="false"
+      />
+      <!-- Polygon hitbox outline (shown when selected) -->
+      @if (interactive && (selectedInstanceId() === sticker.instanceId || isLassoSelected(sticker.instanceId)) && getHitboxSvgPoints(sticker.stickerId)) {
+        <svg
+          class="absolute pointer-events-none"
+          style="left: -5%; top: -5%; width: 110%; height: 110%; overflow: visible;"
+          viewBox="-0.05 -0.05 1.1 1.1"
+          preserveAspectRatio="none"
+        >
+          <polygon
+            [attr.points]="getHitboxSvgPoints(sticker.stickerId)"
+            fill="none"
+            [attr.stroke]="isLassoSelected(sticker.instanceId) ? '#f59e0b' : '#a855f7'"
+            vector-effect="non-scaling-stroke"
+            stroke-width="2"
+            stroke-linejoin="round"
+          />
+        </svg>
+      }
+    </div>
+  }
+
+  <!-- Lasso rect overlay -->
+  @if (interactive && lassoRect()) {
+    <div
+      class="absolute pointer-events-none border-2 border-dashed border-purple-500 bg-purple-100/20 rounded"
+      [style.left.px]="lassoRect()!.x"
+      [style.top.px]="lassoRect()!.y"
+      [style.width.px]="lassoRect()!.w"
+      [style.height.px]="lassoRect()!.h"
+      style="z-index: 100;"
+    ></div>
+  }
+
+  @if (interactive && stickers.length === 0) {
+    <div class="absolute inset-0 flex items-center justify-center text-stone-300 pointer-events-none">
+      <div class="text-center">
+        <div class="text-4xl mb-2">👆</div>
+        <p class="text-sm">Tippe auf einen Sticker unten,<br/>um ihn aufs Canvas zu legen</p>
+      </div>
+    </div>
+  }
+
+  <!-- Selection toolbar (z-index + transform controls) -->
+  @if (interactive && (selectedInstanceId() || lassoSelection().size > 1)) {
+    <div data-canvas-toolbar class="absolute bottom-2 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-white/90 backdrop-blur border border-black/10 rounded-full px-2 py-1 shadow-lg">
+      @if (!lassoSelection().size) {
+        <!-- Z-index controls (single selection only) -->
+        <button
+          class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-purple-100 active:scale-90 transition-all text-sm"
+          title="Nach hinten"
+          (click)="sendBackward()"
+        >⬇️</button>
+        <button
+          class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-purple-100 active:scale-90 transition-all text-sm"
+          title="Nach vorne"
+          (click)="bringForward()"
+        >⬆️</button>
+        <div class="w-px h-5 bg-black/10 mx-0.5"></div>
+      }
+
+      <!-- Rotate controls -->
+      <button
+        class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-purple-100 active:scale-90 transition-all text-sm"
+        title="Links drehen"
+        (click)="rotateSelected(-15)"
+      >↩️</button>
+      <button
+        class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-purple-100 active:scale-90 transition-all text-sm"
+        title="Rechts drehen"
+        (click)="rotateSelected(15)"
+      >↪️</button>
+
+      <div class="w-px h-5 bg-black/10 mx-0.5"></div>
+
+      <!-- Scale controls -->
+      <button
+        class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-purple-100 active:scale-90 transition-all text-sm"
+        title="Kleiner"
+        (click)="scaleSelected(0.8)"
+      >➖</button>
+      <button
+        class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-purple-100 active:scale-90 transition-all text-sm"
+        title="Größer"
+        (click)="scaleSelected(1.25)"
+      >➕</button>
+
+      <div class="w-px h-5 bg-black/10 mx-0.5"></div>
+
+      <!-- Delete -->
+      <button
+        class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-100 active:scale-90 transition-all text-sm"
+        title="Löschen"
+        (click)="removeSelected()"
+      >🗑️</button>
+    </div>
+  }
+</div>

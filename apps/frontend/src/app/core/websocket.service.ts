@@ -141,6 +141,7 @@ export class WebSocketService {
    */
   public disconnect(): void {
     this.intentionalDisconnect = true;
+    this.pendingJoinMsg = null; // clear stale join so reconnect won't re-send it
     this.teardown();
     this.generation++;
     this.status.set("disconnected");
@@ -253,6 +254,9 @@ export class WebSocketService {
 
   private handleVisibilityChange(): void {
     if (document.visibilityState !== "visible") return;
+
+    // Don't auto-reconnect if we intentionally disconnected (session change, etc.)
+    if (this.intentionalDisconnect) return;
 
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       // Socket is dead — reconnect immediately

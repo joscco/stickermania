@@ -74,6 +74,18 @@
                   "with": "src/environments/environment.development.ts"
                 }
               ]
+            },
+            "dev-tools": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "browser": "src/main.dev.ts",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.dev.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -89,6 +101,10 @@
             },
             "development": {
               "buildTarget": "frontend:build:development",
+              "proxyConfig": "proxy.conf.json"
+            },
+            "dev-tools": {
+              "buildTarget": "frontend:build:dev-tools",
               "proxyConfig": "proxy.conf.json"
             }
           },

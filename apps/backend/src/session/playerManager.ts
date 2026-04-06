@@ -60,6 +60,14 @@ export class PlayerManager {
                 // Player clients
                 let player = args.existingPlayerId ? state.players[args.existingPlayerId] : undefined;
 
+                // Check if this clientId is already registered — reuse the same player
+                if (!player) {
+                    const existingConnection = runtime.sessionRuntime.connectedClients.get(args.clientId);
+                    if (existingConnection && existingConnection.playerId !== "__board__") {
+                        player = state.players[existingConnection.playerId];
+                    }
+                }
+
                 if (!player) {
                     const playerId = crypto.randomUUID();
                     const isFirstPlayer = Object.keys(state.players).length === 0;

@@ -1,0 +1,16 @@
+<div animOnInit="banner" class="bg-linear-to-r from-amber-500 to-orange-500 text-white px-4 py-2 text-center">
+  <span class="text-xs font-medium opacity-80">Abstimmung</span>
+  <h2 class="text-base font-bold">{{ stickerService.currentPrompt() }}</h2>
+</div>
+<div animOnInit="item" [animDelay]="0.15" class="flex-1 overflow-y-auto">
+  <app-sticker-voting
+    [submissions]="stickerService.currentRoundSubmissions()"
+    [stickerCatalog]="stickerService.stickerCatalog()"
+    [myVotes]="stickerService.myVotes()"
+    [votesRemaining]="stickerService.votesPerPlayer() - stickerService.myVotes().length"
+    [players]="worldStore.players()"
+    [myPlayerId]="sessionStore.playerId() ?? ''"
+    (voteClicked)="stickerService.castVote($event)"
+  />
+</div>
+

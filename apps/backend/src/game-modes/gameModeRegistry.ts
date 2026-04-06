@@ -1,10 +1,7 @@
-import type {DrawSearchModeState, GameModeId, GardenModeState, TeamGraffitiModeState, UnknownModeState,} from "@birthday/shared";
+import type {GameModeId, StickerCollageModeState, UnknownModeState,} from "@birthday/shared";
 import type {GameModeEngine} from "./gameModeEngine.js";
 
-export type AnyGameModeEngine =
-    | GameModeEngine<"draw-search", DrawSearchModeState>
-    | GameModeEngine<"garden-coop", GardenModeState>
-    | GameModeEngine<"team-graffiti", TeamGraffitiModeState>;
+export type AnyGameModeEngine = GameModeEngine<"sticker-collage", StickerCollageModeState>;
 
 export class GameModeRegistry {
     private readonly engines = new Map<GameModeId, AnyGameModeEngine>();

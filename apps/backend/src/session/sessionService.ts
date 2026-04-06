@@ -2,9 +2,7 @@ import crypto from "node:crypto";
 import type {ClientKind, ClientToServerMessage, GameConfig, GameModeId, GameServerEnvelope, SessionInfo, SessionPlayer, SessionState,} from "@birthday/shared";
 import type {AssetRepository} from "../infra/assetRepository.js";
 import type {SessionRepository} from "../infra/sessionRepository.js";
-import {DrawSearchEngine} from "../game-modes/draw-search/drawSearchEngine.js";
-import {GardenCoopEngine} from "../game-modes/garden-coop/gardenCoopEngine.js";
-import {TeamGraffitiEngine} from "../game-modes/team-graffiti/teamGraffitiEngine.js";
+import {StickerCollageEngine} from "../game-modes/sticker-collage/stickerCollageEngine.js";
 import {GameModeRegistry} from "../game-modes/gameModeRegistry.js";
 import {SessionStateFactory} from "./sessionStateFactory.js";
 import type {ConnectedClientSession, RuntimeEntry} from "./sessionRuntimeTypes.js";
@@ -38,9 +36,7 @@ export class SessionService {
         private readonly sessionRepository: SessionRepository,
         private readonly assetRepository: AssetRepository,
     ) {
-        this.gameModeRegistry.register(new DrawSearchEngine(config, assetRepository));
-        this.gameModeRegistry.register(new GardenCoopEngine());
-        this.gameModeRegistry.register(new TeamGraffitiEngine(config));
+        this.gameModeRegistry.register(new StickerCollageEngine(config));
 
         this.sessionStateFactory = new SessionStateFactory(config, this.gameModeRegistry);
 
@@ -80,7 +76,7 @@ export class SessionService {
         const state = this.sessionStateFactory.createEmpty({
             sessionId,
             sessionCode,
-            initialMode: args.initialMode ?? "draw-search",
+            initialMode: args.initialMode ?? "sticker-collage",
         });
 
         await this.sessionRepository.create(state);
@@ -289,5 +285,33 @@ export class SessionService {
             if (!existingState) return sessionCode;
         }
         throw new Error("Could not generate unique session code");
+    }
+
+    // ─── Collage snapshot ───────────────────────────────────────────
+
+    /**
+     * Set the snapshotUrl on a submitted collage (called after the PNG is uploaded).
+     */
+    public async updateCollageSnapshot(
+        sessionId: string,
+        collageId: string,
+        playerId: string,
+        snapshotUrl: string,
+    ): Promise<SessionState | null> {
+        const result = await this.mutator.mutate(sessionId, (state) => {
+            const ms = state.modeState as any;
+            if (!ms?.submissions) return {stateChanged: false, extra: undefined};
+
+            for (const roundSubs of Object.values(ms.submissions) as any[]) {
+                for (const collage of roundSubs) {
+                    if (collage.id === collageId && collage.playerId === playerId) {
+                        collage.snapshotUrl = snapshotUrl;
+                        return {stateChanged: true, extra: undefined};
+                    }
+                }
+            }
+            return {stateChanged: false, extra: undefined};
+        });
+        return result?.state ?? null;
     }
 }

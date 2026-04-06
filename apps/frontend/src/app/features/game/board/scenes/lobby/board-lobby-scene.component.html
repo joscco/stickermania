@@ -1,0 +1,39 @@
+<div animGroup="item" class="h-full flex flex-col items-center justify-center gap-8">
+  <!-- Title -->
+  <div animOnInit="item" class="text-center">
+    <h1 class="text-5xl font-black text-stone-800">Stickermania</h1>
+  </div>
+
+  <!-- Connected players -->
+  <div animOnInit="item" class="flex flex-wrap justify-center gap-3 max-w-2xl">
+    @for (player of connectedPlayers(); track player.id) {
+      <div class="flex flex-col items-center gap-1">
+        <div
+          class="w-16 h-16 rounded-2xl border-2 bg-stone-100 shadow-md overflow-hidden grid place-items-center text-2xl"
+          [class.border-emerald-400]="player.connected"
+          [class.border-stone-200]="!player.connected">
+          @if (player.avatarUrl) {
+            <img [src]="player.avatarUrl" [alt]="player.name"
+                 class="w-full h-full object-cover"
+                 (error)="$any($event.target).style.display='none'"/>
+          } @else {
+            🙂
+          }
+        </div>
+        <span class="text-xs font-medium text-stone-600 max-w-16 truncate">{{ player.name || 'Spieler' }}</span>
+      </div>
+    }
+  </div>
+
+  <p animOnInit="item" class="text-xl text-stone-500">{{ connectedPlayers().length }} Spieler verbunden</p>
+
+  <!-- Start button -->
+  <button
+    animOnInit="item"
+    class="bg-purple-600 text-white px-10 py-5 rounded-2xl text-2xl font-bold shadow-xl hover:bg-purple-700 active:scale-95 transition-[background-color,box-shadow]"
+    (click)="startGame()"
+  >
+    Spiel starten 🚀
+  </button>
+</div>
+

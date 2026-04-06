@@ -1,0 +1,47 @@
+<div class="px-3 py-2">
+  <div class="flex items-center justify-between mb-1.5">
+    <span class="text-xs font-semibold text-stone-500">Deine Sticker</span>
+    <div class="flex items-center gap-2">
+      @if (hand.swapsRemaining > 0) {
+        <span class="text-xs text-amber-600 font-medium">{{ hand.swapsRemaining }}× tauschen ♻️</span>
+      }
+      @if (!canAddMore) {
+        <span class="text-xs text-red-400 font-medium">Max erreicht</span>
+      }
+    </div>
+  </div>
+  <div class="flex gap-2 overflow-x-auto pb-1">
+    @for (stickerId of hand.stickerIds; track $index) {
+      <div
+        #stickerCard
+        class="relative shrink-0 w-14 h-14 rounded-lg border-2 flex items-center justify-center bg-white transition-all select-none"
+        [class.border-purple-300]="canAddMore"
+        [class.border-stone-200]="!canAddMore"
+        [class.opacity-50]="!canAddMore"
+        [class.cursor-grab]="canAddMore"
+        (pointerdown)="onPointerDown($event, $index, stickerId)"
+        (pointermove)="onPointerMove($event, stickerId, stickerCard)"
+        (pointerup)="onPointerUp($event, stickerId)"
+        (pointercancel)="onPointerUp($event, stickerId)"
+        (contextmenu)="onContextMenu($event, $index, stickerId)"
+      >
+        <img
+          [src]="getStickerUrl(stickerId)"
+          [alt]="stickerId"
+          class="w-10 h-10 object-contain pointer-events-none select-none"
+          draggable="false"
+        />
+        <!-- Swap badge -->
+        @if (hand.swapsRemaining > 0) {
+          <span
+            class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-amber-500 text-white rounded-full text-[9px] flex items-center justify-center font-bold pointer-events-none select-none leading-none">
+            ♻
+          </span>
+        }
+      </div>
+    }
+  </div>
+  @if (hand.swapsRemaining > 0) {
+    <p class="text-[10px] text-stone-400 mt-1">Gedrückt halten zum Tauschen</p>
+  }
+</div>

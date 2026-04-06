@@ -1,0 +1,76 @@
+<div pageRoot class="h-screen w-screen bg-stone-100 text-stone-900 flex flex-col items-center">
+  <div class="w-full max-w-xl px-4 flex flex-col flex-1 min-h-0 py-10">
+
+    <!-- Header – flex-1 oben damit er sich vertikal zentriert -->
+    <div class="flex-1 flex items-center justify-center shrink-0">
+      <div animOnInit="banner" class="text-center">
+        <div class="text-5xl font-black tracking-tight">STICKERMANIA</div>
+      </div>
+    </div>
+
+    @if (errorText()) {
+      <div animOnInit="item"
+           class="mb-4 shrink-0 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 text-center">
+        {{ errorText() }}
+      </div>
+    }
+
+    <!-- New session button -->
+    <button animOnInit="item" [animDelay]="0.1"
+            class="w-full shrink-0 rounded-2xl bg-stone-900 px-5 py-3 text-white font-medium hover:bg-stone-800 disabled:opacity-50 transition-colors"
+            [disabled]="isCreating()"
+            (click)="createSession()"
+    >
+      {{ isCreating() ? 'Erstelle...' : 'Neue Session starten →' }}
+    </button>
+
+    <!-- Existing sessions -->
+    <div class="mt-8 flex flex-col min-h-0 flex-1">
+      <div animOnInit="item" [animDelay]="0.2"
+           class="shrink-0 text-xs font-semibold uppercase tracking-wider text-stone-400 mb-3 px-1">
+        Bestehende Sessions
+      </div>
+
+      @if (isLoadingSessions()) {
+        <div animOnInit="item" [animDelay]="0.25" class="shrink-0 text-sm text-stone-400 text-center py-8">Lade
+          Sessions...
+        </div>
+      } @else if (sessions().length === 0) {
+        <div animOnInit="item" [animDelay]="0.25"
+             class="shrink-0 text-sm text-stone-400 text-center py-4 px-4 rounded-2xl border border-dashed border-stone-300 bg-white">
+          Keine aktiven Sessions vorhanden.
+        </div>
+      } @else {
+        <div animGroup="item" [animDelay]="0.25" class="overflow-y-auto scrollbar-none space-y-2 pb-4">
+          @for (session of sessions(); track session.sessionId) {
+            <div
+              animOnInit="item"
+              class="rounded-2xl bg-white border border-black/5 px-4 py-3 flex items-center gap-4 hover:bg-stone-50 cursor-pointer transition-colors group"
+              (click)="openSession(session.sessionCode)"
+            >
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold tracking-widest text-stone-900">{{ session.sessionCode }}</span>
+                  <span
+                    class="text-xs px-2 py-0.5 rounded-full bg-stone-100 text-stone-500">{{ modeLabel(session.activeMode) }}</span>
+                </div>
+                <div class="text-xs text-stone-400 mt-0.5">
+                  {{ session.playerCount }} Spieler · {{ timeAgo(session.createdAt) }}
+                </div>
+              </div>
+              <button
+                class="shrink-0 rounded-lg p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Session löschen"
+                (click)="deleteSession(session.sessionId, $event)"
+              >
+                <img src="assets/icons/trash.svg" class="w-4 h-4" alt="Löschen"/>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+  </div>
+</div>
+

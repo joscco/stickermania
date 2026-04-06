@@ -1,0 +1,109 @@
+<div class="h-dvh overflow-hidden bg-white text-stone-900 overscroll-none flex flex-col no-select"
+     style="padding-bottom: env(safe-area-inset-bottom);">
+
+  <!-- Header -->
+  <div class="sticky top-0 z-30 bg-white backdrop-blur border-b border-black/6">
+    <div class="mx-auto w-full max-w-lg px-3 py-2">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="text-sm font-semibold shrink-0">Stickermania</span>
+          @if (sessionStore.playerName()) {
+            <button
+              class="text-xs text-stone-400 hover:text-stone-600 transition-colors underline decoration-dotted underline-offset-2 truncate"
+              (click)="startEditName()"
+              title="Name ändern"
+            >{{ sessionStore.playerName() }}
+            </button>
+          }
+        </div>
+
+        <!-- Inline feedback pill (centred, fades in/out) -->
+        <div class="flex-1 flex justify-center px-1 pointer-events-none">
+          @if (sessionStore.feedback(); as feedback) {
+            <span
+              class="text-[11px] font-medium px-2 py-0.5 rounded-full transition-all duration-300"
+              [class.bg-emerald-100]="feedback.type === 'success'"
+              [class.text-emerald-700]="feedback.type === 'success'"
+              [class.bg-red-100]="feedback.type === 'error'"
+              [class.text-red-600]="feedback.type === 'error'"
+            >{{ feedback.text }}</span>
+          }
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <!-- Edit avatar button -->
+          @if (isNameSet() && hasAvatar() && !isEditingName() && !isEditingAvatar()) {
+            <button
+              class="w-6 h-6 rounded-full border border-black/10 bg-stone-50 flex items-center justify-center text-xs hover:bg-stone-100 transition-colors"
+              (click)="startEditAvatar()"
+              title="Avatar ändern"
+            >✏️</button>
+          }
+          @if (timer.timeLeft()) {
+            <span
+              class="text-xs font-mono font-bold text-stone-600 bg-stone-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1">
+              <img src="assets/icons/timer.svg" class="w-3 h-3 inline" alt=""/> {{ timer.timeLeft() }}
+            </span>
+          }
+          <span class="text-xs font-medium text-amber-600 inline-flex items-center gap-0.5">
+            <img src="assets/icons/star.svg" class="w-3 h-3 inline" alt=""/> {{ myScore() }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="flex-1 overflow-hidden">
+    @if (isConnecting()) {
+      <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
+        <div class="w-8 h-8 border-3 border-stone-200 border-t-stone-500 rounded-full animate-spin"></div>
+        @if (wasConnected()) {
+          <span class="text-xs font-medium text-stone-500">Verbindung verloren</span>
+          <span class="text-xs">Versuche erneut zu verbinde...</span>
+        } @else {
+          <span class="text-xs">Verbinde...</span>
+        }
+      </div>
+    } @else if (isDisconnected()) {
+      <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
+        <div class="w-8 h-8 border-3 border-stone-200 border-t-stone-500 rounded-full animate-spin"></div>
+        <span class="text-xs">Verbindung unterbrochen...</span>
+        <span class="text-xs text-stone-500">Du wirst zurück zur Lobby gebracht...</span>
+      </div>
+    } @else {
+      <!-- User is connected -->
+      @if (isEditingName() || !isNameSet()) {
+        <app-lobby-name (nameSubmitted)="onNameSubmitted($event)"/>
+      } @else if (isEditingAvatar()) {
+        <app-lobby-avatar
+          [playerName]="sessionStore.playerName()"
+          [initialAvatarImage]="existingAvatarImage()"
+          (avatarSubmitted)="onAvatarSubmitted($event)"
+          (skipped)="onAvatarSkipped()"
+        />
+      } @else if (!isReady()) {
+        <!-- Connected but waiting for session-state from server -->
+        <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
+          <div class="w-8 h-8 border-3 border-stone-200 border-t-stone-500 rounded-full animate-spin"></div>
+          <span class="text-xs">Lade Spielstand...</span>
+        </div>
+      } @else if (!hasAvatar() && sessionStore.avatarAutoUploading()) {
+        <!-- Avatar is being auto-uploaded from device cache -->
+        <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
+          <div class="w-8 h-8 border-3 border-stone-200 border-t-stone-500 rounded-full animate-spin"></div>
+          <span class="text-xs">Avatar wird übertragen...</span>
+        </div>
+      } @else if (!hasAvatar()) {
+        <app-lobby-avatar
+          [playerName]="sessionStore.playerName()"
+          [initialAvatarImage]="existingAvatarImage()"
+          (avatarSubmitted)="onAvatarSubmitted($event)"
+          (skipped)="onAvatarSkipped()"
+        />
+      } @else {
+        <app-sticker-player-view class="block h-full w-full"/>
+      }
+    }
+  </div>
+</div>
