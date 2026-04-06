@@ -15,7 +15,8 @@
     "_build:shared": "npm run build -w @birthday/shared",
     "_build:party": "npm run _build:shared && npm run build -w @birthday/frontend && npm run build -w @birthday/backend",
     "_build:cloud": "npm run _build:shared && npm run build:cloud -w @birthday/frontend && npm run build -w @birthday/backend",
-    "_build:dev": "npm run _build:shared && npm run build:dev-tools -w @birthday/frontend && npm run build -w @birthday/backend"
+    "_build:dev": "npm run _build:shared && npm run build:dev-tools -w @birthday/frontend && npm run build -w @birthday/backend",
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
     "gsap": "^3.14.2",

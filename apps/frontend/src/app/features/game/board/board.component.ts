@@ -1,7 +1,7 @@
 import {CommonModule} from "@angular/common";
 import {Component, computed, OnDestroy, OnInit, signal} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
-import type {GameModeId, ServerToClientMessage, StickerCollageServerEvent,} from "@birthday/shared";
+import type {ServerToClientMessage, StickerCollageServerEvent} from "@birthday/shared";
 import * as QRCode from "qrcode";
 import {Subscription} from "rxjs";
 import {EventToastsComponent, type UiEvent} from './event-toast/event-toasts.component';
@@ -33,6 +33,7 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly bootErrorText = signal<string | null>(null);
   public readonly sessionCode = signal<string | null>(null);
   public readonly timeLeft = signal<string>("");
+
 
   private sessionId: string | null = null;
   private routeSubscription: Subscription | null = null;
@@ -136,6 +137,7 @@ export class BoardComponent implements OnInit, OnDestroy {
       this.pushEvent("Session konnte nicht gelöscht werden. ❌", Date.now());
     }
   }
+
 
 
   private async bootstrapBoardSession(sessionCode: string): Promise<void> {

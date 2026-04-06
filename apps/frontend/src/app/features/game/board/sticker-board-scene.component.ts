@@ -7,12 +7,12 @@ import {BoardVotingSceneComponent} from './scenes/voting/board-voting-scene.comp
 import {BoardResultsSceneComponent} from './scenes/results/board-results-scene.component';
 import {WorldStore} from '../../../core/world.store';
 import {BoardQrPanelComponent} from './qr-panel/board-qr-panel.component';
-import {AnimGroupDirective, AnimOnInitDirective} from '../../shared/animations/anim-on-init.directive';
+import {AnimOnInitDirective} from '../../shared/animations/anim-on-init.directive';
 
 @Component({
     selector: "app-sticker-board-scene",
     standalone: true,
-  imports: [CommonModule, BoardLobbySceneComponent, BoardBuildingSceneComponent, BoardVotingSceneComponent, BoardResultsSceneComponent, BoardQrPanelComponent, AnimGroupDirective, AnimOnInitDirective],
+    imports: [CommonModule, BoardLobbySceneComponent, BoardBuildingSceneComponent, BoardVotingSceneComponent, BoardResultsSceneComponent, BoardQrPanelComponent, AnimOnInitDirective],
     templateUrl: "./sticker-board-scene.component.html",
 })
 export class StickerBoardSceneComponent {
@@ -26,5 +26,5 @@ export class StickerBoardSceneComponent {
         return this.worldStore.stickerCollageModeState();
     });
 
-    public readonly phase = computed(() => this.modeState()?.phase ?? "LOBBY");
+    public readonly phase = computed(() => this.modeState()?.phase ?? 'LOBBY');
 }

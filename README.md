@@ -100,9 +100,101 @@ LOBBY → BUILDING → VOTING → RESULTS → BUILDING → …
 | `npm run dev` | **Dev-Modus**: Baut Editoren-Frontend, startet Server (nur Editor-APIs) |
 | `npm run dev:live` | **Dev + HMR**: Backend + `ng serve` parallel mit Live-Reload |
 | `npm run cloud` | **Cloud**: Baut mit Cloud-Config, startet auf Port 8080 |
-| `npm run screenshots` | Playwright-Screenshots aller Screens in verschiedenen Viewports |
+| `npm run screenshots` | Baut die App, startet Server, schießt Screenshots aller Screens, stoppt Server |
 
 > Admin-Passwort: `ADMIN_PASSWORD="geheim" npm run party`
+
+---
+
+## Mock-Modus (Screenshots & Dev-Preview)
+
+Das Screenshot-Feature nutzt einen schlanken **Mock-Server** (`scripts/mock-server.mjs`) statt des echten Backends. Das Frontend bleibt dabei völlig unverändert — es verhält sich exakt wie in Produktion.
+
+**Funktionsweise:** Der gewünschte Screen wird als **Cookie** (`mock-screen=<id>`) übergeben — nicht im Session-Code. Im Frontend erscheint damit immer `MOCK` als Session-Code, kurz und sauber.
+
+Das Screenshot-Script setzt den Cookie vor jeder Navigation; der Mock-Server liest ihn aus dem WebSocket-Upgrade-Request:
+
+```
+mock-screen=lobby-name         → Player sieht Namenseingabe
+mock-screen=lobby-avatar       → Player sieht Avatar-Zeichnen
+mock-screen=lobby-waiting      → Player wartet in der Lobby
+mock-screen=building           → Player sieht Canvas mit Hand
+mock-screen=building-no-hand   → Player sieht "Sticker austeilen"-Button
+mock-screen=building-submitted → Player sieht "Eingereicht, warte..."
+mock-screen=voting             → Player sieht Voting-Ansicht
+mock-screen=board-voting       → Board zeigt Voting-Slideshow
+...
+```
+
+Das Frontend navigiert ganz normal zu `/#/player?session=MOCK`, löst den Code per HTTP auf, verbindet per WebSocket — und der Mock-Server antwortet auf das `join`-Paket sofort mit dem passenden `session-state`.
+
+**Kein Frontend-Code für Mock nötig.** Die gesamte Logik sitzt in:
+- `scripts/mock-server.mjs` — HTTP + WebSocket, Fixture-Daten, State-Aufbau pro Screen
+- `scripts/screenshots.mjs` — baut Frontend, startet Mock-Server, schießt Screenshots, stoppt Server
+
+```bash
+# Alles in einem Schritt:
+npm run screenshots
+
+# Mock-Server gegen bereits laufendes Frontend (überspringt Build):
+SCREENSHOT_BASE_URL=http://localhost:3001 npm run screenshots
+```
+
+Screenshots landen in `./screenshots/`.
+
+---
+
+## Sticker-Canvas (Player)
+
+### Drag-from-Hand
+
+Sticker können per **Pointer-Drag** aus der Hand auf die Leinwand gezogen werden:
+
+- **Ghost** erscheint in der exakt gleichen Größe wie der Sticker in der Hand
+- Der Ghost zeigt den Sticker in seiner tatsächlichen Form (kein rechteckiger Rahmen, kein Scale-Down)
+- **Vertikales Scrollen** in der Hand-Liste bleibt erhalten — Drag wird erst nach horizontaler Bewegung ausgelöst
+- Nach dem Loslassen über der Leinwand wird der Sticker an der Abwurfposition platziert
+
+### Touch-Interaktion auf der Leinwand
+
+| Geste | Aktion |
+|---|---|
+| 1 Finger auf Sticker | Sticker auswählen & verschieben |
+| 1 Finger auf leere Fläche | Lasso-Auswahl aufziehen |
+| 2 Finger (beliebige Position) | Pinch → ausgewählten Sticker/Gruppe skalieren & rotieren |
+| Tippen auf leere Fläche | Auswahl aufheben |
+
+> **Pinch ohne Finger auf dem Sticker**: Sobald ein Sticker (oder eine Gruppe) ausgewählt ist, kann die 2-Finger-Geste **irgendwo** auf der Leinwand gestartet werden — der zweite Finger muss nicht auf dem Sticker landen.
+
+### Lasso-Select
+
+- 1 Finger auf **leere** Fläche ziehen → Lasso-Rechteck aufziehen
+- Alle Sticker, die das Rechteck schneiden, werden als **Gruppe** markiert
+- Gruppe lässt sich gemeinsam **verschieben** (1 Finger auf einem Gruppen-Sticker) und **transformieren** (2 Finger, pinch/rotate)
+- Antippen außerhalb der Gruppe hebt die Auswahl auf
+
+### Swap-Modal
+
+Langer Druck (500 ms) auf einen Sticker in der Hand öffnet das Swap-Modal (solange Swaps übrig sind). Ein Sticker aus dem Modal tauscht den gedrückten Sticker in der Hand aus.
+
+---
+
+## Voting
+
+### Board-Ansicht
+
+Die Abstimmungs-Slideshow passt sich automatisch an die Anzahl der Einreichungen an:
+
+- **Wenige Bilder** (passen alle nebeneinander ins Board): zentrierte, statische Darstellung
+- **Viele Bilder** (mehr als ins Board passt): automatisch wandernde Endlos-Schleife (Marquee)
+
+Die Entscheidung wird live per `ResizeObserver` neu berechnet — passt sich also auch bei Fenstergrößenänderungen an.
+
+### Player-Ansicht
+
+- Feedback (verbleibende Stimmen / alle Stimmen abgegeben) ist **klein und unauffällig im Header** untergebracht, nicht als großes Banner
+- Eigene Collage ist mit einem lila Badge „Deine" markiert und kann nicht gewählt werden
+- Bereits abgegebene Stimmen sind mit ⭐ markiert
 
 ---
 
@@ -184,17 +276,24 @@ Für Cloud: Repository-Pattern vorbereitet (`SessionRepository`, `AssetRepositor
 │           └── features/
 │               ├── board/          # Board-Shell (Header, Setup-Drawer)
 │               ├── player/         # Player-Shell (Lobby, Join)
-│               ├── sticker-game/   # Sticker-Collage Spiel
+│               ├── game/           # Sticker-Collage Spiel
 │               │   ├── board/      # Board-Szenen (Lobby, Building, Voting, Results)
+│               │   │               #   voting: adaptive Slideshow (statisch ↔ Marquee)
 │               │   ├── player/     # Player-Szenen (Lobby, Building, Voting, Results)
+│               │   │   ├── player-screen.enum.ts  # PlayerScreen & BoardScreen Enums
+│               │   │   ├── canvas/ #   Sticker-Leinwand (Drag, Pinch, Lasso-Select)
+│               │   │   ├── hand/   #   Sticker-Hand (Drag-Ghost, Scroll, Swap-Trigger)
+│               │   │   ├── swap-modal/  # Sticker-Tausch-Modal
+│               │   │   └── voting/ #   Voting-UI (Feedback im Header)
 │               │   └── services/   # Sticker-Player-Service
-│               ├── hitbox-editor/  # Polygon-Editor für Sticker-Hitboxen
-│               ├── sticker-editor-test/  # Sticker-Canvas Testumgebung
-│               └── dev-landing/    # Dev-Modus Landing Page
+│               ├── editors/        # Hitbox-Editor, Sticker-Editor-Test
+│               └── shared/         # Animationen, gemeinsame Komponenten
 ├── packages/
 │   └── shared/                     # Shared Types, Config-Parser
 ├── scripts/
-│   └── check-sticker-assets.mjs   # Asset-Validierung
+│   ├── check-sticker-assets.mjs   # Asset-Validierung
+│   ├── mock-server.mjs            # Leichtgewichtiger Mock-Server (HTTP + WS) für Screenshots
+│   └── screenshots.mjs            # Playwright-Screenshot-Runner
 ├── game.config.json                # Spielkonfiguration
 ├── hitbox-data.json                # Hitbox-Polygone (generiert)
 ├── Dockerfile                      # Cloud-Image

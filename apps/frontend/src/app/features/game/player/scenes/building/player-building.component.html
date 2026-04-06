@@ -4,25 +4,24 @@
   <h2 class="text-base font-bold">{{ stickerService.currentPrompt() }}</h2>
 </div>
 
-@if (!stickerService.myHand()) {
-  <!-- No hand yet → request one -->
-  <div animGroup="item" [animDelay]="0.1" class="flex-1 flex flex-col items-center justify-center gap-4 p-6">
-    <div animOnInit="item" class="text-6xl">🎨</div>
-    <p animOnInit="item" class="text-stone-600 text-center text-sm">Bereit mitzumachen?<br/>Hol dir deine Sticker-Hand!</p>
-    <button
-      animOnInit="item"
-      class="bg-purple-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
-      (click)="stickerService.requestHand()"
-    >
-      Sticker austeilen 🃏
-    </button>
-  </div>
-} @else if (stickerService.hasSubmittedThisRound()) {
-  <!-- Already submitted -->
+@if (stickerService.hasSubmittedThisRound()) {
+  <!-- Submitted → wait screen -->
   <div animGroup="item" [animDelay]="0.1" class="flex-1 flex flex-col items-center justify-center gap-4 p-6">
     <div animOnInit="item" class="text-6xl">✅</div>
     <p animOnInit="item" class="text-stone-600 text-center font-medium">Eingereicht! 🎉</p>
     <p animOnInit="item" class="text-stone-400 text-center text-sm">Warte auf das Ende der Runde…</p>
+  </div>
+} @else if (skipped()) {
+  <!-- Skipped → wait screen -->
+  <div animGroup="item" [animDelay]="0.1" class="flex-1 flex flex-col items-center justify-center gap-4 p-6">
+    <div animOnInit="item" class="text-6xl">🙈</div>
+    <p animOnInit="item" class="text-stone-600 text-center font-medium">Alles klar, du schaust nur zu.</p>
+    <p animOnInit="item" class="text-stone-400 text-center text-sm">Warte auf das Ende der Runde…</p>
+    <button
+      animOnInit="item"
+      class="text-xs text-stone-400 underline decoration-dotted underline-offset-2 mt-2"
+      (click)="skipped.set(false)"
+    >Doch mitmachen</button>
   </div>
 } @else {
   <!-- Building mode: canvas + hand -->
@@ -49,14 +48,22 @@
 
     <!-- Sticker hand at bottom -->
     <div class="shrink-0 border-t border-black/10 bg-white">
-      <app-sticker-hand
-        [hand]="stickerService.myHand()!"
-        [stickerCatalog]="stickerService.stickerCatalog()"
-        [canAddMore]="canvasPlacements().length < stickerService.maxStickersOnCanvas()"
-        (stickerTapped)="onStickerAddedFromHand($event)"
-        (swapRequested)="openSwapModal($event)"
-        (dragStarted)="onDragStarted($event)"
-      />
+      @if (stickerService.myHand(); as hand) {
+        <app-sticker-hand
+          [hand]="hand"
+          [stickerCatalog]="stickerService.stickerCatalog()"
+          [canAddMore]="canvasPlacements().length < stickerService.maxStickersOnCanvas()"
+          (stickerTapped)="onStickerAddedFromHand($event)"
+          (swapRequested)="openSwapModal($event)"
+          (dragStarted)="onDragStarted($event)"
+        />
+      } @else {
+        <!-- Hand not yet received from server — show placeholder -->
+        <div class="flex items-center justify-center gap-2 px-4 py-3 text-stone-400 text-xs">
+          <div class="w-4 h-4 border-2 border-stone-200 border-t-stone-400 rounded-full animate-spin"></div>
+          Sticker werden geladen…
+        </div>
+      }
       <div class="px-4 pb-3 flex gap-2">
         <button
           class="flex-1 bg-purple-600 text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
@@ -64,6 +71,13 @@
           (click)="submitCollage()"
         >
           Einreichen 🚀
+        </button>
+        <button
+          class="px-4 py-2.5 rounded-xl text-sm text-stone-400 border border-stone-200 active:scale-95 transition-transform"
+          title="Ich möchte nichts einreichen"
+          (click)="skipped.set(true)"
+        >
+          Überspringen
         </button>
       </div>
     </div>
@@ -81,4 +95,3 @@
     />
   }
 }
-

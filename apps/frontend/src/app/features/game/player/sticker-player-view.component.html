@@ -1,19 +1,28 @@
 <div class="h-full flex flex-col overflow-hidden">
-  @switch (stickerService.phase()) {
-    @case ("LOBBY") {
+  @switch (activeScreen()) {
+    @case (PlayerScreen.LOBBY_WAITING) {
       <app-player-lobby />
     }
-    @case ("BUILDING") {
+    @case (PlayerScreen.BUILDING) {
       <app-player-building />
     }
-    @case ("VOTING") {
+    @case (PlayerScreen.BUILDING_SUBMITTED) {
+      <app-player-building />
+    }
+    @case (PlayerScreen.BUILDING_SKIPPED) {
+      <app-player-building />
+    }
+    @case (PlayerScreen.VOTING) {
       <app-player-voting />
     }
-    @case ("RESULTS") {
+    @case (PlayerScreen.RESULTS) {
       <app-player-results />
     }
-    @case ("NEXT_ROUND_SETUP") {
+    @case (PlayerScreen.NEXT_ROUND) {
       <app-player-next-round />
+    }
+    @default {
+      <app-player-lobby />
     }
   }
 </div>

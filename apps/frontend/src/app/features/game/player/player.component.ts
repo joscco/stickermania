@@ -13,6 +13,7 @@ import {ApiService} from '../../../core/api.service';
 import {GameSessionStore} from '../../../core/challenge.store';
 import {WorldStore} from '../../../core/world.store';
 import {ReconnectService} from '../../../core/reconnect.service';
+import {PlayerScreen} from './player-screen.enum';
 
 @Component({
   selector: "app-player",
@@ -34,17 +35,14 @@ import {ReconnectService} from '../../../core/reconnect.service';
 export class PlayerComponent implements OnInit, OnDestroy {
   private unsubscribeWs: (() => void) | null = null;
 
-  /** When true, the user is editing their name (even if already set). */
   public readonly isEditingName = signal(false);
-  /** When true, the user is editing their avatar (even if already set). */
   public readonly isEditingAvatar = signal(false);
 
-  public readonly isConnecting = computed(() => {
-    const s = this.wsService.status();
-    return s === "idle" || s === "connecting";
-  });
-  public readonly isDisconnected = computed(() => this.wsService.status() === "disconnected");
   public readonly wasConnected = computed(() => this.wsService.wasConnected());
+
+  /** Resolves which PlayerScreen to render from live store/connection state. */
+  public readonly currentScreen = computed<PlayerScreen>(() => this.screenFromStore());
+  public readonly PlayerScreen = PlayerScreen;
 
   constructor(
     private readonly wsService: WebSocketService,
@@ -57,7 +55,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
     public readonly timer: PlayerTimerService,
     private readonly messageHandler: PlayerMessageHandler,
   ) {
-    // Pre-fill name from device-level storage (survives session changes)
     const deviceName = this.reconnectService.loadDeviceName();
     if (deviceName) {
       this.sessionStore.playerName.set(deviceName);
@@ -74,22 +71,11 @@ export class PlayerComponent implements OnInit, OnDestroy {
     return id ? !!this.worldStore.players()[id]?.avatarUrl : false;
   });
 
-  /** Existing avatar image to pre-populate the avatar drawing canvas. */
   public readonly existingAvatarImage = computed(() => {
-    // Prefer device-cached data-URL (always available, no CORS issues)
-    const deviceAvatar = this.reconnectService.loadDeviceAvatar();
-    if (deviceAvatar) return deviceAvatar;
-    // Fallback: current server avatar URL
     const id = this.sessionStore.playerId();
     return id ? (this.worldStore.players()[id]?.avatarUrl ?? null) : null;
   });
 
-
-  /**
-   * True once we have received a session-state AND our player exists in it.
-   * Until then we show a loading spinner to avoid flashing lobby/avatar screens
-   * during reconnect.
-   */
   public readonly isReady = computed(() => {
     const state = this.worldStore.sessionState();
     if (!state) return false;
@@ -104,7 +90,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
     const reconnect = this.reconnectService.load();
     const sessionCode = this.reconnectService.resolveSessionCode(this.route);
 
-
     if (!sessionCode) {
       if (reconnect?.sessionCode) {
         await this.router.navigate(["/player"], { queryParams: { session: reconnect.sessionCode } });
@@ -114,20 +99,15 @@ export class PlayerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Determine whether this is a reconnect to the SAME session or a session change.
     const isSameSession = reconnect?.sessionCode?.toUpperCase() === sessionCode.toUpperCase();
     const playerId = isSameSession
         ? (reconnect?.playerId ?? localStorage.getItem("birthday_player_id") ?? null)
         : null;
 
-
-    // If switching sessions, clear stale reconnect data
     if (!isSameSession) {
       this.reconnectService.clear();
     }
 
-    // Set sessionCode on the message handler BEFORE connecting so that any
-    // incoming "welcome" message will have the correct code for reconnect storage.
     this.messageHandler.sessionCode = sessionCode;
 
     // ⚠️ Safari iOS: WebSocket-Verbindung MUSS vor dem ersten `await` gestartet werden.
@@ -148,9 +128,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     try {
       const resolved = await this.apiService.resolveSessionByCode(sessionCode);
       this.sessionStore.setSession(resolved.sessionId);
-      // Update to the canonical code returned by the server
       this.messageHandler.sessionCode = resolved.sessionCode ?? sessionCode;
-
       localStorage.setItem("birthday_last_session_code", resolved.sessionCode);
 
       const joinMsg = {
@@ -159,9 +137,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
         sessionId: resolved.sessionId,
         playerId: playerId ?? undefined,
       };
-
-      // send() stores the join as pendingJoinMsg. If WS is already open
-      // it goes out immediately; otherwise onopen re-sends it automatically.
       this.wsService.send(joinMsg);
 
     } catch {
@@ -176,15 +151,34 @@ export class PlayerComponent implements OnInit, OnDestroy {
     this.unsubscribeWs?.();
   }
 
+  // ── Screen resolution from live store ─────────────────────
+
+  private screenFromStore(): PlayerScreen {
+    const wsStatus = this.wsService.status();
+    if (wsStatus === 'idle' || wsStatus === 'connecting') {
+      return this.wasConnected() ? PlayerScreen.RECONNECTING : PlayerScreen.CONNECTING;
+    }
+    if (wsStatus === 'disconnected') return PlayerScreen.DISCONNECTED;
+    if (!this.isNameSet() || this.isEditingName()) return PlayerScreen.LOBBY_NAME;
+    if (this.isEditingAvatar()) return PlayerScreen.LOBBY_AVATAR;
+    if (!this.isReady()) return PlayerScreen.CONNECTING;
+    if (!this.hasAvatar()) return PlayerScreen.LOBBY_AVATAR;
+
+    const phase = this.worldStore.stickerCollageModeState()?.phase ?? 'LOBBY';
+    switch (phase) {
+      case 'LOBBY':            return PlayerScreen.LOBBY_WAITING;
+      case 'BUILDING':         return PlayerScreen.BUILDING;
+      case 'VOTING':           return PlayerScreen.VOTING;
+      case 'RESULTS':          return PlayerScreen.RESULTS;
+      case 'NEXT_ROUND_SETUP': return PlayerScreen.NEXT_ROUND;
+      default:                 return PlayerScreen.LOBBY_WAITING;
+    }
+  }
+
   // ── UI actions ─────────────────────────────────────────────
 
-  public startEditName(): void {
-    this.isEditingName.set(true);
-  }
-
-  public startEditAvatar(): void {
-    this.isEditingAvatar.set(true);
-  }
+  public startEditName(): void { this.isEditingName.set(true); }
+  public startEditAvatar(): void { this.isEditingAvatar.set(true); }
 
   public onNameSubmitted(name: string): void {
     this.wsService.send({ type: "set-name", name });
@@ -196,7 +190,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   public onAvatarSubmitted(dataUrl: string): void {
     this.wsService.send({ type: "submit-avatar", avatarDataUrl: dataUrl });
-    this.reconnectService.saveDeviceAvatar(dataUrl);
     this.sessionStore.clearTask();
     this.isEditingAvatar.set(false);
   }
