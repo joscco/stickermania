@@ -50,13 +50,7 @@ const SCREENS = [
     // ── Player – building ──────────────────────────────────────────────────────
     {id: 'player-building',           screenKey: 'building',           vp: PHONE_VP, path: '/#/player?session=MOCK'},
     {id: 'player-building-submitted', screenKey: 'building-submitted', vp: PHONE_VP, path: '/#/player?session=MOCK'},
-    // building-skipped is a local UI state: click the skip button to reach it
-    {id: 'player-building-skipped',   screenKey: 'building',           vp: PHONE_VP, path: '/#/player?session=MOCK',
-        postAction: async (page) => {
-            await page.getByRole('button', {name: /überspringen/i}).click();
-            await page.waitForTimeout(300);
-        }
-    },
+    {id: 'player-building-skipped',   screenKey: 'building-skipped',   vp: PHONE_VP, path: '/#/player?session=MOCK'},
 
     // ── Player – voting / results ──────────────────────────────────────────────
     {id: 'player-voting',             screenKey: 'voting',             vp: PHONE_VP, path: '/#/player?session=MOCK'},

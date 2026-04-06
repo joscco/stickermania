@@ -4,94 +4,70 @@
   <h2 class="text-base font-bold">{{ stickerService.currentPrompt() }}</h2>
 </div>
 
-@if (stickerService.hasSubmittedThisRound()) {
-  <!-- Submitted → wait screen -->
-  <div animGroup="item" [animDelay]="0.1" class="flex-1 flex flex-col items-center justify-center gap-4 p-6">
-    <div animOnInit="item" class="text-6xl">✅</div>
-    <p animOnInit="item" class="text-stone-600 text-center font-medium">Eingereicht! 🎉</p>
-    <p animOnInit="item" class="text-stone-400 text-center text-sm">Warte auf das Ende der Runde…</p>
-  </div>
-} @else if (skipped()) {
-  <!-- Skipped → wait screen -->
-  <div animGroup="item" [animDelay]="0.1" class="flex-1 flex flex-col items-center justify-center gap-4 p-6">
-    <div animOnInit="item" class="text-6xl">🙈</div>
-    <p animOnInit="item" class="text-stone-600 text-center font-medium">Alles klar, du schaust nur zu.</p>
-    <p animOnInit="item" class="text-stone-400 text-center text-sm">Warte auf das Ende der Runde…</p>
+<!-- Building mode: canvas + hand -->
+<div class="flex-1 flex flex-col overflow-hidden relative">
+  <!-- Canvas area -->
+  <div class="flex-1 min-h-0 relative bg-stone-50 flex items-center justify-center p-2 overflow-hidden">
+    <div #canvasWrapper class="h-full aspect-square max-w-full rounded-lg overflow-hidden">
+      <app-sticker-canvas
+        #stickerCanvas
+        class="block w-full h-full"
+        [stickers]="canvasPlacements()"
+        [stickerCatalog]="stickerService.stickerCatalog()"
+        [maxStickers]="stickerService.maxStickersOnCanvas()"
+        [interactive]="true"
+        (placementsChanged)="onPlacementsChanged($event)"
+        (stickerRemoved)="onStickerRemoved($event)"
+        (stickerDropped)="onStickerDropped($event)"
+      />
+    </div>
+    <!-- Sticker count -->
+    <div class="absolute top-2 right-2 bg-white/80 backdrop-blur text-xs font-medium text-stone-600 px-2 py-0.5 rounded-full border border-black/6">
+      {{ canvasPlacements().length }}/{{ stickerService.maxStickersOnCanvas() }}
+    </div>
+    <!-- Skip: small, unobtrusive, bottom-left corner -->
     <button
-      animOnInit="item"
-      class="text-xs text-stone-400 underline decoration-dotted underline-offset-2 mt-2"
-      (click)="skipped.set(false)"
-    >Doch mitmachen</button>
-  </div>
-} @else {
-  <!-- Building mode: canvas + hand -->
-  <div class="flex-1 flex flex-col overflow-hidden relative">
-    <!-- Canvas area -->
-    <div class="flex-1 min-h-0 relative bg-stone-50 flex items-center justify-center p-2 overflow-hidden">
-      <div #canvasWrapper class="h-full aspect-square max-w-full rounded-lg overflow-hidden">
-        <app-sticker-canvas
-          #stickerCanvas
-          class="block w-full h-full"
-          [stickers]="canvasPlacements()"
-          [stickerCatalog]="stickerService.stickerCatalog()"
-          [maxStickers]="stickerService.maxStickersOnCanvas()"
-          [interactive]="true"
-          (placementsChanged)="onPlacementsChanged($event)"
-          (stickerRemoved)="onStickerRemoved($event)"
-          (stickerDropped)="onStickerDropped($event)"
-        />
-      </div>
-      <div class="absolute top-2 right-2 bg-white/80 backdrop-blur text-xs font-medium text-stone-600 px-2 py-0.5 rounded-full border border-black/6">
-        {{ canvasPlacements().length }}/{{ stickerService.maxStickersOnCanvas() }}
-      </div>
-    </div>
-
-    <!-- Sticker hand at bottom -->
-    <div class="shrink-0 border-t border-black/10 bg-white">
-      @if (stickerService.myHand(); as hand) {
-        <app-sticker-hand
-          [hand]="hand"
-          [stickerCatalog]="stickerService.stickerCatalog()"
-          [canAddMore]="canvasPlacements().length < stickerService.maxStickersOnCanvas()"
-          (stickerTapped)="onStickerAddedFromHand($event)"
-          (swapRequested)="openSwapModal($event)"
-          (dragStarted)="onDragStarted($event)"
-        />
-      } @else {
-        <!-- Hand not yet received from server — show placeholder -->
-        <div class="flex items-center justify-center gap-2 px-4 py-3 text-stone-400 text-xs">
-          <div class="w-4 h-4 border-2 border-stone-200 border-t-stone-400 rounded-full animate-spin"></div>
-          Sticker werden geladen…
-        </div>
-      }
-      <div class="px-4 pb-3 flex gap-2">
-        <button
-          class="flex-1 bg-purple-600 text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
-          [disabled]="canvasPlacements().length === 0"
-          (click)="submitCollage()"
-        >
-          Einreichen 🚀
-        </button>
-        <button
-          class="px-4 py-2.5 rounded-xl text-sm text-stone-400 border border-stone-200 active:scale-95 transition-transform"
-          title="Ich möchte nichts einreichen"
-          (click)="skipped.set(true)"
-        >
-          Überspringen
-        </button>
-      </div>
-    </div>
+      class="absolute bottom-3 left-3 text-[11px] text-stone-300 hover:text-stone-400 transition-colors"
+      (click)="stickerService.skipRound()"
+    >Überspringen</button>
   </div>
 
-  @if (showSwapModal()) {
-    <app-sticker-swap-modal
-      [currentStickerId]="swapTargetStickerId()!"
-      [handIndex]="swapTargetIndex()!"
-      [stickerCatalog]="stickerService.stickerCatalog()"
-      [currentHandIds]="stickerService.myHand()!.stickerIds"
-      [swapsRemaining]="stickerService.myHand()!.swapsRemaining"
-      (swapConfirmed)="onSwapConfirmed($event)"
-      (closed)="closeSwapModal()"
-    />
-  }
+  <!-- Sticker hand at bottom -->
+  <div class="shrink-0 border-t border-black/10 bg-white">
+    @if (stickerService.myHand(); as hand) {
+      <app-sticker-hand
+        [hand]="hand"
+        [stickerCatalog]="stickerService.stickerCatalog()"
+        [canAddMore]="canvasPlacements().length < stickerService.maxStickersOnCanvas()"
+        (stickerTapped)="onStickerAddedFromHand($event)"
+        (swapRequested)="openSwapModal($event)"
+        (dragStarted)="onDragStarted($event)"
+      />
+    } @else {
+      <!-- Hand not yet received from server -->
+      <div class="flex items-center justify-center gap-2 px-4 py-3 text-stone-400 text-xs">
+        <div class="w-4 h-4 border-2 border-stone-200 border-t-stone-400 rounded-full animate-spin"></div>
+        Sticker werden geladen…
+      </div>
+    }
+    <div class="px-4 pb-3">
+      <button
+        class="w-full bg-purple-600 text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
+        [disabled]="canvasPlacements().length === 0"
+        (click)="submitCollage()"
+      >Einreichen 🚀</button>
+    </div>
+  </div>
+</div>
+
+@if (showSwapModal()) {
+  <app-sticker-swap-modal
+    [currentStickerId]="swapTargetStickerId()!"
+    [handIndex]="swapTargetIndex()!"
+    [stickerCatalog]="stickerService.stickerCatalog()"
+    [currentHandIds]="stickerService.myHand()!.stickerIds"
+    [swapsRemaining]="stickerService.myHand()!.swapsRemaining"
+    (swapConfirmed)="onSwapConfirmed($event)"
+    (closed)="closeSwapModal()"
+  />
 }

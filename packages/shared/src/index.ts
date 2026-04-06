@@ -263,6 +263,8 @@ export interface StickerCollageModeState {
     winnerChoicesDone: boolean;
     /** Prompt history (index → prompt) */
     promptHistory: Record<number, string>;
+    /** Players who opted to skip this round (not submit) */
+    skippedPlayerIds: string[];
     /** Config echoed into state for client use */
     handSize: number;
     maxStickersOnCanvas: number;
@@ -274,6 +276,7 @@ export type StickerCollageClientAction =
     | { type: "request-hand" }
     | { type: "swap-sticker"; handIndex: number; newStickerId: string }
     | { type: "submit-collage"; placements: StickerPlacement[] }
+    | { type: "skip-round" }
     | { type: "cast-vote"; collageId: string }
     | { type: "start-game" }
     | { type: "end-round-early" }
@@ -305,7 +308,11 @@ export type GameServerEventMap = {
     "sticker-collage": StickerCollageServerEvent;
 };
 
-export type GameClientEnvelope = { type: "game-action"; mode: "sticker-collage"; action: StickerCollageClientAction };
+export type GameClientEnvelope = {
+    type: "game-action";
+    mode: "sticker-collage";
+    action: StickerCollageClientAction
+};
 
 export type GameServerEnvelope = {
     type: "game-event";

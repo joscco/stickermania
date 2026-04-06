@@ -15,6 +15,7 @@ import {
     handleRequestHand,
     handleSwapSticker,
     handleSubmitCollage,
+    handleSkipRound,
     handleCastVote,
     handleStartGame,
     handleEndRoundEarly,
@@ -79,6 +80,7 @@ export class StickerCollageEngine implements GameModeEngine<"sticker-collage", S
             lastUnlockedPackId: null,
             winnerChoicesDone: false,
             promptHistory: {},
+            skippedPlayerIds: [],
             handSize: this.config.stickerCollage.handSize,
             maxStickersOnCanvas: this.config.stickerCollage.maxStickersOnCanvas,
             swapCount: this.config.stickerCollage.swapCount,
@@ -128,6 +130,10 @@ export class StickerCollageEngine implements GameModeEngine<"sticker-collage", S
             }
             case "submit-collage": {
                 const r = handleSubmitCollage(sessionState, context.playerId, action.placements, this.config, context.now);
+                return {stateChanged: r.stateChanged, emittedEvents: r.events};
+            }
+            case "skip-round": {
+                const r = handleSkipRound(sessionState, context.playerId);
                 return {stateChanged: r.stateChanged, emittedEvents: r.events};
             }
             case "cast-vote": {

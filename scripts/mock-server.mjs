@@ -84,6 +84,7 @@ const BASE_MODE_STATE = {
     guaranteedPackId: null,
     playerHands: { 'player-1': MOCK_HAND, 'player-2': MOCK_HAND, 'player-3': MOCK_HAND },
     submissions:  { 0: MOCK_SUBMISSIONS },
+    skippedPlayerIds: [],
     currentVotes: { 'player-2': ['col-1'], 'player-3': ['col-1', 'col-2'] },
     lastVoteResults: [
         { collageId: 'col-1', playerId: 'player-1', voteCount: 2, pointsAwarded: 100 },
@@ -108,21 +109,13 @@ const BASE_MODE_STATE = {
  * The screen id is the suffix after "MOCK-" in the session code.
  */
 function buildStateForScreen(screenId, sessionCode) {
-    let phase       = 'LOBBY';
-    let playerHands = BASE_MODE_STATE.playerHands;
-    let submissions = BASE_MODE_STATE.submissions;
-    let mockPlayers = MOCK_PLAYERS;
+    let phase           = 'LOBBY';
+    let playerHands     = BASE_MODE_STATE.playerHands;
+    let submissions     = BASE_MODE_STATE.submissions;
+    let skippedPlayerIds = [];
+    let mockPlayers     = MOCK_PLAYERS;
 
     switch (screenId) {
-        // Connection screens: the WS never completes, so just send a LOBBY state.
-        // The app shows the connecting/reconnecting/disconnected UI based on WS status,
-        // not on the session state — but we still need a valid state so the server responds.
-        case 'connecting':
-        case 'reconnecting':
-        case 'disconnected':
-            phase = 'LOBBY';
-            break;
-
         case 'lobby-name':
             phase = 'LOBBY';
             mockPlayers = {
@@ -133,6 +126,7 @@ function buildStateForScreen(screenId, sessionCode) {
 
         case 'lobby-avatar':
             phase = 'LOBBY';
+            // Player has a name but no avatar → app routes to LOBBY_AVATAR
             mockPlayers = {
                 ...MOCK_PLAYERS,
                 'player-1': {...MOCK_PLAYERS['player-1'], avatarUrl: null},
@@ -146,13 +140,15 @@ function buildStateForScreen(screenId, sessionCode) {
             submissions = { 0: MOCK_SUBMISSIONS.filter(s => s.playerId !== 'player-1') };
             break;
 
-        case 'building-submitted':  phase = 'BUILDING';        break;
+        case 'building-submitted':
+            phase = 'BUILDING';
+            // player-1 has already submitted
+            break;
 
-        // Skipped: player has a hand but we mark them as having submitted with empty placements
-        // so the skipped signal in the component is triggered (actually the skipped state is
-        // purely local UI — mock server just serves a normal building state with hand)
         case 'building-skipped':
             phase = 'BUILDING';
+            // player-1 has skipped
+            skippedPlayerIds = ['player-1'];
             submissions = { 0: MOCK_SUBMISSIONS.filter(s => s.playerId !== 'player-1') };
             break;
 
@@ -170,7 +166,7 @@ function buildStateForScreen(screenId, sessionCode) {
         sessionCode: sessionCode,
         players:     mockPlayers,
         activeMode:  'sticker-collage',
-        modeState:   { ...BASE_MODE_STATE, phase, playerHands, submissions },
+        modeState:   { ...BASE_MODE_STATE, phase, playerHands, submissions, skippedPlayerIds },
         revision:    1,
         updatedAt:   Date.now(),
         createdAt:   Date.now(),

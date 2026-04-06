@@ -38,6 +38,35 @@ export class StickerPlayerService {
         return roundSubs.some(s => s.playerId === playerId);
     });
 
+    public readonly skippedPlayerIds = computed<string[]>(() =>
+        this.modeState()?.skippedPlayerIds ?? []
+    );
+
+    public readonly hasSkippedThisRound = computed<boolean>(() => {
+        const playerId = this.sessionStore.playerId();
+        return !!playerId && this.skippedPlayerIds().includes(playerId);
+    });
+
+    /**
+     * True when every connected player has either submitted or skipped.
+     * Used to show the "Runde schließen" button on the player building screen.
+     */
+    public readonly allPlayersDone = computed<boolean>(() => {
+        const ms = this.modeState();
+        const players = this.worldStore.players();
+        if (!ms || ms.phase !== 'BUILDING') return false;
+        const connectedIds = Object.values(players)
+            .filter(p => p.connected)
+            .map(p => p.id);
+        if (connectedIds.length === 0) {
+          return false;
+        }
+        const roundSubs = ms.submissions[ms.currentRoundIndex] ?? [];
+        const submittedIds = new Set(roundSubs.map(s => s.playerId));
+        const skippedIds = new Set(ms.skippedPlayerIds);
+        return connectedIds.every(id => submittedIds.has(id) || skippedIds.has(id));
+    });
+
     /** Submissions for the current round (used for voting in VOTING phase) */
     public readonly currentRoundSubmissions = computed<StickerCollage[]>(() => {
         const ms = this.modeState();
@@ -127,6 +156,10 @@ export class StickerPlayerService {
 
     public submitCollage(placements: StickerPlacement[]): void {
         this.sendAction({type: "submit-collage", placements});
+    }
+
+    public skipRound(): void {
+        this.sendAction({type: "skip-round"});
     }
 
     public castVote(collageId: string): void {

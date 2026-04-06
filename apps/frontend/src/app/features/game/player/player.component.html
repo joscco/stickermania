@@ -55,7 +55,6 @@
   <!-- Content — single master switch over every possible screen -->
   <div class="flex-1 overflow-hidden flex flex-col">
     @switch (currentScreen()) {
-
       @case (PlayerScreen.CONNECTING) {
         <app-player-connecting />
       }
@@ -83,10 +82,10 @@
         <app-player-building />
       }
       @case (PlayerScreen.BUILDING_SUBMITTED) {
-        <app-player-building />
+        <app-player-building-submitted />
       }
       @case (PlayerScreen.BUILDING_SKIPPED) {
-        <app-player-building />
+        <app-player-building-skipped />
       }
       @case (PlayerScreen.VOTING) {
         <app-player-voting />

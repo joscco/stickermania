@@ -29,8 +29,6 @@ export class PlayerBuildingComponent implements OnDestroy {
     public readonly showSwapModal = signal(false);
     public readonly swapTargetStickerId = signal<string | null>(null);
     public readonly swapTargetIndex = signal<number | null>(null);
-    /** True once the player tapped "Ich möchte nichts einreichen". */
-    public readonly skipped = signal(false);
 
     // ── Pointer-drag state ───────────────────────────────────────
     private ghostEl: HTMLElement | null = null;
@@ -43,7 +41,6 @@ export class PlayerBuildingComponent implements OnDestroy {
     }
 
     // ── Sticker placement ────────────────────────────────────────
-
     public onStickerAddedFromHand(stickerId: string): void {
         const current = this.canvasPlacements();
         if (current.length >= this.stickerService.maxStickersOnCanvas()) return;

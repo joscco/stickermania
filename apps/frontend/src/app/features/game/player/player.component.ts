@@ -8,6 +8,8 @@ import {PlayerReconnectingComponent} from './scenes/reconnecting/player-reconnec
 import {PlayerDisconnectedComponent} from './scenes/disconnected/player-disconnected.component';
 import {PlayerLobbyWaitingComponent} from './scenes/lobby-waiting/player-lobby-waiting.component';
 import {PlayerBuildingComponent} from './scenes/building/player-building.component';
+import {PlayerBuildingSubmittedComponent} from './scenes/building-submitted/player-building-submitted.component';
+import {PlayerBuildingSkippedComponent} from './scenes/building-skipped/player-building-skipped.component';
 import {PlayerVotingComponent} from './scenes/voting/player-voting.component';
 import {PlayerResultsComponent} from './scenes/results/player-results.component';
 import {PlayerNextRoundComponent} from './scenes/next-round/player-next-round.component';
@@ -34,6 +36,8 @@ import {PlayerScreen} from './player-screen.enum';
     PlayerDisconnectedComponent,
     PlayerLobbyWaitingComponent,
     PlayerBuildingComponent,
+    PlayerBuildingSubmittedComponent,
+    PlayerBuildingSkippedComponent,
     PlayerVotingComponent,
     PlayerResultsComponent,
     PlayerNextRoundComponent,
@@ -183,6 +187,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
       case 'LOBBY':            return PlayerScreen.LOBBY_WAITING;
       case 'BUILDING': {
         if (this.stickerService.hasSubmittedThisRound()) return PlayerScreen.BUILDING_SUBMITTED;
+        if (this.stickerService.hasSkippedThisRound())  return PlayerScreen.BUILDING_SKIPPED;
         if (!this.stickerService.myHand()) {
           this.stickerService.requestHand();
         }
