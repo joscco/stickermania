@@ -1,29 +1,26 @@
-import {Component, signal, ViewChild, OnInit} from "@angular/core";
+import {Component, signal, ViewChild, ElementRef, OnInit} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import {RouterModule} from "@angular/router";
 import {HttpClient} from "@angular/common/http";
 import type {StickerPlacement, StickerDefinition} from "@birthday/shared";
 import {StickerCanvasComponent} from '../../game/player/canvas/sticker-canvas.component';
+import {StickerPaletteComponent} from '../../game/shared/sticker-palette/sticker-palette.component';
+import type {StickerDroppedEvent} from '../../game/shared/sticker-palette/sticker-palette.component';
 import {firstValueFrom} from "rxjs";
 
-/**
- * Standalone test editor for the sticker canvas.
- * Loads the full sticker catalog (with hitbox data) from the backend.
- * Navigate to /editor to use.
- */
 @Component({
     selector: "app-sticker-editor-test",
     standalone: true,
-    imports: [CommonModule, RouterModule, StickerCanvasComponent],
+    imports: [CommonModule, RouterModule, StickerCanvasComponent, StickerPaletteComponent],
     templateUrl: "./sticker-editor-test.component.html",
 })
 export class StickerEditorTestComponent implements OnInit {
-    @ViewChild("stickerCanvas") stickerCanvas!: StickerCanvasComponent;
+    @ViewChild("stickerCanvas")   stickerCanvas!: StickerCanvasComponent;
+    @ViewChild("canvasWrapperEl") canvasWrapper!: ElementRef<HTMLDivElement>;
+    @ViewChild("palette")         palette!: StickerPaletteComponent;
 
-    public readonly placements = signal<StickerPlacement[]>([]);
+    public readonly placements  = signal<StickerPlacement[]>([]);
     public readonly maxStickers = 20;
-
-    /** Full catalog — loaded from backend dynamically */
     public readonly testCatalog = signal<StickerDefinition[]>([]);
 
     constructor(private readonly http: HttpClient) {}
@@ -33,48 +30,32 @@ export class StickerEditorTestComponent implements OnInit {
             const catalog = await firstValueFrom(
                 this.http.get<StickerDefinition[]>("/api/sticker-catalog")
             );
-            if (catalog && catalog.length > 0) {
-                this.testCatalog.set(catalog);
-            }
-        } catch {
-            // Backend not available — catalog stays empty
-        }
+            if (catalog?.length) this.testCatalog.set(catalog);
+        } catch {}
     }
 
-    public addStickerToCanvas(stickerId: string): void {
+    public onStickerDropped(event: StickerDroppedEvent): void {
         const current = this.placements();
         if (current.length >= this.maxStickers) return;
 
-        const maxZ = current.length > 0 ? Math.max(...current.map(p => p.zIndex)) : 0;
-        const newPlacement: StickerPlacement = {
-            instanceId: this.stickerCanvas?.generateInstanceId()
-                ?? `inst_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-            stickerId,
-            x: 40 + Math.random() * 200,
-            y: 40 + Math.random() * 200,
-            rotation: 0,
-            scale: 1,
-            zIndex: maxZ + 1,
-        };
-        this.placements.set([...current, newPlacement]);
-    }
+        const canvasEl = this.canvasWrapper?.nativeElement;
+        if (!canvasEl) return;
+        const rect = canvasEl.getBoundingClientRect();
 
-    public onStickerDropped(event: {stickerId: string; x: number; y: number}): void {
-        const current = this.placements();
-        if (current.length >= this.maxStickers) return;
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
 
         const maxZ = current.length > 0 ? Math.max(...current.map(p => p.zIndex)) : 0;
-        const newPlacement: StickerPlacement = {
+        this.placements.set([...current, {
             instanceId: this.stickerCanvas?.generateInstanceId()
                 ?? `inst_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
             stickerId: event.stickerId,
-            x: event.x,
-            y: event.y,
+            x: Math.max(0, x),
+            y: Math.max(0, y),
             rotation: 0,
             scale: 1,
             zIndex: maxZ + 1,
-        };
-        this.placements.set([...current, newPlacement]);
+        }]);
     }
 
     public onPlacementsChanged(placements: StickerPlacement[]): void {
@@ -87,9 +68,5 @@ export class StickerEditorTestComponent implements OnInit {
 
     public clearCanvas(): void {
         this.placements.set([]);
-    }
-
-    public getStickerUrl(stickerId: string): string {
-        return this.testCatalog().find(s => s.id === stickerId)?.imageUrl ?? "";
     }
 }

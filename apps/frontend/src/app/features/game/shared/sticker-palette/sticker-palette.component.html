@@ -1,0 +1,29 @@
+<div class="px-2 py-2">
+  @if (!canAddMore) {
+    <span class="block text-center text-xs text-red-400 font-medium mb-1">Max erreicht</span>
+  }
+  <div class="flex gap-2 overflow-x-auto pb-1">
+    @for (sticker of stickers; track sticker.id) {
+      <div
+        #thumbEl
+        class="relative shrink-0 w-14 h-14 rounded-lg border-2 flex items-center justify-center bg-white select-none touch-none"
+        [class.border-purple-300]="canAddMore && activeDragId() !== sticker.id"
+        [class.border-purple-500]="activeDragId() === sticker.id"
+        [class.border-stone-200]="!canAddMore"
+        [class.opacity-40]="!canAddMore"
+        [class.opacity-30]="activeDragId() === sticker.id"
+        [class.cursor-grab]="canAddMore"
+        [class.cursor-not-allowed]="!canAddMore"
+        (pointerdown)="onPointerDown($event, sticker, thumbEl)"
+      >
+        <img
+          [src]="getStickerUrl(sticker.id)"
+          [alt]="sticker.id"
+          class="w-10 h-10 object-contain pointer-events-none select-none"
+          draggable="false"
+        />
+      </div>
+    }
+  </div>
+</div>
+
