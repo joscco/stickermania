@@ -7,6 +7,7 @@ import {AnimOnInitDirective, AnimGroupDirective} from '../../../shared/animation
   standalone: true,
   imports: [DrawingCanvasComponent, AnimOnInitDirective, AnimGroupDirective],
   templateUrl: './lobby-avatar.component.html',
+  host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })
 export class LobbyAvatarComponent {
   public readonly playerName = input.required<string>();

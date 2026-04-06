@@ -8,6 +8,7 @@ import {AnimOnInitDirective, AnimGroupDirective} from '../../../shared/animation
   standalone: true,
   imports: [OnScreenKeyboardComponent, AnimOnInitDirective, AnimGroupDirective],
   templateUrl: './lobby-name.component.html',
+  host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })
 export class LobbyNameComponent {
   private readonly sessionStore = inject(GameSessionStore);
