@@ -43,29 +43,36 @@
       [style.transform-origin]="'top left'"
       [attr.data-instance-id]="sticker.instanceId"
     >
-      <img
-        [src]="getStickerUrl(sticker.stickerId)"
-        [alt]="sticker.stickerId"
-        class="h-16 w-auto block pointer-events-none"
-        draggable="false"
-      />
-      @if (interactive() && isSelected(sticker.instanceId) && getHitboxSvgPoints(sticker.stickerId)) {
-        <svg
-          class="absolute pointer-events-none"
-          style="left: -5%; top: -5%; width: 110%; height: 110%; overflow: visible;"
-          viewBox="-0.05 -0.05 1.1 1.1"
-          preserveAspectRatio="none"
-        >
-          <polygon
-            [attr.points]="getHitboxSvgPoints(sticker.stickerId)"
-            fill="none"
-            [attr.stroke]="isLassoSelected(sticker.instanceId) ? '#f59e0b' : '#a855f7'"
-            vector-effect="non-scaling-stroke"
-            stroke-width="2"
-            stroke-linejoin="round"
-          />
-        </svg>
-      }
+      <div
+        class="relative inline-block"
+        [attr.data-removal-wrapper-for]="sticker.instanceId"
+        style="transform-origin: center center;"
+      >
+        <img
+          [src]="getStickerUrl(sticker.stickerId)"
+          [alt]="sticker.stickerId"
+          class="h-16 w-auto block pointer-events-none"
+          draggable="false"
+        />
+
+        @if (interactive() && isSelected(sticker.instanceId) && getHitboxSvgPoints(sticker.stickerId)) {
+          <svg
+            class="absolute pointer-events-none"
+            style="left: -5%; top: -5%; width: 110%; height: 110%; overflow: visible;"
+            viewBox="-0.05 -0.05 1.1 1.1"
+            preserveAspectRatio="none"
+          >
+            <polygon
+              [attr.points]="getHitboxSvgPoints(sticker.stickerId)"
+              fill="none"
+              [attr.stroke]="isLassoSelected(sticker.instanceId) ? '#f59e0b' : '#a855f7'"
+              vector-effect="non-scaling-stroke"
+              stroke-width="2"
+              stroke-linejoin="round"
+            />
+          </svg>
+        }
+      </div>
     </div>
   }
 

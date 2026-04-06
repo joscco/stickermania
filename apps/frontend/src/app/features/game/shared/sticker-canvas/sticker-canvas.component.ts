@@ -33,6 +33,8 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   readonly placementsChanged = output<StickerPlacement[]>();
   readonly stickerRemoved = output<string>();
 
+  private readonly removingInstanceIds = new Set<string>();
+
   @ViewChild("canvasArea") private canvasArea!: ElementRef<HTMLDivElement>;
   @ViewChild("deleteZone") private deleteZone!: ElementRef<HTMLDivElement>;
 
@@ -324,34 +326,60 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
    *  Uses a manual tween on the CSS `scale` property so it composites
    *  with the existing `transform` (which contains translate + rotate + scale). */
   private animateRemoval(instanceIds: string[], done: () => void): void {
-    const els = instanceIds
-      .map(id => this.canvasArea?.nativeElement.querySelector<HTMLElement>(`[data-instance-id="${id}"]`))
-      .filter((el): el is HTMLElement => !!el);
+    const idsToAnimate = instanceIds.filter(
+      (instanceId) => !this.removingInstanceIds.has(instanceId),
+    );
 
-    if (!els.length) {
+    if (!idsToAnimate.length) {
+      return;
+    }
+
+    for (const instanceId of idsToAnimate) {
+      this.removingInstanceIds.add(instanceId);
+    }
+
+    const wrappers = idsToAnimate
+      .map((instanceId) =>
+        this.canvasArea?.nativeElement.querySelector<HTMLElement>(
+          `[data-removal-wrapper-for="${instanceId}"]`,
+        ),
+      )
+      .filter((element): element is HTMLElement => !!element);
+
+    if (!wrappers.length) {
+      for (const instanceId of idsToAnimate) {
+        this.removingInstanceIds.delete(instanceId);
+      }
       done();
       return;
     }
 
-    // Animate using a proxy object so we control the CSS `scale` property directly.
-    // The CSS `scale` property composes on top of the existing `transform` and
-    // scales around the element's own center — no anchor-point shift.
-    const proxy = {t: 1};
-    gsap.to(proxy, {
-      t: 0, duration: 0.18, ease: "power2.in",
-      // Set transform-origin to center for proper scaling, then animate the `scale` property.
+    gsap.killTweensOf(wrappers);
+
+    gsap.to(wrappers, {
+      scale: 0,
+      opacity: 0,
+      duration: 0.18,
+      ease: "power2.in",
+      overwrite: true,
+      transformOrigin: "50% 50%",
+      force3D: true,
       onStart: () => {
-        for (const el of els) {
-          el.style.transformOrigin = 'center';
-        }
+        gsap.set(wrappers, {
+          willChange: "transform, opacity",
+        });
       },
-      onUpdate: () => {
-        for (const el of els) {
-          el.style.scale = `${proxy.t}`;
-          el.style.opacity = `${proxy.t}`;
+      onComplete: () => {
+        for (const instanceId of idsToAnimate) {
+          this.removingInstanceIds.delete(instanceId);
         }
+
+        gsap.set(wrappers, {
+          clearProps: "transform,opacity,willChange,transformOrigin",
+        });
+
+        done();
       },
-      onComplete: () => done(),
     });
   }
 
