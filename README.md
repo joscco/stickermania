@@ -78,7 +78,7 @@ docker run --rm -p 8080:8080 -e PORT=8080 birthday-sticker-collage
 ## Spielablauf
 
 ```
-LOBBY → BUILDING → VOTING → RESULTS → BUILDING → …
+LOBBY → BUILDING → VOTING → RESULTS → BUILDING → ...
 ```
 
 1. **Lobby** — Spieler treten per QR-Code bei, zeichnen Avatar, wählen Namen

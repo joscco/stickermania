@@ -126,7 +126,7 @@ export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
         });
     }
 
-    /** Returns [0, 1, …, n-1] — for use in @for loops in the template. */
+    /** Returns [0, 1, ..., n-1] — for use in @for loops in the template. */
     public range(n: number): number[] {
         return Array.from({length: Math.max(0, n)}, (_, i) => i);
     }

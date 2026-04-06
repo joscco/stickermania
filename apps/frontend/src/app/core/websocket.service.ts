@@ -205,7 +205,7 @@ export class WebSocketService {
 
   private scheduleReconnect(): void {
     this.clearReconnectTimer();
-    // 0 ms → 500 ms → 1 s → 2 s → … capped at 8 s
+    // 0 ms → 500 ms → 1 s → 2 s → ... capped at 8 s
     const delay = this.reconnectAttempt === 0
       ? 0
       : Math.min(8_000, 500 * Math.pow(2, this.reconnectAttempt - 1));

@@ -93,7 +93,7 @@ export class AnimOnInitDirective implements OnInit, AfterViewInit {
  * als gestaggerte Gruppe animiert.
  *
  *   <ul animGroup="item" [animStagger]="0.07" [animDelay]="0.3">
- *     <li animOnInit="item">…</li>
+ *     <li animOnInit="item">...</li>
  *   </ul>
  */
 @Directive({

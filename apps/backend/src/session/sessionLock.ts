@@ -4,7 +4,7 @@
  * same time).
  *
  * Usage:
- *   await sessionLock.run(sessionId, async () => { … });
+ *   await sessionLock.run(sessionId, async () => { ... });
  */
 export class SessionLock {
     private readonly queues = new Map<string, Promise<void>>();
