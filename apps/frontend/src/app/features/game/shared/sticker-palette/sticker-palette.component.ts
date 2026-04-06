@@ -9,6 +9,7 @@ import {
 } from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {StickerDefinition} from "@birthday/shared";
+import {CANVAS_STICKER_PX} from '../sticker-editor/sticker-editor.component';
 
 export interface StickerDroppedEvent {
     stickerId: string;
@@ -76,15 +77,12 @@ export class StickerPaletteComponent implements OnDestroy {
 
         event.preventDefault();
 
-        this.dragStickerId  = sticker.id;
+        this.dragStickerId   = sticker.id;
         this.activePointerId = event.pointerId;
         this.activeDragId.set(sticker.id);
 
-        // Measure the thumbnail to size the ghost identically
-        const rect = thumbEl.getBoundingClientRect();
-        const size = Math.min(rect.width, rect.height);
-
-        this.ghostEl = this.createGhost(sticker.imageUrl, size, event.clientX, event.clientY);
+        // Ghost is always the canvas sticker size so there is no visual jump on drop
+        this.ghostEl = this.createGhost(sticker.imageUrl, CANVAS_STICKER_PX, event.clientX, event.clientY);
 
         try { thumbEl.setPointerCapture(event.pointerId); } catch {}
 
