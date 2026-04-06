@@ -209,7 +209,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     public lassoSvgPath(): string {
         const path = this.lassoPath();
         if (!path || path.length < 2) return "";
-        return "M " + path.map(p => `${p.x} ${p.y}`).join(" L ") + " Z";
+        return "M " + path.map(p => `${p.x} ${p.y}`).join(" L ");
     }
 
     // ── Touch handler installation ───────────────────────────────
@@ -656,24 +656,5 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
     public generateInstanceId(): string {
         return `inst_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    }
-
-    public onDragOver(event: DragEvent): void {
-        if (event.dataTransfer?.types.includes("application/x-sticker-id")) {
-            event.preventDefault();
-            if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
-        }
-    }
-
-    public onDrop(event: DragEvent): void {
-        const stickerId = event.dataTransfer?.getData("application/x-sticker-id");
-        if (!stickerId) return;
-        event.preventDefault();
-        const rect = this.canvasArea.nativeElement.getBoundingClientRect();
-        this.stickerDropped.emit({
-            stickerId,
-            x: Math.max(0, event.clientX - rect.left - 32),
-            y: Math.max(0, event.clientY - rect.top  - 32),
-        });
     }
 }

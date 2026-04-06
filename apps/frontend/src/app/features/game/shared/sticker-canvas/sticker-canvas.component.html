@@ -50,7 +50,7 @@
     </div>
   }
 
-  <!-- Freehand lasso overlay — rendered as SVG on top of everything -->
+  <!-- Freehand lasso overlay — open stroke only, no fill, no closing line -->
   @if (interactive && lassoPath() && lassoPath()!.length > 1) {
     <svg
       class="absolute inset-0 w-full h-full pointer-events-none"
@@ -58,10 +58,10 @@
     >
       <path
         [attr.d]="lassoSvgPath()"
-        fill="rgba(168,85,247,0.10)"
+        fill="none"
         stroke="#a855f7"
-        stroke-width="2"
-        stroke-dasharray="6 3"
+        stroke-width="2.5"
+        stroke-dasharray="7 4"
         stroke-linejoin="round"
         stroke-linecap="round"
       />

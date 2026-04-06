@@ -13,6 +13,7 @@ import {
     NgZone,
 } from "@angular/core";
 import {CommonModule} from "@angular/common";
+import gsap from "gsap";
 import type {StickerDefinition} from "@birthday/shared";
 import {CANVAS_STICKER_PX} from '../sticker-editor/sticker-editor.component';
 
@@ -89,7 +90,6 @@ export class StickerPaletteComponent implements AfterViewInit, OnChanges, OnDest
     private recalcPageSize(): void {
         const el = this.rowEl?.nativeElement;
         if (!el) return;
-        // Each thumb: w-16 (64px) + gap-2 (8px) = 72px; minimum 3
         const count = Math.max(3, Math.floor(el.clientWidth / 72));
         this.zone.run(() => {
             this.pageSize.set(count);
@@ -98,8 +98,54 @@ export class StickerPaletteComponent implements AfterViewInit, OnChanges, OnDest
         });
     }
 
-    public prevPage(): void { if (this.canPrev()) this.currentPage.update(p => p - 1); }
-    public nextPage(): void { if (this.canNext()) this.currentPage.update(p => p + 1); }
+    public prevPage(): void {
+        if (!this.canPrev()) return;
+        this.animatePage(() => this.currentPage.update(p => p - 1));
+    }
+
+    public nextPage(): void {
+        if (!this.canNext()) return;
+        this.animatePage(() => this.currentPage.update(p => p + 1));
+    }
+
+    /**
+     * GSAP page transition:
+     * 1. Fade + slide current items UP out
+     * 2. Update the page (Angular re-renders)
+     * 3. Fade + slide new items IN from BELOW
+     */
+    private animatePage(updateFn: () => void): void {
+        const el = this.rowEl?.nativeElement;
+        if (!el) { updateFn(); return; }
+
+        const items = Array.from(el.querySelectorAll<HTMLElement>("[data-thumb]"));
+
+        gsap.to(items.length ? items : [el], {
+            y: -10,
+            opacity: 0,
+            duration: 0.18,
+            ease: "power2.in",
+            stagger: 0,
+            onComplete: () => {
+                // Reset position before Angular re-renders
+                gsap.set(items.length ? items : [el], {y: 12, opacity: 0});
+                this.zone.run(() => {
+                    updateFn();
+                    // Wait one tick for Angular to render the new items, then animate in
+                    setTimeout(() => {
+                        const newItems = Array.from(
+                            el.querySelectorAll<HTMLElement>("[data-thumb]")
+                        );
+                        gsap.fromTo(
+                            newItems.length ? newItems : [el],
+                            {y: 12, opacity: 0},
+                            {y: 0, opacity: 1, duration: 0.22, ease: "power2.out", stagger: 0.03},
+                        );
+                    }, 0);
+                });
+            },
+        });
+    }
 
     /** Returns [0, 1, …, n-1] — for use in @for loops in the template. */
     public range(n: number): number[] {
@@ -147,28 +193,32 @@ export class StickerPaletteComponent implements AfterViewInit, OnChanges, OnDest
     }
 
     private onGlobalMove(event: PointerEvent): void {
-        if (event.pointerId !== this.activePointerId) return;
-        event.preventDefault();
-        if (!this.ghostEl) return;
-        this.ghostEl.style.left = `${event.clientX}px`;
-        this.ghostEl.style.top  = `${event.clientY}px`;
-        const canvasEl = this.canvasEl;
-        if (canvasEl) {
-            const r = canvasEl.getBoundingClientRect();
-            const over = event.clientX >= r.left && event.clientX <= r.right &&
-                         event.clientY >= r.top  && event.clientY <= r.bottom;
-            canvasEl.style.outline = over ? "3px solid #a855f7" : "";
-        }
+      if (event.pointerId !== this.activePointerId) return;
+      event.preventDefault();
+      if (!this.ghostEl) return;
+      this.ghostEl.style.left = `${event.clientX}px`;
+      this.ghostEl.style.top = `${event.clientY}px`;
+      const canvasEl = this.canvasEl;
+      if (canvasEl) {
+        const r = canvasEl.getBoundingClientRect();
+        const over = event.clientX >= r.left && event.clientX <= r.right &&
+          event.clientY >= r.top && event.clientY <= r.bottom;
+        canvasEl.style.outline = over ? "3px solid #a855f7" : "";
+      }
     }
 
     private onGlobalUp(event: PointerEvent): void {
         if (event.pointerId !== this.activePointerId) return;
         const canvasEl = this.canvasEl;
+
+        // Remove ghost synchronously before emit — prevents flash
+        this.ghostEl?.remove();
+        this.ghostEl = null;
+
         if (canvasEl && this.dragStickerId) {
             const r = canvasEl.getBoundingClientRect();
             if (event.clientX >= r.left && event.clientX <= r.right &&
                 event.clientY >= r.top  && event.clientY <= r.bottom) {
-                if (this.ghostEl) this.ghostEl.style.visibility = "hidden";
                 this.stickerDropped.emit({
                     stickerId:      this.dragStickerId,
                     clientX:        event.clientX,
@@ -209,3 +259,4 @@ export class StickerPaletteComponent implements AfterViewInit, OnChanges, OnDest
         window.removeEventListener("pointercancel", this.boundUp);
     }
 }
+
