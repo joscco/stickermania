@@ -25,7 +25,9 @@ export class StickerEditorTestComponent implements OnInit {
             const catalog = await firstValueFrom(
                 this.http.get<StickerDefinition[]>("/api/sticker-catalog")
             );
-            if (catalog?.length) this.testCatalog.set(catalog);
+            if (catalog?.length) {
+              this.testCatalog.set(catalog);
+            }
         } catch {}
     }
 }

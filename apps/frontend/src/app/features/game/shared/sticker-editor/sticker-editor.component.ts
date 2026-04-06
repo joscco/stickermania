@@ -11,9 +11,9 @@ import {
 } from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {StickerDefinition, StickerPlacement} from "@birthday/shared";
-import {StickerCanvasComponent} from '../../player/canvas/sticker-canvas.component';
 import {StickerPaletteComponent} from '../sticker-palette/sticker-palette.component';
 import type {StickerDroppedEvent} from '../sticker-palette/sticker-palette.component';
+import {StickerCanvasComponent} from '../sticker-canvas/sticker-canvas.component';
 
 /**
  * Shared Sticker-Editor.
@@ -34,7 +34,7 @@ export const CANVAS_STICKER_PX = 64;
 @Component({
     selector: "app-sticker-editor",
     standalone: true,
-    imports: [CommonModule, StickerCanvasComponent, StickerPaletteComponent],
+  imports: [CommonModule, StickerCanvasComponent, StickerPaletteComponent, StickerCanvasComponent],
     templateUrl: "./sticker-editor.component.html",
     host: {"class": "flex flex-col overflow-hidden"},
 })
@@ -65,13 +65,12 @@ export class StickerEditorComponent implements OnDestroy {
         if (!canvasEl) return;
         const rect = canvasEl.getBoundingClientRect();
 
-        // The canvas renders stickers at CANVAS_STICKER_PX × CANVAS_STICKER_PX (scale = 1).
-        // x/y on the canvas is the top-left of the sticker container.
-        // The ghost is centred on the pointer, so we subtract half the sticker size
-        // so the placed sticker's visual centre matches where the ghost centre was.
-        const half = CANVAS_STICKER_PX / 2;
-        const x = event.clientX - rect.left - half;
-        const y = event.clientY - rect.top  - half;
+        // Ghost is centred on the pointer (transform: translate(-50%,-50%)).
+        // The canvas places the sticker at (x, y) = top-left of its container div.
+        // Subtract half the ghost's actual rendered size so the sticker's visual
+        // centre lands exactly at the pointer release point — no jump.
+        const x = event.clientX - rect.left  - event.renderedWidth  / 2;
+        const y = event.clientY - rect.top   - event.renderedHeight / 2;
 
         const current = this.placements();
         const maxZ = current.length > 0 ? Math.max(...current.map(p => p.zIndex)) : 0;

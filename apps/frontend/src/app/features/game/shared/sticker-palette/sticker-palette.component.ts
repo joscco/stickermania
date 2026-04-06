@@ -17,6 +17,10 @@ export interface StickerDroppedEvent {
     clientX: number;
     /** clientY at the moment of drop */
     clientY: number;
+    /** Actual rendered width of the ghost image (px) — matches canvas rendering */
+    renderedWidth: number;
+    /** Actual rendered height of the ghost image (px) — matches canvas rendering */
+    renderedHeight: number;
 }
 
 /**
@@ -51,6 +55,7 @@ export class StickerPaletteComponent implements OnDestroy {
     public readonly activeDragId = signal<string | null>(null);
 
     private ghostEl: HTMLElement | null = null;
+    private ghostImg: HTMLImageElement | null = null;
     private dragStickerId: string | null = null;
     private activePointerId: number | null = null;
 
@@ -81,8 +86,9 @@ export class StickerPaletteComponent implements OnDestroy {
         this.activePointerId = event.pointerId;
         this.activeDragId.set(sticker.id);
 
-        // Ghost is always the canvas sticker size so there is no visual jump on drop
-        this.ghostEl = this.createGhost(sticker.imageUrl, CANVAS_STICKER_PX, event.clientX, event.clientY);
+        const {ghost, img} = this.createGhost(sticker.imageUrl, event.clientX, event.clientY);
+        this.ghostEl  = ghost;
+        this.ghostImg = img;
 
         try { thumbEl.setPointerCapture(event.pointerId); } catch {}
 
@@ -118,10 +124,15 @@ export class StickerPaletteComponent implements OnDestroy {
             const r = canvasEl.getBoundingClientRect();
             if (event.clientX >= r.left && event.clientX <= r.right &&
                 event.clientY >= r.top  && event.clientY <= r.bottom) {
+                // Use the actual rendered ghost image dimensions for precise centering
+                const renderedWidth  = this.ghostImg?.offsetWidth  ?? CANVAS_STICKER_PX;
+                const renderedHeight = this.ghostImg?.offsetHeight ?? CANVAS_STICKER_PX;
                 this.stickerDropped.emit({
                     stickerId: this.dragStickerId,
                     clientX:   event.clientX,
                     clientY:   event.clientY,
+                    renderedWidth,
+                    renderedHeight,
                 });
             }
         }
@@ -131,22 +142,27 @@ export class StickerPaletteComponent implements OnDestroy {
 
     // ─── Ghost helpers ─────────────────────────────────────────────
 
-    private createGhost(imageUrl: string, size: number, x: number, y: number): HTMLElement {
+    /**
+     * Creates a ghost that is visually identical to how the canvas renders the sticker:
+     * height fixed at CANVAS_STICKER_PX (h-16 = 64 px), width auto-sized by the image's
+     * natural aspect ratio — so there is zero size/shape jump on drop.
+     */
+    private createGhost(imageUrl: string, x: number, y: number): {ghost: HTMLElement; img: HTMLImageElement} {
         const ghost = document.createElement("div");
         ghost.style.cssText = `
             position: fixed;
             pointer-events: none;
             z-index: 9999;
-            transform: translate(-50%, -50%) scale(1.15);
-            filter: drop-shadow(0 6px 16px rgba(0,0,0,0.3));
+            transform: translate(-50%, -50%);
+            filter: drop-shadow(0 6px 16px rgba(0,0,0,0.35));
             transition: none;
         `;
         const img = document.createElement("img");
         img.src = imageUrl;
+        // Mirror exactly: height = CANVAS_STICKER_PX, width = auto (aspect-ratio preserved)
         img.style.cssText = `
-            width: ${size}px;
-            height: ${size}px;
-            object-fit: contain;
+            height: ${CANVAS_STICKER_PX}px;
+            width: auto;
             display: block;
             pointer-events: none;
         `;
@@ -155,12 +171,13 @@ export class StickerPaletteComponent implements OnDestroy {
         document.body.appendChild(ghost);
         ghost.style.left = `${x}px`;
         ghost.style.top  = `${y}px`;
-        return ghost;
+        return {ghost, img};
     }
 
     private cleanup(canvasEl?: HTMLElement): void {
         this.ghostEl?.remove();
         this.ghostEl         = null;
+        this.ghostImg        = null;
         this.dragStickerId   = null;
         this.activePointerId = null;
         this.activeDragId.set(null);
