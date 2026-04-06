@@ -1,5 +1,5 @@
 <div class="px-1 py-2">
-  @if (!canAddMore) {
+  @if (!canAddMore()) {
     <span class="block text-center text-xs text-red-400 font-medium mb-1">Max erreicht</span>
   }
 
@@ -36,12 +36,12 @@
             class="relative shrink-0 w-16 h-16 rounded-xl border-2 flex items-center justify-center bg-white select-none touch-none"
             [class.border-purple-300]="canAddMore() && activeDragId() !== sticker.id"
             [class.border-purple-500]="activeDragId() === sticker.id"
-            [class.shadow-sm]="canAddMore"
-            [class.border-stone-200]="!canAddMore"
-            [class.opacity-40]="!canAddMore"
-            [class.opacity-10]="activeDragId() === sticker.id"
-            [class.cursor-grab]="canAddMore"
-            [class.cursor-not-allowed]="!canAddMore"
+            [class.shadow-sm]="canAddMore()"
+            [class.border-stone-200]="!canAddMore()"
+            [class.opacity-40]="!canAddMore()"
+            [class.cursor-grab]="canAddMore()"
+            [class.cursor-not-allowed]="!canAddMore()"
+            [class.cursor-not-allowed]="!canAddMore()"
             (pointerdown)="onPointerDown($event, sticker, thumbEl)"
           >
             <img

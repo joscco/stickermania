@@ -35,6 +35,10 @@ export type GestureCallbacks = {
     onLassoSelectionChanged: (ids: Set<string>) => void;
     /** Called when the single selected sticker changes. */
     onSelectedChanged: (instanceId: string | null) => void;
+    /** Called when a single sticker is dragged off the canvas edge — should be deleted. */
+    onStickerDraggedOff?: (instanceId: string) => void;
+    /** Called during move when the pointer crosses outside/inside the canvas boundary. */
+    onDragNearEdge?: (outsideCanvas: boolean) => void;
 };
 
 // ── GestureHandler ───────────────────────────────────────────────────────────
@@ -182,6 +186,12 @@ export class StickerGestureHandler {
                     return base ? {...p, x: base.baseX + dx, y: base.baseY + dy} : p;
                 }),
             );
+            // Signal whether the drag has left the canvas boundary
+            if (this.callbacks.onDragNearEdge && this.selectedInstanceId) {
+                const outside = clientX < rect.left || clientX > rect.right ||
+                                clientY < rect.top  || clientY > rect.bottom;
+                this.callbacks.onDragNearEdge(outside);
+            }
             return;
         }
 
@@ -195,11 +205,28 @@ export class StickerGestureHandler {
         this.pointers = this.pointers.filter(p => p.id !== id);
 
         if (this.pointers.length === 0) {
+            // Check if a single sticker was dragged off the canvas edge
+            if (this.moveActive && this.tapMoved && this.callbacks.onStickerDraggedOff) {
+                const rect = this.getCanvasRect();
+                const outside = clientX < rect.left || clientX > rect.right ||
+                                clientY < rect.top  || clientY > rect.bottom;
+                if (outside && this.selectedInstanceId && this.lassoSelection.size === 0) {
+                    const id = this.selectedInstanceId;
+                    this.selectedInstanceId = null;
+                    this.moveActive = false;
+                    this.moveBaselines = [];
+                    this.callbacks.onSelectedChanged(null);
+                    this.callbacks.onStickerDraggedOff(id);
+                    return;
+                }
+            }
+
             this.finaliseLasso();
             this.handleTapDeselect(clientX, clientY);
             this.moveActive      = false;
             this.moveBaselines   = [];
             this.pinchBaselines  = [];
+            this.callbacks.onDragNearEdge?.(false);
         }
 
         // Re-anchor move when going 2 → 1 finger

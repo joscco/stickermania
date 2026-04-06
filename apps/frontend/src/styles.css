@@ -5,6 +5,20 @@
   &::-webkit-scrollbar { display: none; }
 }
 
+@utility toolbar-btn {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  color: rgb(87 83 78);        /* stone-600 */
+  transition: background-color 150ms, transform 100ms;
+  flex-shrink: 0;
+  &:hover  { background-color: rgb(231 229 228); } /* stone-200 */
+  &:active { transform: scale(0.88); }
+}
+
 /*
  * Load Darumadrop One from the bundled TTF so it works offline / in LAN.
  * The Google-Fonts <link> in index.html still wins when online because

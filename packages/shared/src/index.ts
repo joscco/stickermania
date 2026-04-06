@@ -198,6 +198,10 @@ export interface StickerPlacement {
     rotation: number;
     scale: number;
     zIndex: number;
+    /** Horizontal mirror (scaleX: -1) */
+    flipX?: boolean;
+    /** Vertical mirror (scaleY: -1) */
+    flipY?: boolean;
 }
 
 export interface StickerHand {

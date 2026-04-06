@@ -10,6 +10,7 @@ import {
     OnDestroy,
 } from "@angular/core";
 import {CommonModule} from "@angular/common";
+import gsap from "gsap";
 import type {StickerPlacement, StickerDefinition} from "@birthday/shared";
 import {pointInPolygon} from "./sticker-hit-test.util";
 import {StickerGestureHandler} from "./sticker-gesture-handler";
@@ -33,6 +34,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     readonly stickerRemoved    = output<string>();
 
     @ViewChild("canvasArea") private canvasArea!: ElementRef<HTMLDivElement>;
+    @ViewChild("deleteZone") private deleteZone!: ElementRef<HTMLDivElement>;
 
     public get canvasNativeElement(): HTMLDivElement | null {
         return this.canvasArea?.nativeElement ?? null;
@@ -42,6 +44,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     public readonly selectedInstanceId = signal<string | null>(null);
     public readonly lassoSelection     = signal<Set<string>>(new Set());
     public readonly lassoPath          = signal<{x: number; y: number}[] | null>(null);
+    public readonly dragNearEdge       = signal<boolean>(false);
 
     // ── Internals ─────────────────────────────────────────────────
     private catalogMap             = new Map<string, StickerDefinition>();
@@ -49,17 +52,26 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     private removeTouchListeners: (() => void) | null = null;
 
     constructor() {
-        // Rebuild catalog map whenever stickerCatalog input changes
         effect(() => {
             const catalog = this.stickerCatalog();
             this.catalogMap.clear();
             for (const s of catalog) this.catalogMap.set(s.id, s);
         });
-
-        // Keep gesture handler in sync whenever stickers change
         effect(() => {
             const stickers = this.stickers();
             this.gesture?.syncState(stickers, this.selectedInstanceId(), this.lassoSelection());
+        });
+        // Animate the delete-zone overlay
+        effect(() => {
+            const near = this.dragNearEdge();
+            const el   = this.deleteZone?.nativeElement;
+            if (!el) return;
+            gsap.to(el, {
+                opacity:  near ? 1 : 0,
+                duration: near ? 0.18 : 0.12,
+                ease:     near ? "power2.out" : "power2.in",
+                overwrite: true,
+            });
         });
     }
 
@@ -71,10 +83,12 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
             (cx, cy) => this.hitTestSticker(cx, cy),
             (instanceId) => this.getRenderedSize(instanceId),
             {
-                onPlacementsChanged: (p) => this.placementsChanged.emit(p),
-                onLassoPathChanged:  (p) => this.lassoPath.set(p),
-                onLassoSelectionChanged: (ids) => this.lassoSelection.set(ids),
-                onSelectedChanged:   (id) => this.selectedInstanceId.set(id),
+                onPlacementsChanged:     (p)    => this.placementsChanged.emit(p),
+                onLassoPathChanged:      (p)    => this.lassoPath.set(p),
+                onLassoSelectionChanged: (ids)  => this.lassoSelection.set(ids),
+                onSelectedChanged:       (id)   => this.selectedInstanceId.set(id),
+                onStickerDraggedOff:     (id)   => { this.dragNearEdge.set(false); this.stickerRemoved.emit(id); },
+                onDragNearEdge:          (near) => this.dragNearEdge.set(near),
             },
         );
         if (this.interactive()) this.installTouchListeners();
@@ -125,6 +139,13 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         return "M " + path.map(p => `${p.x} ${p.y}`).join(" L ");
     }
 
+    /** Builds the CSS transform string including rotation, scale, and flip. */
+    public getStickerTransform(p: StickerPlacement): string {
+        const sx = (p.flipX ? -1 : 1) * p.scale;
+        const sy = (p.flipY ? -1 : 1) * p.scale;
+        return `rotate(${p.rotation}deg) scale(${sx}, ${sy})`;
+    }
+
     // ── Toolbar actions ───────────────────────────────────────────
 
     public rotateSelected(degrees: number): void {
@@ -158,8 +179,19 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         this.stickerRemoved.emit(id);
     }
 
-    public bringForward(): void   { this.swapZ(+1); }
-    public sendBackward(): void   { this.swapZ(-1); }
+    public mirrorSelected(axis: 'h' | 'v'): void {
+        const ids = this.selectionIds();
+        if (!ids.length) return;
+        this.emit(this.stickers().map(p => {
+            if (!ids.includes(p.instanceId)) return p;
+            return axis === 'h'
+                ? {...p, flipX: !p.flipX}
+                : {...p, flipY: !p.flipY};
+        }));
+    }
+
+    public bringForward(): void { this.swapZ(+1); }
+    public sendBackward(): void { this.swapZ(-1); }
 
     // ── Private ───────────────────────────────────────────────────
 
