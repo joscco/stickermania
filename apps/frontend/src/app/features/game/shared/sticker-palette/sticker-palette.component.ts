@@ -189,6 +189,8 @@ export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
         if (event.pointerId !== this.activePointerId) return;
         const canvasEl = this.canvasEl;
 
+        let animate = true;
+
         // Emit drop event immediately (before animation) so the sticker appears on canvas
         if (canvasEl && this.dragStickerId) {
             const r = canvasEl.getBoundingClientRect();
@@ -201,6 +203,7 @@ export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
                     renderedWidth:  this.dragRenderedWidth,
                     renderedHeight: this.dragRenderedHeight,
                 });
+                animate = false;
             }
         }
 
@@ -209,10 +212,14 @@ export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
         this.ghostEl = null;
 
         if (ghost) {
-            gsap.to(ghost, {
+            if (animate) {
+              gsap.to(ghost, {
                 scale: 0, opacity: 0, duration: 0.15, ease: "power2.in",
                 onComplete: () => ghost.remove(),
-            });
+              });
+            } else {
+              ghost.remove();
+            }
         }
 
         this.cleanup(canvasEl ?? undefined);
