@@ -261,17 +261,17 @@ export function createMockServer() {
                     return;
                 }
 
-                // For reconnecting: briefly connect then drop — app shows RECONNECTING
+                // For reconnecting: send welcome once so wasConnected flips to true,
+                // then always close immediately on every subsequent join so the app
+                // stays permanently in the RECONNECTING spinner.
                 if (screenId === 'reconnecting') {
                     ws.send(JSON.stringify({
                         type: 'welcome', clientId: 'mock-client', playerId,
                         sessionId: 'MOCK', serverTime: Date.now(), serverSessionId: 'mock-server',
                     }));
-                    ws.send(JSON.stringify({
-                        type: 'session-state', state: buildStateForScreen('lobby-waiting', 'MOCK'),
-                    }));
-                    // Drop after 200 ms so wasConnected flips to true first
-                    setTimeout(() => ws.close(), 200);
+                    // Close after a tiny delay — triggers reconnect loop which we also close,
+                    // so the UI stays on the reconnecting spinner indefinitely.
+                    setTimeout(() => ws.close(), 100);
                     return;
                 }
 

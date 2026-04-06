@@ -16,7 +16,7 @@
           }
         </div>
 
-        <!-- Inline feedback pill (centred, fades in/out) -->
+        <!-- Inline feedback pill -->
         <div class="flex-1 flex justify-center px-1 pointer-events-none">
           @if (sessionStore.feedback(); as feedback) {
             <span
@@ -40,8 +40,7 @@
             >✏️</button>
           }
           @if (timer.timeLeft()) {
-            <span
-              class="text-xs font-mono font-bold text-stone-600 bg-stone-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1">
+            <span class="text-xs font-mono font-bold text-stone-600 bg-stone-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1">
               <img src="assets/icons/timer.svg" class="w-3 h-3 inline" alt=""/> {{ timer.timeLeft() }}
             </span>
           }
@@ -53,26 +52,22 @@
     </div>
   </div>
 
-  <!-- Content — single switch on currentScreen() -->
+  <!-- Content — single master switch over every possible screen -->
   <div class="flex-1 overflow-hidden">
     @switch (currentScreen()) {
 
       @case (PlayerScreen.CONNECTING) {
         <app-player-connecting />
       }
-
       @case (PlayerScreen.RECONNECTING) {
         <app-player-reconnecting />
       }
-
       @case (PlayerScreen.DISCONNECTED) {
         <app-player-disconnected />
       }
-
       @case (PlayerScreen.LOBBY_NAME) {
         <app-lobby-name (nameSubmitted)="onNameSubmitted($event)"/>
       }
-
       @case (PlayerScreen.LOBBY_AVATAR) {
         <app-lobby-avatar
           [playerName]="sessionStore.playerName()"
@@ -81,10 +76,29 @@
           (skipped)="onAvatarSkipped()"
         />
       }
-
+      @case (PlayerScreen.LOBBY_WAITING) {
+        <app-player-lobby-waiting />
+      }
+      @case (PlayerScreen.BUILDING) {
+        <app-player-building />
+      }
+      @case (PlayerScreen.BUILDING_SUBMITTED) {
+        <app-player-building />
+      }
+      @case (PlayerScreen.BUILDING_SKIPPED) {
+        <app-player-building />
+      }
+      @case (PlayerScreen.VOTING) {
+        <app-player-voting />
+      }
+      @case (PlayerScreen.RESULTS) {
+        <app-player-results />
+      }
+      @case (PlayerScreen.NEXT_ROUND) {
+        <app-player-next-round />
+      }
       @default {
-        <!-- All game screens: lobby-waiting, building, voting, results, next-round -->
-        <app-sticker-player-view class="block h-full w-full"/>
+        <app-player-connecting />
       }
     }
   </div>

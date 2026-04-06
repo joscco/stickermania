@@ -1,12 +1,16 @@
 import {CommonModule} from "@angular/common";
 import {Component, computed, OnDestroy, OnInit, signal} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
-import {StickerPlayerViewComponent} from './sticker-player-view.component';
 import {LobbyAvatarComponent} from './lobby/lobby-avatar.component';
 import {LobbyNameComponent} from './lobby/lobby-name.component';
 import {PlayerConnectingComponent} from './scenes/connecting/player-connecting.component';
 import {PlayerReconnectingComponent} from './scenes/reconnecting/player-reconnecting.component';
 import {PlayerDisconnectedComponent} from './scenes/disconnected/player-disconnected.component';
+import {PlayerLobbyWaitingComponent} from './scenes/lobby-waiting/player-lobby-waiting.component';
+import {PlayerBuildingComponent} from './scenes/building/player-building.component';
+import {PlayerVotingComponent} from './scenes/voting/player-voting.component';
+import {PlayerResultsComponent} from './scenes/results/player-results.component';
+import {PlayerNextRoundComponent} from './scenes/next-round/player-next-round.component';
 import {StickerEventHandler} from '../services/sticker-event-handler';
 import {StickerPlayerService} from '../services/sticker-player.service';
 import {PlayerTimerService} from '../services/player-timer.service';
@@ -25,10 +29,14 @@ import {PlayerScreen} from './player-screen.enum';
     CommonModule,
     LobbyNameComponent,
     LobbyAvatarComponent,
-    StickerPlayerViewComponent,
     PlayerConnectingComponent,
     PlayerReconnectingComponent,
     PlayerDisconnectedComponent,
+    PlayerLobbyWaitingComponent,
+    PlayerBuildingComponent,
+    PlayerVotingComponent,
+    PlayerResultsComponent,
+    PlayerNextRoundComponent,
   ],
   providers: [
     PlayerMessageHandler,
@@ -59,6 +67,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     public readonly worldStore: WorldStore,
     public readonly timer: PlayerTimerService,
     private readonly messageHandler: PlayerMessageHandler,
+    public readonly stickerService: StickerPlayerService,
   ) {
     const deviceName = this.reconnectService.loadDeviceName();
     if (deviceName) {
@@ -172,7 +181,13 @@ export class PlayerComponent implements OnInit, OnDestroy {
     const phase = this.worldStore.stickerCollageModeState()?.phase ?? 'LOBBY';
     switch (phase) {
       case 'LOBBY':            return PlayerScreen.LOBBY_WAITING;
-      case 'BUILDING':         return PlayerScreen.BUILDING;
+      case 'BUILDING': {
+        if (this.stickerService.hasSubmittedThisRound()) return PlayerScreen.BUILDING_SUBMITTED;
+        if (!this.stickerService.myHand()) {
+          this.stickerService.requestHand();
+        }
+        return PlayerScreen.BUILDING;
+      }
       case 'VOTING':           return PlayerScreen.VOTING;
       case 'RESULTS':          return PlayerScreen.RESULTS;
       case 'NEXT_ROUND_SETUP': return PlayerScreen.NEXT_ROUND;
