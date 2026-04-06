@@ -51,7 +51,12 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     @Output() stickerRemoved = new EventEmitter<string>();
     @Output() stickerDropped = new EventEmitter<{stickerId: string; x: number; y: number}>();
 
-    @ViewChild("canvasArea") canvasArea!: ElementRef<HTMLDivElement>;
+    @ViewChild("canvasArea") private canvasArea!: ElementRef<HTMLDivElement>;
+
+    /** The inner canvas element — use this as the drop target for external drag sources. */
+    public get canvasNativeElement(): HTMLDivElement | null {
+        return this.canvasArea?.nativeElement ?? null;
+    }
 
     public readonly selectedInstanceId = signal<string | null>(null);
     /** Set of instanceIds currently in the lasso selection */

@@ -1,7 +1,6 @@
 import {
     Component,
     computed,
-    ElementRef,
     Input,
     OnDestroy,
     Output,
@@ -48,7 +47,6 @@ export class StickerEditorComponent implements OnDestroy {
     @Output() placementsChanged = new EventEmitter<StickerPlacement[]>();
 
     @ViewChild("stickerCanvas") stickerCanvas!: StickerCanvasComponent;
-    @ViewChild("canvasWrapper") canvasWrapper!: ElementRef<HTMLDivElement>;
 
     public readonly placements = signal<StickerPlacement[]>([]);
 
@@ -61,7 +59,8 @@ export class StickerEditorComponent implements OnDestroy {
     public onStickerDropped(event: StickerDroppedEvent): void {
         if (!this.canAddMore()) return;
 
-        const canvasEl = this.canvasWrapper?.nativeElement;
+        // Use the inner canvasArea element — same coordinate origin as sticker x/y placements
+        const canvasEl = this.stickerCanvas?.canvasNativeElement;
         if (!canvasEl) return;
         const rect = canvasEl.getBoundingClientRect();
 

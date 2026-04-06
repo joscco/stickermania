@@ -1,6 +1,6 @@
 <!-- Canvas area — fills available space -->
 <div class="flex-1 min-h-0 relative bg-stone-50 flex items-center justify-center p-2 overflow-hidden">
-  <div #canvasWrapper class="h-full aspect-square max-w-full rounded-lg overflow-hidden">
+  <div class="h-full aspect-square max-w-full">
     <app-sticker-canvas
       #stickerCanvas
       class="block w-full h-full"
@@ -23,8 +23,7 @@
   <app-sticker-palette
     [stickers]="paletteStickers"
     [canAddMore]="canAddMore()"
-    [dropTarget]="canvasWrapper"
+    [dropTarget]="stickerCanvas.canvasNativeElement"
     (stickerDropped)="onStickerDropped($event)"
   />
 </div>
-

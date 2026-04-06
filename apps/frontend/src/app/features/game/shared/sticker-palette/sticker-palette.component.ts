@@ -55,7 +55,8 @@ export class StickerPaletteComponent implements OnDestroy {
     public readonly activeDragId = signal<string | null>(null);
 
     private ghostEl: HTMLElement | null = null;
-    private ghostImg: HTMLImageElement | null = null;
+    private dragRenderedWidth  = CANVAS_STICKER_PX;
+    private dragRenderedHeight = CANVAS_STICKER_PX;
     private dragStickerId: string | null = null;
     private activePointerId: number | null = null;
 
@@ -86,9 +87,20 @@ export class StickerPaletteComponent implements OnDestroy {
         this.activePointerId = event.pointerId;
         this.activeDragId.set(sticker.id);
 
-        const {ghost, img} = this.createGhost(sticker.imageUrl, event.clientX, event.clientY);
-        this.ghostEl  = ghost;
-        this.ghostImg = img;
+        // Measure the actual canvas-render size from the thumbnail's natural dimensions.
+        // naturalWidth/Height are available immediately (image already loaded in the palette).
+        // Canvas renders with h-16 (64px) fixed height, width auto → same aspect ratio.
+        const thumbImg = thumbEl.querySelector("img") as HTMLImageElement | null;
+        if (thumbImg && thumbImg.naturalWidth > 0 && thumbImg.naturalHeight > 0) {
+            this.dragRenderedHeight = CANVAS_STICKER_PX;
+            this.dragRenderedWidth  = Math.round(CANVAS_STICKER_PX * thumbImg.naturalWidth / thumbImg.naturalHeight);
+        } else {
+            this.dragRenderedWidth  = CANVAS_STICKER_PX;
+            this.dragRenderedHeight = CANVAS_STICKER_PX;
+        }
+
+        const {ghost} = this.createGhost(sticker.imageUrl, event.clientX, event.clientY);
+        this.ghostEl = ghost;
 
         try { thumbEl.setPointerCapture(event.pointerId); } catch {}
 
@@ -124,9 +136,11 @@ export class StickerPaletteComponent implements OnDestroy {
             const r = canvasEl.getBoundingClientRect();
             if (event.clientX >= r.left && event.clientX <= r.right &&
                 event.clientY >= r.top  && event.clientY <= r.bottom) {
-                // Use the actual rendered ghost image dimensions for precise centering
-                const renderedWidth  = this.ghostImg?.offsetWidth  ?? CANVAS_STICKER_PX;
-                const renderedHeight = this.ghostImg?.offsetHeight ?? CANVAS_STICKER_PX;
+                const renderedWidth  = this.dragRenderedWidth;
+                const renderedHeight = this.dragRenderedHeight;
+                // Hide ghost immediately before emitting so it doesn't flash
+                // alongside the newly placed sticker during Angular's change detection cycle
+                if (this.ghostEl) this.ghostEl.style.visibility = "hidden";
                 this.stickerDropped.emit({
                     stickerId: this.dragStickerId,
                     clientX:   event.clientX,
@@ -147,7 +161,7 @@ export class StickerPaletteComponent implements OnDestroy {
      * height fixed at CANVAS_STICKER_PX (h-16 = 64 px), width auto-sized by the image's
      * natural aspect ratio — so there is zero size/shape jump on drop.
      */
-    private createGhost(imageUrl: string, x: number, y: number): {ghost: HTMLElement; img: HTMLImageElement} {
+    private createGhost(imageUrl: string, x: number, y: number): {ghost: HTMLElement} {
         const ghost = document.createElement("div");
         ghost.style.cssText = `
             position: fixed;
@@ -171,15 +185,16 @@ export class StickerPaletteComponent implements OnDestroy {
         document.body.appendChild(ghost);
         ghost.style.left = `${x}px`;
         ghost.style.top  = `${y}px`;
-        return {ghost, img};
+        return {ghost};
     }
 
     private cleanup(canvasEl?: HTMLElement): void {
         this.ghostEl?.remove();
-        this.ghostEl         = null;
-        this.ghostImg        = null;
-        this.dragStickerId   = null;
-        this.activePointerId = null;
+        this.ghostEl             = null;
+        this.dragRenderedWidth   = CANVAS_STICKER_PX;
+        this.dragRenderedHeight  = CANVAS_STICKER_PX;
+        this.dragStickerId       = null;
+        this.activePointerId     = null;
         this.activeDragId.set(null);
         if (canvasEl) canvasEl.style.outline = "";
         window.removeEventListener("pointermove",   this.boundMove);
