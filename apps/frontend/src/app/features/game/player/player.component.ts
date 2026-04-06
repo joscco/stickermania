@@ -4,6 +4,9 @@ import {ActivatedRoute, Router} from "@angular/router";
 import {StickerPlayerViewComponent} from './sticker-player-view.component';
 import {LobbyAvatarComponent} from './lobby/lobby-avatar.component';
 import {LobbyNameComponent} from './lobby/lobby-name.component';
+import {PlayerConnectingComponent} from './scenes/connecting/player-connecting.component';
+import {PlayerReconnectingComponent} from './scenes/reconnecting/player-reconnecting.component';
+import {PlayerDisconnectedComponent} from './scenes/disconnected/player-disconnected.component';
 import {StickerEventHandler} from '../services/sticker-event-handler';
 import {StickerPlayerService} from '../services/sticker-player.service';
 import {PlayerTimerService} from '../services/player-timer.service';
@@ -23,6 +26,9 @@ import {PlayerScreen} from './player-screen.enum';
     LobbyNameComponent,
     LobbyAvatarComponent,
     StickerPlayerViewComponent,
+    PlayerConnectingComponent,
+    PlayerReconnectingComponent,
+    PlayerDisconnectedComponent,
   ],
   providers: [
     PlayerMessageHandler,
@@ -37,7 +43,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   public readonly isEditingName = signal(false);
   public readonly isEditingAvatar = signal(false);
-
   public readonly wasConnected = computed(() => this.wsService.wasConnected());
 
   /** Resolves which PlayerScreen to render from live store/connection state. */

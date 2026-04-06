@@ -1,10 +1,10 @@
 import {Component, inject} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import {StickerPlayerService} from '../../../services/sticker-player.service';
-import {StickerVotingComponent} from '../../voting/sticker-voting.component';
 import {WorldStore} from '../../../../../core/world.store';
 import {GameSessionStore} from '../../../../../core/challenge.store';
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
+import {StickerVotingComponent} from './voting/sticker-voting.component';
 
 @Component({
     selector: "app-player-voting",

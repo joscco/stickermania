@@ -1,7 +1,7 @@
 <div class="h-full flex flex-col overflow-hidden">
   @switch (activeScreen()) {
     @case (PlayerScreen.LOBBY_WAITING) {
-      <app-player-lobby />
+      <app-player-lobby-waiting />
     }
     @case (PlayerScreen.BUILDING) {
       <app-player-building />
@@ -22,7 +22,7 @@
       <app-player-next-round />
     }
     @default {
-      <app-player-lobby />
+      <app-player-lobby-waiting />
     }
   }
 </div>

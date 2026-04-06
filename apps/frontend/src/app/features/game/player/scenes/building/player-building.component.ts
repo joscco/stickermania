@@ -5,10 +5,10 @@ import {StickerPlayerService} from '../../../services/sticker-player.service';
 import {StickerCanvasComponent} from '../../canvas/sticker-canvas.component';
 import {StickerHandComponent} from '../../hand/sticker-hand.component';
 import type {DragStartEvent} from '../../hand/sticker-hand.component';
-import {StickerSwapModalComponent} from '../../swap-modal/sticker-swap-modal.component';
 import {GameSessionStore} from '../../../../../core/challenge.store';
 import {ApiService} from '../../../../../core/api.service';
 import {AnimOnInitDirective, AnimGroupDirective} from '../../../../shared/animations/anim-on-init.directive';
+import {StickerSwapModalComponent} from './swap-modal/sticker-swap-modal.component';
 
 @Component({
     selector: "app-player-building",
