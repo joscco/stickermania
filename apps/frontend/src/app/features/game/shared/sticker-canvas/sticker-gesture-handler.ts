@@ -35,8 +35,8 @@ export type GestureCallbacks = {
     onLassoSelectionChanged: (ids: Set<string>) => void;
     /** Called when the single selected sticker changes. */
     onSelectedChanged: (instanceId: string | null) => void;
-    /** Called when a single sticker is dragged off the canvas edge — should be deleted. */
-    onStickerDraggedOff?: (instanceId: string) => void;
+    /** Called when sticker(s) are dragged off the canvas edge — should be deleted. First arg is primary id, second is full list. */
+    onStickerDraggedOff?: (id: string, allIds: string[]) => void;
     /** Called during move when the pointer crosses outside/inside the canvas boundary. */
     onDragNearEdge?: (outsideCanvas: boolean) => void;
 };
@@ -186,8 +186,8 @@ export class StickerGestureHandler {
                     return base ? {...p, x: base.baseX + dx, y: base.baseY + dy} : p;
                 }),
             );
-            // Signal whether the drag has left the canvas boundary
-            if (this.callbacks.onDragNearEdge && this.selectedInstanceId) {
+            // Signal whether the drag has left the canvas boundary (single or group)
+            if (this.callbacks.onDragNearEdge && this.hasSelection()) {
                 const outside = clientX < rect.left || clientX > rect.right ||
                                 clientY < rect.top  || clientY > rect.bottom;
                 this.callbacks.onDragNearEdge(outside);
@@ -205,18 +205,23 @@ export class StickerGestureHandler {
         this.pointers = this.pointers.filter(p => p.id !== id);
 
         if (this.pointers.length === 0) {
-            // Check if a single sticker was dragged off the canvas edge
+            // Check if selection was dragged off the canvas edge
             if (this.moveActive && this.tapMoved && this.callbacks.onStickerDraggedOff) {
                 const rect = this.getCanvasRect();
                 const outside = clientX < rect.left || clientX > rect.right ||
                                 clientY < rect.top  || clientY > rect.bottom;
-                if (outside && this.selectedInstanceId && this.lassoSelection.size === 0) {
-                    const id = this.selectedInstanceId;
+                if (outside && this.hasSelection()) {
+                    // Collect ids to delete before clearing state
+                    const ids = this.currentSelectionIds();
                     this.selectedInstanceId = null;
+                    this.lassoSelection = new Set();
                     this.moveActive = false;
                     this.moveBaselines = [];
                     this.callbacks.onSelectedChanged(null);
-                    this.callbacks.onStickerDraggedOff(id);
+                    this.callbacks.onLassoSelectionChanged(new Set());
+                    // Notify in a single batch call rather than one per id
+                    this.callbacks.onDragNearEdge?.(false);
+                    this.callbacks.onStickerDraggedOff(ids[0], ids);
                     return;
                 }
             }

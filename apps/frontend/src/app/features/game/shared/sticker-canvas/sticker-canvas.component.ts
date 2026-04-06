@@ -87,7 +87,12 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
                 onLassoPathChanged:      (p)    => this.lassoPath.set(p),
                 onLassoSelectionChanged: (ids)  => this.lassoSelection.set(ids),
                 onSelectedChanged:       (id)   => this.selectedInstanceId.set(id),
-                onStickerDraggedOff:     (id)   => { this.dragNearEdge.set(false); this.stickerRemoved.emit(id); },
+                onStickerDraggedOff:     (_id, allIds)   => {
+                    this.dragNearEdge.set(false);
+                    const removedSet = new Set(allIds);
+                    const updated = this.stickers().filter(p => !removedSet.has(p.instanceId));
+                    this.placementsChanged.emit(updated);
+                },
                 onDragNearEdge:          (near) => this.dragNearEdge.set(near),
             },
         );
@@ -139,11 +144,17 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         return "M " + path.map(p => `${p.x} ${p.y}`).join(" L ");
     }
 
-    /** Builds the CSS transform string including rotation, scale, and flip. */
+    /** Builds the CSS transform string including rotation, scale, and flip.
+     *  Uses transform-origin: top left in the template, so we translate to center,
+     *  apply rotate+scale, then translate back. This avoids squishing at canvas edges. */
     public getStickerTransform(p: StickerPlacement): string {
         const sx = (p.flipX ? -1 : 1) * p.scale;
         const sy = (p.flipY ? -1 : 1) * p.scale;
-        return `rotate(${p.rotation}deg) scale(${sx}, ${sy})`;
+        // The img is h-16 w-auto; we read the real size from the DOM for accurate centering
+        // but we can't call getRenderedSize here (template helper, called per frame).
+        // Instead, use CSS: translate(50%, 50%) → rotate+scale → translate(-50%, -50%)
+        // This effectively scales around the center while keeping top-left as (x, y).
+        return `translate(50%, 50%) rotate(${p.rotation}deg) scale(${sx}, ${sy}) translate(-50%, -50%)`;
     }
 
     // ── Toolbar actions ───────────────────────────────────────────
@@ -151,19 +162,49 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     public rotateSelected(degrees: number): void {
         const ids = this.selectionIds();
         if (!ids.length) return;
-        this.emit(this.stickers().map(p =>
-            ids.includes(p.instanceId) ? {...p, rotation: p.rotation + degrees} : p,
-        ));
+
+        if (ids.length === 1) {
+            this.emit(this.stickers().map(p =>
+                p.instanceId === ids[0] ? {...p, rotation: p.rotation + degrees} : p,
+            ));
+            return;
+        }
+
+        // Group rotation around centroid
+        this.applyGroupTransform(ids, degrees, 1, null);
     }
 
     public scaleSelected(factor: number): void {
         const ids = this.selectionIds();
         if (!ids.length) return;
-        this.emit(this.stickers().map(p =>
-            ids.includes(p.instanceId)
-                ? {...p, scale: Math.max(0.2, Math.min(4, p.scale * factor))}
-                : p,
-        ));
+
+        if (ids.length === 1) {
+            this.emit(this.stickers().map(p =>
+                p.instanceId === ids[0]
+                    ? {...p, scale: Math.max(0.2, Math.min(4, p.scale * factor))}
+                    : p,
+            ));
+            return;
+        }
+
+        // Group scale around centroid
+        this.applyGroupTransform(ids, 0, factor, null);
+    }
+
+    public mirrorSelected(axis: 'h' | 'v'): void {
+        const ids = this.selectionIds();
+        if (!ids.length) return;
+
+        if (ids.length === 1) {
+            this.emit(this.stickers().map(p => {
+                if (p.instanceId !== ids[0]) return p;
+                return axis === 'h' ? {...p, flipX: !p.flipX} : {...p, flipY: !p.flipY};
+            }));
+            return;
+        }
+
+        // Group mirror around centroid
+        this.applyGroupTransform(ids, 0, 1, axis);
     }
 
     public removeSelected(): void {
@@ -179,19 +220,75 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         this.stickerRemoved.emit(id);
     }
 
-    public mirrorSelected(axis: 'h' | 'v'): void {
-        const ids = this.selectionIds();
-        if (!ids.length) return;
-        this.emit(this.stickers().map(p => {
-            if (!ids.includes(p.instanceId)) return p;
-            return axis === 'h'
-                ? {...p, flipX: !p.flipX}
-                : {...p, flipY: !p.flipY};
-        }));
-    }
-
     public bringForward(): void { this.swapZ(+1); }
     public sendBackward(): void { this.swapZ(-1); }
+
+    /**
+     * Applies a group transform (rotate, scale, mirror) around the group centroid.
+     * Same math as pinch gesture but triggered by toolbar buttons.
+     */
+    private applyGroupTransform(
+        ids: string[],
+        rotateDeg: number,
+        scaleFactor: number,
+        mirrorAxis: 'h' | 'v' | null,
+    ): void {
+        const all      = this.stickers();
+        const selected = all.filter(p => ids.includes(p.instanceId));
+        if (!selected.length) return;
+
+        // Compute group centroid
+        let cx = 0, cy = 0;
+        for (const p of selected) {
+            const {w, h} = this.getRenderedSize(p.instanceId);
+            cx += p.x + (w * p.scale) / 2;
+            cy += p.y + (h * p.scale) / 2;
+        }
+        cx /= selected.length;
+        cy /= selected.length;
+
+        const rotRad = (rotateDeg * Math.PI) / 180;
+        const cos    = Math.cos(rotRad);
+        const sin    = Math.sin(rotRad);
+
+        this.emit(all.map(p => {
+            if (!ids.includes(p.instanceId)) return p;
+            const {w, h} = this.getRenderedSize(p.instanceId);
+            const scaledW = w * p.scale;
+            const scaledH = h * p.scale;
+
+            // Vector from centroid to sticker center
+            let relX = (p.x + scaledW / 2) - cx;
+            let relY = (p.y + scaledH / 2) - cy;
+
+            // Mirror
+            if (mirrorAxis === 'h') relX = -relX;
+            if (mirrorAxis === 'v') relY = -relY;
+
+            // Rotate the relative vector
+            const newRelX = relX * cos - relY * sin;
+            const newRelY = relX * sin + relY * cos;
+
+            // Scale
+            const newScale = Math.max(0.2, Math.min(4, p.scale * scaleFactor));
+            const newScaledW = w * newScale;
+            const newScaledH = h * newScale;
+
+            // New position: centroid + rotated/scaled offset − half new size
+            const newX = cx + newRelX * scaleFactor - newScaledW / 2;
+            const newY = cy + newRelY * scaleFactor - newScaledH / 2;
+
+            return {
+                ...p,
+                x:        newX,
+                y:        newY,
+                scale:    newScale,
+                rotation: p.rotation + rotateDeg,
+                ...(mirrorAxis === 'h' ? {flipX: !p.flipX} : {}),
+                ...(mirrorAxis === 'v' ? {flipY: !p.flipY} : {}),
+            };
+        }));
+    }
 
     // ── Private ───────────────────────────────────────────────────
 
