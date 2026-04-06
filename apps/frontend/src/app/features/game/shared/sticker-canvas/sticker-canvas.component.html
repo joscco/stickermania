@@ -30,7 +30,7 @@
 
   @for (sticker of stickers(); track sticker.instanceId) {
     <div
-      class="absolute select-none"
+      class="absolute select-none transition-opacity duration-150 w-max"
       [class.ring-2]="interactive() && isSelected(sticker.instanceId) && !getHitboxSvgPoints(sticker.stickerId)"
       [class.ring-purple-400]="interactive() && selectedInstanceId() === sticker.instanceId && !getHitboxSvgPoints(sticker.stickerId)"
       [class.ring-amber-400]="interactive() && isLassoSelected(sticker.instanceId) && !getHitboxSvgPoints(sticker.stickerId)"
