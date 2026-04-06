@@ -244,60 +244,78 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     mirrorAxis: 'h' | 'v' | null,
   ): void {
     const all = this.stickers();
-    const selected = all.filter(p => ids.includes(p.instanceId));
-    if (!selected.length) return;
-
-    // Compute group centroid
-    let cx = 0, cy = 0;
-    for (const p of selected) {
-      const {w, h} = this.getRenderedSize(p.instanceId);
-      cx += p.x + (w * p.scale) / 2;
-      cy += p.y + (h * p.scale) / 2;
+    const selected = all.filter((placement) => ids.includes(placement.instanceId));
+    if (!selected.length) {
+      return;
     }
-    cx /= selected.length;
-    cy /= selected.length;
 
-    const rotRad = (rotateDeg * Math.PI) / 180;
-    const cos = Math.cos(rotRad);
-    const sin = Math.sin(rotRad);
+    // Compute group centroid from visual centers.
+    // With your transform setup, the visual center is based on the unscaled size.
+    let centroidX = 0;
+    let centroidY = 0;
 
-    this.emit(all.map(p => {
-      if (!ids.includes(p.instanceId)) return p;
-      const {w, h} = this.getRenderedSize(p.instanceId);
-      const scaledW = w * p.scale;
-      const scaledH = h * p.scale;
+    for (const placement of selected) {
+      const { w, h } = this.getRenderedSize(placement.instanceId);
+      centroidX += placement.x + w / 2;
+      centroidY += placement.y + h / 2;
+    }
 
-      // Vector from centroid to sticker center
-      let relX = (p.x + scaledW / 2) - cx;
-      let relY = (p.y + scaledH / 2) - cy;
+    centroidX /= selected.length;
+    centroidY /= selected.length;
 
-      // Mirror
-      if (mirrorAxis === 'h') relX = -relX;
-      if (mirrorAxis === 'v') relY = -relY;
+    const rotationRadians = (rotateDeg * Math.PI) / 180;
+    const cos = Math.cos(rotationRadians);
+    const sin = Math.sin(rotationRadians);
 
-      // Rotate the relative vector
-      const newRelX = relX * cos - relY * sin;
-      const newRelY = relX * sin + relY * cos;
+    this.emit(
+      all.map((placement) => {
+        if (!ids.includes(placement.instanceId)) {
+          return placement;
+        }
 
-      // Scale
-      const newScale = Math.max(0.2, Math.min(4, p.scale * scaleFactor));
-      const newScaledW = w * newScale;
-      const newScaledH = h * newScale;
+        const { w, h } = this.getRenderedSize(placement.instanceId);
 
-      // New position: centroid + rotated/scaled offset − half new size
-      const newX = cx + newRelX * scaleFactor - newScaledW / 2;
-      const newY = cy + newRelY * scaleFactor - newScaledH / 2;
+        // Current sticker center in canvas coordinates
+        const centerX = placement.x + w / 2;
+        const centerY = placement.y + h / 2;
 
-      return {
-        ...p,
-        x: newX,
-        y: newY,
-        scale: newScale,
-        rotation: p.rotation + rotateDeg,
-        ...(mirrorAxis === 'h' ? {flipX: !p.flipX} : {}),
-        ...(mirrorAxis === 'v' ? {flipY: !p.flipY} : {}),
-      };
-    }));
+        // Vector from group centroid to sticker center
+        let relativeX = centerX - centroidX;
+        let relativeY = centerY - centroidY;
+
+        // Mirror around group centroid
+        if (mirrorAxis === 'h') {
+          relativeX = -relativeX;
+        }
+        if (mirrorAxis === 'v') {
+          relativeY = -relativeY;
+        }
+
+        // Rotate relative vector
+        const rotatedRelativeX = relativeX * cos - relativeY * sin;
+        const rotatedRelativeY = relativeX * sin + relativeY * cos;
+
+        // Scale relative vector
+        const transformedRelativeX = rotatedRelativeX * scaleFactor;
+        const transformedRelativeY = rotatedRelativeY * scaleFactor;
+
+        // New center
+        const newCenterX = centroidX + transformedRelativeX;
+        const newCenterY = centroidY + transformedRelativeY;
+
+        const newScale = Math.max(0.2, Math.min(4, placement.scale * scaleFactor));
+
+        return {
+          ...placement,
+          x: newCenterX - w / 2,
+          y: newCenterY - h / 2,
+          scale: newScale,
+          rotation: placement.rotation + rotateDeg,
+          ...(mirrorAxis === 'h' ? { flipX: !placement.flipX } : {}),
+          ...(mirrorAxis === 'v' ? { flipY: !placement.flipY } : {}),
+        };
+      }),
+    );
   }
 
   // ── Private ───────────────────────────────────────────────────
@@ -375,36 +393,67 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   private hitTestSticker(clientX: number, clientY: number): string | null {
-    const rect = this.canvasArea.nativeElement.getBoundingClientRect();
-    const sorted = [...this.stickers()].sort((a, b) => b.zIndex - a.zIndex);
+    const canvasRect = this.canvasArea.nativeElement.getBoundingClientRect();
+    const sortedPlacements = [...this.stickers()].sort(
+      (firstPlacement, secondPlacement) => secondPlacement.zIndex - firstPlacement.zIndex,
+    );
 
-    for (const p of sorted) {
-      const {w: imgW, h: imgH} = this.getRenderedSize(p.instanceId);
-      if (imgW === 0 || imgH === 0) continue;
-
-      const scaledW = imgW * p.scale;
-      const scaledH = imgH * p.scale;
-      const cx = p.x + scaledW / 2 + rect.left;
-      const cy = p.y + scaledH / 2 + rect.top;
-
-      // Rotate click point into sticker's local space
-      const dx = clientX - cx;
-      const dy = clientY - cy;
-      const rad = (-p.rotation * Math.PI) / 180;
-      const rx = dx * Math.cos(rad) - dy * Math.sin(rad);
-      const ry = dx * Math.sin(rad) + dy * Math.cos(rad);
-
-      const localX = (rx + scaledW / 2) / scaledW;
-      const localY = (ry + scaledH / 2) / scaledH;
-      if (localX < 0 || localX > 1 || localY < 0 || localY > 1) continue;
-
-      const def = this.catalogMap.get(p.stickerId);
-      if (def?.hitboxPolygon && def.hitboxPolygon.length >= 3) {
-        if (pointInPolygon(localX, localY, def.hitboxPolygon)) return p.instanceId;
+    for (const placement of sortedPlacements) {
+      const { w: imageWidth, h: imageHeight } = this.getRenderedSize(placement.instanceId);
+      if (imageWidth === 0 || imageHeight === 0) {
         continue;
       }
-      return p.instanceId;
+
+      // With the current CSS transform setup:
+      // left/top position the untransformed box,
+      // while rotate/scale/flip happen visually around the center.
+      const stickerCenterX = canvasRect.left + placement.x + imageWidth / 2;
+      const stickerCenterY = canvasRect.top + placement.y + imageHeight / 2;
+
+      // Pointer relative to sticker center in screen space
+      const offsetX = clientX - stickerCenterX;
+      const offsetY = clientY - stickerCenterY;
+
+      // Undo rotation
+      const negativeRotationRadians = (-placement.rotation * Math.PI) / 180;
+      const cos = Math.cos(negativeRotationRadians);
+      const sin = Math.sin(negativeRotationRadians);
+
+      const unrotatedX = offsetX * cos - offsetY * sin;
+      const unrotatedY = offsetX * sin + offsetY * cos;
+
+      // Undo scale and flip
+      const scaleX = (placement.flipX ? -1 : 1) * placement.scale;
+      const scaleY = (placement.flipY ? -1 : 1) * placement.scale;
+
+      // Safety guard, though scale should already be clamped elsewhere
+      if (scaleX === 0 || scaleY === 0) {
+        continue;
+      }
+
+      const localOffsetX = unrotatedX / scaleX;
+      const localOffsetY = unrotatedY / scaleY;
+
+      // Convert from centered local coordinates into normalized 0..1 box coordinates
+      const localX = (localOffsetX + imageWidth / 2) / imageWidth;
+      const localY = (localOffsetY + imageHeight / 2) / imageHeight;
+
+      // Fast reject outside the sticker bounds
+      if (localX < 0 || localX > 1 || localY < 0 || localY > 1) {
+        continue;
+      }
+
+      const stickerDefinition = this.catalogMap.get(placement.stickerId);
+      if (stickerDefinition?.hitboxPolygon && stickerDefinition.hitboxPolygon.length >= 3) {
+        if (pointInPolygon(localX, localY, stickerDefinition.hitboxPolygon)) {
+          return placement.instanceId;
+        }
+        continue;
+      }
+
+      return placement.instanceId;
     }
+
     return null;
   }
 
