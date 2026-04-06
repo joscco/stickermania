@@ -189,9 +189,7 @@ export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
         if (event.pointerId !== this.activePointerId) return;
         const canvasEl = this.canvasEl;
 
-        this.ghostEl?.remove();
-        this.ghostEl = null;
-
+        // Emit drop event immediately (before animation) so the sticker appears on canvas
         if (canvasEl && this.dragStickerId) {
             const r = canvasEl.getBoundingClientRect();
             if (event.clientX >= r.left && event.clientX <= r.right &&
@@ -205,12 +203,24 @@ export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
                 });
             }
         }
+
+        // Tween ghost out, then remove
+        const ghost = this.ghostEl;
+        this.ghostEl = null;
+
+        if (ghost) {
+            gsap.to(ghost, {
+                scale: 0, opacity: 0, duration: 0.15, ease: "power2.in",
+                onComplete: () => ghost.remove(),
+            });
+        }
+
         this.cleanup(canvasEl ?? undefined);
     }
 
     private createGhost(imageUrl: string, x: number, y: number): {ghost: HTMLElement} {
         const ghost = document.createElement("div");
-        ghost.style.cssText = `position:fixed;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);filter:drop-shadow(0 6px 16px rgba(0,0,0,0.35));transition:none;`;
+        ghost.style.cssText = `position:fixed;pointer-events:none;z-index:9999;filter:drop-shadow(0 6px 16px rgba(0,0,0,0.35));`;
         const img = document.createElement("img");
         img.src = imageUrl;
         img.style.cssText = `height:${CANVAS_STICKER_PX}px;width:auto;display:block;pointer-events:none;`;
@@ -219,12 +229,15 @@ export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
         document.body.appendChild(ghost);
         ghost.style.left = `${x}px`;
         ghost.style.top  = `${y}px`;
+        // Use GSAP for all transform properties so they stay coherent
+        gsap.set(ghost, {xPercent: -50, yPercent: -50, scale: 0.3, transformOrigin: "50% 50%"});
+        gsap.to(ghost, {scale: 1, duration: 0.18, ease: "back.out(1.5)"});
         return {ghost};
     }
 
     private cleanup(canvasEl?: HTMLElement): void {
-        this.ghostEl?.remove();
-        this.ghostEl             = null;
+        // ghostEl is handled by onGlobalUp's GSAP tween — only force-remove if still around
+        if (this.ghostEl) { this.ghostEl.remove(); this.ghostEl = null; }
         this.dragRenderedWidth   = CANVAS_STICKER_PX;
         this.dragRenderedHeight  = CANVAS_STICKER_PX;
         this.dragStickerId       = null;

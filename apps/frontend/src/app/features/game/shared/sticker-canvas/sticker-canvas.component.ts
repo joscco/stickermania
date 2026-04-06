@@ -90,8 +90,11 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
                 onStickerDraggedOff:     (_id, allIds)   => {
                     this.dragNearEdge.set(false);
                     const removedSet = new Set(allIds);
-                    const updated = this.stickers().filter(p => !removedSet.has(p.instanceId));
-                    this.placementsChanged.emit(updated);
+                    this.animateRemoval(allIds, () => {
+                        this.placementsChanged.emit(
+                            this.stickers().filter(p => !removedSet.has(p.instanceId)),
+                        );
+                    });
                 },
                 onDragNearEdge:          (near) => this.dragNearEdge.set(near),
             },
@@ -211,13 +214,15 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         const group = this.lassoSelection();
         if (group.size > 0) {
             this.lassoSelection.set(new Set());
-            this.emit(this.stickers().filter(p => !group.has(p.instanceId)));
+            this.animateRemoval([...group], () =>
+                this.emit(this.stickers().filter(p => !group.has(p.instanceId))),
+            );
             return;
         }
         const id = this.selectedInstanceId();
         if (!id) return;
         this.selectedInstanceId.set(null);
-        this.stickerRemoved.emit(id);
+        this.animateRemoval([id], () => this.stickerRemoved.emit(id));
     }
 
     public bringForward(): void { this.swapZ(+1); }
@@ -291,6 +296,32 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     }
 
     // ── Private ───────────────────────────────────────────────────
+
+    /** Tween sticker DOM elements to scale 0 + fade, then call `done`.
+     *  Uses a manual tween on the CSS `scale` property so it composites
+     *  with the existing `transform` (which contains translate + rotate + scale). */
+    private animateRemoval(instanceIds: string[], done: () => void): void {
+        const els = instanceIds
+            .map(id => this.canvasArea?.nativeElement.querySelector<HTMLElement>(`[data-instance-id="${id}"]`))
+            .filter((el): el is HTMLElement => !!el);
+
+        if (!els.length) { done(); return; }
+
+        // Animate using a proxy object so we control the CSS `scale` property directly.
+        // The CSS `scale` property composes on top of the existing `transform` and
+        // scales around the element's own center — no anchor-point shift.
+        const proxy = {t: 1};
+        gsap.to(proxy, {
+            t: 0, duration: 0.18, ease: "power2.in",
+            onUpdate: () => {
+                for (const el of els) {
+                    el.style.scale = `${proxy.t}`;
+                    el.style.opacity = `${proxy.t}`;
+                }
+            },
+            onComplete: () => done(),
+        });
+    }
 
 
     private selectionIds(): string[] {
