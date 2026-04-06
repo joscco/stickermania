@@ -1,10 +1,9 @@
 import {
     Component,
     computed,
-    Input,
+    input,
+    output,
     OnDestroy,
-    Output,
-    EventEmitter,
     signal,
     ViewChild,
 } from "@angular/core";
@@ -33,26 +32,24 @@ export const CANVAS_STICKER_PX = 64;
 @Component({
     selector: "app-sticker-editor",
     standalone: true,
-  imports: [CommonModule, StickerCanvasComponent, StickerPaletteComponent, StickerCanvasComponent],
+    imports: [CommonModule, StickerCanvasComponent, StickerPaletteComponent],
     templateUrl: "./sticker-editor.component.html",
     host: {"class": "flex flex-col overflow-hidden"},
 })
 export class StickerEditorComponent implements OnDestroy {
-    /** Stickers available in the palette (hand for player, full catalog for test editor). */
-    @Input() paletteStickers: StickerDefinition[] = [];
-    /** Full sticker catalog for image URL resolution. */
-    @Input() stickerCatalog: StickerDefinition[] = [];
-    @Input() maxStickers: number = 12;
+    // ── Inputs / Outputs ──────────────────────────────────────────
+    /** Stickers available in the palette (player hand or full catalog). */
+    readonly paletteStickers  = input<StickerDefinition[]>([]);
+    /** Full catalog for image URL resolution in the canvas. */
+    readonly stickerCatalog   = input<StickerDefinition[]>([]);
+    readonly maxStickers      = input<number>(12);
 
-    @Output() placementsChanged = new EventEmitter<StickerPlacement[]>();
+    readonly placementsChanged = output<StickerPlacement[]>();
 
     @ViewChild("stickerCanvas") stickerCanvas!: StickerCanvasComponent;
 
     public readonly placements = signal<StickerPlacement[]>([]);
-
-    public readonly canAddMore = computed(() =>
-        this.placements().length < this.maxStickers
-    );
+    public readonly canAddMore = computed(() => this.placements().length < this.maxStickers());
 
     // ── Drop handler ──────────────────────────────────────────────
 
@@ -112,4 +109,3 @@ export class StickerEditorComponent implements OnDestroy {
 
     ngOnDestroy(): void {}
 }
-

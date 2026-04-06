@@ -34,7 +34,7 @@
             #thumbEl
             data-thumb
             class="relative shrink-0 w-16 h-16 rounded-xl border-2 flex items-center justify-center bg-white select-none touch-none"
-            [class.border-purple-300]="canAddMore && activeDragId() !== sticker.id"
+            [class.border-purple-300]="canAddMore() && activeDragId() !== sticker.id"
             [class.border-purple-500]="activeDragId() === sticker.id"
             [class.shadow-sm]="canAddMore"
             [class.border-stone-200]="!canAddMore"

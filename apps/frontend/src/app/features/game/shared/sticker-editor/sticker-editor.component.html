@@ -5,8 +5,8 @@
       #stickerCanvas
       class="block w-full h-full"
       [stickers]="placements()"
-      [stickerCatalog]="stickerCatalog"
-      [maxStickers]="maxStickers"
+      [stickerCatalog]="stickerCatalog()"
+      [maxStickers]="maxStickers()"
       [interactive]="true"
       (placementsChanged)="onPlacementsChanged($event)"
       (stickerRemoved)="onStickerRemoved($event)"
@@ -14,14 +14,14 @@
   </div>
   <!-- Sticker count badge -->
   <div class="absolute top-2 right-2 bg-white/80 backdrop-blur text-xs font-medium text-stone-600 px-2 py-0.5 rounded-full border border-black/6">
-    {{ placements().length }}/{{ maxStickers }}
+    {{ placements().length }}/{{ maxStickers() }}
   </div>
 </div>
 
 <!-- Palette strip -->
 <div class="shrink-0 border-t border-black/10 bg-white">
   <app-sticker-palette
-    [stickers]="paletteStickers"
+    [stickers]="paletteStickers()"
     [canAddMore]="canAddMore()"
     [dropTarget]="stickerCanvas.canvasNativeElement"
     (stickerDropped)="onStickerDropped($event)"

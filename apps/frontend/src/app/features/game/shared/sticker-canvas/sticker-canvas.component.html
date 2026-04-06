@@ -1,22 +1,22 @@
 <div
   #canvasArea
   class="w-full h-full relative overflow-hidden bg-white rounded-lg"
-  [class.border-2]="interactive"
-  [class.border-dashed]="interactive"
-  [class.border-purple-200]="interactive"
+  [class.border-2]="interactive()"
+  [class.border-dashed]="interactive()"
+  [class.border-purple-200]="interactive()"
 >
   <!-- Grid background -->
   <div class="absolute inset-0 opacity-5 pointer-events-none"
        style="background-image: radial-gradient(circle, #6b7280 1px, transparent 1px); background-size: 20px 20px;">
   </div>
 
-  @for (sticker of stickers; track sticker.instanceId) {
+  @for (sticker of stickers(); track sticker.instanceId) {
     <div
       class="absolute select-none"
-      [class.ring-2]="interactive && isSelected(sticker.instanceId) && !getHitboxSvgPoints(sticker.stickerId)"
-      [class.ring-purple-400]="interactive && selectedInstanceId() === sticker.instanceId && !getHitboxSvgPoints(sticker.stickerId)"
-      [class.ring-amber-400]="interactive && isLassoSelected(sticker.instanceId) && !getHitboxSvgPoints(sticker.stickerId)"
-      [class.rounded-lg]="interactive && isSelected(sticker.instanceId) && !getHitboxSvgPoints(sticker.stickerId)"
+      [class.ring-2]="interactive() && isSelected(sticker.instanceId) && !getHitboxSvgPoints(sticker.stickerId)"
+      [class.ring-purple-400]="interactive() && selectedInstanceId() === sticker.instanceId && !getHitboxSvgPoints(sticker.stickerId)"
+      [class.ring-amber-400]="interactive() && isLassoSelected(sticker.instanceId) && !getHitboxSvgPoints(sticker.stickerId)"
+      [class.rounded-lg]="interactive() && isSelected(sticker.instanceId) && !getHitboxSvgPoints(sticker.stickerId)"
       [style.left.px]="sticker.x"
       [style.top.px]="sticker.y"
       [style.transform]="'rotate(' + sticker.rotation + 'deg) scale(' + sticker.scale + ')'"
@@ -30,7 +30,7 @@
         class="h-16 w-auto block pointer-events-none"
         draggable="false"
       />
-      @if (interactive && isSelected(sticker.instanceId) && getHitboxSvgPoints(sticker.stickerId)) {
+      @if (interactive() && isSelected(sticker.instanceId) && getHitboxSvgPoints(sticker.stickerId)) {
         <svg
           class="absolute pointer-events-none"
           style="left: -5%; top: -5%; width: 110%; height: 110%; overflow: visible;"
@@ -51,7 +51,7 @@
   }
 
   <!-- Freehand lasso overlay — open stroke only, no fill, no closing line -->
-  @if (interactive && lassoPath() && lassoPath()!.length > 1) {
+  @if (interactive() && lassoPath() && lassoPath()!.length > 1) {
     <svg
       class="absolute inset-0 w-full h-full pointer-events-none"
       style="z-index: 9000;"
@@ -68,7 +68,7 @@
     </svg>
   }
 
-  @if (interactive && stickers.length === 0) {
+  @if (interactive() && stickers().length === 0) {
     <div class="absolute inset-0 flex items-center justify-center text-stone-300 pointer-events-none">
       <div class="text-center">
         <div class="text-4xl mb-2">👇</div>
@@ -78,7 +78,7 @@
   }
 
   <!-- Selection toolbar -->
-  @if (interactive && (selectedInstanceId() || lassoSelection().size > 0)) {
+  @if (interactive() && (selectedInstanceId() || lassoSelection().size > 0)) {
     <div data-canvas-toolbar class="absolute bottom-2 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-white/90 backdrop-blur border border-black/10 rounded-full px-2 py-1 shadow-lg">
       @if (lassoSelection().size === 0) {
         <button class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-purple-100 active:scale-90 transition-all text-sm" title="Nach hinten" (click)="sendBackward()">⬇️</button>

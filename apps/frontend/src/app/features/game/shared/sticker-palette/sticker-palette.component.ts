@@ -1,15 +1,13 @@
 import {
     Component,
     ElementRef,
-    Input,
-    OnChanges,
-    OnDestroy,
-    Output,
-    EventEmitter,
+    input,
+    output,
     signal,
     computed,
     ViewChild,
     AfterViewInit,
+    OnDestroy,
     NgZone,
 } from "@angular/core";
 import {CommonModule} from "@angular/common";
@@ -32,13 +30,13 @@ export interface StickerDroppedEvent {
     templateUrl: "./sticker-palette.component.html",
     host: {"class": "flex flex-col"},
 })
-export class StickerPaletteComponent implements AfterViewInit, OnChanges, OnDestroy {
-    @Input() stickers: StickerDefinition[] = [];
-    @Input() canAddMore: boolean = true;
+export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
+    // ── Inputs / Outputs ──────────────────────────────────────────
+    readonly stickers    = input<StickerDefinition[]>([]);
+    readonly canAddMore  = input<boolean>(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    @Input() dropTarget!: any;
-
-    @Output() stickerDropped = new EventEmitter<StickerDroppedEvent>();
+    readonly dropTarget  = input<any>(null);
+    readonly stickerDropped = output<StickerDroppedEvent>();
 
     @ViewChild("rowEl") rowEl!: ElementRef<HTMLDivElement>;
 
@@ -49,11 +47,11 @@ export class StickerPaletteComponent implements AfterViewInit, OnChanges, OnDest
     public readonly currentPage = signal(0);
 
     public readonly pageCount = computed(() =>
-        Math.max(1, Math.ceil(this.stickers.length / this.pageSize()))
+        Math.max(1, Math.ceil(this.stickers().length / this.pageSize()))
     );
     public readonly pageStickers = computed(() => {
         const start = this.currentPage() * this.pageSize();
-        return this.stickers.slice(start, start + this.pageSize());
+        return this.stickers().slice(start, start + this.pageSize());
     });
     public readonly canPrev = computed(() => this.currentPage() > 0);
     public readonly canNext = computed(() => this.currentPage() < this.pageCount() - 1);
@@ -77,11 +75,6 @@ export class StickerPaletteComponent implements AfterViewInit, OnChanges, OnDest
         this.recalcPageSize();
     }
 
-    ngOnChanges(): void {
-        this.currentPage.set(0);
-        setTimeout(() => this.recalcPageSize(), 0);
-    }
-
     ngOnDestroy(): void {
         this.cleanup(this.canvasEl ?? undefined);
         this.resizeObserver?.disconnect();
@@ -93,7 +86,7 @@ export class StickerPaletteComponent implements AfterViewInit, OnChanges, OnDest
         const count = Math.max(3, Math.floor(el.clientWidth / 72));
         this.zone.run(() => {
             this.pageSize.set(count);
-            const maxPage = Math.max(0, Math.ceil(this.stickers.length / count) - 1);
+            const maxPage = Math.max(0, Math.ceil(this.stickers().length / count) - 1);
             if (this.currentPage() > maxPage) this.currentPage.set(maxPage);
         });
     }
@@ -108,38 +101,24 @@ export class StickerPaletteComponent implements AfterViewInit, OnChanges, OnDest
         this.animatePage(() => this.currentPage.update(p => p + 1));
     }
 
-    /**
-     * GSAP page transition:
-     * 1. Fade + slide current items UP out
-     * 2. Update the page (Angular re-renders)
-     * 3. Fade + slide new items IN from BELOW
-     */
     private animatePage(updateFn: () => void): void {
         const el = this.rowEl?.nativeElement;
         if (!el) { updateFn(); return; }
 
         const items = Array.from(el.querySelectorAll<HTMLElement>("[data-thumb]"));
+        const targets = items.length ? items : [el];
 
-        gsap.to(items.length ? items : [el], {
-            y: -10,
-            opacity: 0,
-            duration: 0.18,
-            ease: "power2.in",
-            stagger: 0,
+        gsap.to(targets, {
+            y: -10, opacity: 0, duration: 0.16, ease: "power2.in",
             onComplete: () => {
-                // Reset position before Angular re-renders
-                gsap.set(items.length ? items : [el], {y: 12, opacity: 0});
                 this.zone.run(() => {
                     updateFn();
-                    // Wait one tick for Angular to render the new items, then animate in
                     setTimeout(() => {
-                        const newItems = Array.from(
-                            el.querySelectorAll<HTMLElement>("[data-thumb]")
-                        );
+                        const newItems = Array.from(el.querySelectorAll<HTMLElement>("[data-thumb]"));
                         gsap.fromTo(
                             newItems.length ? newItems : [el],
                             {y: 12, opacity: 0},
-                            {y: 0, opacity: 1, duration: 0.22, ease: "power2.out", stagger: 0.03},
+                            {y: 0, opacity: 1, duration: 0.22, ease: "power2.out", stagger: 0.025},
                         );
                     }, 0);
                 });
@@ -153,20 +132,19 @@ export class StickerPaletteComponent implements AfterViewInit, OnChanges, OnDest
     }
 
     private get canvasEl(): HTMLElement | null {
-        if (!this.dropTarget) return null;
-        return (this.dropTarget as ElementRef<HTMLElement>).nativeElement
-            ?? (this.dropTarget as HTMLElement)
-            ?? null;
+        const t = this.dropTarget();
+        if (!t) return null;
+        return (t as ElementRef<HTMLElement>).nativeElement ?? (t as HTMLElement) ?? null;
     }
 
     public getStickerUrl(stickerId: string): string {
-        return this.stickers.find(s => s.id === stickerId)?.imageUrl ?? "";
+        return this.stickers().find(s => s.id === stickerId)?.imageUrl ?? "";
     }
 
     // ── Pointer drag ─────────────────────────────────────────────
 
     public onPointerDown(event: PointerEvent, sticker: StickerDefinition, thumbEl: HTMLElement): void {
-        if (!this.canAddMore) return;
+        if (!this.canAddMore()) return;
         if (event.button !== 0 && event.button !== undefined) return;
         event.preventDefault();
 
@@ -193,25 +171,24 @@ export class StickerPaletteComponent implements AfterViewInit, OnChanges, OnDest
     }
 
     private onGlobalMove(event: PointerEvent): void {
-      if (event.pointerId !== this.activePointerId) return;
-      event.preventDefault();
-      if (!this.ghostEl) return;
-      this.ghostEl.style.left = `${event.clientX}px`;
-      this.ghostEl.style.top = `${event.clientY}px`;
-      const canvasEl = this.canvasEl;
-      if (canvasEl) {
-        const r = canvasEl.getBoundingClientRect();
-        const over = event.clientX >= r.left && event.clientX <= r.right &&
-          event.clientY >= r.top && event.clientY <= r.bottom;
-        canvasEl.style.outline = over ? "3px solid #a855f7" : "";
-      }
+        if (event.pointerId !== this.activePointerId) return;
+        event.preventDefault();
+        if (!this.ghostEl) return;
+        this.ghostEl.style.left = `${event.clientX}px`;
+        this.ghostEl.style.top  = `${event.clientY}px`;
+        const canvasEl = this.canvasEl;
+        if (canvasEl) {
+            const r = canvasEl.getBoundingClientRect();
+            const over = event.clientX >= r.left && event.clientX <= r.right &&
+                         event.clientY >= r.top  && event.clientY <= r.bottom;
+            canvasEl.style.outline = over ? "3px solid #a855f7" : "";
+        }
     }
 
     private onGlobalUp(event: PointerEvent): void {
         if (event.pointerId !== this.activePointerId) return;
         const canvasEl = this.canvasEl;
 
-        // Remove ghost synchronously before emit — prevents flash
         this.ghostEl?.remove();
         this.ghostEl = null;
 
