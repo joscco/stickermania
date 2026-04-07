@@ -105,12 +105,12 @@
     </div>
   } @else if (stickerService.isWinner() && stickerService.winnerChoicesDone()) {
     <div animOnInit="item" [animDelay]="0.2" class="text-center py-4">
-      <p class="text-emerald-600 font-medium text-sm">✅ Auswahl getroffen! Warte auf die nächste Runde…</p>
+      <p class="text-emerald-600 font-medium text-sm">✅ Auswahl getroffen! Warte auf die nächste Runde...</p>
     </div>
   } @else if (stickerService.winnerId()) {
     <div animOnInit="item" [animDelay]="0.2" class="text-center py-4 px-6">
       <p class="text-stone-500 text-sm">
-        {{ worldStore.players()[stickerService.winnerId()!]?.name ?? 'Der Gewinner' }} wählt die nächste Runde…
+        {{ worldStore.players()[stickerService.winnerId()!]?.name ?? 'Der Gewinner' }} wählt die nächste Runde...
       </p>
       <div class="animate-pulse text-2xl mt-2">⏳</div>
     </div>

@@ -1,0 +1,97 @@
+<div class="px-2 py-2">
+  @if (!canAddMore()) {
+    <span class="block text-center text-xs text-red-400 font-medium mb-1">Max erreicht</span>
+  }
+
+  <div class="flex items-center gap-1">
+
+    <!-- Prev button -->
+    <button
+      class="shrink-0 w-12 self-stretch flex items-center justify-center rounded-xl transition-all duration-150"
+      [class.text-stone-500]="canPrev()"
+      [class.bg-stone-100]="canPrev()"
+      [class.active:bg-stone-200]="canPrev()"
+      [class.active:scale-95]="canPrev()"
+      [class.text-stone-200]="!canPrev()"
+      [class.cursor-default]="!canPrev()"
+      [disabled]="!canPrev()"
+      (click)="prevPage()"
+      (pointerdown)="$event.stopPropagation()"
+    >
+      <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
+
+    <!-- Sticker row — GSAP handles animation, no CSS transitions needed -->
+    <div class="flex-1 overflow-hidden">
+      <div
+        #rowEl
+        class="flex items-center justify-center gap-2"
+      >
+        @for (sticker of pageStickers(); track sticker.id) {
+          <div
+            #thumbEl
+            data-thumb
+            class="relative shrink-0 w-16 h-16 rounded-xl border-2 flex items-center justify-center bg-white select-none touch-none"
+            [class.border-purple-300]="canAddMore() && activeDragId() !== sticker.id"
+            [class.border-purple-500]="activeDragId() === sticker.id"
+            [class.shadow-sm]="canAddMore()"
+            [class.border-stone-200]="!canAddMore()"
+            [class.opacity-40]="!canAddMore()"
+            [class.cursor-grab]="canAddMore()"
+            [class.cursor-not-allowed]="!canAddMore()"
+            [class.cursor-not-allowed]="!canAddMore()"
+            (pointerdown)="onPointerDown($event, sticker, thumbEl)"
+          >
+            <img
+              [src]="getStickerUrl(sticker.id)"
+              [alt]="sticker.id"
+              class="w-10 h-10 object-contain pointer-events-none select-none"
+              draggable="false"
+            />
+          </div>
+        }
+        @for (empty of range(pageSize() - pageStickers().length); track empty) {
+          <div class="shrink-0 w-16 h-16"></div>
+        }
+      </div>
+    </div>
+
+    <!-- Next button -->
+    <button
+      class="shrink-0 w-12 self-stretch flex items-center justify-center rounded-xl transition-all duration-150"
+      [class.text-stone-500]="canNext()"
+      [class.bg-stone-100]="canNext()"
+      [class.active:bg-stone-200]="canNext()"
+      [class.active:scale-95]="canNext()"
+      [class.text-stone-200]="!canNext()"
+      [class.cursor-default]="!canNext()"
+      [disabled]="!canNext()"
+      (click)="nextPage()"
+      (pointerdown)="$event.stopPropagation()"
+    >
+      <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </button>
+
+  </div>
+
+  <!-- Page dots -->
+  @if (pageCount() > 1) {
+    <div class="flex justify-center gap-1.5 mt-1.5">
+      @for (i of range(pageCount()); track i) {
+        <div
+          class="rounded-full transition-all duration-200"
+          [class.w-3]="currentPage() === i"
+          [class.w-1.5]="currentPage() !== i"
+          [class.h-1.5]="true"
+          [class.bg-purple-400]="currentPage() === i"
+          [class.bg-stone-300]="currentPage() !== i"
+        ></div>
+      }
+    </div>
+  }
+</div>
+

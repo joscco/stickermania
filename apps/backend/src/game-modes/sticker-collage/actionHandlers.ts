@@ -117,10 +117,30 @@ export function handleSubmitCollage(
 
     ms.submissions[ms.currentRoundIndex].push(collage);
 
-    return {
-        stateChanged: true,
-        events: [{type: "collage-submitted", playerId, collageId}],
-    };
+    const events: StickerCollageServerEvent[] = [{type: "collage-submitted", playerId, collageId}];
+
+    return {stateChanged: true, events};
+}
+
+/**
+ * Handle "skip-round": mark player as skipping this round (no submission).
+ * Does NOT auto-advance to voting — that requires an explicit "end-round-early".
+ */
+export function handleSkipRound(
+    state: SessionState<StickerCollageModeState>,
+    playerId: string,
+): {stateChanged: boolean; events: StickerCollageServerEvent[]} {
+    const ms = state.modeState;
+    if (ms.phase !== "BUILDING") {
+        return {stateChanged: false, events: []};
+    }
+    if (ms.skippedPlayerIds.includes(playerId)) {
+        return {stateChanged: false, events: []};
+    }
+
+    ms.skippedPlayerIds.push(playerId);
+
+    return {stateChanged: true, events: []};
 }
 
 /**
@@ -247,9 +267,15 @@ export function handlePickPrompt(
     prompt: string,
 ): {stateChanged: boolean; events: StickerCollageServerEvent[]} {
     const ms = state.modeState;
-    if (ms.phase !== "RESULTS") return {stateChanged: false, events: []};
-    if (ms.winnerId !== playerId) return {stateChanged: false, events: []};
-    if (!ms.promptChoices.includes(prompt)) return {stateChanged: false, events: []};
+    if (ms.phase !== "RESULTS") {
+        return {stateChanged: false, events: []};
+    }
+    if (ms.winnerId !== playerId) {
+        return {stateChanged: false, events: []};
+    }
+    if (!ms.promptChoices.includes(prompt)) {
+        return {stateChanged: false, events: []};
+    }
 
     // Store for use when advancing to next round
     ms.promptHistory[ms.currentRoundIndex + 1] = prompt;
@@ -269,10 +295,18 @@ export function handleUnlockPack(
     packId: string,
 ): {stateChanged: boolean; events: StickerCollageServerEvent[]} {
     const ms = state.modeState;
-    if (ms.phase !== "RESULTS") return {stateChanged: false, events: []};
-    if (ms.winnerId !== playerId) return {stateChanged: false, events: []};
-    if (!ms.packUnlockChoices.includes(packId)) return {stateChanged: false, events: []};
-    if (ms.unlockedPackIds.includes(packId)) return {stateChanged: false, events: []};
+    if (ms.phase !== "RESULTS") {
+        return {stateChanged: false, events: []};
+    }
+    if (ms.winnerId !== playerId) {
+        return {stateChanged: false, events: []};
+    }
+    if (!ms.packUnlockChoices.includes(packId)) {
+        return {stateChanged: false, events: []};
+    }
+    if (ms.unlockedPackIds.includes(packId)) {
+        return {stateChanged: false, events: []};
+    }
 
     ms.unlockedPackIds.push(packId);
     ms.lastUnlockedPackId = packId;

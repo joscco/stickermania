@@ -46,15 +46,36 @@
       @if (!worldStore.sessionState()) {
         <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
           <div class="h-8 w-8 animate-spin rounded-full border-4 border-stone-200 border-t-stone-500"></div>
-          <span class="text-sm">Verbinde mit Session…</span>
+          <span class="text-sm">Verbinde mit Session...</span>
         </div>
       } @else {
-        <app-sticker-board-scene
-          class="block h-full w-full"
-          [sessionCode]="sessionCode()"
-          [playerQrDataUrl]="playerQrDataUrl()"
-          [wifiQrDataUrl]="wifiQrDataUrl()"
-        />
+        <!-- Master phase switch — direct to each board scene -->
+        <div class="h-full relative">
+          @switch (phase()) {
+            @case ("LOBBY") {
+              <app-board-lobby-scene/>
+            }
+            @case ("BUILDING") {
+              <app-board-building-scene [modeState]="modeState()"/>
+            }
+            @case ("VOTING") {
+              <app-board-voting-scene [modeState]="modeState()"/>
+            }
+            @case ("RESULTS") {
+              <app-board-results-scene [modeState]="modeState()"/>
+            }
+            @case ("NEXT_ROUND_SETUP") {
+              <app-board-building-scene [modeState]="modeState()"/>
+            }
+          }
+          <div animOnInit="item" class="absolute bottom-3 right-3 z-10">
+            <app-board-qr-panel
+              [sessionCode]="sessionCode()"
+              [playerQrDataUrl]="playerQrDataUrl()"
+              [wifiQrDataUrl]="wifiQrDataUrl()"
+            />
+          </div>
+        </div>
       }
     </div>
 

@@ -20,8 +20,6 @@ export class GameSessionStore {
   public readonly currentTask = signal<DrawSearchPlayerTask | null>(null);
   public readonly feedback = signal<{ text: string; type: "success" | "error" } | null>(null);
 
-  /** True while the device-cached avatar is being auto-uploaded to the server. */
-  public readonly avatarAutoUploading = signal(false);
 
   /** Stores the result of a guess until the player has seen it. */
   public readonly guessResult = signal<GuessResultInfo | null>(null);

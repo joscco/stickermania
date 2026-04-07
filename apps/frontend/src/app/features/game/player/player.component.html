@@ -12,12 +12,11 @@
               class="text-xs text-stone-400 hover:text-stone-600 transition-colors underline decoration-dotted underline-offset-2 truncate"
               (click)="startEditName()"
               title="Name ändern"
-            >{{ sessionStore.playerName() }}
-            </button>
+            >{{ sessionStore.playerName() }}</button>
           }
         </div>
 
-        <!-- Inline feedback pill (centred, fades in/out) -->
+        <!-- Inline feedback pill -->
         <div class="flex-1 flex justify-center px-1 pointer-events-none">
           @if (sessionStore.feedback(); as feedback) {
             <span
@@ -31,8 +30,9 @@
         </div>
 
         <div class="flex items-center gap-2 shrink-0">
-          <!-- Edit avatar button -->
-          @if (isNameSet() && hasAvatar() && !isEditingName() && !isEditingAvatar()) {
+          @if (isNameSet() && hasAvatar()
+               && currentScreen() !== PlayerScreen.LOBBY_NAME
+               && currentScreen() !== PlayerScreen.LOBBY_AVATAR) {
             <button
               class="w-6 h-6 rounded-full border border-black/10 bg-stone-50 flex items-center justify-center text-xs hover:bg-stone-100 transition-colors"
               (click)="startEditAvatar()"
@@ -40,8 +40,7 @@
             >✏️</button>
           }
           @if (timer.timeLeft()) {
-            <span
-              class="text-xs font-mono font-bold text-stone-600 bg-stone-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1">
+            <span class="text-xs font-mono font-bold text-stone-600 bg-stone-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1">
               <img src="assets/icons/timer.svg" class="w-3 h-3 inline" alt=""/> {{ timer.timeLeft() }}
             </span>
           }
@@ -53,56 +52,52 @@
     </div>
   </div>
 
-  <!-- Content -->
-  <div class="flex-1 overflow-hidden">
-    @if (isConnecting()) {
-      <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
-        <div class="w-8 h-8 border-3 border-stone-200 border-t-stone-500 rounded-full animate-spin"></div>
-        @if (wasConnected()) {
-          <span class="text-xs font-medium text-stone-500">Verbindung verloren</span>
-          <span class="text-xs">Versuche erneut zu verbinde...</span>
-        } @else {
-          <span class="text-xs">Verbinde...</span>
-        }
-      </div>
-    } @else if (isDisconnected()) {
-      <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
-        <div class="w-8 h-8 border-3 border-stone-200 border-t-stone-500 rounded-full animate-spin"></div>
-        <span class="text-xs">Verbindung unterbrochen...</span>
-        <span class="text-xs text-stone-500">Du wirst zurück zur Lobby gebracht...</span>
-      </div>
-    } @else {
-      <!-- User is connected -->
-      @if (isEditingName() || !isNameSet()) {
+  <!-- Content — single master switch over every possible screen -->
+  <div class="flex-1 overflow-hidden flex flex-col">
+    @switch (currentScreen()) {
+      @case (PlayerScreen.CONNECTING) {
+        <app-player-connecting />
+      }
+      @case (PlayerScreen.RECONNECTING) {
+        <app-player-reconnecting />
+      }
+      @case (PlayerScreen.DISCONNECTED) {
+        <app-player-disconnected />
+      }
+      @case (PlayerScreen.LOBBY_NAME) {
         <app-lobby-name (nameSubmitted)="onNameSubmitted($event)"/>
-      } @else if (isEditingAvatar()) {
+      }
+      @case (PlayerScreen.LOBBY_AVATAR) {
         <app-lobby-avatar
           [playerName]="sessionStore.playerName()"
           [initialAvatarImage]="existingAvatarImage()"
           (avatarSubmitted)="onAvatarSubmitted($event)"
           (skipped)="onAvatarSkipped()"
         />
-      } @else if (!isReady()) {
-        <!-- Connected but waiting for session-state from server -->
-        <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
-          <div class="w-8 h-8 border-3 border-stone-200 border-t-stone-500 rounded-full animate-spin"></div>
-          <span class="text-xs">Lade Spielstand...</span>
-        </div>
-      } @else if (!hasAvatar() && sessionStore.avatarAutoUploading()) {
-        <!-- Avatar is being auto-uploaded from device cache -->
-        <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
-          <div class="w-8 h-8 border-3 border-stone-200 border-t-stone-500 rounded-full animate-spin"></div>
-          <span class="text-xs">Avatar wird übertragen...</span>
-        </div>
-      } @else if (!hasAvatar()) {
-        <app-lobby-avatar
-          [playerName]="sessionStore.playerName()"
-          [initialAvatarImage]="existingAvatarImage()"
-          (avatarSubmitted)="onAvatarSubmitted($event)"
-          (skipped)="onAvatarSkipped()"
-        />
-      } @else {
-        <app-sticker-player-view class="block h-full w-full"/>
+      }
+      @case (PlayerScreen.LOBBY_WAITING) {
+        <app-player-lobby-waiting />
+      }
+      @case (PlayerScreen.BUILDING) {
+        <app-player-building />
+      }
+      @case (PlayerScreen.BUILDING_SUBMITTED) {
+        <app-player-building-submitted />
+      }
+      @case (PlayerScreen.BUILDING_SKIPPED) {
+        <app-player-building-skipped />
+      }
+      @case (PlayerScreen.VOTING) {
+        <app-player-voting />
+      }
+      @case (PlayerScreen.RESULTS) {
+        <app-player-results />
+      }
+      @case (PlayerScreen.NEXT_ROUND) {
+        <app-player-next-round />
+      }
+      @default {
+        <app-player-connecting />
       }
     }
   </div>

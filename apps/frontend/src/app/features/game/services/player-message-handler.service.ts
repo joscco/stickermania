@@ -109,20 +109,8 @@ export class PlayerMessageHandler {
     }
 
     // ── Avatar ────────────────────────────────────────────────
-    if (!player.avatarUrl) {
-      // Server has no avatar yet → try re-uploading from device cache
-      const cachedAvatar = this.reconnectService.loadDeviceAvatar();
-      if (cachedAvatar) {
-        this.sessionStore.avatarAutoUploading.set(true);
-        this.wsService.send({ type: "submit-avatar", avatarDataUrl: cachedAvatar });
-        // The server will broadcast an updated session-state once it processes the
-        // avatar. syncPlayerModeFromState will run again on that update.
-        return;
-      }
-    } else {
-      // Avatar confirmed on server → clear uploading flag
-      this.sessionStore.avatarAutoUploading.set(false);
-    }
+    // Avatar is fully server-managed. Player must draw one if the server
+    // has none — no local cache re-upload.
 
     // If name or avatar still missing → lobby
     if (this.sessionStore.playerName().trim().length === 0 || !player.avatarUrl) {

@@ -40,4 +40,4 @@ Data
 wlan-config.json
 /.data/
 /apps/backend/.data/
-.screenshots/
+/screenshots/

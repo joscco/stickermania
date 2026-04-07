@@ -1,0 +1,101 @@
+<!-- ── Canvas area ── -->
+<div
+  #canvasArea
+  class="w-full h-full relative bg-white overflow-visible"
+  [style.box-shadow]="interactive() && !dragNearEdge() ? 'inset 0 0 0 2px #e9d5ff' : 'none'"
+>
+  <!-- Dot-grid background -->
+  <div class="absolute inset-0 opacity-5 pointer-events-none"
+       style="background-image: radial-gradient(circle, #6b7280 1px, transparent 1px); background-size: 20px 20px;">
+  </div>
+
+  <!-- ── Delete-zone overlay — always in DOM, GSAP animates opacity ── -->
+  <div
+    #deleteZone
+    class="absolute inset-0 pointer-events-none flex items-center justify-center"
+    style="opacity: 0; z-index: 9999;"
+  >
+    <div class="absolute inset-0"
+         style="background: repeating-linear-gradient(-45deg, rgba(239,68,68,0.09) 0px, rgba(239,68,68,0.09) 8px, transparent 8px, transparent 16px);"></div>
+    <div class="relative flex flex-col items-center gap-1.5 text-white rounded-2xl px-5 py-3 shadow-xl"
+         style="background: rgba(239,68,68,0.88); backdrop-filter: blur(4px);">
+      <svg viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M8 6V4h8v2"/>
+        <line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+      </svg>
+      <span class="text-xs font-semibold tracking-wide">Loslassen zum Löschen</span>
+    </div>
+  </div>
+
+  @for (sticker of stickers(); track sticker.instanceId) {
+    <div
+      class="absolute select-none transition-opacity duration-150 w-max"
+      [class.ring-2]="interactive() && isSelected(sticker.instanceId) && !getHitboxSvgPoints(sticker.stickerId)"
+      [class.ring-purple-400]="interactive() && selectedInstanceId() === sticker.instanceId && !getHitboxSvgPoints(sticker.stickerId)"
+      [class.ring-amber-400]="interactive() && isLassoSelected(sticker.instanceId) && !getHitboxSvgPoints(sticker.stickerId)"
+      [class.rounded-lg]="interactive() && isSelected(sticker.instanceId) && !getHitboxSvgPoints(sticker.stickerId)"
+      [class.opacity-40]="interactive() && dragNearEdge() && isSelected(sticker.instanceId)"
+      [style.left.px]="sticker.x"
+      [style.top.px]="sticker.y"
+      [style.transform]="getStickerTransform(sticker)"
+      [style.z-index]="sticker.zIndex"
+      [style.transform-origin]="'top left'"
+      [attr.data-instance-id]="sticker.instanceId"
+    >
+      <div
+        class="relative inline-block"
+        [attr.data-removal-wrapper-for]="sticker.instanceId"
+        style="transform-origin: center center;"
+      >
+        <img
+          [src]="getStickerUrl(sticker.stickerId)"
+          [alt]="sticker.stickerId"
+          class="h-16 w-auto block pointer-events-none"
+          draggable="false"
+        />
+
+        @if (interactive() && isSelected(sticker.instanceId) && getHitboxSvgPoints(sticker.stickerId)) {
+          <svg
+            class="absolute pointer-events-none"
+            style="left: -5%; top: -5%; width: 110%; height: 110%; overflow: visible;"
+            viewBox="-0.05 -0.05 1.1 1.1"
+            preserveAspectRatio="none"
+          >
+            <polygon
+              [attr.points]="getHitboxSvgPoints(sticker.stickerId)"
+              fill="none"
+              [attr.stroke]="isLassoSelected(sticker.instanceId) ? '#f59e0b' : '#a855f7'"
+              vector-effect="non-scaling-stroke"
+              stroke-width="2"
+              stroke-linejoin="round"
+            />
+          </svg>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Freehand lasso overlay -->
+  @if (interactive() && lassoPath() && lassoPath()!.length > 1) {
+    <svg class="absolute inset-0 w-full h-full pointer-events-none" style="z-index: 9000;">
+      <path
+        [attr.d]="lassoSvgPath()"
+        fill="none"
+        stroke="#a855f7"
+        stroke-width="2.5"
+        stroke-dasharray="7 4"
+        stroke-linejoin="round"
+        stroke-linecap="round"
+      />
+    </svg>
+  }
+
+  @if (interactive() && stickers().length === 0) {
+    <div class="absolute inset-0 flex items-center justify-center text-stone-300 pointer-events-none">
+      <div class="text-center">
+        <div class="text-4xl mb-2">👇</div>
+        <p class="text-sm">Sticker unten festhalten<br/>und auf die Fläche ziehen</p>
+      </div>
+    </div>
+  }
+</div>

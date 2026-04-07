@@ -1,13 +1,18 @@
 import {CommonModule} from "@angular/common";
 import {Component, computed, OnDestroy, OnInit, signal} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
-import type {GameModeId, ServerToClientMessage, StickerCollageServerEvent,} from "@birthday/shared";
+import type {ServerToClientMessage, StickerCollageServerEvent} from "@birthday/shared";
 import * as QRCode from "qrcode";
 import {Subscription} from "rxjs";
 import {EventToastsComponent, type UiEvent} from './event-toast/event-toasts.component';
 import {BoardLobbyComponent} from './board-lobby.component';
 import {BoardSetupDrawerComponent} from './setup-drawer/board-setup-drawer.component';
-import {StickerBoardSceneComponent} from './sticker-board-scene.component';
+import {BoardLobbySceneComponent} from './scenes/lobby/board-lobby-scene.component';
+import {BoardBuildingSceneComponent} from './scenes/building/board-building-scene.component';
+import {BoardVotingSceneComponent} from './scenes/voting/board-voting-scene.component';
+import {BoardResultsSceneComponent} from './scenes/results/board-results-scene.component';
+import {BoardQrPanelComponent} from './qr-panel/board-qr-panel.component';
+import {AnimOnInitDirective} from '../../shared/animations/anim-on-init.directive';
 import {WebSocketService} from '../../../core/websocket.service';
 import {ApiService} from '../../../core/api.service';
 import {WorldStore} from '../../../core/world.store';
@@ -17,7 +22,7 @@ const EVENT_TOAST_DURATION_MS = 3000;
 @Component({
   selector: "app-board",
   standalone: true,
-  imports: [CommonModule, EventToastsComponent, BoardLobbyComponent, StickerBoardSceneComponent, BoardSetupDrawerComponent],
+  imports: [CommonModule, EventToastsComponent, BoardLobbyComponent, BoardSetupDrawerComponent, BoardLobbySceneComponent, BoardBuildingSceneComponent, BoardVotingSceneComponent, BoardResultsSceneComponent, BoardQrPanelComponent, AnimOnInitDirective],
   templateUrl: "./board.component.html",
 })
 export class BoardComponent implements OnInit, OnDestroy {
@@ -34,6 +39,7 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly sessionCode = signal<string | null>(null);
   public readonly timeLeft = signal<string>("");
 
+
   private sessionId: string | null = null;
   private routeSubscription: Subscription | null = null;
   private unsubscribeWs: (() => void) | null = null;
@@ -41,11 +47,12 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   public readonly currentTimerEndsAt = computed(() => {
     const ms = this.worldStore.stickerCollageModeState();
-    if (!ms) {
-      return 0;
-    }
+    if (!ms) return 0;
     return ms.roundEndsAt ?? ms.votingEndsAt ?? ms.resultsEndsAt ?? 0;
   });
+
+  public readonly modeState = computed(() => this.worldStore.stickerCollageModeState());
+  public readonly phase = computed(() => this.modeState()?.phase ?? 'LOBBY');
 
   public constructor(
     private readonly wsService: WebSocketService,
@@ -136,6 +143,7 @@ export class BoardComponent implements OnInit, OnDestroy {
       this.pushEvent("Session konnte nicht gelöscht werden. ❌", Date.now());
     }
   }
+
 
 
   private async bootstrapBoardSession(sessionCode: string): Promise<void> {

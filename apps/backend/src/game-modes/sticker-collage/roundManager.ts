@@ -41,6 +41,7 @@ export function startBuilding(
     // Reset per-round data
     ms.playerHands = {};
     ms.currentVotes = {};
+    ms.skippedPlayerIds = [];
     ms.winnerId = null;
     ms.promptChoices = [];
     ms.packUnlockChoices = [];
