@@ -54,10 +54,12 @@ export class StickerPlayerService {
     public readonly allPlayersDone = computed<boolean>(() => {
         const ms = this.modeState();
         const players = this.worldStore.players();
-        if (!ms || ms.phase !== 'BUILDING') return false;
+        if (!ms || ms.phase !== 'BUILDING') {
+          return false;
+        }
         const connectedIds = Object.values(players)
-            .filter(p => p.connected)
-            .map(p => p.id);
+            .filter(player => player.connected)
+            .map(player => player.id);
         if (connectedIds.length === 0) {
           return false;
         }
