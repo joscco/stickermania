@@ -11,7 +11,7 @@ import {PhaseTimerScheduler} from "./phaseTimerScheduler.js";
 import {PlayerManager} from "./playerManager.js";
 import {SessionMutator} from "./sessionMutator.js";
 
-const SESSION_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+const SESSION_CODE_ALPHABET = "0123456789";
 
 function generateSessionCode(length: number = 4): string {
     let sessionCode = "";

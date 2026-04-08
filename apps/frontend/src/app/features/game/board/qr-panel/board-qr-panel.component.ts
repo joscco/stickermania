@@ -2,7 +2,7 @@ import {Component, input} from "@angular/core";
 import {CommonModule} from "@angular/common";
 
 /**
- * Zeigt Session-Code + optionale QR-Codes (Mitspielen & WLAN).
+ * Zeigt Session-Code + optionale QR-Codes (Mitspielen).
  *
  * Varianten:
  *   size="large"  – großes Panel für die Lobby (Standard)
@@ -17,6 +17,5 @@ import {CommonModule} from "@angular/common";
 export class BoardQrPanelComponent {
     public readonly sessionCode = input<string | null>(null);
     public readonly playerQrDataUrl = input<string | null>(null);
-    public readonly wifiQrDataUrl = input<string | null>(null);
 }
 

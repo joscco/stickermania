@@ -36,8 +36,10 @@ world-state.json
 .env
 .env.*.local
 
-Data
-wlan-config.json
+# Local config with credentials – copy from *.example.json and fill in
+game.config.json
+wlan/wlan-config.json
+wlan/wlan-qr.png
 /.data/
 /apps/backend/.data/
 /screenshots/

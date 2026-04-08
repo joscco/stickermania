@@ -7,5 +7,6 @@ README.md
 .data
 coverage
 .angular
-# WiFi credentials – must never be baked into cloud images
-wlan-config.json
+# credentials & local config – never bake into image
+wlan/
+game.config.json

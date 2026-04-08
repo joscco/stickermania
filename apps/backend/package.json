@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@birthday/shared": "0.1.0",
+    "@fastify/cookie": "^11.0.2",
     "@fastify/static": "^9.0.0",
     "@fastify/websocket": "^11.2.0",
     "fastify": "^5.8.4",

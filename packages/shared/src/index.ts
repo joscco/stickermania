@@ -2,35 +2,6 @@
 
 // ─── Config types ────────────────────────────────────────────────
 
-export interface DrawSearchGameConfig {
-    drawPrompts: string[];
-    canvasResolution: number;
-    /** How many fake captions to collect per drawing before it becomes guessable */
-    fakeCaptionsPerDrawing: number;
-    /** Points awarded for guessing the real title */
-    pointsCorrectGuess: number;
-    /** Points awarded when your fake caption fools someone */
-    pointsFooledPlayer: number;
-    /** If > 0, inject test drawings on startMode */
-    seedTestDrawings: number;
-}
-
-export interface GardenCoopGameConfig {
-    plotCount: number;
-    initialSeeds: number;
-    pestChance: number;
-}
-
-export interface TeamGraffitiGameConfig {
-    roundDurationSec: number;
-    /** Seconds between automatic action grants */
-    actionAccrualIntervalSec: number;
-    /** Maximum actions a player can hold */
-    maxActions: number;
-    /** Actions granted to each player at round start */
-    initialActions: number;
-}
-
 export interface StickerCollageGameConfig {
     roundDurationSec: number;
     votingDurationSec: number;
@@ -48,7 +19,6 @@ export interface StickerCollageGameConfig {
 
 export interface GameConfig {
     // General
-    drawingsPath: string;
     port: number;
     adminPassword: string | null;
     sessionTtlHours: number;
@@ -68,7 +38,6 @@ export function parseGameConfig(raw: unknown): GameConfig {
     const sc = parseSubObject(r, "stickerCollage");
 
     return {
-        drawingsPath: typeof r["drawingsPath"] === "string" ? r["drawingsPath"] : "./drawings",
         port: typeof r["port"] === "number" ? r["port"] : 3001,
         adminPassword: typeof r["adminPassword"] === "string" ? r["adminPassword"] : null,
         sessionTtlHours: typeof r["sessionTtlHours"] === "number" ? r["sessionTtlHours"] : 24,

@@ -8,15 +8,17 @@
     "packages/*"
   ],
   "scripts": {
-    "party": "npm run _build:party && node apps/backend/dist/index.js",
-    "cloud": "npm run _build:cloud && PORT=8080 node apps/backend/dist/index.js",
+    "start": "npm run _build && node apps/backend/dist/index.js",
     "dev": "npm run _build:dev && APP_MODE=dev node apps/backend/dist/index.js",
     "dev:live": "concurrently -n be,fe -c blue,green \"npm run _build:shared && npm run build -w @birthday/backend && APP_MODE=dev node apps/backend/dist/index.js\" \"npm run dev:tools -w @birthday/frontend\"",
+    "screenshots": "node scripts/screenshots.mjs",
+    "wlan:qr": "node wlan/wlan-qr.mjs",
+    "cloud:deploy": "node scripts/cloud-deploy.mjs",
+    "cloud:start": "gcloud run services update birthday-game --region europe-west1 --ingress all --min-instances 1 --project birthday-game-2026",
+    "cloud:stop": "gcloud run services update birthday-game --region europe-west1 --ingress internal --min-instances 0 --project birthday-game-2026",
+    "_build": "npm run _build:shared && npm run build -w @birthday/frontend && npm run build -w @birthday/backend",
     "_build:shared": "npm run build -w @birthday/shared",
-    "_build:party": "npm run _build:shared && npm run build -w @birthday/frontend && npm run build -w @birthday/backend",
-    "_build:cloud": "npm run _build:shared && npm run build:cloud -w @birthday/frontend && npm run build -w @birthday/backend",
-    "_build:dev": "npm run _build:shared && npm run build:dev-tools -w @birthday/frontend && npm run build -w @birthday/backend",
-    "screenshots": "node scripts/screenshots.mjs"
+    "_build:dev": "npm run _build:shared && npm run build:dev-tools -w @birthday/frontend && npm run build -w @birthday/backend"
   },
   "dependencies": {
     "gsap": "^3.14.2",

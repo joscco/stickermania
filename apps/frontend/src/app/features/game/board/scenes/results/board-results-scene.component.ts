@@ -22,7 +22,6 @@ export class BoardResultsSceneComponent {
 
     public readonly modeState = input<StickerCollageModeState | null>(null);
 
-
     public readonly topResults = computed<StickerCollageVoteResult[]>(() => {
         return (this.modeState()?.lastVoteResults ?? []).slice(0, 3);
     });
@@ -56,4 +55,3 @@ export class BoardResultsSceneComponent {
         this.wsService.send({type: "game-action", mode: "sticker-collage", action});
     }
 }
-

@@ -1,4 +1,4 @@
-# Birthday Sticker-Collage
+# Stickermania
 
 Session-basiertes Party-Spiel: Spieler erstellen gemeinsam lustige Sticker-Collagen und stimmen über die besten ab.
 
@@ -12,15 +12,14 @@ Session-basiertes Party-Spiel: Spieler erstellen gemeinsam lustige Sticker-Colla
 
 ## Modi
 
-Die App kennt **drei Modi**:
+Die App kennt **zwei Modi**:
 
-| | **🎉 Party (LAN)** | **☁️ Cloud** | **🛠️ Dev (Editoren)** |
-|---|---|---|---|
-| **Einsatz** | Geburtstagsfeier, LAN-Party | Google Cloud Run | Sticker & Hitboxen bearbeiten |
-| **Was läuft** | Voller Game-Server + WebSocket | Voller Game-Server | Nur Editor-APIs, kein WebSocket |
-| **Frontend** | Board, Player, Join | Board, Player, Join | Hitbox-Editor, Sticker-Editor |
-| **WLAN-QR** | ✅ wenn `wlan-config.json` vorhanden | ❌ | ❌ |
-| **Script** | `npm run party` | `npm run cloud` | `npm run dev` |
+| | **🎉 Spiel** | **🛠️ Dev (Editoren)** |
+|---|---|---|
+| **Einsatz** | Party (LAN) oder Google Cloud Run | Sticker & Hitboxen bearbeiten |
+| **Was läuft** | Voller Game-Server + WebSocket | Nur Editor-APIs, kein WebSocket |
+| **Frontend** | Board, Player | Hitbox-Editor, Sticker-Editor |
+| **Script** | `npm run start` | `npm run dev` |
 
 ---
 
@@ -29,8 +28,11 @@ Die App kennt **drei Modi**:
 ```bash
 npm install
 
-# Party-Modus (LAN) — baut alles und startet den Server
-npm run party
+# Konfiguration anlegen (einmalig)
+cp game.config.example.json game.config.json
+
+# Spiel-Modus — baut alles und startet den Server
+npm run start
 
 # Dev-Modus — nur Editoren
 npm run dev
@@ -39,12 +41,37 @@ npm run dev
 npm run dev:live
 ```
 
-### Party-Modus
+### Lokaler Modus
 
-1. Optional: `cp wlan-config.example.json wlan-config.json` und WLAN-Daten eintragen
-2. `npm run party`
-3. Board öffnen: `http://<LAN-IP>:3001/#/board`
-4. Spieler scannen den QR-Code vom Board
+1. `npm run start`
+2. Browser öffnen: `http://localhost:3001`
+3. Auf "Ich bin der Moderator → Zum Board" klicken und Passwort eingeben
+4. Session erstellen, QR-Code anzeigen lassen
+5. Spieler öffnen dieselbe URL auf ihrem Handy und geben den Session-Code ein
+
+**Optional: WLAN-QR-Code für Aushang generieren**
+
+```bash
+cp wlan/wlan-config.example.json wlan/wlan-config.json
+# WLAN-Daten eintragen, dann:
+npm run wlan:qr
+# → wlan/wlan-qr.png (drucken & aufhängen)
+```
+
+### Cloud-Modus (Google Cloud Run)
+
+Siehe [`docs-gcloud.md`](docs-gcloud.md) für die vollständige Anleitung.
+
+```bash
+# Image bauen & deployen (einmalig oder nach Änderungen)
+npm run cloud:deploy
+
+# Vor der Demonstration hochfahren
+npm run cloud:start
+
+# Nach der Demonstration runterfahren (spart Kosten)
+npm run cloud:stop
+```
 
 ### Dev-Modus
 
@@ -56,22 +83,21 @@ npm run dev
 # → http://localhost:3001/#/hitbox-editor  (Hitbox-Editor)
 ```
 
-Oder mit Live-Reload für Editor-Entwicklung:
+---
+
+## Board-Zugang & Passwortschutz
+
+Die Startseite (`/`) ist für alle zugänglich: Spieler geben dort ihren Session-Code ein.
+
+Der **"Zum Board"**-Link am unteren Rand führt zu einem Passwort-Dialog. Das Passwort wird vom Backend geprüft. Bei Erfolg setzt das Backend ein HttpOnly-Cookie — der Moderator bleibt eingeloggt, bis der Cookie abläuft oder der Container neugestartet wird.
+
+Das Passwort wird in `game.config.json` unter `adminPassword` gesetzt. Lokal kann es auch per Umgebungsvariable überschrieben werden:
 
 ```bash
-npm run dev:live
-# → Frontend: http://localhost:4200 (ng serve mit HMR)
-# → Backend:  http://localhost:3001 (API für Hitbox-Daten)
+ADMIN_PASSWORD="geheim" npm run start
 ```
 
-### Cloud-Modus
-
-```bash
-npm run cloud
-# oder via Docker
-docker build -t birthday-sticker-collage .
-docker run --rm -p 8080:8080 -e PORT=8080 birthday-sticker-collage
-```
+Ist kein Passwort konfiguriert (`adminPassword: null`), ist der Board-Zugang ohne Passwort möglich.
 
 ---
 
@@ -90,19 +116,35 @@ LOBBY → BUILDING → VOTING → RESULTS → BUILDING → ...
    - ⭐ Ein **"Auf jeden Fall dabei"-Pack** (garantiert 1 Sticker davon in jeder Hand)
 5. Zurück zu Schritt 2
 
+Nach der Session: Im Board auf **"Alle Avatare & Collagen herunterladen"** klicken, um alle Bilder als ZIP zu speichern.
+
 ---
 
 ## Scripts
 
 | Script | Beschreibung |
 |---|---|
-| `npm run party` | **Party-Modus**: Baut alles, startet Server auf Port 3001 |
+| `npm run start` | **Spiel-Modus**: Baut alles, startet Server (LAN auf Port 3001, Cloud auf Port 8080) |
 | `npm run dev` | **Dev-Modus**: Baut Editoren-Frontend, startet Server (nur Editor-APIs) |
 | `npm run dev:live` | **Dev + HMR**: Backend + `ng serve` parallel mit Live-Reload |
-| `npm run cloud` | **Cloud**: Baut mit Cloud-Config, startet auf Port 8080 |
+| `npm run wlan:qr` | WLAN-QR-Code als PNG generieren (aus `wlan/wlan-config.json`) |
+| `npm run cloud:deploy` | Quellcode an Cloud Build schicken, Image bauen & auf Cloud Run deployen |
+| `npm run cloud:start` | Cloud-Run-Service hochfahren (Ingress auf `all`, min. 1 Instanz) |
+| `npm run cloud:stop` | Cloud-Run-Service herunterfahren (Ingress auf `internal`, 0 Instanzen) |
 | `npm run screenshots` | Baut die App, startet Server, schießt Screenshots aller Screens, stoppt Server |
 
-> Admin-Passwort: `ADMIN_PASSWORD="geheim" npm run party`
+> Admin-Passwort lokal: `ADMIN_PASSWORD="geheim" npm run start`
+
+---
+
+## Asset-Benennung
+
+Gespeicherte Dateien in `.data/assets/<sessionId>/`:
+
+- **Avatare**: `avatar_<spielername>_<playerId>.png`
+- **Collagen**: `collage_<spielername>_<prompt>_<collageId>.png`
+
+Spieler- und Prompt-Namen werden sanitiert (Sonderzeichen → `_`, max. 60 Zeichen). Die IDs am Ende verhindern Namenskollisionen.
 
 ---
 
@@ -200,30 +242,25 @@ Die Entscheidung wird live per `ResizeObserver` neu berechnet — passt sich als
 
 ## HTTP API
 
-| Methode | Pfad | Beschreibung |
-|---|---|---|
-| `POST` | `/api/sessions` | Neue Session erstellen |
-| `GET` | `/api/sessions/by-code/:code` | Session per Code finden |
-| `GET` | `/api/sessions/:id/state` | Session-State abrufen |
-| `POST` | `/api/sessions/:id/reset` | Session zurücksetzen |
-| `DELETE` | `/api/sessions/:id` | Session löschen |
-| `POST` | `/api/sessions/:id/collage-image` | Collage-PNG hochladen |
-| `GET` | `/api/sticker-catalog` | Sticker-Katalog (inkl. Hitbox-Daten) |
-| `GET` | `/api/hitbox-data` | Alle Hitbox-Polygone |
-| `PUT` | `/api/hitbox-data/:stickerId` | Hitbox-Polygon speichern |
-| `DELETE` | `/api/hitbox-data/:stickerId` | Hitbox-Polygon löschen |
-| `GET` | `/api/assets/...` | Avatare, Collagen (statische Assets) |
-| `GET` | `/api/wlan-config` | WLAN-Config (nur Party-Modus) |
+| Methode | Pfad | Auth | Beschreibung |
+|---|---|---|---|
+| `POST` | `/api/auth/board-login` | — | Board-Login, setzt Cookie |
+| `GET` | `/api/auth/board-status` | Cookie | Cookie-Prüfung |
+| `GET` | `/api/sessions` | — | Sessions auflisten |
+| `POST` | `/api/sessions` | ✅ Cookie | Neue Session erstellen |
+| `GET` | `/api/sessions/by-code/:code` | — | Session per Code finden |
+| `GET` | `/api/sessions/:id/state` | — | Session-State abrufen |
+| `POST` | `/api/sessions/:id/reset` | ✅ Cookie | Session zurücksetzen |
+| `DELETE` | `/api/sessions/:id` | ✅ Cookie | Session löschen |
+| `POST` | `/api/sessions/:id/collage-image` | — | Collage-PNG hochladen |
+| `GET` | `/api/sessions/:id/assets` | — | Asset-Liste für Download |
+| `GET` | `/api/assets/...` | — | Avatare, Collagen (statische Assets) |
+| `GET` | `/api/sticker-catalog` | — | Sticker-Katalog |
 
 ## WebSocket
 
 ```
 ws://HOST:PORT/ws
-```
-
-Join-Message:
-```json
-{ "type": "join", "kind": "player", "sessionId": "abc123", "playerId": "optional-id" }
 ```
 
 ---
@@ -232,21 +269,27 @@ Join-Message:
 
 ### `game.config.json`
 
-Spielparameter (Timer, Handgröße, Prompts, Sticker-Packs, Punkteverteilung etc.)
+Spielparameter (Timer, Handgröße, Prompts, Sticker-Packs, Punkteverteilung, `adminPassword`).
 
-### `wlan-config.json`
-
-Optionale WLAN-Daten für den Party-Modus (QR-Code auf dem Board):
+`game.config.json` ist in `.gitignore` — sie enthält lokal das Admin-Passwort. Beim ersten Checkout:
 
 ```bash
-cp wlan-config.example.json wlan-config.json
+cp game.config.example.json game.config.json
+# Dann adminPassword setzen und ggf. andere Werte anpassen
 ```
 
-> ⚠️ Beide Config-Dateien mit Credentials sind in `.gitignore`.
+Für Cloud Run wird `game.config.json` **nicht** ins Docker-Image kopiert — `npm run cloud:deploy` liest das Passwort aus der lokalen `game.config.json` und übergibt es automatisch als `ADMIN_PASSWORD` Env-Var an Cloud Run.
 
-### `hitbox-data.json`
+### `wlan/wlan-config.json`
 
-Vom Hitbox-Editor generierte Polygon-Daten für Sticker-Hitboxen. Wird automatisch geladen und in den Sticker-Katalog gemergt.
+Optionale WLAN-Daten für den `wlan:qr`-Script:
+
+```bash
+cp wlan/wlan-config.example.json wlan/wlan-config.json
+npm run wlan:qr  # → wlan/wlan-qr.png
+```
+
+> ⚠️ Beide Config-Dateien sind in `.gitignore` — die `*.example.json` Varianten sind committet.
 
 ---
 
@@ -266,38 +309,31 @@ Für Cloud: Repository-Pattern vorbereitet (`SessionRepository`, `AssetRepositor
 ├── apps/
 │   ├── backend/                    # Node.js (Fastify) HTTP + WebSocket Server
 │   │   └── src/
-│   │       ├── http/               # API-Routen (Game + Editor)
+│   │       ├── http/               # API-Routen (authPlugin, apiRoutes, editorApiRoutes, wsPlugin)
 │   │       ├── session/            # Session-Management, Player, Timer
 │   │       ├── game-modes/         # Sticker-Collage Engine
 │   │       └── infra/              # Repository-Implementierungen
 │   └── frontend/                   # Angular SPA
 │       └── src/app/
-│           ├── core/               # Stores, Services (WebSocket, API, Session)
+│           ├── core/               # Stores, Services (WebSocket, API, Session, BoardAuthGuard)
 │           └── features/
-│               ├── board/          # Board-Shell (Header, Setup-Drawer)
-│               ├── player/         # Player-Shell (Lobby, Join)
-│               ├── game/           # Sticker-Collage Spiel
-│               │   ├── board/      # Board-Szenen (Lobby, Building, Voting, Results)
-│               │   │               #   voting: adaptive Slideshow (statisch ↔ Marquee)
-│               │   ├── player/     # Player-Szenen (Lobby, Building, Voting, Results)
-│               │   │   ├── player-screen.enum.ts  # PlayerScreen & BoardScreen Enums
-│               │   │   ├── canvas/ #   Sticker-Leinwand (Drag, Pinch, Lasso-Select)
-│               │   │   ├── hand/   #   Sticker-Hand (Drag-Ghost, Scroll, Swap-Trigger)
-│               │   │   ├── swap-modal/  # Sticker-Tausch-Modal
-│               │   │   └── voting/ #   Voting-UI (Feedback im Header)
-│               │   └── services/   # Sticker-Player-Service
-│               ├── editors/        # Hitbox-Editor, Sticker-Editor-Test
+│               ├── game/
+│               │   ├── landing/    # Startseite: Session-Code-Eingabe + Board-Login
+│               │   ├── board/      # Board-Szenen (Lobby, Building, Voting, Results + Download)
+│               │   └── player/     # Player-Szenen (Lobby, Building, Voting, Results)
 │               └── shared/         # Animationen, gemeinsame Komponenten
 ├── packages/
 │   └── shared/                     # Shared Types, Config-Parser
 ├── scripts/
-│   ├── check-sticker-assets.mjs   # Asset-Validierung
-│   ├── mock-server.mjs            # Leichtgewichtiger Mock-Server (HTTP + WS) für Screenshots
+│   ├── mock-server.mjs            # Mock-Server für Screenshots
 │   └── screenshots.mjs            # Playwright-Screenshot-Runner
-├── game.config.json                # Spielkonfiguration
-├── hitbox-data.json                # Hitbox-Polygone (generiert)
+├── wlan/
+│   ├── wlan-config.example.json   # WLAN-Config-Vorlage
+│   └── wlan-qr.mjs               # QR-Code-Generator
+├── game.config.json                # Spielkonfiguration (inkl. adminPassword)
+├── hitbox-data.json                # Hitbox-Polygone
 ├── Dockerfile                      # Cloud-Image
-└── package.json                    # Workspace-Scripts & Modi
+└── package.json                    # Workspace-Scripts
 ```
 
 ---
@@ -305,9 +341,10 @@ Für Cloud: Repository-Pattern vorbereitet (`SessionRepository`, `AssetRepositor
 ## Technologie
 
 - **Frontend**: Angular 21 (Standalone Components, Signals, Zoneless)
-- **Backend**: Node.js + Fastify + WebSocket
+- **Backend**: Node.js + Fastify + WebSocket + @fastify/cookie
 - **Styling**: Tailwind CSS 4
 - **Animationen**: GSAP
+- **ZIP-Download**: JSZip
 - **Screenshots**: Playwright
 - **Monorepo**: npm Workspaces
 

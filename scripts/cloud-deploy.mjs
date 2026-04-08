@@ -1,0 +1,75 @@
+#!/usr/bin/env node
+/**
+ * Reads adminPassword from game.config.json and runs the full Cloud Build + Cloud Run deploy.
+ * Called via: npm run cloud:deploy
+ */
+
+import fs from "node:fs";
+import path from "node:path";
+import {execSync} from "node:child_process";
+import {fileURLToPath} from "node:url";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+// ─── Read adminPassword from local game.config.json ─────────────────────────
+
+const configPath = path.join(root, "game.config.json");
+if (!fs.existsSync(configPath)) {
+    console.error(`[cloud-deploy] game.config.json not found at ${configPath}`);
+    console.error(`[cloud-deploy] Run: cp game.config.example.json game.config.json`);
+    process.exit(1);
+}
+
+const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+const adminPassword = config.adminPassword ?? null;
+
+if (!adminPassword) {
+    console.warn("[cloud-deploy] ⚠️  adminPassword is not set in game.config.json — board will be accessible without a password.");
+}
+
+// ─── Config ─────────────────────────────────────────────────────────────────
+
+const PROJECT   = "birthday-game-2026";
+const REGION    = "europe-west1";
+const SERVICE   = "birthday-game";
+const IMAGE     = `${REGION}-docker.pkg.dev/${PROJECT}/${SERVICE}/${SERVICE}:latest`;
+
+// ─── Step 1: Cloud Build ─────────────────────────────────────────────────────
+
+console.log("\n[cloud-deploy] 🏗  Building image via Cloud Build…\n");
+run(`gcloud builds submit --config cloudbuild.yaml --project ${PROJECT} .`);
+
+// ─── Step 2: Cloud Run deploy ────────────────────────────────────────────────
+
+const envVars = adminPassword
+    ? `ADMIN_PASSWORD=${adminPassword}`
+    : "ADMIN_PASSWORD=";
+
+console.log("\n[cloud-deploy] 🚀  Deploying to Cloud Run…\n");
+run(
+    `gcloud run deploy ${SERVICE}` +
+    ` --image ${IMAGE}` +
+    ` --region ${REGION}` +
+    ` --project ${PROJECT}` +
+    ` --allow-unauthenticated` +
+    ` --timeout 3600` +
+    ` --max-instances 1` +
+    ` --min-instances 0` +
+    ` --port 8080` +
+    ` --set-env-vars ${envVars}`
+);
+
+console.log("\n[cloud-deploy] ✅  Deploy complete.");
+if (adminPassword) {
+    console.log(`[cloud-deploy]    Board password set from game.config.json.`);
+} else {
+    console.log(`[cloud-deploy]    No board password set — set adminPassword in game.config.json before next deploy.`);
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function run(cmd) {
+    console.log(`$ ${cmd}\n`);
+    execSync(cmd, {stdio: "inherit", cwd: root});
+}
+
