@@ -109,28 +109,12 @@
   </div>
 
   <!-- Advance button -->
-  <div animOnInit="item" [animDelay]="0.85" class="text-center pb-3">
+  <div animOnInit="item" [animDelay]="0.85" class="text-center pb-6">
     <button
       class="bg-purple-600 text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-purple-700 active:scale-95 transition-all"
       (click)="advanceFromResults()"
     >
       Nächste Runde ⏩
-    </button>
-  </div>
-
-  <!-- Download assets -->
-  <div class="text-center pb-6">
-    <button
-      class="text-xs text-stone-400 hover:text-stone-600 underline underline-offset-2 disabled:opacity-40"
-      [disabled]="downloadState() === 'loading'"
-      (click)="downloadAllAssets()"
-    >
-      @switch (downloadState()) {
-        @case ('loading') { ⏳ Bilder werden gepackt... }
-        @case ('done') { ✅ Download gestartet }
-        @case ('error') { ❌ Fehler beim Laden }
-        @default { ⬇ Alle Avatare & Collagen herunterladen }
-      }
     </button>
   </div>
 </div>

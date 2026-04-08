@@ -1,6 +1,7 @@
 import { CommonModule } from "@angular/common";
 import { Component, OnInit, output, signal } from "@angular/core";
 import type { GameModeId } from "@birthday/shared";
+import JSZip from "jszip";
 import { ApiService, type SessionSummary } from '../../../core/api.service';
 import {AnimOnInitDirective, AnimGroupDirective} from '../../shared/animations/anim-on-init.directive';
 import {PageRootDirective} from '../../shared/animations/page-root.directive';
@@ -21,8 +22,11 @@ export class BoardLobbyComponent implements OnInit {
   public readonly sessions = signal<SessionSummary[]>([]);
   public readonly isLoadingSessions = signal(true);
 
+  /** Per-session download state: idle | loading | done | error */
+  public readonly downloadStates = signal<Map<string, "idle" | "loading" | "done" | "error">>(new Map());
+
   public readonly gameModes: { id: GameModeId; icon: string; label: string; description: string }[] = [
-    { id: "sticker-collage", icon: "assets/png/select_icon_sticker_game.png", label: "Sticker-Collage", description: "Sticker-Collagen bauen & bewerten" },
+    { id: "sticker-collage", icon: "assets/png/select_icon_sticker_game.png", label: "Stickermania", description: "Sticker-Collagen bauen & bewerten" },
   ];
 
   public constructor(
@@ -56,6 +60,52 @@ export class BoardLobbyComponent implements OnInit {
       await this.api.deleteSession(sessionId);
       this.sessions.set(this.sessions().filter((s) => s.sessionId !== sessionId));
     } catch { /* ignore */ }
+  }
+
+  public downloadState(sessionId: string): "idle" | "loading" | "done" | "error" {
+    return this.downloadStates().get(sessionId) ?? "idle";
+  }
+
+  public async downloadSessionAssets(sessionId: string, sessionCode: string, event: Event): Promise<void> {
+    event.stopPropagation();
+
+    const states = new Map(this.downloadStates());
+    states.set(sessionId, "loading");
+    this.downloadStates.set(states);
+
+    try {
+      const assets = await this.api.getSessionAssets(sessionId);
+      if (assets.length === 0) {
+        const s = new Map(this.downloadStates());
+        s.set(sessionId, "error");
+        this.downloadStates.set(s);
+        return;
+      }
+
+      const zip = new JSZip();
+      await Promise.all(assets.map(async (asset) => {
+        const response = await fetch(asset.publicUrl);
+        const blob = await response.blob();
+        const folder = asset.type === "avatar" ? "avatare" : "collagen";
+        zip.file(`${folder}/${asset.filename}`, blob);
+      }));
+
+      const content = await zip.generateAsync({type: "blob"});
+      const url = URL.createObjectURL(content);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `stickermania-${sessionCode}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      const s = new Map(this.downloadStates());
+      s.set(sessionId, "done");
+      this.downloadStates.set(s);
+    } catch {
+      const s = new Map(this.downloadStates());
+      s.set(sessionId, "error");
+      this.downloadStates.set(s);
+    }
   }
 
   public modeLabel(mode: string): string {
