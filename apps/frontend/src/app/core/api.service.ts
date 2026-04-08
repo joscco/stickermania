@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
-import type { GameModeId, SessionInfo, SessionState } from "@birthday/shared";
+import type { GameModeId, SessionInfo } from "@birthday/shared";
 import { firstValueFrom } from "rxjs";
 
 export interface ResolvedSessionInfo {
@@ -46,6 +46,14 @@ export class ApiService {
       this.httpClient.post<{ok: boolean; publicUrl: string}>(
         `/api/sessions/${encodeURIComponent(sessionId)}/collage-image`,
         {playerId, collageId, imageDataUrl},
+      ),
+    );
+  }
+
+  public getSessionAssets(sessionId: string): Promise<Array<{type: "avatar" | "collage"; filename: string; publicUrl: string}>> {
+    return firstValueFrom(
+      this.httpClient.get<Array<{type: "avatar" | "collage"; filename: string; publicUrl: string}>>(
+        `/api/sessions/${encodeURIComponent(sessionId)}/assets`,
       ),
     );
   }

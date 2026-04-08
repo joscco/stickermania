@@ -36,8 +36,8 @@ world-state.json
 .env
 .env.*.local
 
-wlan-config.json
-wlan-qr.png
+wlan/wlan-config.json
+wlan/wlan-qr.png
 /.data/
 /apps/backend/.data/
 /screenshots/

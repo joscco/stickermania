@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import Fastify from "fastify";
+import fastifyCookie from "@fastify/cookie";
 import fastifyStatic from "@fastify/static";
 import fastifyWebSocket from "@fastify/websocket";
 import {loadBackendConfig} from "./config.js";
@@ -9,6 +10,7 @@ import {SessionService} from "./session/sessionService.js";
 import {FileSessionRepository} from "./infra/local/fileSessionRepository.js";
 import {LocalAssetRepository} from "./infra/local/localAssetRepository.js";
 import {registerApiRoutes} from "./http/apiRoutes.js";
+import {registerAuthPlugin} from "./http/authPlugin.js";
 import {registerEditorApiRoutes} from "./http/editorApiRoutes.js";
 import {registerWebSocket} from "./http/wsPlugin.js";
 
@@ -20,6 +22,8 @@ const {appMode} = backendConfig;
 const app = Fastify({logger: false, bodyLimit: 10 * 1024 * 1024}); // 10 MB for collage image uploads
 
 // ─── Plugins ────────────────────────────────────────────────────
+
+await app.register(fastifyCookie);
 
 // WebSocket support (must be registered before routes that use it)
 if (appMode !== "dev") {
@@ -57,6 +61,8 @@ if (fs.existsSync(frontendDist)) {
 
 // Editor routes are available in all modes (party + dev)
 await registerEditorApiRoutes(app, backendConfig);
+// Auth routes available in all modes
+await registerAuthPlugin(app, backendConfig);
 
 if (appMode !== "dev") {
     // Game routes + WebSocket only in party/cloud modes

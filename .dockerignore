@@ -7,5 +7,5 @@ README.md
 .data
 coverage
 .angular
-# WiFi credentials – must never be baked into cloud images
-wlan-config.json
+# WLAN credentials and QR files – must never be baked into cloud images
+wlan/

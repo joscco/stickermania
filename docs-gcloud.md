@@ -4,14 +4,9 @@ Diese Anleitung beschreibt, wie das Spiel als Docker-Container gebaut und auf **
 
 ## Voraussetzungen
 
-Benötigt werden:
-
-- ein Google-Cloud-Projekt
-- die **Google Cloud CLI** (`gcloud`)
-- Docker mit laufender Engine
-- ein lokales, erfolgreich gebautes Projekt
-
-Cloud Run kann Container-Images direkt aus **Artifact Registry** deployen. Artifact Registry nutzt dafür die `pkg.dev`-Domains. ([docs.cloud.google.com](https://docs.cloud.google.com/run/docs/deploying?utm_source=chatgpt.com))
+- ein Google-Cloud-Projekt (`birthday-game-2026`)
+- **Google Cloud CLI** (`gcloud`) installiert und eingerichtet
+- Docker mit laufender Engine (inkl. `docker buildx` für Apple Silicon)
 
 ---
 
@@ -19,50 +14,47 @@ Cloud Run kann Container-Images direkt aus **Artifact Registry** deployen. Artif
 
 ### 1. Cloud Run erwartet `linux/amd64`
 
-Cloud Run akzeptiert nur Container-Images, deren Manifest `linux/amd64` unterstützt. Das ist besonders wichtig, wenn lokal auf einem Apple-Silicon-Mac gebaut wird. ([docs.cloud.google.com](https://docs.cloud.google.com/run/docs/container-contract?utm_source=chatgpt.com))
+Cloud Run akzeptiert nur Container-Images für `linux/amd64`. Auf Apple-Silicon-Macs muss beim Bauen die Zielplattform explizit angegeben werden.
 
 ### 2. Der Container muss auf `PORT` lauschen
 
-Cloud Run injiziert die Umgebungsvariable `PORT` in den Container. Der Dienst muss auf genau diesem Port HTTP-Anfragen annehmen. In diesem Projekt ist das `8080`. ([docs.cloud.google.com](https://docs.cloud.google.com/run/docs/building/containers?utm_source=chatgpt.com))
+Cloud Run setzt die Umgebungsvariable `PORT=8080`. Das Backend liest diese Variable automatisch aus.
 
-### 3. Timeout für WebSockets / lange Requests
+### 3. Timeout für WebSockets
 
-Cloud Run hat standardmäßig **300 Sekunden** Timeout und erlaubt maximal **3600 Sekunden**. Für dieses Spiel ist ein höheres Timeout sinnvoll. ([docs.cloud.google.com](https://docs.cloud.google.com/run/docs/configuring/request-timeout?utm_source=chatgpt.com))
+Cloud Run hat standardmäßig 300 Sekunden Timeout. Der Deploy-Befehl setzt `--timeout 3600` (60 Minuten) für lange Spielsitzungen.
 
-### 4. Aktueller Architekturstand
+### 4. Nur eine Instanz (`--max-instances 1`)
 
-Dieses Projekt nutzt aktuell noch:
+Das Spiel speichert Sessions und Assets **lokal im Container-Dateisystem**. Würden mehrere Instanzen gleichzeitig laufen, würden Spieler auf verschiedene Instanzen treffen und ihre Session nicht finden. Daher wird Cloud Run auf genau eine Instanz begrenzt. Das ist für Demonstrations-Sessions mit wenigen Teilnehmern völlig ausreichend.
 
-- lokale Dateipersistenz für Sessions
-- lokale Asset-Speicherung
-- In-Memory-Runtimes im Backend
+> **Wichtig**: Wenn die Instanz neugestartet wird (z. B. nach einem neuen Deploy), sind alle laufenden Sessions verloren. Der `cloud:start` / `cloud:stop`-Zyklus ist dafür gedacht, die Instanz nur während Demonstrationen laufen zu lassen.
 
-Das ist für eine Demo okay, aber noch nicht robust gegen Neustarts oder Mehrinstanzbetrieb. Session Affinity kann helfen, ersetzt aber keinen externen Zustandsspeicher. ([docs.cloud.google.com](https://docs.cloud.google.com/run/docs/deploying?utm_source=chatgpt.com))
+### 5. Passwortschutz
 
----
+Der Board-Zugang ist durch ein Passwort geschützt. Das Passwort wird als Umgebungsvariable gesetzt:
 
-## Sicherheitswarnung
-
-Lokale Konfigurationsdateien mit sensiblen Daten, zum Beispiel WLAN-Zugangsdaten, dürfen **nicht** ins Image oder Repository gelangen.
-
-Empfohlen:
-
-- echte lokale Dateien in `.gitignore` aufnehmen
-- dieselben Dateien zusätzlich in `.dockerignore` aufnehmen
-- nur Beispiel-Dateien wie `wlan-config.example.json` versionieren
-
-Beispiel:
-
-```gitignore
-apps/frontend/public/assets/wlan-config.json
-.data
+```bash
+# Beim Deploy mitgeben:
+gcloud run deploy birthday-game \
+  --set-env-vars ADMIN_PASSWORD=mein-sicheres-passwort \
+  ...
 ```
 
+Ohne `ADMIN_PASSWORD` ist der Board-Zugang ohne Passwort möglich — **nicht für öffentliche Deployments empfohlen**.
+
 ---
 
-## APIs aktivieren
+## Sicherheitshinweise
 
-Im gewünschten GCP-Projekt zuerst die nötigen APIs aktivieren:
+- `wlan/wlan-config.json` darf **nicht** ins Image gelangen (steht in `.dockerignore` und `.gitignore`)
+- `ADMIN_PASSWORD` gehört **nicht** in den Code, sondern als Secret/Env-Var beim Deploy
+
+---
+
+## Einmalige Einrichtung
+
+### APIs aktivieren
 
 ```bash
 gcloud config set project birthday-game-2026
@@ -73,45 +65,29 @@ gcloud services enable \
   cloudbuild.googleapis.com
 ```
 
-Cloud Run, Artifact Registry und Cloud Build sind die zentralen Bausteine für diesen Deploy-Weg. ([docs.cloud.google.com](https://docs.cloud.google.com/run/docs/deploying?utm_source=chatgpt.com))
-
----
-
-## Artifact Registry Repository anlegen
-
-Falls noch kein Docker-Repository existiert:
+### Artifact Registry Repository anlegen
 
 ```bash
 gcloud artifacts repositories create birthday-game \
   --repository-format=docker \
   --location=europe-west1 \
-  --description="Birthday game images"
+  --description="Stickermania images"
 ```
 
-Container-Images werden in Artifact Registry in einem Docker-Repository gespeichert. ([docs.cloud.google.com](https://docs.cloud.google.com/artifact-registry/docs/docker?utm_source=chatgpt.com))
-
----
-
-## Docker für Artifact Registry authentifizieren
-
-Vor Push/Pull muss Docker für die Ziel-Registry authentifiziert werden:
+### Docker für Artifact Registry authentifizieren
 
 ```bash
 gcloud auth login
 gcloud auth configure-docker europe-west1-docker.pkg.dev
 ```
 
-`gcloud auth configure-docker` richtet Docker so ein, dass Requests gegen Artifact Registry mit den Google-Credentials authentifiziert werden. ([docs.cloud.google.com](https://docs.cloud.google.com/artifact-registry/docs/docker/authentication?utm_source=chatgpt.com))
-
 ---
 
-## Docker-Image bauen
+## Workflow: Deploy → Start → Stop
 
-### Für Cloud Run wichtig: `linux/amd64`
+### `npm run cloud:deploy` — Image bauen & deployen
 
-Auf Apple-Silicon-Macs muss das Image explizit für `linux/amd64` gebaut werden.
-
-Empfohlener Build:
+Führt folgendes aus:
 
 ```bash
 docker buildx build \
@@ -119,169 +95,111 @@ docker buildx build \
   -t europe-west1-docker.pkg.dev/birthday-game-2026/birthday-game/birthday-game:latest \
   --push \
   .
-```
 
-Damit wird das Image:
-
-- für `linux/amd64` gebaut
-- korrekt getaggt
-- direkt nach Artifact Registry gepusht
-
-Cloud Run verlangt ein Image, das `linux/amd64` unterstützt. ([docs.cloud.google.com](https://docs.cloud.google.com/run/docs/container-contract?utm_source=chatgpt.com))
-
----
-
-## Cloud Run Deploy
-
-Wenn das Image erfolgreich in Artifact Registry liegt:
-
-```bash
 gcloud run deploy birthday-game \
   --image europe-west1-docker.pkg.dev/birthday-game-2026/birthday-game/birthday-game:latest \
   --region europe-west1 \
   --allow-unauthenticated \
   --timeout 3600 \
-  --session-affinity \
-  --min-instances 1 \
+  --max-instances 1 \
+  --min-instances 0 \
   --port 8080
 ```
 
-### Bedeutung der Flags
+> Beim ersten Deploy oder nach Code-Änderungen ausführen. Dauert mehrere Minuten.
+> Das `ADMIN_PASSWORD` muss danach über `gcloud run services update` oder direkt beim Deploy als `--set-env-vars` gesetzt werden (einmalig, bleibt erhalten):
+> ```bash
+> gcloud run services update birthday-game \
+>   --region europe-west1 \
+>   --set-env-vars ADMIN_PASSWORD=mein-passwort
+> ```
 
-- `--allow-unauthenticated`  
-  Die App ist öffentlich erreichbar.
+---
 
-- `--timeout 3600`  
-  Erhöht das Request-Timeout auf 60 Minuten, passend für längere Verbindungen. ([docs.cloud.google.com](https://docs.cloud.google.com/run/docs/configuring/request-timeout?utm_source=chatgpt.com))
+### `npm run cloud:start` — Vor der Demonstration
 
-- `--session-affinity`  
-  Hilft dabei, dass ein Client möglichst auf derselben Instanz bleibt. Das ist nützlich, weil das Projekt aktuell noch nicht auf Firestore/Cloud Storage umgestellt ist. Session Affinity ist aber nur ein Routing-Helfer. ([docs.cloud.google.com](https://docs.cloud.google.com/run/docs/deploying?utm_source=chatgpt.com))
+Setzt Ingress auf `all` und startet mindestens eine Instanz:
 
-- `--min-instances 1`  
-  Hält mindestens eine Instanz warm, damit der erste Aufruf nicht kalt startet.
+```bash
+gcloud run services update birthday-game \
+  --region europe-west1 \
+  --ingress all \
+  --min-instances 1
+```
 
-- `--port 8080`  
-  Passt zum Container, der auf Port `8080` lauscht. Cloud Run erwartet, dass der Dienst auf dem konfigurierten `PORT` läuft. ([docs.cloud.google.com](https://docs.cloud.google.com/run/docs/building/containers?utm_source=chatgpt.com))
+Die App ist danach öffentlich erreichbar. Beim ersten Start kann es ~30 Sekunden dauern (Cold Start).
+
+---
+
+### `npm run cloud:stop` — Nach der Demonstration
+
+Setzt Ingress auf `internal` (kein öffentlicher Zugriff mehr) und skaliert auf 0 Instanzen:
+
+```bash
+gcloud run services update birthday-game \
+  --region europe-west1 \
+  --ingress internal \
+  --min-instances 0
+```
+
+> ⚠️ Durch das Herunterskalieren auf 0 wird der Container gestoppt — alle laufenden Sessions und gespeicherten Assets gehen verloren.
 
 ---
 
 ## Zugriff auf die App
 
-Nach erfolgreichem Deploy gibt `gcloud` eine `run.app`-URL zurück.
+Nach `cloud:start` gibt `gcloud` die URL aus. Die App ist dann unter der `run.app`-URL erreichbar:
 
-Die App wird dann über folgende URL geöffnet:
-
-```text
-https://<DEINE-CLOUD-RUN-URL>/#/board
+```
+https://<DEINE-CLOUD-RUN-URL>/
 ```
 
-Von dort aus:
-
-- neue Session starten
-- QR-Code erzeugen
-- weitere Geräte über Join-Link oder QR beitreten lassen
-
----
-
-## Service löschen
-
-Falls ein fehlerhafter oder sensibler Deploy entfernt werden soll:
-
-```bash
-gcloud run services delete birthday-game --region europe-west1
-```
-
-Optional kann zusätzlich das Image aus Artifact Registry gelöscht werden.
+- Spieler öffnen diese URL auf ihrem Handy und geben den Session-Code ein
+- Der Moderator klickt auf "Zum Board", gibt das Passwort ein und legt eine Session an
 
 ---
 
 ## Nützliche Diagnose-Befehle
 
-### Vorhandene Cloud-Run-Services anzeigen
-
 ```bash
+# Status des Services anzeigen
+gcloud run services describe birthday-game --region europe-west1
+
+# Alle Cloud-Run-Services auflisten
 gcloud run services list --region europe-west1
-```
 
-### Images in Artifact Registry anzeigen
-
-```bash
+# Images in Artifact Registry anzeigen
 gcloud artifacts docker images list \
   europe-west1-docker.pkg.dev/birthday-game-2026/birthday-game
-```
 
-### Docker-Images lokal anzeigen
-
-```bash
+# Lokale Docker-Images anzeigen
 docker images | grep birthday-game
+
+# Service komplett löschen (z. B. nach der Veranstaltung)
+gcloud run services delete birthday-game --region europe-west1
 ```
 
 ---
 
-## Empfohlene lokale Dateien
+## `.dockerignore`
 
-### `.dockerignore`
-
-```gitignore
+```
 node_modules
 dist
 .git
 .gitignore
 README.md
 .data
-apps/frontend/public/assets/wlan-config.json
-```
-
-### `.gitignore`
-
-```gitignore
-apps/frontend/public/assets/wlan-config.json
-.data
+wlan/
 ```
 
 ---
 
-## Spätere Verbesserung
+## Spätere Verbesserungsmöglichkeiten
 
-Für eine robustere Cloud-Version sollte später umgestellt werden auf:
+Für eine robustere Cloud-Version (mehrere Instanzen, kein Datenverlust bei Restarts):
 
 - **Firestore** für Sessions und Spielzustand
-- **Cloud Storage** für Zeichnungen und Avatare
+- **Cloud Storage** für Avatare und Collagen
 
-Dann wäre das Spiel deutlich stabiler gegen Neustarts und Mehrinstanzbetrieb. Cloud Run selbst unterstützt dieses Muster gut, aber der aktuelle dateibasierte Zustandsspeicher ist dafür noch nicht ideal. ([docs.cloud.google.com](https://docs.cloud.google.com/run/docs/deploying?utm_source=chatgpt.com))
-
----
-
-## Kurzfassung
-
-```bash
-gcloud config set project birthday-game-2026
-
-gcloud services enable \
-  run.googleapis.com \
-  artifactregistry.googleapis.com \
-  cloudbuild.googleapis.com
-
-gcloud artifacts repositories create birthday-game \
-  --repository-format=docker \
-  --location=europe-west1 \
-  --description="Birthday game images"
-
-gcloud auth login
-gcloud auth configure-docker europe-west1-docker.pkg.dev
-
-docker buildx build \
-  --platform linux/amd64 \
-  -t europe-west1-docker.pkg.dev/birthday-game-2026/birthday-game/birthday-game:latest \
-  --push \
-  .
-
-gcloud run deploy birthday-game \
-  --image europe-west1-docker.pkg.dev/birthday-game-2026/birthday-game/birthday-game:latest \
-  --region europe-west1 \
-  --allow-unauthenticated \
-  --timeout 3600 \
-  --session-affinity \
-  --min-instances 1 \
-  --port 8080
-```
+Das bestehende Repository-Pattern (`SessionRepository`, `AssetRepository`) ist dafür vorbereitet — es braucht nur neue Implementierungen.

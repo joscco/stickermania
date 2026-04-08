@@ -20,7 +20,7 @@ export class LocalAssetRepository implements AssetRepository {
   public constructor(private readonly dataRoot: string) {}
 
   public async saveAvatar(args: { sessionId: string; playerId: string; playerName: string; imageDataUrl: string }): Promise<SavedAsset> {
-    const relativePath = path.posix.join("assets", args.sessionId, "avatars", `${sanitize(args.playerName)}-${args.playerId}.png`);
+    const relativePath = path.posix.join("assets", args.sessionId, "avatars", `avatar_${sanitize(args.playerName)}_${args.playerId}.png`);
     await this.writeBuffer(relativePath, decodePngDataUrl(args.imageDataUrl));
     return {
       assetPath: relativePath,
@@ -33,7 +33,7 @@ export class LocalAssetRepository implements AssetRepository {
       "assets",
       args.sessionId,
       "drawings",
-      `${sanitize(args.playerName)}-${sanitize(args.prompt)}-${args.drawingId}.png`,
+      `drawing_${sanitize(args.playerName)}_${sanitize(args.prompt)}_${args.drawingId}.png`,
     );
     await this.writeBuffer(relativePath, decodePngDataUrl(args.imageDataUrl));
     return {
@@ -42,12 +42,12 @@ export class LocalAssetRepository implements AssetRepository {
     };
   }
 
-  public async saveCollage(args: { sessionId: string; playerId: string; playerName: string; collageId: string; imageDataUrl: string }): Promise<SavedAsset> {
+  public async saveCollage(args: { sessionId: string; playerId: string; playerName: string; collageId: string; prompt: string; imageDataUrl: string }): Promise<SavedAsset> {
     const relativePath = path.posix.join(
       "assets",
       args.sessionId,
       "collages",
-      `${sanitize(args.playerName)}-${args.collageId}.png`,
+      `collage_${sanitize(args.playerName)}_${sanitize(args.prompt)}_${args.collageId}.png`,
     );
     await this.writeBuffer(relativePath, decodePngDataUrl(args.imageDataUrl));
     return {
