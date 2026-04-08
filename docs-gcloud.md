@@ -5,8 +5,9 @@ Diese Anleitung beschreibt, wie das Spiel als Docker-Container gebaut und auf **
 ## Voraussetzungen
 
 - ein Google-Cloud-Projekt (`birthday-game-2026`)
-- **Google Cloud CLI** (`gcloud`) installiert und eingerichtet
-- Docker mit laufender Engine (inkl. `docker buildx` für Apple Silicon)
+- **Google Cloud CLI** (`gcloud`) installiert und eingerichtet (`gcloud auth login`)
+
+Kein lokales Docker nötig — der Build läuft auf Google Cloud Build.
 
 ---
 
@@ -74,12 +75,6 @@ gcloud artifacts repositories create birthday-game \
   --description="Stickermania images"
 ```
 
-### Docker für Artifact Registry authentifizieren
-
-```bash
-gcloud auth login
-gcloud auth configure-docker europe-west1-docker.pkg.dev
-```
 
 ---
 
@@ -87,14 +82,10 @@ gcloud auth configure-docker europe-west1-docker.pkg.dev
 
 ### `npm run cloud:deploy` — Image bauen & deployen
 
-Führt folgendes aus:
+Schickt den Quellcode an **Google Cloud Build** (kein lokales Docker nötig), baut das Image dort für `linux/amd64` und deployt es anschließend auf Cloud Run:
 
 ```bash
-docker buildx build \
-  --platform linux/amd64 \
-  -t europe-west1-docker.pkg.dev/birthday-game-2026/birthday-game/birthday-game:latest \
-  --push \
-  .
+gcloud builds submit --config cloudbuild.yaml --project birthday-game-2026 .
 
 gcloud run deploy birthday-game \
   --image europe-west1-docker.pkg.dev/birthday-game-2026/birthday-game/birthday-game:latest \
@@ -106,12 +97,13 @@ gcloud run deploy birthday-game \
   --port 8080
 ```
 
-> Beim ersten Deploy oder nach Code-Änderungen ausführen. Dauert mehrere Minuten.
-> Das `ADMIN_PASSWORD` muss danach über `gcloud run services update` oder direkt beim Deploy als `--set-env-vars` gesetzt werden (einmalig, bleibt erhalten):
+> Beim ersten Deploy oder nach Code-Änderungen ausführen. Dauert ~3–5 Minuten.
+> Das `ADMIN_PASSWORD` einmalig setzen (bleibt bei späteren Deploys erhalten):
 > ```bash
 > gcloud run services update birthday-game \
 >   --region europe-west1 \
->   --set-env-vars ADMIN_PASSWORD=mein-passwort
+>   --set-env-vars ADMIN_PASSWORD=mein-passwort \
+>   --project birthday-game-2026
 > ```
 
 ---
@@ -172,8 +164,6 @@ gcloud run services list --region europe-west1
 gcloud artifacts docker images list \
   europe-west1-docker.pkg.dev/birthday-game-2026/birthday-game
 
-# Lokale Docker-Images anzeigen
-docker images | grep birthday-game
 
 # Service komplett löschen (z. B. nach der Veranstaltung)
 gcloud run services delete birthday-game --region europe-west1

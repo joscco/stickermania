@@ -4,11 +4,9 @@
   "scripts": {
     "check-stickers": "node scripts/check-sticker-assets.mjs",
     "prebuild": "node scripts/check-sticker-assets.mjs",
-    "prebuild:cloud": "node scripts/check-sticker-assets.mjs",
     "dev": "ng serve --configuration development",
     "dev:tools": "ng serve --configuration dev-tools",
     "build": "ng build --configuration production",
-    "build:cloud": "ng build --configuration cloud",
     "build:dev-tools": "ng build --configuration dev-tools",
     "test": "ng test"
   },

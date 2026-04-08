@@ -36,7 +36,7 @@ export async function registerAuthPlugin(
                 sameSite: "strict",
                 path: "/",
                 maxAge: COOKIE_MAX_AGE_SEC,
-                secure: backendConfig.appMode === "cloud",
+                secure: !!process.env.PORT, // PORT is set by Cloud Run → HTTPS → secure cookie
             });
 
             return {ok: true};

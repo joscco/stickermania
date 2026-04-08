@@ -12,14 +12,14 @@ Session-basiertes Party-Spiel: Spieler erstellen gemeinsam lustige Sticker-Colla
 
 ## Modi
 
-Die App kennt **drei Modi**:
+Die App kennt **zwei Modi**:
 
-| | **🎉 Party (LAN)** | **☁️ Cloud** | **🛠️ Dev (Editoren)** |
-|---|---|---|---|
-| **Einsatz** | Geburtstagsfeier, LAN-Party | Google Cloud Run | Sticker & Hitboxen bearbeiten |
-| **Was läuft** | Voller Game-Server + WebSocket | Voller Game-Server | Nur Editor-APIs, kein WebSocket |
-| **Frontend** | Board, Player | Board, Player | Hitbox-Editor, Sticker-Editor |
-| **Script** | `npm run party` | `npm run cloud` | `npm run dev` |
+| | **🎉 Spiel** | **🛠️ Dev (Editoren)** |
+|---|---|---|
+| **Einsatz** | Party (LAN) oder Google Cloud Run | Sticker & Hitboxen bearbeiten |
+| **Was läuft** | Voller Game-Server + WebSocket | Nur Editor-APIs, kein WebSocket |
+| **Frontend** | Board, Player | Hitbox-Editor, Sticker-Editor |
+| **Script** | `npm run start` | `npm run dev` |
 
 ---
 
@@ -28,8 +28,8 @@ Die App kennt **drei Modi**:
 ```bash
 npm install
 
-# Party-Modus (LAN) — baut alles und startet den Server
-npm run party
+# Spiel-Modus — baut alles und startet den Server
+npm run start
 
 # Dev-Modus — nur Editoren
 npm run dev
@@ -38,9 +38,9 @@ npm run dev
 npm run dev:live
 ```
 
-### Party-Modus
+### Spiel-Modus (lokal)
 
-1. `npm run party`
+1. `npm run start`
 2. Browser öffnen: `http://localhost:3001`
 3. Auf "Ich bin der Moderator → Zum Board" klicken und Passwort eingeben
 4. Session erstellen, QR-Code anzeigen lassen
@@ -121,17 +121,16 @@ Nach der Session: Im Board auf **"Alle Avatare & Collagen herunterladen"** klick
 
 | Script | Beschreibung |
 |---|---|
-| `npm run party` | **Party-Modus**: Baut alles, startet Server auf Port 3001 |
+| `npm run start` | **Spiel-Modus**: Baut alles, startet Server (LAN auf Port 3001, Cloud auf Port 8080) |
 | `npm run dev` | **Dev-Modus**: Baut Editoren-Frontend, startet Server (nur Editor-APIs) |
 | `npm run dev:live` | **Dev + HMR**: Backend + `ng serve` parallel mit Live-Reload |
-| `npm run cloud` | **Cloud lokal testen**: Baut mit Cloud-Config, startet auf Port 8080 |
 | `npm run wlan:qr` | WLAN-QR-Code als PNG generieren (aus `wlan/wlan-config.json`) |
-| `npm run cloud:deploy` | Docker-Image bauen, nach Artifact Registry pushen & auf Cloud Run deployen |
+| `npm run cloud:deploy` | Quellcode an Cloud Build schicken, Image bauen & auf Cloud Run deployen |
 | `npm run cloud:start` | Cloud-Run-Service hochfahren (Ingress auf `all`, min. 1 Instanz) |
 | `npm run cloud:stop` | Cloud-Run-Service herunterfahren (Ingress auf `internal`, 0 Instanzen) |
 | `npm run screenshots` | Baut die App, startet Server, schießt Screenshots aller Screens, stoppt Server |
 
-> Admin-Passwort: `ADMIN_PASSWORD="geheim" npm run party`
+> Admin-Passwort lokal: `ADMIN_PASSWORD="geheim" npm run start`
 
 ---
 

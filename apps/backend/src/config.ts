@@ -2,25 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { parseGameConfig, type GameConfig } from "@birthday/shared";
 
-export interface WlanConfig {
-    wifi?: {
-        ssid?: string;
-        password?: string;
-        security?: string;
-        hidden?: boolean;
-        showWifiSectionByDefault?: boolean;
-    };
-}
-
-export type AppMode = "party" | "cloud" | "dev";
-
 export interface BackendConfig {
-    appMode: AppMode;
+    devMode: boolean;
     gameConfig: GameConfig;
     dataRoot: string;
     sessionsPath: string;
     assetsPath: string;
-    wlanConfig: WlanConfig | null;
 }
 
 export function loadBackendConfig(args: { argv: string[]; cwd: string }): BackendConfig {
@@ -41,22 +28,11 @@ export function loadBackendConfig(args: { argv: string[]; cwd: string }): Backen
         gameConfig.adminPassword = process.env.ADMIN_PASSWORD;
     }
 
-    // Load optional WLAN config from project root (party mode only)
-    const wlanConfigPath = path.resolve(args.cwd, "wlan-config.json");
-    let wlanConfig: WlanConfig | null = null;
-    try {
-        wlanConfig = JSON.parse(fs.readFileSync(wlanConfigPath, "utf-8")) as WlanConfig;
-        console.log(`[config] loaded wlan-config.json from ${wlanConfigPath}`);
-    } catch {
-        console.log(`[config] wlan-config.json not found at ${wlanConfigPath} (OK for cloud mode)`);
-    }
-
     const dataRoot = path.resolve(process.env.DATA_ROOT ?? path.resolve(args.cwd, ".data"));
     const sessionsPath = path.resolve(dataRoot, "sessions");
     const assetsPath = path.resolve(dataRoot, "assets");
 
-    const rawMode = process.env.APP_MODE ?? "party";
-    const appMode: AppMode = (rawMode === "dev" || rawMode === "cloud") ? rawMode : "party";
+    const devMode = process.env.APP_MODE === "dev";
 
-    return { appMode, gameConfig, dataRoot, sessionsPath, assetsPath, wlanConfig };
+    return { devMode, gameConfig, dataRoot, sessionsPath, assetsPath };
 }
