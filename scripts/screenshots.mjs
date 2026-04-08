@@ -68,7 +68,7 @@ const SCREENS = [
 
 function build() {
     console.log('🔨 Building frontend...');
-    execSync('npm run _build:party', {cwd: ROOT, stdio: 'inherit'});
+    execSync('npm run _build', {cwd: ROOT, stdio: 'inherit'});
     console.log('✅ Build done.\n');
 }
 

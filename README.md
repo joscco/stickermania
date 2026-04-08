@@ -1,4 +1,4 @@
-# Birthday Sticker-Collage
+# Stickermania
 
 Session-basiertes Party-Spiel: Spieler erstellen gemeinsam lustige Sticker-Collagen und stimmen über die besten ab.
 
@@ -41,7 +41,7 @@ npm run dev
 npm run dev:live
 ```
 
-### Spiel-Modus (lokal)
+### Lokaler Modus
 
 1. `npm run start`
 2. Browser öffnen: `http://localhost:3001`
