@@ -91,10 +91,10 @@ Die Startseite (`/`) ist für alle zugänglich: Spieler geben dort ihren Session
 
 Der **"Zum Board"**-Link am unteren Rand führt zu einem Passwort-Dialog. Das Passwort wird vom Backend geprüft. Bei Erfolg setzt das Backend ein HttpOnly-Cookie — der Moderator bleibt eingeloggt, bis der Cookie abläuft oder der Container neugestartet wird.
 
-Das Passwort wird in `game.config.json` unter `adminPassword` gesetzt oder per Umgebungsvariable überschrieben:
+Das Passwort wird in `game.config.json` unter `adminPassword` gesetzt. Lokal kann es auch per Umgebungsvariable überschrieben werden:
 
 ```bash
-ADMIN_PASSWORD="geheim" npm run party
+ADMIN_PASSWORD="geheim" npm run start
 ```
 
 Ist kein Passwort konfiguriert (`adminPassword: null`), ist der Board-Zugang ohne Passwort möglich.
@@ -186,13 +186,7 @@ cp game.config.example.json game.config.json
 # Dann adminPassword setzen und ggf. andere Werte anpassen
 ```
 
-Für Cloud Run wird `game.config.json` **nicht** ins Docker-Image kopiert. Config per Env-Var (einmalig, bleibt bei Deploys erhalten):
-
-```bash
-gcloud run services update birthday-game \
-  --region europe-west1 \
-  --set-env-vars ADMIN_PASSWORD=mein-passwort
-```
+Für Cloud Run wird `game.config.json` **nicht** ins Docker-Image kopiert — `npm run cloud:deploy` liest das Passwort aus der lokalen `game.config.json` und übergibt es automatisch als `ADMIN_PASSWORD` Env-Var an Cloud Run.
 
 ### `wlan/wlan-config.json`
 

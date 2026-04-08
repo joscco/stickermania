@@ -33,16 +33,19 @@ Das Spiel speichert Sessions und Assets **lokal im Container-Dateisystem**. Wür
 
 ### 5. Passwortschutz
 
-Der Board-Zugang ist durch ein Passwort geschützt. Das Passwort wird als Umgebungsvariable gesetzt:
+Der Board-Zugang ist durch ein Passwort geschützt. Das Passwort wird in `game.config.json` unter `adminPassword` gesetzt und beim Deploy automatisch als `ADMIN_PASSWORD` Env-Var an Cloud Run übergeben:
 
-```bash
-# Beim Deploy mitgeben:
-gcloud run deploy birthday-game \
-  --set-env-vars ADMIN_PASSWORD=mein-sicheres-passwort \
+```json
+// game.config.json
+{
+  "adminPassword": "mein-sicheres-passwort",
   ...
+}
 ```
 
-Ohne `ADMIN_PASSWORD` ist der Board-Zugang ohne Passwort möglich — **nicht für öffentliche Deployments empfohlen**.
+Dann einfach `npm run cloud:deploy` ausführen — kein weiterer Schritt nötig.
+
+Ohne gesetztes Passwort ist der Board-Zugang offen — **nicht für öffentliche Deployments empfohlen**.
 
 ---
 
@@ -84,37 +87,26 @@ gcloud artifacts repositories create birthday-game \
 
 ### `npm run cloud:deploy` — Image bauen & deployen
 
-Schickt den Quellcode an **Google Cloud Build** (kein lokales Docker nötig), baut das Image dort für `linux/amd64` und deployt es anschließend auf Cloud Run:
+Führt `scripts/cloud-deploy.mjs` aus, das:
+
+1. `adminPassword` aus der lokalen `game.config.json` liest
+2. Das Image via **Google Cloud Build** baut (`linux/amd64`, kein lokales Docker nötig)
+3. Das Image auf Cloud Run deployt und `ADMIN_PASSWORD` dabei als Env-Var setzt
 
 ```bash
-gcloud builds submit --config cloudbuild.yaml --project birthday-game-2026 .
-
-gcloud run deploy birthday-game \
-  --image europe-west1-docker.pkg.dev/birthday-game-2026/birthday-game/birthday-game:latest \
-  --region europe-west1 \
-  --allow-unauthenticated \
-  --timeout 3600 \
-  --max-instances 1 \
-  --min-instances 0 \
-  --port 8080
+npm run cloud:deploy
 ```
 
 > Beim ersten Deploy oder nach Code-Änderungen ausführen. Dauert ~3–5 Minuten.
 
-**Wichtig:** Das Image enthält keine `game.config.json`. Alle Spieleinstellungen, die du für Cloud Run brauchst, werden als Env-Vars gesetzt. Einmalig nach dem ersten Deploy (Werte bleiben bei späteren Deploys erhalten):
+Das Passwort wird bei **jedem** Deploy aus `game.config.json` übernommen — kein separater `gcloud run services update` Schritt nötig.
 
-```bash
-gcloud run services update birthday-game \
-  --region europe-west1 \
-  --project birthday-game-2026 \
-  --set-env-vars ADMIN_PASSWORD=mein-sicheres-passwort
-```
+Weitere Env-Vars (werden **nicht** automatisch gesetzt, können manuell ergänzt werden):
 
-Weitere optionale Env-Vars:
 | Variable | Bedeutung | Standard |
 |---|---|---|
-| `ADMIN_PASSWORD` | Board-Passwort | *(kein Passwort)* |
-| `PORT` | HTTP-Port | 3001 (Cloud Run setzt 8080 automatisch) |
+| `ADMIN_PASSWORD` | Board-Passwort (wird automatisch gesetzt) | *(kein Passwort)* |
+| `PORT` | HTTP-Port | Cloud Run setzt 8080 automatisch |
 | `DATA_ROOT` | Pfad für Sessions & Assets | `.data` |
 
 ---

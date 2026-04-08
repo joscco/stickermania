@@ -1,6 +1,6 @@
 {
   "port": 3001,
-  "adminPassword": null,
+  "adminPassword": "stickergott",
   "stickerCollage": {
     "roundDurationSec": 600,
     "votingDurationSec": 120,
