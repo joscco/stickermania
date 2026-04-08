@@ -17,7 +17,7 @@
     "_build:cloud": "npm run _build:shared && npm run build:cloud -w @birthday/frontend && npm run build -w @birthday/backend",
     "_build:dev": "npm run _build:shared && npm run build:dev-tools -w @birthday/frontend && npm run build -w @birthday/backend",
     "screenshots": "node scripts/screenshots.mjs",
-    "wlan:qr": "node scripts/wlan-qr.mjs",
+    "wlan:qr": "node wlan/wlan-qr.mjs",
     "cloud:deploy": "docker buildx build --platform linux/amd64 -t europe-west1-docker.pkg.dev/birthday-game-2026/birthday-game/birthday-game:latest --push . && gcloud run deploy birthday-game --image europe-west1-docker.pkg.dev/birthday-game-2026/birthday-game/birthday-game:latest --region europe-west1 --allow-unauthenticated --timeout 3600 --session-affinity --min-instances 0 --port 8080",
     "cloud:start": "gcloud run services update birthday-game --region europe-west1 --ingress all --min-instances 1",
     "cloud:stop": "gcloud run services update birthday-game --region europe-west1 --ingress internal --min-instances 0"

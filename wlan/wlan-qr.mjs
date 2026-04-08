@@ -16,7 +16,7 @@ import QRCode from "qrcode";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 
-const configPath = path.join(root, "wlan-config.json");
+const configPath = path.join(root, "wlan", "wlan-config.json");
 if (!fs.existsSync(configPath)) {
   console.error(`[wlan-qr] wlan-config.json not found at ${configPath}`);
   console.error(`[wlan-qr] Copy wlan-config.example.json to wlan-config.json and fill in your WiFi credentials.`);
@@ -45,7 +45,7 @@ const payload =
   `P:${escapeWifi(security === "nopass" ? "" : password)};` +
   `H:${hidden ? "true" : "false"};;`;
 
-const outPath = path.join(root, "wlan-qr.png");
+const outPath = path.join(root, "wlan", "wlan-qr.png");
 
 await QRCode.toFile(outPath, payload, {
   type: "png",
