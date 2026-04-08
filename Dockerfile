@@ -26,6 +26,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/apps/backend/dist ./apps/backend/dist
 COPY --from=build /app/apps/frontend/dist ./apps/frontend/dist
 COPY --from=build /app/packages/shared/dist ./packages/shared/dist
+COPY hitbox-data.json ./hitbox-data.json
 
 # game.config.json is intentionally NOT copied into the image.
 # Game settings are passed as environment variables at runtime:
