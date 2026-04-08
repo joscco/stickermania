@@ -36,6 +36,8 @@ world-state.json
 .env
 .env.*.local
 
+# Local config with credentials – copy from *.example.json and fill in
+game.config.json
 wlan/wlan-config.json
 wlan/wlan-qr.png
 /.data/

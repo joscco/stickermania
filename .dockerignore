@@ -7,5 +7,6 @@ README.md
 .data
 coverage
 .angular
-# WLAN credentials and QR files – must never be baked into cloud images
+# credentials & local config – never bake into image
 wlan/
+game.config.json

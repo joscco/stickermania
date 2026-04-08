@@ -28,6 +28,9 @@ Die App kennt **zwei Modi**:
 ```bash
 npm install
 
+# Konfiguration anlegen (einmalig)
+cp game.config.example.json game.config.json
+
 # Spiel-Modus — baut alles und startet den Server
 npm run start
 
@@ -176,15 +179,31 @@ ws://HOST:PORT/ws
 
 Spielparameter (Timer, Handgröße, Prompts, Sticker-Packs, Punkteverteilung, `adminPassword`).
 
+`game.config.json` ist in `.gitignore` — sie enthält lokal das Admin-Passwort. Beim ersten Checkout:
+
+```bash
+cp game.config.example.json game.config.json
+# Dann adminPassword setzen und ggf. andere Werte anpassen
+```
+
+Für Cloud Run wird `game.config.json` **nicht** ins Docker-Image kopiert. Config per Env-Var (einmalig, bleibt bei Deploys erhalten):
+
+```bash
+gcloud run services update birthday-game \
+  --region europe-west1 \
+  --set-env-vars ADMIN_PASSWORD=mein-passwort
+```
+
 ### `wlan/wlan-config.json`
 
 Optionale WLAN-Daten für den `wlan:qr`-Script:
 
 ```bash
+cp wlan/wlan-config.example.json wlan/wlan-config.json
 npm run wlan:qr  # → wlan/wlan-qr.png
 ```
 
-> ⚠️ Beide Config-Dateien mit Credentials sind in `.gitignore`.
+> ⚠️ Beide Config-Dateien sind in `.gitignore` — die `*.example.json` Varianten sind committet.
 
 ---
 
