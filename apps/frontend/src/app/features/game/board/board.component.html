@@ -72,7 +72,6 @@
             <app-board-qr-panel
               [sessionCode]="sessionCode()"
               [playerQrDataUrl]="playerQrDataUrl()"
-              [wifiQrDataUrl]="wifiQrDataUrl()"
             />
           </div>
         </div>
@@ -83,8 +82,6 @@
       [isOpen]="isSetupDrawerOpen()"
       [canReset]="true"
       [playerUrl]="playerUrl()"
-      [playerQrDataUrl]="playerQrDataUrl()"
-      (wifiQrGenerated)="handleWifiQrGenerated($event)"
       (onCloseRequested)="closeSetupDrawer()"
       (resetRequested)="resetSession()"
       (deleteRequested)="deleteSession()"

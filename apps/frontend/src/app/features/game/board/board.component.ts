@@ -30,7 +30,6 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   public readonly playerUrl = signal<string>("");
   public readonly playerQrDataUrl = signal<string | null>(null);
-  public readonly wifiQrDataUrl = signal<string | null>(null);
   public readonly isSetupDrawerOpen = signal<boolean>(false);
   public readonly events = signal<UiEvent[]>([]);
   public readonly isBoardReady = signal<boolean>(false);
@@ -107,15 +106,6 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.isSetupDrawerOpen.set(false);
   }
 
-  public handleWifiQrGenerated(dataUrl: string): void {
-    this.wifiQrDataUrl.set(dataUrl || null);
-  }
-
-
-  public startMode(): void {
-    this.wsService.send({type: "start-mode"});
-  }
-
   public async backToLobby(): Promise<void> {
     this.cleanupBoardRuntime();
     await this.router.navigate(["/board"]);
@@ -189,7 +179,6 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.wsService.disconnect();
     this.worldStore.clearSessionState();
     this.isSetupDrawerOpen.set(false);
-    this.wifiQrDataUrl.set(null);
 
     if (this.timerInterval) {
       clearInterval(this.timerInterval);

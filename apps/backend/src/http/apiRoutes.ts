@@ -1,5 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
 import type {FastifyInstance} from "fastify";
 import type {GameModeId} from "@birthday/shared";
 import type {SessionService} from "../session/sessionService.js";
@@ -111,14 +109,6 @@ export async function registerApiRoutes(
         const baseUrl = buildBaseUrl(request.protocol, request.hostname, backendConfig.gameConfig.port);
         return {baseUrl};
     });
-
-    app.get("/api/wlan-config", async (_request, reply) => {
-        if (backendConfig.wlanConfig) {
-            return backendConfig.wlanConfig;
-        }
-        return reply.status(404).send({message: "WLAN config not available"});
-    });
-
 
     // ─── Collage image upload ───────────────────────────────────
 
