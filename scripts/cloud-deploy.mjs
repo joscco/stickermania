@@ -37,7 +37,7 @@ const IMAGE     = `${REGION}-docker.pkg.dev/${PROJECT}/${SERVICE}/${SERVICE}:lat
 // ─── Step 1: Cloud Build ─────────────────────────────────────────────────────
 
 console.log("\n[cloud-deploy] 🏗  Building image via Cloud Build…\n");
-run(`gcloud builds submit --config cloudbuild.yaml --project ${PROJECT} .`);
+run(`gcloud builds submit --config cloudbuild.yaml --stream --project ${PROJECT} .`);
 
 // ─── Step 2: Cloud Run deploy ────────────────────────────────────────────────
 
