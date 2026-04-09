@@ -27,10 +27,9 @@ COPY --from=build /app/apps/backend/dist ./apps/backend/dist
 COPY --from=build /app/apps/frontend/dist ./apps/frontend/dist
 COPY --from=build /app/packages/shared/dist ./packages/shared/dist
 COPY hitbox-data.json ./hitbox-data.json
-COPY game.config.json ./game.config.json
-
-# adminPassword in game.config.json is overridden at runtime by the ADMIN_PASSWORD env var.
-# All other game settings (prompts, timers, etc.) are read from game.config.json in the image.
+COPY game.config.public.json ./game.config.public.json
+# game.config.json (private, gitignored) is NOT in the image.
+# adminPassword is injected at runtime via the ADMIN_PASSWORD env var.
 
 EXPOSE 8080
 CMD ["node", "apps/backend/dist/index.js"]

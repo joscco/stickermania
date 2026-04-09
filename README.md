@@ -267,18 +267,21 @@ ws://HOST:PORT/ws
 
 ## Konfiguration
 
-### `game.config.json`
+Die Spielkonfiguration ist auf zwei Dateien aufgeteilt:
 
-Spielparameter (Timer, Handgröße, Prompts, Sticker-Packs, Punkteverteilung, `adminPassword`).
+| Datei | Inhalt | Git |
+|---|---|---|
+| `game.config.public.json` | Spieleinstellungen (Prompts, Timer, Handgröße, …) | ✅ committed |
+| `game.config.json` | Nur `adminPassword` | ❌ gitignored |
 
-`game.config.json` ist in `.gitignore` — sie enthält lokal das Admin-Passwort. Beim ersten Checkout:
+### Erster Checkout
 
 ```bash
 cp game.config.example.json game.config.json
-# Dann adminPassword setzen und ggf. andere Werte anpassen
+# adminPassword in game.config.json setzen
 ```
 
-Für Cloud Run wird `game.config.json` ins Docker-Image kopiert (damit Prompts, Timer etc. übernommen werden). Das `adminPassword` darin wird zur Laufzeit durch die `ADMIN_PASSWORD` Env-Var überschrieben, die `npm run cloud:deploy` automatisch aus der lokalen `game.config.json` liest und setzt.
+Das Backend mergt beide Dateien beim Start. Für Cloud Run wird nur `game.config.public.json` ins Image kopiert — `adminPassword` kommt per Env-Var, die `npm run cloud:deploy` automatisch aus der lokalen `game.config.json` liest.
 
 ### `wlan/wlan-config.json`
 
@@ -289,7 +292,6 @@ cp wlan/wlan-config.example.json wlan/wlan-config.json
 npm run wlan:qr  # → wlan/wlan-qr.png
 ```
 
-> ⚠️ Beide Config-Dateien sind in `.gitignore` — die `*.example.json` Varianten sind committet.
 
 ---
 

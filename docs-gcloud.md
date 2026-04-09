@@ -33,17 +33,13 @@ Das Spiel speichert Sessions und Assets **lokal im Container-Dateisystem**. Wür
 
 ### 5. Passwortschutz
 
-Der Board-Zugang ist durch ein Passwort geschützt. Das Passwort wird in `game.config.json` unter `adminPassword` gesetzt und beim Deploy automatisch als `ADMIN_PASSWORD` Env-Var an Cloud Run übergeben:
+Der Board-Zugang ist durch ein Passwort geschützt. Es steht in der **gitignored** `game.config.json`:
 
 ```json
-// game.config.json
-{
-  "adminPassword": "mein-sicheres-passwort",
-  ...
-}
+{ "adminPassword": "mein-sicheres-passwort" }
 ```
 
-Dann einfach `npm run cloud:deploy` ausführen — kein weiterer Schritt nötig.
+`npm run cloud:deploy` liest diesen Wert und übergibt ihn automatisch als `ADMIN_PASSWORD` Env-Var an Cloud Run — kein weiterer Schritt nötig.
 
 Ohne gesetztes Passwort ist der Board-Zugang offen — **nicht für öffentliche Deployments empfohlen**.
 
@@ -51,10 +47,10 @@ Ohne gesetztes Passwort ist der Board-Zugang offen — **nicht für öffentliche
 
 ## Sicherheitshinweise
 
-- `game.config.json` ist in `.gitignore` — **niemals ins Repository einchecken**
-- `game.config.json` **wird** ins Docker-Image kopiert (für Prompts, Timer etc.) — aber `adminPassword` darin wird zur Laufzeit durch die `ADMIN_PASSWORD` Env-Var überschrieben, die `cloud:deploy` automatisch setzt
+- `game.config.json` ist in `.gitignore` — enthält nur `adminPassword`, **niemals einchecken**
+- `game.config.public.json` ist committed und enthält alle Spieleinstellungen — **kein Secret darin**
+- Das Docker-Image enthält nur `game.config.public.json`; `adminPassword` kommt per `ADMIN_PASSWORD` Env-Var
 - `wlan/wlan-config.json` ist gitignored und nie im Image
-- Solange das `ADMIN_PASSWORD` korrekt gesetzt ist, ist das Passwort in `game.config.json` im Image irrelevant
 
 ---
 
