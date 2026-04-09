@@ -7,6 +7,5 @@ README.md
 .data
 coverage
 .angular
-# credentials & local config – never bake into image
+# WLAN credentials – never bake into image
 wlan/
-game.config.json

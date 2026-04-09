@@ -52,9 +52,9 @@ Ohne gesetztes Passwort ist der Board-Zugang offen — **nicht für öffentliche
 ## Sicherheitshinweise
 
 - `game.config.json` ist in `.gitignore` — **niemals ins Repository einchecken**
-- `wlan/wlan-config.json` ist ebenfalls gitignored
-- `ADMIN_PASSWORD` (und andere Secrets) gehören als Env-Var in Cloud Run, nicht in den Code oder das Image
-- Das Image enthält **keine** `game.config.json` — alle relevanten Werte kommen zur Laufzeit per Env-Var rein
+- `game.config.json` **wird** ins Docker-Image kopiert (für Prompts, Timer etc.) — aber `adminPassword` darin wird zur Laufzeit durch die `ADMIN_PASSWORD` Env-Var überschrieben, die `cloud:deploy` automatisch setzt
+- `wlan/wlan-config.json` ist gitignored und nie im Image
+- Solange das `ADMIN_PASSWORD` korrekt gesetzt ist, ist das Passwort in `game.config.json` im Image irrelevant
 
 ---
 

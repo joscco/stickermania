@@ -8,6 +8,18 @@ function pickRandom<T>(arr: T[], count: number): T[] {
     return shuffled.slice(0, count);
 }
 
+/**
+ * Pick one random prompt that hasn't been used in this session yet.
+ * Once all prompts have been used, reset the pool (start a new cycle) and pick again.
+ */
+function pickUnusedPrompt(config: StickerCollageGameConfig, ms: StickerCollageModeState): string {
+    const usedPrompts = new Set(Object.values(ms.promptHistory));
+    const unused = config.prompts.filter(p => !usedPrompts.has(p));
+    // All prompts used → start a new cycle with the full list
+    const pool = unused.length > 0 ? unused : config.prompts;
+    return pickRandom(pool, 1)[0] ?? config.prompts[0];
+}
+
 // ─── Phase transitions ──────────────────────────────────────────
 
 /**
@@ -33,8 +45,7 @@ export function startBuilding(
     if (chosenPrompt) {
         ms.currentPrompt = chosenPrompt;
     } else {
-        const promptIndex = (ms.currentRoundIndex - 1) % config.prompts.length;
-        ms.currentPrompt = config.prompts[promptIndex];
+        ms.currentPrompt = pickUnusedPrompt(config, ms);
     }
     ms.promptHistory[ms.currentRoundIndex] = ms.currentPrompt;
 
@@ -136,12 +147,13 @@ function prepareWinnerChoices(
     ms: StickerCollageModeState,
     config: StickerCollageGameConfig,
 ): void {
-    // Prompt choices: pick N random prompts not used in recent rounds
+    // Prompt choices: pick N random prompts not yet used in this session.
+    // If all prompts have been used, start a new cycle with the full list.
     const usedPrompts = new Set(Object.values(ms.promptHistory));
-    const availablePrompts = config.prompts.filter(p => !usedPrompts.has(p));
-    const promptPool = availablePrompts.length >= config.promptChoiceCount
-        ? availablePrompts
-        : config.prompts; // fallback to all if not enough unused
+    const unusedPrompts = config.prompts.filter(p => !usedPrompts.has(p));
+    const promptPool = unusedPrompts.length >= config.promptChoiceCount
+        ? unusedPrompts
+        : config.prompts; // all used → new cycle
     ms.promptChoices = pickRandom(promptPool, config.promptChoiceCount);
 
     // Pack unlock choices: pick from locked packs
@@ -180,10 +192,10 @@ export function advanceFromResults(
         ms.winnerChoicesDone = true;
     }
 
-    // Determine next prompt
+    // Determine next prompt: winner's pick → first choice → random unused
     const nextPrompt = ms.promptHistory[ms.currentRoundIndex + 1]
         ?? ms.promptChoices[0]
-        ?? config.prompts[(ms.currentRoundIndex) % config.prompts.length];
+        ?? pickUnusedPrompt(config, ms);
 
     // Clear guaranteed pack after use (it applies only to the next round)
     // guaranteedPackId is already set if the winner chose it

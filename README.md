@@ -278,7 +278,7 @@ cp game.config.example.json game.config.json
 # Dann adminPassword setzen und ggf. andere Werte anpassen
 ```
 
-Für Cloud Run wird `game.config.json` **nicht** ins Docker-Image kopiert — `npm run cloud:deploy` liest das Passwort aus der lokalen `game.config.json` und übergibt es automatisch als `ADMIN_PASSWORD` Env-Var an Cloud Run.
+Für Cloud Run wird `game.config.json` ins Docker-Image kopiert (damit Prompts, Timer etc. übernommen werden). Das `adminPassword` darin wird zur Laufzeit durch die `ADMIN_PASSWORD` Env-Var überschrieben, die `npm run cloud:deploy` automatisch aus der lokalen `game.config.json` liest und setzt.
 
 ### `wlan/wlan-config.json`
 

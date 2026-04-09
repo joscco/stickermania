@@ -27,12 +27,10 @@ COPY --from=build /app/apps/backend/dist ./apps/backend/dist
 COPY --from=build /app/apps/frontend/dist ./apps/frontend/dist
 COPY --from=build /app/packages/shared/dist ./packages/shared/dist
 COPY hitbox-data.json ./hitbox-data.json
+COPY game.config.json ./game.config.json
 
-# game.config.json is intentionally NOT copied into the image.
-# Game settings are passed as environment variables at runtime:
-#   ADMIN_PASSWORD  – board password (required for production)
-#   PORT            – HTTP port (set automatically by Cloud Run)
-#   DATA_ROOT       – path for sessions/assets (default: .data)
+# adminPassword in game.config.json is overridden at runtime by the ADMIN_PASSWORD env var.
+# All other game settings (prompts, timers, etc.) are read from game.config.json in the image.
 
 EXPOSE 8080
 CMD ["node", "apps/backend/dist/index.js"]
