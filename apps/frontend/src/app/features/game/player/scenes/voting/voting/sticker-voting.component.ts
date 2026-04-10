@@ -49,5 +49,13 @@ export class StickerVotingComponent {
             this.voteClicked.emit(collageId);
         }
     }
-}
 
+    public ownSubmission(): StickerCollage | null {
+        if (!this.myPlayerId) return null;
+        return this.submissions.find((submission) => submission.playerId === this.myPlayerId) ?? null;
+    }
+
+    public votableSubmissions(): StickerCollage[] {
+        return this.submissions.filter((submission) => !this.isOwnSubmission(submission));
+    }
+}

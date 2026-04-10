@@ -2,32 +2,29 @@
   <span class="text-xs font-medium opacity-80">Abstimmung</span>
   <h2 class="text-base font-bold">{{ stickerService.currentPrompt() }}</h2>
 </div>
-<div animOnInit="item" [animDelay]="0.15" class="flex-1 overflow-y-auto">
-  <app-sticker-voting
-    [submissions]="stickerService.currentRoundSubmissions()"
-    [stickerCatalog]="stickerService.stickerCatalog()"
-    [myVotes]="stickerService.myVotes()"
-    [votesRemaining]="stickerService.votesPerPlayer() - stickerService.myVotes().length"
-    [players]="worldStore.players()"
-    [myPlayerId]="sessionStore.playerId() ?? ''"
-    (voteClicked)="stickerService.castVote($event)"
-  />
-</div>
 
-<!-- Footer: done-voting / all-done advance -->
-<div class="shrink-0 border-t border-black/10 bg-white px-4 py-3 flex flex-col gap-2">
-  @if (!stickerService.myDoneVoting()) {
+@if (!stickerService.myDoneVoting()) {
+  <div animOnInit="item" [animDelay]="0.15" class="flex-1 overflow-y-auto">
+    <app-sticker-voting
+      [submissions]="stickerService.currentRoundSubmissions()"
+      [stickerCatalog]="stickerService.stickerCatalog()"
+      [myVotes]="stickerService.myVotes()"
+      [votesRemaining]="stickerService.votesPerPlayer() - stickerService.myVotes().length"
+      [players]="worldStore.players()"
+      [myPlayerId]="sessionStore.playerId() ?? ''"
+      (voteClicked)="stickerService.castVote($event)"
+    />
+  </div>
+
+  <div class="shrink-0 border-t border-black/10 bg-white px-4 py-3 flex flex-col gap-2">
     <button
       class="w-full bg-amber-500 text-white py-2.5 rounded-xl font-semibold shadow active:scale-95 transition-transform"
       (click)="stickerService.doneVoting()"
     >Ich bin fertig ✓</button>
-  } @else if (!stickerService.allVotingDone()) {
-    <p class="text-center text-sm text-stone-400">Warte auf die anderen...</p>
-  }
-  @if (stickerService.allVotingDone()) {
-    <button
-      class="w-full bg-purple-600 text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
-      (click)="stickerService.endVotingEarly()"
-    >Abstimmung beenden ⏭️</button>
-  }
-</div>
+  </div>
+} @else {
+  <app-player-voting-done
+    [allVotingDone]="stickerService.allVotingDone()"
+    (endVotingEarly)="stickerService.endVotingEarly()"
+  />
+}
