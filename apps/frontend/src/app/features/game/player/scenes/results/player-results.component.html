@@ -32,7 +32,7 @@
     <div class="px-4 pb-4 space-y-4">
       <!-- Progress dots -->
       <div animOnInit="choice" [animDelay]="0.2" class="flex justify-center gap-3 py-2">
-        <div class="w-8 h-8 rounded-full grid place-items-center text-sm shadow-sm"
+        <div class="w-8 h-8 rounded-full grid place-items-center text-sm shadow-sm transition-colors duration-200"
              [class.bg-emerald-100]="stickerService.hasChosenPrompt()"
              [class.text-emerald-600]="stickerService.hasChosenPrompt()"
              [class.bg-purple-100]="!stickerService.hasChosenPrompt()"
@@ -40,7 +40,7 @@
           @if (stickerService.hasChosenPrompt()) { ✓ } @else { 🎯 }
         </div>
         @if (stickerService.hasLockedPacks()) {
-          <div class="w-8 h-8 rounded-full grid place-items-center text-sm shadow-sm"
+          <div class="w-8 h-8 rounded-full grid place-items-center text-sm shadow-sm transition-colors duration-200"
                [class.bg-emerald-100]="stickerService.hasUnlockedPack()"
                [class.text-emerald-600]="stickerService.hasUnlockedPack()"
                [class.bg-purple-100]="!stickerService.hasUnlockedPack()"
@@ -51,56 +51,56 @@
         <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 grid place-items-center text-sm shadow-sm">⭐</div>
       </div>
 
-      <!-- Step 1: Pick prompt -->
-      @if (!stickerService.hasChosenPrompt() && stickerService.promptChoices().length > 0) {
-        <div animOnInit="choice" [animDelay]="0.3">
-          <h3 class="text-sm font-semibold text-stone-700 mb-2">🎯 Wähle den nächsten Prompt:</h3>
-          <div class="space-y-2">
-            @for (prompt of stickerService.promptChoices(); track prompt) {
-              <button
-                class="w-full text-left p-3 rounded-xl border-2 border-stone-200 bg-white text-sm font-medium active:scale-[0.98] transition-transform hover:border-purple-300"
-                (click)="stickerService.pickPrompt(prompt)"
-              >
-                {{ prompt }}
-              </button>
-            }
+      @switch (currentWinnerStep()) {
+        @case ('prompt') {
+          <!-- Step 1: Pick prompt -->
+          <div animOnInit="choice" [animDelay]="0.25">
+            <h3 class="text-sm font-semibold text-stone-700 mb-2">🎯 Wähle den nächsten Prompt:</h3>
+            <div class="space-y-2">
+              @for (prompt of stickerService.promptChoices(); track prompt) {
+                <button
+                  class="w-full text-left p-3 rounded-xl border-2 border-stone-200 bg-white text-sm font-medium active:scale-[0.98] transition-transform hover:border-purple-300"
+                  (click)="stickerService.pickPrompt(prompt)"
+                >
+                  {{ prompt }}
+                </button>
+              }
+            </div>
           </div>
-        </div>
-      }
-
-      <!-- Step 2: Unlock pack -->
-      @if (stickerService.hasChosenPrompt() && !stickerService.hasUnlockedPack() && stickerService.packUnlockChoices().length > 0) {
-        <div animOnInit="choice" [animDelay]="0.3">
-          <h3 class="text-sm font-semibold text-stone-700 mb-2">🔓 Schalte ein Sticker-Pack frei:</h3>
-          <div class="grid grid-cols-2 gap-2">
-            @for (pack of stickerService.packUnlockChoices(); track pack.id) {
-              <button
-                class="p-3 rounded-xl border-2 border-stone-200 bg-white text-center active:scale-95 transition-transform hover:border-emerald-300"
-                (click)="stickerService.unlockPack(pack.id)"
-              >
-                <div class="text-2xl">🎁</div>
-                <div class="text-xs font-medium mt-1">{{ pack.name }}</div>
-              </button>
-            }
+        }
+        @case ('unlock') {
+          <!-- Step 2: Unlock pack -->
+          <div animOnInit="choice" [animDelay]="0.25">
+            <h3 class="text-sm font-semibold text-stone-700 mb-2">🔓 Schalte ein Sticker-Pack frei:</h3>
+            <div class="grid grid-cols-2 gap-2">
+              @for (pack of stickerService.packUnlockChoices(); track pack.id) {
+                <button
+                  class="p-3 rounded-xl border-2 border-stone-200 bg-white text-center active:scale-95 transition-transform hover:border-emerald-300"
+                  (click)="stickerService.unlockPack(pack.id)"
+                >
+                  <div class="text-2xl">🎁</div>
+                  <div class="text-xs font-medium mt-1">{{ pack.name }}</div>
+                </button>
+              }
+            </div>
           </div>
-        </div>
-      }
-
-      <!-- Step 3: Guaranteed pack -->
-      @if (stickerService.hasChosenPrompt() && (stickerService.hasUnlockedPack() || !stickerService.hasLockedPacks()) && stickerService.guaranteedPackChoices().length > 0) {
-        <div animOnInit="choice" [animDelay]="0.3">
-          <h3 class="text-sm font-semibold text-stone-700 mb-2">⭐ "Auf jeden Fall dabei"-Pack:</h3>
-          <div class="grid grid-cols-2 gap-2">
-            @for (pack of stickerService.guaranteedPackChoices(); track pack.id) {
-              <button
-                class="p-3 rounded-xl border-2 border-stone-200 bg-white text-center active:scale-95 transition-transform hover:border-amber-300"
-                (click)="stickerService.pickGuaranteedPack(pack.id)"
-              >
-                <div class="text-lg">{{ pack.name }}</div>
-              </button>
-            }
+        }
+        @case ('guaranteed') {
+          <!-- Step 3: Guaranteed pack -->
+          <div animOnInit="choice" [animDelay]="0.25">
+            <h3 class="text-sm font-semibold text-stone-700 mb-2">⭐ "Auf jeden Fall dabei"-Pack:</h3>
+            <div class="grid grid-cols-2 gap-2">
+              @for (pack of stickerService.guaranteedPackChoices(); track pack.id) {
+                <button
+                  class="p-3 rounded-xl border-2 border-stone-200 bg-white text-center active:scale-95 transition-transform hover:border-amber-300"
+                  (click)="stickerService.pickGuaranteedPack(pack.id)"
+                >
+                  <div class="text-lg">{{ pack.name }}</div>
+                </button>
+              }
+            </div>
           </div>
-        </div>
+        }
       }
     </div>
   } @else if (stickerService.isWinner() && stickerService.winnerChoicesDone()) {

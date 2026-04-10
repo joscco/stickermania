@@ -41,10 +41,8 @@
 
     <!-- Game scene (full remaining space, no sidebar) -->
     <div class="flex-1 relative overflow-hidden bg-white">
-      <app-event-error-toasts [events]="events()"></app-event-error-toasts>
-
       @if (!worldStore.sessionState()) {
-        <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
+        <div animOnInit="item" class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
           <div class="h-8 w-8 animate-spin rounded-full border-4 border-stone-200 border-t-stone-500"></div>
           <span class="text-sm">Verbinde mit Session...</span>
         </div>

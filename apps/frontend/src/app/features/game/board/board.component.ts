@@ -1,10 +1,9 @@
 import {CommonModule} from "@angular/common";
 import {Component, computed, OnDestroy, OnInit, signal} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
-import type {ServerToClientMessage, StickerCollageServerEvent} from "@birthday/shared";
+import type {ServerToClientMessage} from "@birthday/shared";
 import * as QRCode from "qrcode";
 import {Subscription} from "rxjs";
-import {EventToastsComponent, type UiEvent} from './event-toast/event-toasts.component';
 import {BoardLobbyComponent} from './board-lobby.component';
 import {BoardSetupDrawerComponent} from './setup-drawer/board-setup-drawer.component';
 import {BoardLobbySceneComponent} from './scenes/lobby/board-lobby-scene.component';
@@ -17,12 +16,10 @@ import {WebSocketService} from '../../../core/websocket.service';
 import {ApiService} from '../../../core/api.service';
 import {WorldStore} from '../../../core/world.store';
 
-const EVENT_TOAST_DURATION_MS = 3000;
-
 @Component({
   selector: "app-board",
   standalone: true,
-  imports: [CommonModule, EventToastsComponent, BoardLobbyComponent, BoardSetupDrawerComponent, BoardLobbySceneComponent, BoardBuildingSceneComponent, BoardVotingSceneComponent, BoardResultsSceneComponent, BoardQrPanelComponent, AnimOnInitDirective],
+  imports: [CommonModule, BoardLobbyComponent, BoardSetupDrawerComponent, BoardLobbySceneComponent, BoardBuildingSceneComponent, BoardVotingSceneComponent, BoardResultsSceneComponent, BoardQrPanelComponent, AnimOnInitDirective],
   templateUrl: "./board.component.html",
 })
 export class BoardComponent implements OnInit, OnDestroy {
@@ -31,13 +28,11 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly playerUrl = signal<string>("");
   public readonly playerQrDataUrl = signal<string | null>(null);
   public readonly isSetupDrawerOpen = signal<boolean>(false);
-  public readonly events = signal<UiEvent[]>([]);
   public readonly isBoardReady = signal<boolean>(false);
   public readonly isBootstrapping = signal<boolean>(true);
   public readonly bootErrorText = signal<string | null>(null);
   public readonly sessionCode = signal<string | null>(null);
   public readonly timeLeft = signal<string>("");
-
 
   private sessionId: string | null = null;
   private routeSubscription: Subscription | null = null;
@@ -116,7 +111,6 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   public resetSession(): void {
     this.wsService.send({type: "reset-session"});
-    this.pushEvent("Spiel zurückgesetzt. 🔄", Date.now());
   }
 
   public async deleteSession(): Promise<void> {
@@ -133,7 +127,7 @@ export class BoardComponent implements OnInit, OnDestroy {
       this.cleanupBoardRuntime();
       await this.router.navigate(["/board"]);
     } catch {
-      this.pushEvent("Session konnte nicht gelöscht werden. ❌", Date.now());
+      console.error("Error while deleting session", this.sessionId);
     }
   }
 
@@ -192,29 +186,13 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   private handleMessage(message: ServerToClientMessage): void {
     switch (message.type) {
-      case "welcome": {
-        break;
-      }
-
       case "session-state": {
         this.worldStore.setSessionState(message.state);
         break;
       }
 
-      case "session-event": {
-        this.pushEvent(message.text, message.createdAt);
+      default:
         break;
-      }
-
-      case "game-event": {
-        // Nichts zu tun
-        break;
-      }
-
-      case "error": {
-        this.pushEvent(message.message, Date.now());
-        break;
-      }
     }
   }
 
@@ -238,16 +216,5 @@ export class BoardComponent implements OnInit, OnDestroy {
       const seconds = totalSeconds % 60;
       this.timeLeft.set(`${minutes}:${String(seconds).padStart(2, "0")}`);
     }, 500);
-  }
-
-  private pushEvent(text: string, createdAt: number): void {
-    const eventId = `${createdAt}-${Math.random().toString(16).slice(2)}`;
-    const uiEvent: UiEvent = {id: eventId, text, createdAt};
-
-    this.events.set([uiEvent, ...this.events()]);
-
-    setTimeout(() => {
-      this.events.set(this.events().filter((event) => event.id !== eventId));
-    }, EVENT_TOAST_DURATION_MS);
   }
 }

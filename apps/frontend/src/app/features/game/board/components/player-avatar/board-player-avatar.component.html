@@ -3,8 +3,7 @@
 
   <!-- Avatar ring + image/fallback + badge -->
   <div class="relative">
-    <div [class]="sizeClasses() + ' bg-stone-100 shadow-md overflow-hidden grid place-items-center ' + borderClass()"
-         [class.grayscale]="greyscale()">
+    <div [class]="sizeClasses() + ' bg-stone-100 shadow-md overflow-hidden grid place-items-center ' + borderClass()">
       @if (player().avatarUrl) {
         <img [src]="player().avatarUrl"
              [alt]="player().name"
@@ -28,9 +27,7 @@
   </div>
 
   <!-- Name -->
-  <span class="text-xs font-medium truncate max-w-14"
-        [class.text-stone-400]="status() === 'offline'"
-        [class.text-stone-600]="status() !== 'offline'">
+  <span class="text-xs font-medium truncate max-w-14 text-stone-600">
     {{ player().name || 'Spieler' }}
   </span>
 </div>

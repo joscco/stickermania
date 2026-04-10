@@ -61,11 +61,7 @@ export class BoardPlayerAvatarComponent {
     });
 
     public readonly dimmed = computed(() =>
-        this.status() === "idle" || this.status() === "skipped"
-    );
-
-    public readonly greyscale = computed(() =>
-        this.status() === "offline"
+        this.status() === "idle" || this.status() === "skipped" || this.status() === "offline"
     );
 
     /** Badge config: { emoji, bgClass, animate } or null */

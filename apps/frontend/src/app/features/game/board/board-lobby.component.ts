@@ -2,14 +2,14 @@ import { CommonModule } from "@angular/common";
 import { Component, OnInit, output, signal } from "@angular/core";
 import JSZip from "jszip";
 import { ApiService, type SessionSummary } from '../../../core/api.service';
-import {AnimOnInitDirective, AnimGroupDirective} from '../../shared/animations/anim-on-init.directive';
+import {AnimOnInitDirective, AnimGroupDirective, AnimPresenceDirective} from '../../shared/animations/anim-on-init.directive';
 import {PageRootDirective} from '../../shared/animations/page-root.directive';
 import {PageTransitionService} from '../../shared/animations/page-transition.service';
 
 @Component({
   selector: "app-board-lobby",
   standalone: true,
-  imports: [CommonModule, AnimOnInitDirective, AnimGroupDirective, PageRootDirective],
+  imports: [CommonModule, AnimOnInitDirective, AnimGroupDirective, PageRootDirective, AnimPresenceDirective],
   templateUrl: "./board-lobby.component.html",
 })
 export class BoardLobbyComponent implements OnInit {
@@ -19,9 +19,12 @@ export class BoardLobbyComponent implements OnInit {
   public readonly errorText = signal<string | null>(null);
   public readonly sessions = signal<SessionSummary[]>([]);
   public readonly isLoadingSessions = signal(true);
+  public readonly leavingSessionIds = signal<Set<string>>(new Set());
 
   /** Per-session download state: idle | loading | done | error */
   public readonly downloadStates = signal<Map<string, "idle" | "loading" | "done" | "error">>(new Map());
+
+  private readonly sessionLeaveDurationMs = 320;
 
   public constructor(
     private readonly api: ApiService,
@@ -50,9 +53,11 @@ export class BoardLobbyComponent implements OnInit {
 
   public async deleteSession(sessionId: string, event: Event): Promise<void> {
     event.stopPropagation();
+    if (this.isSessionLeaving(sessionId)) return;
+
     try {
       await this.api.deleteSession(sessionId);
-      this.sessions.set(this.sessions().filter((s) => s.sessionId !== sessionId));
+      this.startSessionLeave(sessionId);
     } catch { /* ignore */ }
   }
 
@@ -112,6 +117,10 @@ export class BoardLobbyComponent implements OnInit {
     return `vor ${Math.floor(hours / 24)} Tag(en)`;
   }
 
+  public isSessionLeaving(sessionId: string): boolean {
+    return this.leavingSessionIds().has(sessionId);
+  }
+
   private async loadSessions(): Promise<void> {
     this.isLoadingSessions.set(true);
     try {
@@ -119,5 +128,22 @@ export class BoardLobbyComponent implements OnInit {
     } catch { /* ignore */ }
     this.isLoadingSessions.set(false);
   }
-}
 
+  private startSessionLeave(sessionId: string): void {
+    const leaving = new Set(this.leavingSessionIds());
+    leaving.add(sessionId);
+    this.leavingSessionIds.set(leaving);
+
+    setTimeout(() => {
+      this.sessions.set(this.sessions().filter((s) => s.sessionId !== sessionId));
+
+      const nextLeaving = new Set(this.leavingSessionIds());
+      nextLeaving.delete(sessionId);
+      this.leavingSessionIds.set(nextLeaving);
+
+      const nextDownloadStates = new Map(this.downloadStates());
+      nextDownloadStates.delete(sessionId);
+      this.downloadStates.set(nextDownloadStates);
+    }, this.sessionLeaveDurationMs);
+  }
+}

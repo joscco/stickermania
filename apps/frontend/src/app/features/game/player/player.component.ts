@@ -155,7 +155,12 @@ export class PlayerComponent implements OnInit, OnDestroy {
       this.wsService.disconnect();
       this.reconnectService.clear();
       this.sessionStore.showFeedback("Session wurde nicht gefunden oder ist abgelaufen.", "error");
-      setTimeout(() => this.router.navigate(["/"]), 2500);
+      setTimeout(() => {
+        void this.router.navigate(["/"], {
+          queryParams: {error: "invalid-session"},
+          replaceUrl: true,
+        });
+      }, 2500);
     }
   }
 

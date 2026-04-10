@@ -1,19 +1,16 @@
-@if (isOpen()) {
-  <button
-    type="button"
-    class="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
-    (click)="requestClose()"
-    aria-label="Close setup drawer"
-  ></button>
-}
+<button
+  type="button"
+  class="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
+  [animPresence]="isOpen()"
+  animPresenceType="overlay"
+  (click)="requestClose()"
+  aria-label="Close setup drawer"
+></button>
 
 <div
-  class="fixed right-0 top-0 z-50 h-full w-[min(420px,92vw)] translate-x-full border-l border-black/[0.06] bg-white shadow-xl backdrop-blur
-         transition-[transform,visibility] duration-300 ease-out"
-  [class.translate-x-full]="!isOpen()"
-  [class.translate-x-0]="isOpen()"
-  [class.invisible]="!isOpen()"
-  [class.visible]="isOpen()"
+  class="fixed right-0 top-0 z-50 h-full w-[min(420px,92vw)] border-l border-black/[0.06] bg-white shadow-xl backdrop-blur"
+  [animPresence]="isOpen()"
+  animPresenceType="strip"
 >
   <div class="flex h-full flex-col">
     <div class="flex items-center justify-between gap-3 border-b border-black/[0.06] px-4 py-3">
