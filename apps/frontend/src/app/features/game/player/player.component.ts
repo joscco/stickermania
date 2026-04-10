@@ -109,21 +109,9 @@ export class PlayerComponent implements OnInit, OnDestroy {
     const sessionCode = this.reconnectService.resolveSessionCode(this.route);
 
     if (!sessionCode) {
-      if (reconnect?.sessionCode) {
-        await this.router.navigate(["/player"], { queryParams: { session: reconnect.sessionCode } });
-        return;
-      }
-      await this.router.navigate(["/join"]);
+      // No session code in URL → back to landing, no auto-redirect
+      await this.router.navigate(["/"]);
       return;
-    }
-
-    const isSameSession = reconnect?.sessionCode?.toUpperCase() === sessionCode.toUpperCase();
-    const playerId = isSameSession
-        ? (reconnect?.playerId ?? localStorage.getItem("birthday_player_id") ?? null)
-        : null;
-
-    if (!isSameSession) {
-      this.reconnectService.clear();
     }
 
     this.messageHandler.sessionCode = sessionCode;
@@ -147,7 +135,13 @@ export class PlayerComponent implements OnInit, OnDestroy {
       const resolved = await this.apiService.resolveSessionByCode(sessionCode);
       this.sessionStore.setSession(resolved.sessionId);
       this.messageHandler.sessionCode = resolved.sessionCode ?? sessionCode;
-      localStorage.setItem("birthday_last_session_code", resolved.sessionCode);
+
+      // Reuse the stored playerId only when the stored sessionId matches this session
+      const isSameSession = reconnect?.sessionId === resolved.sessionId;
+      const playerId = isSameSession ? (reconnect?.playerId ?? null) : null;
+      if (!isSameSession) {
+        this.reconnectService.clear();
+      }
 
       const joinMsg = {
         type: "join" as const,
@@ -161,7 +155,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
       this.wsService.disconnect();
       this.reconnectService.clear();
       this.sessionStore.showFeedback("Session wurde nicht gefunden oder ist abgelaufen.", "error");
-      setTimeout(() => this.router.navigate(["/join"]), 2500);
+      setTimeout(() => this.router.navigate(["/"]), 2500);
     }
   }
 
@@ -182,7 +176,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     if (!this.isReady()) return PlayerScreen.CONNECTING;
     if (!this.hasAvatar()) return PlayerScreen.LOBBY_AVATAR;
 
-    const phase = this.worldStore.stickerCollageModeState()?.phase ?? 'LOBBY';
+    const phase = this.worldStore.stickerCollageGameState()?.phaseState.phase ?? 'LOBBY';
     switch (phase) {
       case 'LOBBY':            return PlayerScreen.LOBBY_WAITING;
       case 'BUILDING': {
@@ -208,7 +202,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
   public onNameSubmitted(name: string): void {
     this.wsService.send({ type: "set-name", name });
     this.sessionStore.playerName.set(name);
-    this.reconnectService.update({ playerName: name });
     this.reconnectService.saveDeviceName(name);
     this.isEditingName.set(false);
   }

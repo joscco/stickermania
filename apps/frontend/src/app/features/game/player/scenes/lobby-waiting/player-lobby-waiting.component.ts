@@ -1,5 +1,6 @@
-import {Component} from "@angular/core";
+import {Component, inject} from "@angular/core";
 import {AnimOnInitDirective, AnimGroupDirective} from '../../../../shared/animations/anim-on-init.directive';
+import {StickerPlayerService} from '../../../services/sticker-player.service';
 
 @Component({
     selector: "app-player-lobby-waiting",
@@ -8,4 +9,6 @@ import {AnimOnInitDirective, AnimGroupDirective} from '../../../../shared/animat
     templateUrl: "./player-lobby-waiting.component.html",
     host: {"class": "flex-1 flex flex-col"},
 })
-export class PlayerLobbyWaitingComponent {}
+export class PlayerLobbyWaitingComponent {
+    public readonly stickerService = inject(StickerPlayerService);
+}

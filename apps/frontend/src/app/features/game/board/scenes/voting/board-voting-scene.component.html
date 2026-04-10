@@ -2,7 +2,7 @@
   <!-- Voting banner -->
   <div animOnInit="banner" class="bg-linear-to-r from-amber-500 to-orange-500 text-white px-8 py-5 text-center rounded-2xl mx-4 mt-4 shadow-lg">
     <span class="text-sm font-medium opacity-70 uppercase tracking-wider">Abstimmung</span>
-    <h1 class="text-3xl font-black mt-1">{{ modeState()?.currentPrompt ?? '' }}</h1>
+    <h1 class="text-3xl font-black mt-1">{{ gameState()?.currentPrompt ?? '' }}</h1>
   </div>
 
   <!-- Slideshow strip -->
@@ -28,7 +28,8 @@
   </div>
 
   <!-- End voting button -->
-  <div animOnInit="item" [animDelay]="0.4" class="text-center pb-6">
+  <div animOnInit="item" [animDelay]="0.4" class="text-center pb-6 flex flex-col items-center gap-2">
+    <p class="text-sm text-stone-400">{{ doneVotingCount() }}/{{ roundParticipantCount() }} fertig abgestimmt</p>
     <button
         class="bg-orange-500 text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-orange-600 active:scale-95 transition-[background-color,box-shadow]"
       (click)="endVotingEarly()"

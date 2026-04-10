@@ -27,15 +27,6 @@
       Beitreten
     </button>
 
-    @if (lastSessionCode()) {
-      <button
-        class="mt-3 text-sm text-stone-500 underline"
-        (click)="useLastSession()"
-      >
-        Letzte Session {{ lastSessionCode() }} verwenden
-      </button>
-    }
-
     <div class="mt-6 border-t border-black/5 pt-4">
       <button
         class="text-xs text-stone-400 hover:text-stone-600 underline underline-offset-2 transition-colors"

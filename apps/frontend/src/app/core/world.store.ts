@@ -1,12 +1,11 @@
 import {computed, Injectable, signal} from "@angular/core";
-import type {GameModeId, SessionPlayer, SessionState, StickerCollageModeState} from "@birthday/shared";
+import type {SessionPlayer, SessionState, StickerCollageGameState} from "@birthday/shared";
 
 @Injectable({ providedIn: "root" })
 export class WorldStore {
 
   public readonly sessionState = signal<SessionState | null>(null);
   public readonly lastError = signal<string | null>(null);
-  public readonly activeMode = computed<GameModeId>(() => this.sessionState()?.activeMode ?? "sticker-collage");
   public readonly players = computed<Record<string, SessionPlayer>>(() => this.sessionState()?.players ?? {});
 
   /** All players including those without a name, sorted by score desc then join time asc */
@@ -31,14 +30,14 @@ export class WorldStore {
       });
   });
 
-  public readonly stickerCollageModeState = computed<StickerCollageModeState | null>(() => {
+  public readonly stickerCollageGameState = computed<StickerCollageGameState | null>(() => {
     const sessionState = this.sessionState();
 
-    if (!sessionState || sessionState.activeMode !== "sticker-collage") {
+    if (!sessionState) {
       return null;
     }
 
-    return sessionState.modeState as StickerCollageModeState;
+    return sessionState.gameState;
   });
 
   public setSessionState(state: SessionState): void {

@@ -105,7 +105,7 @@
     </div>
   } @else if (stickerService.isWinner() && stickerService.winnerChoicesDone()) {
     <div animOnInit="item" [animDelay]="0.2" class="text-center py-4">
-      <p class="text-emerald-600 font-medium text-sm">✅ Auswahl getroffen! Warte auf die nächste Runde...</p>
+      <p class="text-emerald-600 font-medium text-sm">✅ Auswahl getroffen!</p>
     </div>
   } @else if (stickerService.winnerId()) {
     <div animOnInit="item" [animDelay]="0.2" class="text-center py-4 px-6">
@@ -117,3 +117,12 @@
   }
 </div>
 
+<!-- Footer: ready-to-advance (only once winner is done choosing) -->
+@if (stickerService.canReadyToAdvance()) {
+  <div class="shrink-0 border-t border-black/10 bg-white px-4 py-3">
+    <button
+      class="w-full bg-purple-600 text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
+      (click)="stickerService.readyToAdvance()"
+    >Nächste Runde starten ⏭️</button>
+  </div>
+}

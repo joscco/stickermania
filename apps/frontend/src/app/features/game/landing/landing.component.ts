@@ -4,9 +4,6 @@ import {ActivatedRoute, Router} from "@angular/router";
 import {HttpClient} from "@angular/common/http";
 import {firstValueFrom} from "rxjs";
 
-const LAST_SESSION_CODE_STORAGE_KEY = "birthday_last_session_code";
-const RECONNECT_STORAGE_KEY = "birthday_reconnect";
-
 @Component({
   selector: "app-landing",
   standalone: true,
@@ -15,9 +12,6 @@ const RECONNECT_STORAGE_KEY = "birthday_reconnect";
 })
 export class LandingComponent implements OnInit {
   public readonly sessionCode = signal<string>("");
-  public readonly lastSessionCode = signal<string | null>(
-    localStorage.getItem(LAST_SESSION_CODE_STORAGE_KEY),
-  );
 
   // Board password dialog state
   public readonly showPasswordDialog = signal<boolean>(false);
@@ -35,24 +29,11 @@ export class LandingComponent implements OnInit {
 
   public ngOnInit(): void {
     const routeCode = this.route.snapshot.paramMap.get("sessionCode");
-
     if (routeCode) {
       const normalized = this.normalizeSessionCode(routeCode);
-      localStorage.setItem(LAST_SESSION_CODE_STORAGE_KEY, normalized);
       void this.router.navigate(["/player"], {queryParams: {session: normalized}});
       return;
     }
-
-    try {
-      const raw = localStorage.getItem(RECONNECT_STORAGE_KEY);
-      if (raw) {
-        const payload = JSON.parse(raw) as {sessionCode?: string; playerId?: string};
-        if (payload?.sessionCode && payload?.playerId) {
-          void this.router.navigate(["/player"], {queryParams: {session: payload.sessionCode}});
-          return;
-        }
-      }
-    } catch { /* ignore */ }
 
     void this.checkBoardAuth();
   }
@@ -71,17 +52,9 @@ export class LandingComponent implements OnInit {
     this.sessionCode.set(this.normalizeSessionCode(raw));
   }
 
-  public useLastSession(): void {
-    const lastCode = this.lastSessionCode();
-    if (lastCode) {
-      this.sessionCode.set(lastCode);
-    }
-  }
-
   public joinSession(): void {
     const code = this.sessionCode();
     if (code.length < 4) return;
-    localStorage.setItem(LAST_SESSION_CODE_STORAGE_KEY, code);
     void this.router.navigate(["/player"], {queryParams: {session: code}});
   }
 

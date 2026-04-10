@@ -1,6 +1,5 @@
 import { CommonModule } from "@angular/common";
 import { Component, OnInit, output, signal } from "@angular/core";
-import type { GameModeId } from "@birthday/shared";
 import JSZip from "jszip";
 import { ApiService, type SessionSummary } from '../../../core/api.service';
 import {AnimOnInitDirective, AnimGroupDirective} from '../../shared/animations/anim-on-init.directive';
@@ -16,7 +15,6 @@ import {PageTransitionService} from '../../shared/animations/page-transition.ser
 export class BoardLobbyComponent implements OnInit {
   public readonly sessionCreated = output<string>();
 
-  public readonly selectedMode = signal<GameModeId>("sticker-collage");
   public readonly isCreating = signal(false);
   public readonly errorText = signal<string | null>(null);
   public readonly sessions = signal<SessionSummary[]>([]);
@@ -24,10 +22,6 @@ export class BoardLobbyComponent implements OnInit {
 
   /** Per-session download state: idle | loading | done | error */
   public readonly downloadStates = signal<Map<string, "idle" | "loading" | "done" | "error">>(new Map());
-
-  public readonly gameModes: { id: GameModeId; icon: string; label: string; description: string }[] = [
-    { id: "sticker-collage", icon: "assets/png/select_icon_sticker_game.png", label: "Stickermania", description: "Sticker-Collagen bauen & bewerten" },
-  ];
 
   public constructor(
     private readonly api: ApiService,
@@ -42,7 +36,7 @@ export class BoardLobbyComponent implements OnInit {
     this.isCreating.set(true);
     this.errorText.set(null);
     try {
-      const session = await this.api.createSession(this.selectedMode());
+      const session = await this.api.createSession();
       this.transitions.leaveAndNavigate(() => this.sessionCreated.emit(session.sessionCode));
     } catch {
       this.errorText.set("Session konnte nicht erstellt werden.");
@@ -106,10 +100,6 @@ export class BoardLobbyComponent implements OnInit {
       s.set(sessionId, "error");
       this.downloadStates.set(s);
     }
-  }
-
-  public modeLabel(mode: string): string {
-    return this.gameModes.find((m) => m.id === mode)?.label ?? mode;
   }
 
   public timeAgo(timestamp: number): string {

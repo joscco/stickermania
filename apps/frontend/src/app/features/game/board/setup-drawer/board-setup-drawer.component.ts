@@ -22,15 +22,4 @@ export class BoardSetupDrawerComponent {
   public requestClose(): void {
     this.onCloseRequested.emit();
   }
-
-  public async copyPlayerUrl(): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(this.playerUrl());
-      this.copyHint.set("Kopiert!");
-    } catch {
-      this.copyHint.set("Kopieren nicht möglich.");
-    }
-
-    window.setTimeout(() => this.copyHint.set(null), 1500);
-  }
 }

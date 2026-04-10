@@ -70,8 +70,7 @@ const MOCK_SUBMISSIONS = [
     },
 ];
 
-const BASE_MODE_STATE = {
-    mode: 'sticker-collage',
+const BASE_GAME_STATE = {
     currentRoundIndex: 0,
     currentPrompt: 'Das schönste Geburtstagsmonster',
     roundStartedAt: Date.now() - 60_000,
@@ -110,8 +109,8 @@ const BASE_MODE_STATE = {
  */
 function buildStateForScreen(screenId, sessionCode) {
     let phase           = 'LOBBY';
-    let playerHands     = BASE_MODE_STATE.playerHands;
-    let submissions     = BASE_MODE_STATE.submissions;
+    let playerHands     = BASE_GAME_STATE.playerHands;
+    let submissions     = BASE_GAME_STATE.submissions;
     let skippedPlayerIds = [];
     let mockPlayers     = MOCK_PLAYERS;
 
@@ -166,7 +165,7 @@ function buildStateForScreen(screenId, sessionCode) {
         sessionCode: sessionCode,
         players:     mockPlayers,
         activeMode:  'sticker-collage',
-        modeState:   { ...BASE_MODE_STATE, phase, playerHands, submissions, skippedPlayerIds },
+        gameState:   { ...BASE_GAME_STATE, phase, playerHands, submissions, skippedPlayerIds },
         revision:    1,
         updatedAt:   Date.now(),
         createdAt:   Date.now(),

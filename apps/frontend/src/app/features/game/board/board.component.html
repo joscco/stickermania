@@ -41,7 +41,7 @@
 
     <!-- Game scene (full remaining space, no sidebar) -->
     <div class="flex-1 relative overflow-hidden bg-white">
-      <app-event-toasts [events]="events()"></app-event-toasts>
+      <app-event-error-toasts [events]="events()"></app-event-error-toasts>
 
       @if (!worldStore.sessionState()) {
         <div class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
@@ -56,16 +56,16 @@
               <app-board-lobby-scene/>
             }
             @case ("BUILDING") {
-              <app-board-building-scene [modeState]="modeState()"/>
+              <app-board-building-scene [gameState]="gameState()"/>
             }
             @case ("VOTING") {
-              <app-board-voting-scene [modeState]="modeState()"/>
+              <app-board-voting-scene [gameState]="gameState()"/>
             }
             @case ("RESULTS") {
-              <app-board-results-scene [modeState]="modeState()"/>
+              <app-board-results-scene [gameState]="gameState()"/>
             }
             @case ("NEXT_ROUND_SETUP") {
-              <app-board-building-scene [modeState]="modeState()"/>
+              <app-board-building-scene [gameState]="gameState()"/>
             }
           }
           <div animOnInit="item" class="absolute bottom-3 right-3 z-10">

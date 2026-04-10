@@ -18,7 +18,7 @@ export interface UiEvent {
 }
 
 @Component({
-  selector: "app-event-toasts",
+  selector: "app-event-error-toasts",
   standalone: true,
   imports: [CommonModule],
   templateUrl: "./event-toasts.component.html"

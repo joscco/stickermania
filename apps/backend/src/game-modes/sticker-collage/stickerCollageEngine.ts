@@ -1,30 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
-import type {
-    GameConfig,
-    SessionState,
-    StickerCollageClientAction,
-    StickerCollageModeState,
-    StickerCollageServerEvent,
-    StickerDefinition,
-} from "@birthday/shared";
-import type {GameActionResult, GameModeEngine} from "../gameModeEngine.js";
+import type {GameConfig, SessionState, StickerCollageGameState, StickerCollageServerEvent, StickerDefinition,} from "@birthday/shared";
+import type {GameActionResult, GameEngine} from "../gameModeEngine.js";
 import {DEFAULT_STICKER_CATALOG, DEFAULT_STICKER_PACKS} from "./stickerCatalog.js";
-import {startVoting, startResults, advanceFromResults} from "./roundManager.js";
-import {
-    handleRequestHand,
-    handleSwapSticker,
-    handleSubmitCollage,
-    handleSkipRound,
-    handleCastVote,
-    handleStartGame,
-    handleEndRoundEarly,
-    handleEndVotingEarly,
-    handlePickPrompt,
-    handleUnlockPack,
-    handlePickGuaranteedPack,
-    handleAdvanceFromResults,
-} from "./actionHandlers.js";
+import {transitionToNextRound, transitionToResults, transitionToVoting} from "./roundManager.js";
+import {advanceToNextRound, boardAdvancesToNextRound, castVote, dealHandToPlayer, endBuildingPhaseEarly, endVotingPhaseEarly, markPlayerDoneVoting, skipRound, startGame, submitCollage, winnerPicksGuaranteedPack, winnerPicksPrompt, winnerUnlocksPack,} from "./actionHandlers.js";
 
 /**
  * Merge hitbox polygon data from hitbox-data.json into the sticker catalog.
@@ -47,199 +27,155 @@ function buildCatalogWithHitboxes(): StickerDefinition[] {
     });
 }
 
-export class StickerCollageEngine implements GameModeEngine<"sticker-collage", StickerCollageModeState> {
-    public readonly mode = "sticker-collage" as const;
-
+export class StickerCollageEngine implements GameEngine {
     public constructor(private readonly config: GameConfig) {}
 
-    public createInitialState(): StickerCollageModeState {
+    public createInitialState(): StickerCollageGameState {
         const packs = DEFAULT_STICKER_PACKS;
-        const unlockedPackIds = packs.filter(p => p.unlockedAtStart).map(p => p.id);
+        const unlockedPackIds = packs.filter(pack => pack.unlockedAtStart).map(pack => pack.id);
 
         return {
-            mode: "sticker-collage",
             currentRoundIndex: 0,
-            phase: "LOBBY",
             currentPrompt: "",
             roundStartedAt: null,
-            roundEndsAt: null,
-            votingEndsAt: null,
-            resultsEndsAt: null,
             stickerCatalog: buildCatalogWithHitboxes(),
             stickerPacks: packs,
             unlockedPackIds,
             guaranteedPackId: null,
-            playerHands: {},
             submissions: {},
-            currentVotes: {},
-            lastVoteResults: [],
-            winnerId: null,
-            promptChoices: [],
-            packUnlockChoices: [],
-            guaranteedPackChoices: [],
-            lastUnlockedPackId: null,
-            winnerChoicesDone: false,
             promptHistory: {},
-            skippedPlayerIds: [],
+            roundParticipantIds: [],
             handSize: this.config.stickerCollage.handSize,
             maxStickersOnCanvas: this.config.stickerCollage.maxStickersOnCanvas,
             swapCount: this.config.stickerCollage.swapCount,
             votesPerPlayer: this.config.stickerCollage.votesPerPlayer,
+            phaseState: {phase: "LOBBY"},
         };
     }
 
     public onPlayerJoined(args: {
-        sessionState: SessionState<StickerCollageModeState>;
+        sessionState: SessionState;
         player: {id: string};
         now: number;
-    }): GameActionResult<"sticker-collage"> {
+    }): GameActionResult {
+        const {gameState} = args.sessionState;
+        const isNotLobby = gameState.phaseState.phase !== "LOBBY";
+        const isNewParticipant = !gameState.roundParticipantIds.includes(args.player.id);
+
+        if (isNotLobby && isNewParticipant) {
+            gameState.roundParticipantIds.push(args.player.id);
+            return {stateChanged: true, emittedEvents: []};
+        }
         return {stateChanged: false, emittedEvents: []};
     }
 
-    public startMode(args: {
-        sessionState: SessionState<StickerCollageModeState>;
+    public startGame(args: {
+        sessionState: SessionState;
         now: number;
-    }): GameActionResult<"sticker-collage"> {
-        // startMode puts us in LOBBY — the actual game starts via "start-game" action
-        args.sessionState.modeState.phase = "LOBBY";
+    }): GameActionResult {
+        args.sessionState.gameState.phaseState = {phase: "LOBBY"};
         return {stateChanged: true, emittedEvents: []};
     }
 
-    public resetMode(args: {
-        sessionState: SessionState<StickerCollageModeState>;
-    }): GameActionResult<"sticker-collage"> {
-        args.sessionState.modeState = this.createInitialState();
+    public resetGame(args: {
+        sessionState: SessionState;
+        now: number;
+    }): GameActionResult {
+        args.sessionState.gameState = this.createInitialState();
         return {stateChanged: true, emittedEvents: []};
     }
 
     public applyAction(args: {
-        sessionState: SessionState<StickerCollageModeState>;
-        action: StickerCollageClientAction;
-        context: {playerId: string; now: number};
-    }): GameActionResult<"sticker-collage"> {
-        const {sessionState, action, context} = args;
+        sessionState: SessionState;
+        action: import("@birthday/shared").StickerCollageClientAction;
+        context: {sessionId: string; playerId: string; clientId: string; clientKind: import("@birthday/shared").ClientKind; now: number};
+    }): GameActionResult {
+        const result = this.dispatchAction(args.sessionState, args.action, args.context);
+        return {stateChanged: result.stateChanged, emittedEvents: result.events};
+    }
+
+    private dispatchAction(
+        state: SessionState,
+        action: import("@birthday/shared").StickerCollageClientAction,
+        context: {playerId: string; now: number},
+    ) {
+        const {playerId, now} = context;
 
         switch (action.type) {
-            case "request-hand": {
-                const r = handleRequestHand(sessionState, context.playerId, this.config);
-                return {stateChanged: r.stateChanged, emittedEvents: r.events};
-            }
-            case "swap-sticker": {
-                const r = handleSwapSticker(sessionState, context.playerId, action.handIndex, action.newStickerId);
-                return {stateChanged: r.stateChanged, emittedEvents: r.events};
-            }
-            case "submit-collage": {
-                const r = handleSubmitCollage(sessionState, context.playerId, action.placements, this.config, context.now);
-                return {stateChanged: r.stateChanged, emittedEvents: r.events};
-            }
-            case "skip-round": {
-                const r = handleSkipRound(sessionState, context.playerId);
-                return {stateChanged: r.stateChanged, emittedEvents: r.events};
-            }
-            case "cast-vote": {
-                const r = handleCastVote(sessionState, context.playerId, action.collageId, this.config);
-                return {stateChanged: r.stateChanged, emittedEvents: r.events};
-            }
-            case "start-game": {
-                const r = handleStartGame(sessionState, this.config, context.now);
-                return {stateChanged: r.stateChanged, emittedEvents: r.events};
-            }
-            case "end-round-early": {
-                const r = handleEndRoundEarly(sessionState, this.config, context.now);
-                return {stateChanged: r.stateChanged, emittedEvents: r.events};
-            }
-            case "end-voting-early": {
-                const r = handleEndVotingEarly(sessionState, this.config, context.now);
-                return {stateChanged: r.stateChanged, emittedEvents: r.events};
-            }
-            case "pick-prompt": {
-                const r = handlePickPrompt(sessionState, context.playerId, action.prompt);
-                return {stateChanged: r.stateChanged, emittedEvents: r.events};
-            }
-            case "unlock-pack": {
-                const r = handleUnlockPack(sessionState, context.playerId, action.packId);
-                return {stateChanged: r.stateChanged, emittedEvents: r.events};
-            }
-            case "pick-guaranteed-pack": {
-                const r = handlePickGuaranteedPack(sessionState, context.playerId, action.packId);
-                return {stateChanged: r.stateChanged, emittedEvents: r.events};
-            }
-            case "advance-from-results": {
-                const r = handleAdvanceFromResults(sessionState, this.config, context.now);
-                return {stateChanged: r.stateChanged, emittedEvents: r.events};
-            }
-            default:
-                return {stateChanged: false, emittedEvents: []};
+            case "request-hand":         return dealHandToPlayer(state, playerId, this.config);
+            case "submit-collage":       return submitCollage(state, playerId, action.placements, this.config, now);
+            case "skip-round":           return skipRound(state, playerId);
+            case "cast-vote":            return castVote(state, playerId, action.collageId, this.config);
+            case "done-voting":          return markPlayerDoneVoting(state, playerId);
+            case "ready-to-advance":     return advanceToNextRound(state, playerId, this.config, now);
+            case "start-game":           return startGame(state, this.config, now);
+            case "end-round-early":      return endBuildingPhaseEarly(state, this.config, now);
+            case "end-voting-early":     return endVotingPhaseEarly(state, this.config, now);
+            case "pick-prompt":          return winnerPicksPrompt(state, playerId, action.prompt);
+            case "unlock-pack":          return winnerUnlocksPack(state, playerId, action.packId);
+            case "pick-guaranteed-pack": return winnerPicksGuaranteedPack(state, playerId, action.packId);
+            case "advance-from-results": return boardAdvancesToNextRound(state, this.config, now);
+            default:                     return {stateChanged: false, events: []};
         }
     }
 
     public getNextTimerAt(args: {
-        sessionState: SessionState<StickerCollageModeState>;
+        sessionState: SessionState;
         now: number;
     }): number | null {
-        const ms = args.sessionState.modeState;
+        const {phaseState} = args.sessionState.gameState;
+        const {now} = args;
 
-        if (ms.phase === "BUILDING" && ms.roundEndsAt && args.now < ms.roundEndsAt) {
-            return ms.roundEndsAt;
-        }
-        if (ms.phase === "VOTING" && ms.votingEndsAt && args.now < ms.votingEndsAt) {
-            return ms.votingEndsAt;
-        }
-        if (ms.phase === "RESULTS" && ms.resultsEndsAt && args.now < ms.resultsEndsAt) {
-            return ms.resultsEndsAt;
-        }
-
+        if (phaseState.phase === "BUILDING" && now < phaseState.roundEndsAt)   { return phaseState.roundEndsAt; }
+        if (phaseState.phase === "VOTING"   && now < phaseState.votingEndsAt)  { return phaseState.votingEndsAt; }
+        if (phaseState.phase === "RESULTS"  && now < phaseState.resultsEndsAt) { return phaseState.resultsEndsAt; }
         return null;
     }
 
     public onTimerElapsed(args: {
-        sessionState: SessionState<StickerCollageModeState>;
+        sessionState: SessionState;
         now: number;
-    }): GameActionResult<"sticker-collage"> {
-        const ms = args.sessionState.modeState;
+    }): GameActionResult {
+        const {sessionState, now} = args;
+        const {gameState} = sessionState;
+        const {phaseState} = gameState;
 
-        if (ms.phase === "BUILDING") {
-            // Building timer expired → move to voting
-            startVoting(args.sessionState, this.config.stickerCollage, args.now);
+        if (phaseState.phase === "BUILDING") {
+            transitionToVoting(sessionState, this.config.stickerCollage, now);
+            const newPhase = gameState.phaseState;
+            if (newPhase.phase !== "VOTING") {
+                return {stateChanged: false, emittedEvents: []};
+            }
+            return {stateChanged: true, emittedEvents: [{type: "voting-started", votingEndsAt: newPhase.votingEndsAt}]};
+        }
+
+        if (phaseState.phase === "VOTING") {
+            transitionToResults(sessionState, this.config.stickerCollage, now);
+            const newPhase = gameState.phaseState;
+            if (newPhase.phase !== "RESULTS") {
+                return {stateChanged: false, emittedEvents: []};
+            }
+            const scoreEvents: StickerCollageServerEvent[] = newPhase.lastVoteResults
+                .filter(result => result.pointsAwarded > 0 && sessionState.players[result.playerId])
+                .map(result => ({type: "score-update", playerId: result.playerId, newScore: sessionState.players[result.playerId].score}));
             return {
                 stateChanged: true,
-                emittedEvents: [{type: "voting-started", votingEndsAt: ms.votingEndsAt!}],
+                emittedEvents: [
+                    ...scoreEvents,
+                    {type: "results-ready", winnerId: newPhase.winnerId, results: newPhase.lastVoteResults},
+                ],
             };
         }
 
-        if (ms.phase === "VOTING") {
-            // Voting timer expired → tally and show results
-            startResults(args.sessionState, this.config.stickerCollage, args.now);
-
-            const events: StickerCollageServerEvent[] = [];
-            for (const result of ms.lastVoteResults) {
-                if (result.pointsAwarded > 0 && args.sessionState.players[result.playerId]) {
-                    events.push({
-                        type: "score-update",
-                        playerId: result.playerId,
-                        newScore: args.sessionState.players[result.playerId].score,
-                    });
-                }
+        if (phaseState.phase === "RESULTS") {
+            transitionToNextRound(sessionState, this.config.stickerCollage, now);
+            const newPhase = gameState.phaseState;
+            if (newPhase.phase !== "BUILDING") {
+                return {stateChanged: false, emittedEvents: []};
             }
-            events.push({
-                type: "results-ready",
-                winnerId: ms.winnerId,
-                results: ms.lastVoteResults,
-            });
-            return {stateChanged: true, emittedEvents: events};
-        }
-
-        if (ms.phase === "RESULTS") {
-            // Results timer expired → auto-advance to next round
-            advanceFromResults(args.sessionState, this.config.stickerCollage, args.now);
             return {
                 stateChanged: true,
-                emittedEvents: [{
-                    type: "round-started",
-                    roundIndex: ms.currentRoundIndex,
-                    prompt: ms.currentPrompt,
-                    endsAt: ms.roundEndsAt!,
-                }],
+                emittedEvents: [{type: "round-started", roundIndex: gameState.currentRoundIndex, prompt: gameState.currentPrompt, endsAt: newPhase.roundEndsAt}],
             };
         }
 

@@ -4,14 +4,11 @@ import type { ActivatedRoute } from "@angular/router";
 const RECONNECT_STORAGE_KEY = "birthday_reconnect";
 const DEVICE_NAME_KEY = "birthday_device_player_name";
 
-// Clean up any legacy avatar data that may still be in localStorage
-try { localStorage.removeItem("birthday_device_avatar_data_url"); } catch { /* ignore */ }
-
 export interface ReconnectPayload {
+  /** Server-assigned player UUID — used to reclaim the same player slot on rejoin. */
   playerId: string;
+  /** Server-assigned session UUID — used to verify the player belongs to this session. */
   sessionId: string;
-  sessionCode: string;
-  playerName: string;
 }
 
 @Injectable({ providedIn: "root" })
@@ -21,12 +18,10 @@ export class ReconnectService {
       const raw = localStorage.getItem(RECONNECT_STORAGE_KEY);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
-      if (parsed?.playerId && parsed?.sessionId && parsed?.sessionCode) {
-        return parsed as ReconnectPayload;
+      if (parsed?.playerId && parsed?.sessionId) {
+        return { playerId: parsed.playerId, sessionId: parsed.sessionId };
       }
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
     return null;
   }
 
@@ -39,8 +34,6 @@ export class ReconnectService {
     const updated: ReconnectPayload = {
       playerId: partial.playerId ?? existing?.playerId ?? "",
       sessionId: partial.sessionId ?? existing?.sessionId ?? "",
-      sessionCode: partial.sessionCode ?? existing?.sessionCode ?? "",
-      playerName: partial.playerName ?? existing?.playerName ?? "",
     };
     if (updated.playerId && updated.sessionId) {
       this.save(updated);
@@ -50,16 +43,12 @@ export class ReconnectService {
   /** Remove all stored reconnect data (e.g. when the session is deleted). */
   public clear(): void {
     localStorage.removeItem(RECONNECT_STORAGE_KEY);
-    localStorage.removeItem("birthday_last_session_code");
   }
 
-  /** Resolve the session code from the route query param or localStorage. */
+  /** Resolve the session code from the route query param only — no localStorage fallback. */
   public resolveSessionCode(route: ActivatedRoute): string | null {
     const routeCode = route.snapshot.queryParamMap.get("session");
-    if (routeCode?.trim()) {
-      return routeCode.trim().toUpperCase();
-    }
-    return localStorage.getItem("birthday_last_session_code")?.trim().toUpperCase() ?? null;
+    return routeCode?.trim().toUpperCase() ?? null;
   }
 
   // ── Device-level identity (survives session changes) ──────────

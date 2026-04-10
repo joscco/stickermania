@@ -4,11 +4,12 @@ import type {SessionPlayer, StickerCollageClientAction} from "@birthday/shared";
 import {WorldStore} from '../../../../../core/world.store';
 import {WebSocketService} from '../../../../../core/websocket.service';
 import {AnimGroupDirective, AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
+import {BoardPlayerAvatarComponent} from '../../components/player-avatar/board-player-avatar.component';
 
 @Component({
   selector: "app-board-lobby-scene",
   standalone: true,
-  imports: [CommonModule, AnimOnInitDirective, AnimGroupDirective],
+  imports: [CommonModule, AnimOnInitDirective, AnimGroupDirective, BoardPlayerAvatarComponent],
   templateUrl: "./board-lobby-scene.component.html",
 })
 export class BoardLobbySceneComponent {
@@ -21,6 +22,6 @@ export class BoardLobbySceneComponent {
 
   public startGame(): void {
     const action: StickerCollageClientAction = {type: "start-game"};
-    this.wsService.send({type: "game-action", mode: "sticker-collage", action});
+    this.wsService.send({type: "game-action", action});
   }
 }

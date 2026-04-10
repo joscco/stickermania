@@ -1,5 +1,9 @@
 import {inject, Injectable, computed} from "@angular/core";
-import type {StickerCollageClientAction, StickerCollageModeState, StickerCollage, StickerHand, StickerPlacement, StickerPack} from "@birthday/shared";
+import type {
+    StickerCollageClientAction, StickerCollageGameState, StickerCollage, StickerHand,
+    StickerPlacement, StickerPack,
+    StickerCollageBuildingState, StickerCollageVotingState, StickerCollageResultsState,
+} from "@birthday/shared";
 import {GameSessionStore} from '../../../core/challenge.store';
 import {WorldStore} from '../../../core/world.store';
 import {WebSocketService} from '../../../core/websocket.service';
@@ -10,193 +14,172 @@ export class StickerPlayerService {
     private readonly worldStore = inject(WorldStore);
     private readonly wsService = inject(WebSocketService);
 
-    public readonly modeState = computed<StickerCollageModeState | null>(() => {
-        return this.worldStore.stickerCollageModeState();
+    public readonly gameState = computed<StickerCollageGameState | null>(() =>
+        this.worldStore.stickerCollageGameState()
+    );
+
+    // ─── Phase helpers ───────────────────────────────────────────
+
+    private readonly buildingState = computed<StickerCollageBuildingState | null>(() => {
+        const ps = this.gameState()?.phaseState;
+        return ps?.phase === "BUILDING" ? ps : null;
+    });
+    private readonly votingState = computed<StickerCollageVotingState | null>(() => {
+        const ps = this.gameState()?.phaseState;
+        return ps?.phase === "VOTING" ? ps : null;
+    });
+    private readonly resultsState = computed<StickerCollageResultsState | null>(() => {
+        const ps = this.gameState()?.phaseState;
+        return ps?.phase === "RESULTS" ? ps : null;
     });
 
-    // ─── Computed state ──────────────────────────────────────────
+    // ─── General state ───────────────────────────────────────────
 
-    public readonly currentPrompt = computed(() => this.modeState()?.currentPrompt ?? "");
-    public readonly currentRoundIndex = computed(() => this.modeState()?.currentRoundIndex ?? 0);
-    public readonly phase = computed(() => this.modeState()?.phase ?? "LOBBY");
-    public readonly roundEndsAt = computed(() => this.modeState()?.roundEndsAt ?? 0);
-    public readonly votingEndsAt = computed(() => this.modeState()?.votingEndsAt ?? 0);
-    public readonly resultsEndsAt = computed(() => this.modeState()?.resultsEndsAt ?? 0);
-    public readonly stickerCatalog = computed(() => this.modeState()?.stickerCatalog ?? []);
+    public readonly currentPrompt = computed(() => this.gameState()?.currentPrompt ?? "");
+    public readonly currentRoundIndex = computed(() => this.gameState()?.currentRoundIndex ?? 0);
+    public readonly phase = computed(() => this.gameState()?.phaseState.phase ?? "LOBBY");
+    public readonly roundEndsAt = computed(() => this.buildingState()?.roundEndsAt ?? 0);
+    public readonly votingEndsAt = computed(() => this.votingState()?.votingEndsAt ?? 0);
+    public readonly resultsEndsAt = computed(() => this.resultsState()?.resultsEndsAt ?? 0);
+    public readonly stickerCatalog = computed(() => this.gameState()?.stickerCatalog ?? []);
+    public readonly votesPerPlayer = computed(() => this.gameState()?.votesPerPlayer ?? 3);
+    public readonly maxStickersOnCanvas = computed(() => this.gameState()?.maxStickersOnCanvas ?? 12);
+
+    // ─── Building phase ──────────────────────────────────────────
 
     public readonly myHand = computed<StickerHand | null>(() => {
         const playerId = this.sessionStore.playerId();
         if (!playerId) return null;
-        return this.modeState()?.playerHands[playerId] ?? null;
+        return this.buildingState()?.playerHands[playerId] ?? null;
     });
 
     public readonly hasSubmittedThisRound = computed<boolean>(() => {
         const playerId = this.sessionStore.playerId();
-        const ms = this.modeState();
+        const ms = this.gameState();
         if (!playerId || !ms) return false;
-        const roundSubs = ms.submissions[ms.currentRoundIndex] ?? [];
-        return roundSubs.some(s => s.playerId === playerId);
+        return (ms.submissions[ms.currentRoundIndex] ?? []).some(s => s.playerId === playerId);
     });
-
-    public readonly skippedPlayerIds = computed<string[]>(() =>
-        this.modeState()?.skippedPlayerIds ?? []
-    );
 
     public readonly hasSkippedThisRound = computed<boolean>(() => {
         const playerId = this.sessionStore.playerId();
-        return !!playerId && this.skippedPlayerIds().includes(playerId);
+        if (!playerId) return false;
+        return this.buildingState()?.skippedPlayerIds.includes(playerId) ?? false;
     });
 
-    /**
-     * True when every connected player has either submitted or skipped.
-     * Used to show the "Runde schließen" button on the player building screen.
-     */
+    /** True when every connected round participant has submitted or skipped — shows "Runde schließen" button. */
     public readonly allPlayersDone = computed<boolean>(() => {
-        const ms = this.modeState();
+        const ms = this.gameState();
+        const ps = this.buildingState();
         const players = this.worldStore.players();
-        if (!ms || ms.phase !== 'BUILDING') {
-          return false;
-        }
-        const connectedIds = Object.values(players)
-            .filter(player => player.connected)
-            .map(player => player.id);
-        if (connectedIds.length === 0) {
-          return false;
-        }
-        const roundSubs = ms.submissions[ms.currentRoundIndex] ?? [];
-        const submittedIds = new Set(roundSubs.map(s => s.playerId));
-        const skippedIds = new Set(ms.skippedPlayerIds);
-        return connectedIds.every(id => submittedIds.has(id) || skippedIds.has(id));
+        if (!ms || !ps) return false;
+        const activeIds = ms.roundParticipantIds.filter(id => players[id]?.connected);
+        if (activeIds.length === 0) return false;
+        const submittedIds = new Set((ms.submissions[ms.currentRoundIndex] ?? []).map(s => s.playerId));
+        const skippedIds = new Set(ps.skippedPlayerIds);
+        return activeIds.every(id => submittedIds.has(id) || skippedIds.has(id));
     });
 
-    /** Submissions for the current round (used for voting in VOTING phase) */
+    // ─── Voting phase ────────────────────────────────────────────
+
     public readonly currentRoundSubmissions = computed<StickerCollage[]>(() => {
-        const ms = this.modeState();
+        const ms = this.gameState();
         if (!ms) return [];
         return ms.submissions[ms.currentRoundIndex] ?? [];
     });
 
-    /** Current player's votes this round */
     public readonly myVotes = computed<string[]>(() => {
         const playerId = this.sessionStore.playerId();
         if (!playerId) return [];
-        return this.modeState()?.currentVotes[playerId] ?? [];
+        return this.votingState()?.currentVotes[playerId] ?? [];
     });
 
-    public readonly lastVoteResults = computed(() => this.modeState()?.lastVoteResults ?? []);
-    public readonly votesPerPlayer = computed(() => this.modeState()?.votesPerPlayer ?? 3);
-    public readonly maxStickersOnCanvas = computed(() => this.modeState()?.maxStickersOnCanvas ?? 12);
+    public readonly myDoneVoting = computed<boolean>(() => {
+        const playerId = this.sessionStore.playerId();
+        if (!playerId) return false;
+        return this.votingState()?.doneVotingIds.includes(playerId) ?? false;
+    });
 
-    // ─── Winner / results ────────────────────────────────────────
+    /** True when all currently connected round participants have signalled done-voting. */
+    public readonly allVotingDone = computed<boolean>(() => {
+        const ms = this.gameState();
+        const ps = this.votingState();
+        const players = this.worldStore.players();
+        if (!ms || !ps) return false;
+        const connectedIds = ms.roundParticipantIds.filter(id => players[id]?.connected);
+        return connectedIds.length > 0 && connectedIds.every(id => ps.doneVotingIds.includes(id));
+    });
 
-    public readonly winnerId = computed(() => this.modeState()?.winnerId ?? null);
+    // ─── Results phase ───────────────────────────────────────────
+
+    public readonly lastVoteResults = computed(() => this.resultsState()?.lastVoteResults ?? []);
+    public readonly winnerId = computed(() => this.resultsState()?.winnerId ?? null);
 
     public readonly isWinner = computed(() => {
         const playerId = this.sessionStore.playerId();
         return !!playerId && playerId === this.winnerId();
     });
 
-    public readonly promptChoices = computed(() => this.modeState()?.promptChoices ?? []);
-    public readonly packUnlockChoices = computed<StickerPack[]>(() => {
-        const ms = this.modeState();
-        if (!ms) return [];
-        return ms.packUnlockChoices
-            .map(id => ms.stickerPacks.find(p => p.id === id))
-            .filter((p): p is StickerPack => !!p);
-    });
-    public readonly guaranteedPackChoices = computed<StickerPack[]>(() => {
-        const ms = this.modeState();
-        if (!ms) return [];
-        return ms.guaranteedPackChoices
-            .map(id => ms.stickerPacks.find(p => p.id === id))
-            .filter((p): p is StickerPack => !!p);
-    });
-    public readonly winnerChoicesDone = computed(() => this.modeState()?.winnerChoicesDone ?? false);
-
-    /** Whether the winner has already chosen a prompt */
-    public readonly hasChosenPrompt = computed(() => {
-        const ms = this.modeState();
-        if (!ms) return false;
-        return !!ms.promptHistory[ms.currentRoundIndex + 1];
-    });
-
-    /** Whether the winner has already unlocked a pack */
-    public readonly hasUnlockedPack = computed(() => {
-        return !!this.modeState()?.lastUnlockedPackId;
-    });
-
-    /** Whether there are any locked packs left to unlock */
-    public readonly hasLockedPacks = computed(() => {
-        return (this.modeState()?.packUnlockChoices ?? []).length > 0;
-    });
-
-    /** My placement in last vote results (1-indexed, null if not found) */
     public readonly myPlacement = computed<number | null>(() => {
         const playerId = this.sessionStore.playerId();
-        const results = this.lastVoteResults();
-        if (!playerId || results.length === 0) return null;
-        const idx = results.findIndex(r => r.playerId === playerId);
+        const r = this.lastVoteResults();
+        if (!playerId || r.length === 0) return null;
+        const idx = r.findIndex(r => r.playerId === playerId);
         return idx >= 0 ? idx + 1 : null;
     });
 
-    // ─── Sticker packs ──────────────────────────────────────────
+    public readonly promptChoices = computed(() => this.resultsState()?.promptChoices ?? []);
+    public readonly packUnlockChoices = computed<StickerPack[]>(() => {
+        const ms = this.gameState();
+        const ps = this.resultsState();
+        if (!ms || !ps) return [];
+        return ps.packUnlockChoices.map(id => ms.stickerPacks.find(p => p.id === id)).filter((p): p is StickerPack => !!p);
+    });
+    public readonly guaranteedPackChoices = computed<StickerPack[]>(() => {
+        const ms = this.gameState();
+        const ps = this.resultsState();
+        if (!ms || !ps) return [];
+        return ps.guaranteedPackChoices.map(id => ms.stickerPacks.find(p => p.id === id)).filter((p): p is StickerPack => !!p);
+    });
+    public readonly winnerChoicesDone = computed(() => this.resultsState()?.winnerChoicesDone ?? false);
+    public readonly hasChosenPrompt = computed(() => {
+        const ms = this.gameState();
+        return !!ms && !!ms.promptHistory[ms.currentRoundIndex + 1];
+    });
+    public readonly hasUnlockedPack = computed(() => !!(this.resultsState()?.lastUnlockedPackId));
+    public readonly hasLockedPacks = computed(() => (this.resultsState()?.packUnlockChoices ?? []).length > 0);
 
-    public readonly stickerPacks = computed(() => this.modeState()?.stickerPacks ?? []);
-    public readonly unlockedPackIds = computed(() => this.modeState()?.unlockedPackIds ?? []);
-    public readonly lastUnlockedPackId = computed(() => this.modeState()?.lastUnlockedPackId ?? null);
-    public readonly guaranteedPackId = computed(() => this.modeState()?.guaranteedPackId ?? null);
+    /** True once the winner has completed all choices — unlocks the "Weiter" button for everyone. */
+    public readonly canReadyToAdvance = computed<boolean>(() => this.resultsState()?.winnerChoicesDone ?? true);
+
+    public readonly myReadyToAdvance = computed<boolean>(() => {
+        const playerId = this.sessionStore.playerId();
+        if (!playerId) return false;
+        return this.resultsState()?.readyToAdvanceIds.includes(playerId) ?? false;
+    });
+
+    // ─── Sticker packs (cross-phase) ─────────────────────────────
+
+    public readonly stickerPacks = computed(() => this.gameState()?.stickerPacks ?? []);
+    public readonly unlockedPackIds = computed(() => this.gameState()?.unlockedPackIds ?? []);
+    public readonly lastUnlockedPackId = computed(() => this.resultsState()?.lastUnlockedPackId ?? null);
+    public readonly guaranteedPackId = computed(() => this.gameState()?.guaranteedPackId ?? null);
 
     // ─── Actions ─────────────────────────────────────────────────
 
-    public requestHand(): void {
-        this.sendAction({type: "request-hand"});
-    }
-
-    public swapSticker(handIndex: number, newStickerId: string): void {
-        this.sendAction({type: "swap-sticker", handIndex, newStickerId});
-    }
-
-    public submitCollage(placements: StickerPlacement[]): void {
-        this.sendAction({type: "submit-collage", placements});
-    }
-
-    public skipRound(): void {
-        this.sendAction({type: "skip-round"});
-    }
-
-    public castVote(collageId: string): void {
-        this.sendAction({type: "cast-vote", collageId});
-    }
-
-    public startGame(): void {
-        this.sendAction({type: "start-game"});
-    }
-
-    public endRoundEarly(): void {
-        this.sendAction({type: "end-round-early"});
-    }
-
-    public endVotingEarly(): void {
-        this.sendAction({type: "end-voting-early"});
-    }
-
-    public pickPrompt(prompt: string): void {
-        this.sendAction({type: "pick-prompt", prompt});
-    }
-
-    public unlockPack(packId: string): void {
-        this.sendAction({type: "unlock-pack", packId});
-    }
-
-    public pickGuaranteedPack(packId: string): void {
-        this.sendAction({type: "pick-guaranteed-pack", packId});
-    }
-
-    public advanceFromResults(): void {
-        this.sendAction({type: "advance-from-results"});
-    }
+    public requestHand(): void           { this.sendAction({type: "request-hand"}); }
+    public submitCollage(placements: StickerPlacement[]): void { this.sendAction({type: "submit-collage", placements}); }
+    public skipRound(): void             { this.sendAction({type: "skip-round"}); }
+    public castVote(collageId: string): void { this.sendAction({type: "cast-vote", collageId}); }
+    public doneVoting(): void            { this.sendAction({type: "done-voting"}); }
+    public readyToAdvance(): void        { this.sendAction({type: "ready-to-advance"}); }
+    public startGame(): void             { this.sendAction({type: "start-game"}); }
+    public endRoundEarly(): void         { this.sendAction({type: "end-round-early"}); }
+    public endVotingEarly(): void        { this.sendAction({type: "end-voting-early"}); }
+    public pickPrompt(prompt: string): void { this.sendAction({type: "pick-prompt", prompt}); }
+    public unlockPack(packId: string): void { this.sendAction({type: "unlock-pack", packId}); }
+    public pickGuaranteedPack(packId: string): void { this.sendAction({type: "pick-guaranteed-pack", packId}); }
 
     private sendAction(action: StickerCollageClientAction): void {
-        this.wsService.send({type: "game-action", mode: "sticker-collage", action});
+        this.wsService.send({type: "game-action", action});
     }
 }

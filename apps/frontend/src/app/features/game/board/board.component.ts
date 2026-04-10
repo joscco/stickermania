@@ -45,13 +45,16 @@ export class BoardComponent implements OnInit, OnDestroy {
   private timerInterval: ReturnType<typeof setInterval> | null = null;
 
   public readonly currentTimerEndsAt = computed(() => {
-    const ms = this.worldStore.stickerCollageModeState();
-    if (!ms) return 0;
-    return ms.roundEndsAt ?? ms.votingEndsAt ?? ms.resultsEndsAt ?? 0;
+    const ps = this.worldStore.stickerCollageGameState()?.phaseState;
+    if (!ps) return 0;
+    if (ps.phase === "BUILDING") return ps.roundEndsAt;
+    if (ps.phase === "VOTING") return ps.votingEndsAt;
+    if (ps.phase === "RESULTS") return ps.resultsEndsAt;
+    return 0;
   });
 
-  public readonly modeState = computed(() => this.worldStore.stickerCollageModeState());
-  public readonly phase = computed(() => this.modeState()?.phase ?? 'LOBBY');
+  public readonly gameState = computed(() => this.worldStore.stickerCollageGameState());
+  public readonly phase = computed(() => this.gameState()?.phaseState.phase ?? 'LOBBY');
 
   public constructor(
     private readonly wsService: WebSocketService,
@@ -135,7 +138,6 @@ export class BoardComponent implements OnInit, OnDestroy {
   }
 
 
-
   private async bootstrapBoardSession(sessionCode: string): Promise<void> {
     this.isBootstrapping.set(true);
     this.bootErrorText.set(null);
@@ -205,9 +207,7 @@ export class BoardComponent implements OnInit, OnDestroy {
       }
 
       case "game-event": {
-        if (message.mode === "sticker-collage") {
-          this.handleStickerCollageEvent(message.event);
-        }
+        // Nichts zu tun
         break;
       }
 
@@ -215,52 +215,6 @@ export class BoardComponent implements OnInit, OnDestroy {
         this.pushEvent(message.message, Date.now());
         break;
       }
-    }
-  }
-
-  private handleStickerCollageEvent(event: StickerCollageServerEvent): void {
-    switch (event.type) {
-      case "game-started":
-        this.pushEvent("🎉 Das Spiel beginnt!", Date.now());
-        break;
-      case "round-started": {
-        this.pushEvent(`🎨 Neue Runde: ${event.prompt}`, Date.now());
-        break;
-      }
-      case "collage-submitted": {
-        const playerName = this.worldStore.players()[event.playerId]?.name || "Jemand";
-        this.pushEvent(`🖼️ ${playerName} hat eine Collage eingereicht!`, Date.now());
-        break;
-      }
-      case "voting-started":
-        this.pushEvent("🗳️ Abstimmung läuft!", Date.now());
-        break;
-      case "results-ready": {
-        if (event.winnerId) {
-          const winnerName = this.worldStore.players()[event.winnerId]?.name || "Jemand";
-          this.pushEvent(`🏆 ${winnerName} gewinnt die Runde!`, Date.now());
-        }
-        break;
-      }
-      case "round-ended":
-        break;
-      case "score-update": {
-        const playerName = this.worldStore.players()[event.playerId]?.name || "Jemand";
-        this.pushEvent(`⭐ ${playerName} hat jetzt ${event.newScore} Punkte.`, Date.now());
-        break;
-      }
-      case "pack-unlocked":
-        this.pushEvent(`🔓 ${event.packName} freigeschaltet!`, Date.now());
-        break;
-      case "prompt-chosen":
-        this.pushEvent(`🎯 Nächster Prompt: ${event.prompt}`, Date.now());
-        break;
-      case "guaranteed-pack-chosen":
-        this.pushEvent(`⭐ ${event.packName} ist auf jeden Fall dabei!`, Date.now());
-        break;
-      case "hand-dealt":
-      case "vote-registered":
-        break;
     }
   }
 
