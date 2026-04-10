@@ -57,8 +57,13 @@ export class PlayerComponent implements OnInit, OnDestroy {
   public readonly isEditingAvatar = signal(false);
   public readonly wasConnected = computed(() => this.wsService.wasConnected());
 
+  /** When set via ?screen= query param, this overrides all live-state logic. */
+  private readonly forcedScreen = signal<PlayerScreen | null>(null);
+
   /** Resolves which PlayerScreen to render from live store/connection state. */
-  public readonly currentScreen = computed<PlayerScreen>(() => this.screenFromStore());
+  public readonly currentScreen = computed<PlayerScreen>(
+    () => this.forcedScreen() ?? this.screenFromStore()
+  );
   public readonly PlayerScreen = PlayerScreen;
 
   constructor(
@@ -105,6 +110,13 @@ export class PlayerComponent implements OnInit, OnDestroy {
   // ── Lifecycle ──────────────────────────────────────────────
 
   public async ngOnInit(): Promise<void> {
+    // ?screen=connecting  →  render that screen directly, skip all WS logic.
+    const forcedScreenParam = this.route.snapshot.queryParamMap.get('screen');
+    if (forcedScreenParam) {
+      this.forcedScreen.set(forcedScreenParam as PlayerScreen);
+      return;
+    }
+
     const reconnect = this.reconnectService.load();
     const sessionCode = this.reconnectService.resolveSessionCode(this.route);
 

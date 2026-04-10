@@ -70,37 +70,72 @@ const MOCK_SUBMISSIONS = [
     },
 ];
 
-const BASE_GAME_STATE = {
+// ── Phase state builders ──────────────────────────────────────────────────────
+
+const MOCK_VOTE_RESULTS = [
+    { collageId: 'col-1', playerId: 'player-1', voteCount: 2, pointsAwarded: 100 },
+    { collageId: 'col-2', playerId: 'player-2', voteCount: 1, pointsAwarded:  60 },
+    { collageId: 'col-3', playerId: 'player-3', voteCount: 0, pointsAwarded:   0 },
+];
+
+function makeLobbyPhase() {
+    return { phase: 'LOBBY' };
+}
+
+function makeBuildingPhase({ skippedPlayerIds = [], playerHands } = {}) {
+    return {
+        phase: 'BUILDING',
+        roundEndsAt:      Date.now() + 300_000,
+        playerHands:      playerHands ?? { 'player-1': MOCK_HAND, 'player-2': MOCK_HAND, 'player-3': MOCK_HAND },
+        skippedPlayerIds: skippedPlayerIds,
+    };
+}
+
+function makeVotingPhase({ currentVotes = {}, doneVotingIds = [] } = {}) {
+    return {
+        phase: 'VOTING',
+        votingEndsAt:  Date.now() + 120_000,
+        currentVotes,
+        doneVotingIds,
+    };
+}
+
+function makeResultsPhase() {
+    return {
+        phase: 'RESULTS',
+        resultsEndsAt:     Date.now() + 60_000,
+        lastVoteResults:   MOCK_VOTE_RESULTS,
+        winnerId:          'player-1',
+        promptChoices:     ['Das gruseligste Tier', 'Mein Traumfrühstück', 'Ein Roboter im Urlaub'],
+        packUnlockChoices: [],
+        guaranteedPackChoices: [],
+        lastUnlockedPackId: null,
+        winnerChoicesDone: false,
+        readyToAdvanceIds: [],
+    };
+}
+
+function makeNextRoundPhase() {
+    return { phase: 'NEXT_ROUND_SETUP' };
+}
+
+// ── Base (phase-independent) game state ───────────────────────────────────────
+
+const BASE_COMMON = {
     currentRoundIndex: 0,
-    currentPrompt: 'Das schönste Geburtstagsmonster',
-    roundStartedAt: Date.now() - 60_000,
-    roundEndsAt:    Date.now() + 300_000,
-    votingEndsAt:   null,
-    resultsEndsAt:  null,
-    stickerCatalog: MOCK_CATALOG,
-    stickerPacks: [{ id: 'pack-1', name: 'Basis', stickerIds: STICKER_IDS, unlockedAtStart: true }],
-    unlockedPackIds: ['pack-1'],
-    guaranteedPackId: null,
-    playerHands: { 'player-1': MOCK_HAND, 'player-2': MOCK_HAND, 'player-3': MOCK_HAND },
-    submissions:  { 0: MOCK_SUBMISSIONS },
-    skippedPlayerIds: [],
-    currentVotes: { 'player-2': ['col-1'], 'player-3': ['col-1', 'col-2'] },
-    lastVoteResults: [
-        { collageId: 'col-1', playerId: 'player-1', voteCount: 2, pointsAwarded: 100 },
-        { collageId: 'col-2', playerId: 'player-2', voteCount: 1, pointsAwarded:  60 },
-        { collageId: 'col-3', playerId: 'player-3', voteCount: 0, pointsAwarded:   0 },
-    ],
-    winnerId: 'player-1',
-    promptChoices: ['Das gruseligste Tier', 'Mein Traumfrühstück', 'Ein Roboter im Urlaub'],
-    packUnlockChoices: [],
-    guaranteedPackChoices: [],
-    lastUnlockedPackId: null,
-    winnerChoicesDone: false,
-    promptHistory: { 0: 'Das schönste Geburtstagsmonster' },
-    handSize: 8,
+    currentPrompt:     'Das schönste Geburtstagsmonster',
+    roundStartedAt:    Date.now() - 60_000,
+    stickerCatalog:    MOCK_CATALOG,
+    stickerPacks:      [{ id: 'pack-1', name: 'Basis', stickerIds: STICKER_IDS, unlockedAtStart: true }],
+    unlockedPackIds:   ['pack-1'],
+    guaranteedPackId:  null,
+    submissions:       { 0: MOCK_SUBMISSIONS },
+    promptHistory:     { 0: 'Das schönste Geburtstagsmonster' },
+    roundParticipantIds: ['player-1', 'player-2', 'player-3'],
+    handSize:          8,
     maxStickersOnCanvas: 12,
-    swapCount: 2,
-    votesPerPlayer: 3,
+    swapCount:         2,
+    votesPerPlayer:    3,
 };
 
 /**
@@ -108,56 +143,87 @@ const BASE_GAME_STATE = {
  * The screen id is the suffix after "MOCK-" in the session code.
  */
 function buildStateForScreen(screenId, sessionCode) {
-    let phase           = 'LOBBY';
-    let playerHands     = BASE_GAME_STATE.playerHands;
-    let submissions     = BASE_GAME_STATE.submissions;
-    let skippedPlayerIds = [];
-    let mockPlayers     = MOCK_PLAYERS;
+    let phaseState   = makeLobbyPhase();
+    let submissions  = BASE_COMMON.submissions;
+    let mockPlayers  = MOCK_PLAYERS;
 
     switch (screenId) {
         case 'lobby-name':
-            phase = 'LOBBY';
+            phaseState = makeLobbyPhase();
             mockPlayers = {
                 ...MOCK_PLAYERS,
-                'player-1': {...MOCK_PLAYERS['player-1'], name: '', avatarUrl: null},
+                'player-1': { ...MOCK_PLAYERS['player-1'], name: '', avatarUrl: null },
             };
             break;
 
         case 'lobby-avatar':
-            phase = 'LOBBY';
-            // Player has a name but no avatar → app routes to LOBBY_AVATAR
+            phaseState = makeLobbyPhase();
             mockPlayers = {
                 ...MOCK_PLAYERS,
-                'player-1': {...MOCK_PLAYERS['player-1'], avatarUrl: null},
+                'player-1': { ...MOCK_PLAYERS['player-1'], avatarUrl: null },
             };
             break;
 
-        case 'lobby-waiting':       phase = 'LOBBY';           break;
+        case 'lobby-waiting':
+        case 'board-lobby':
+            phaseState = makeLobbyPhase();
+            break;
 
         case 'building':
-            phase = 'BUILDING';
             submissions = { 0: MOCK_SUBMISSIONS.filter(s => s.playerId !== 'player-1') };
+            phaseState  = makeBuildingPhase();
             break;
 
         case 'building-submitted':
-            phase = 'BUILDING';
-            // player-1 has already submitted
+            // player-1 already submitted → their collage is in submissions
+            phaseState = makeBuildingPhase();
             break;
 
         case 'building-skipped':
-            phase = 'BUILDING';
-            // player-1 has skipped
-            skippedPlayerIds = ['player-1'];
             submissions = { 0: MOCK_SUBMISSIONS.filter(s => s.playerId !== 'player-1') };
+            phaseState  = makeBuildingPhase({ skippedPlayerIds: ['player-1'] });
             break;
 
-        case 'voting':              phase = 'VOTING';           break;
-        case 'results':             phase = 'RESULTS';          break;
-        case 'next-round':          phase = 'NEXT_ROUND_SETUP'; break;
-        case 'board-lobby':         phase = 'LOBBY';            break;
-        case 'board-building':      phase = 'BUILDING';         break;
-        case 'board-voting':        phase = 'VOTING';           break;
-        case 'board-results':       phase = 'RESULTS';          break;
+        case 'board-building':
+            phaseState = makeBuildingPhase();
+            break;
+
+        case 'voting':
+            phaseState = makeVotingPhase({
+                currentVotes:  { 'player-1': ['col-2'], 'player-2': ['col-1'], 'player-3': ['col-1', 'col-2'] },
+                doneVotingIds: [],
+            });
+            break;
+
+        case 'voting-done':
+            phaseState = makeVotingPhase({
+                currentVotes:  { 'player-1': ['col-2', 'col-3'], 'player-2': ['col-1'], 'player-3': ['col-1', 'col-2'] },
+                doneVotingIds: ['player-1'],
+            });
+            break;
+
+        case 'voting-all-done':
+            phaseState = makeVotingPhase({
+                currentVotes:  { 'player-1': ['col-2', 'col-3'], 'player-2': ['col-1'], 'player-3': ['col-1', 'col-2'] },
+                doneVotingIds: ['player-1', 'player-2', 'player-3'],
+            });
+            break;
+
+        case 'board-voting':
+            phaseState = makeVotingPhase({
+                currentVotes:  { 'player-2': ['col-1'], 'player-3': ['col-1', 'col-2'] },
+                doneVotingIds: [],
+            });
+            break;
+
+        case 'results':
+        case 'board-results':
+            phaseState = makeResultsPhase();
+            break;
+
+        case 'next-round':
+            phaseState = makeNextRoundPhase();
+            break;
     }
 
     return {
@@ -165,7 +231,7 @@ function buildStateForScreen(screenId, sessionCode) {
         sessionCode: sessionCode,
         players:     mockPlayers,
         activeMode:  'sticker-collage',
-        gameState:   { ...BASE_GAME_STATE, phase, playerHands, submissions, skippedPlayerIds },
+        gameState:   { ...BASE_COMMON, submissions, phaseState },
         revision:    1,
         updatedAt:   Date.now(),
         createdAt:   Date.now(),
@@ -201,6 +267,13 @@ export function createMockServer() {
         if (urlPath === '/api/sessions') {
             res.writeHead(200, {'Content-Type': 'application/json'});
             res.end('[]');
+            return;
+        }
+
+        // GET /api/auth/board-status → always allow (needed by boardAuthGuard)
+        if (urlPath === '/api/auth/board-status') {
+            res.writeHead(200, {'Content-Type': 'application/json'});
+            res.end(JSON.stringify({authenticated: true}));
             return;
         }
 
@@ -251,27 +324,8 @@ export function createMockServer() {
                     : '';
                 const playerId = msg.playerId ?? 'player-1';
 
-                // For connecting: don't respond at all — app stays on spinner
-                if (screenId === 'connecting') {
-                    return;
-                }
 
-                // For reconnecting: send welcome once so wasConnected flips to true,
-                // then always close immediately on every subsequent join so the app
-                // stays permanently in the RECONNECTING spinner.
-                if (screenId === 'reconnecting') {
-                    ws.send(JSON.stringify({
-                        type: 'welcome', clientId: 'mock-client', playerId,
-                        sessionId: 'MOCK', serverTime: Date.now(), serverSessionId: 'mock-server',
-                    }));
-                    // Close after a tiny delay — triggers reconnect loop which we also close,
-                    // so the UI stays on the reconnecting spinner indefinitely.
-                    setTimeout(() => ws.close(), 100);
-                    return;
-                }
-
-                // For disconnected: close the socket immediately after welcome
-                // so the WS service transitions to "disconnected"
+                // disconnected: send error so the WS service transitions to disconnected.
                 if (screenId === 'disconnected') {
                     ws.send(JSON.stringify({
                         type: 'error',
