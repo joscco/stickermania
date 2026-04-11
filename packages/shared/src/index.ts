@@ -126,13 +126,21 @@ export interface StickerDefinition {
 export interface StickerPlacement {
     instanceId: string;
     stickerId: string;
+    /** Visual center X in canvas-local pixels. */
     x: number;
+    /** Visual center Y in canvas-local pixels. */
     y: number;
     rotation: number;
     scale: number;
     zIndex: number;
     flipX?: boolean;
     flipY?: boolean;
+    /** Non-uniform stretch: horizontal scale factor (multiplied on top of scale). */
+    scaleX?: number;
+    /** Non-uniform stretch: vertical scale factor (multiplied on top of scale). */
+    scaleY?: number;
+    /** Groups this sticker with others sharing the same groupId. */
+    groupId?: string;
 }
 
 export interface StickerHand {

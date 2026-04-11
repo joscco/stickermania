@@ -61,12 +61,10 @@ export class StickerEditorComponent implements OnDestroy {
         if (!canvasEl) return;
         const rect = canvasEl.getBoundingClientRect();
 
-        // Ghost is centred on the pointer (transform: translate(-50%,-50%)).
-        // The canvas places the sticker at (x, y) = top-left of its container div.
-        // Subtract half the ghost's actual rendered size so the sticker's visual
-        // centre lands exactly at the pointer release point — no jump.
-        const x = event.clientX - rect.left  - event.renderedWidth  / 2;
-        const y = event.clientY - rect.top   - event.renderedHeight / 2;
+        // x/y = visual center of the sticker on the canvas.
+        // The ghost is centred on the pointer, so pointer position = desired center.
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
 
         const current = this.placements();
         const maxZ = current.length > 0 ? Math.max(...current.map(p => p.zIndex)) : 0;

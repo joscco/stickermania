@@ -1,60 +1,62 @@
-<!-- Canvas area + Toolbar. Toolbar is here (not inside canvas) so it never resizes the canvas. -->
+<!-- Canvas area + Global Top-Bar. -->
 <div class="flex-1 min-h-0 relative bg-stone-50 flex flex-col items-center justify-center p-2">
 
-  <!-- Toolbar — always occupies its fixed height, content changes based on selection -->
+  <!-- Global Top-Bar: only canvas-wide actions -->
   @if (stickerCanvas.interactive()) {
     <div
       data-canvas-toolbar
       class="shrink-0 w-full max-w-[min(100%,var(--canvas-w,100%))] flex items-center gap-1 px-2 bg-stone-100 rounded-t-lg border border-b-0 border-black/8"
       style="height: 2.5rem;"
     >
-      @if (stickerCanvas.selectedInstanceId() || stickerCanvas.lassoSelection().size > 0) {
+      <!-- Undo -->
+      <button
+        class="toolbar-btn"
+        title="Rückgängig"
+        [disabled]="!stickerCanvas.undo.canUndo()"
+        [class.opacity-30]="!stickerCanvas.undo.canUndo()"
+        (click)="stickerCanvas.undoAction()"
+      >
+        <svg viewBox="0 0 20 20" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M4 10a6 6 0 1 0 6-6H7m3-3-3 3 3 3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <!-- Redo -->
+      <button
+        class="toolbar-btn"
+        title="Wiederholen"
+        [disabled]="!stickerCanvas.undo.canRedo()"
+        [class.opacity-30]="!stickerCanvas.undo.canRedo()"
+        (click)="stickerCanvas.redoAction()"
+      >
+        <svg viewBox="0 0 20 20" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M16 10a6 6 0 1 1-6-6h3M10 1l3 3-3 3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
 
-        @if (stickerCanvas.lassoSelection().size === 0) {
-          <button class="toolbar-btn" title="Nach hinten" (click)="stickerCanvas.sendBackward()">
-            z--
-          </button>
-          <button class="toolbar-btn" title="Nach vorne" (click)="stickerCanvas.bringForward()">
-            z++
-          </button>
-          <div class="w-px h-5 bg-black/10 mx-0.5 shrink-0"></div>
-        }
+      <div class="flex-1"></div>
 
-        <button class="toolbar-btn" title="Links drehen" (click)="stickerCanvas.rotateSelected(-15)">
-          <svg viewBox="0 0 20 20" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10a6 6 0 1 0 6-6H7m3-3-3 3 3 3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <button class="toolbar-btn" title="Rechts drehen" (click)="stickerCanvas.rotateSelected(15)">
-          <svg viewBox="0 0 20 20" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 10a6 6 0 1 1-6-6h3M10 1l3 3-3 3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <div class="w-px h-5 bg-black/10 mx-0.5 shrink-0"></div>
+      <!-- Sticker count -->
+      <span class="text-xs text-stone-400 select-none">{{ placements().length }}/{{ maxStickers() }}</span>
 
-        <button class="toolbar-btn" title="Horizontal spiegeln" (click)="stickerCanvas.mirrorSelected('h')">
-          <svg viewBox="0 0 20 20" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v14M4 6l3 4-3 4M16 6l-3 4 3 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <button class="toolbar-btn" title="Vertikal spiegeln" (click)="stickerCanvas.mirrorSelected('v')">
-          <svg viewBox="0 0 20 20" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10h14M6 4l4 3 4-3M6 16l4-3 4 3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <div class="w-px h-5 bg-black/10 mx-0.5 shrink-0"></div>
+      <div class="w-px h-5 bg-black/10 mx-0.5 shrink-0"></div>
 
-        <button class="toolbar-btn" title="Kleiner" (click)="stickerCanvas.scaleSelected(0.8)">
-          <svg viewBox="0 0 20 20" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="6"/><path d="M7 10h6" stroke-linecap="round"/></svg>
+      <!-- Clear all -->
+      @if (placements().length > 0) {
+        <button
+          class="toolbar-btn"
+          style="color: rgb(248 113 113);"
+          title="Alle Sticker entfernen"
+          (click)="clearPlacements()"
+        >
+          <svg viewBox="0 0 20 20" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M4 4l12 12M16 4 4 16" stroke-linecap="round"/>
+          </svg>
         </button>
-        <button class="toolbar-btn" title="Größer" (click)="stickerCanvas.scaleSelected(1.25)">
-          <svg viewBox="0 0 20 20" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="6"/><path d="M10 7v6M7 10h6" stroke-linecap="round"/></svg>
-        </button>
-        <div class="flex-1"></div>
-
-        <button class="toolbar-btn" style="color: rgb(248 113 113);" title="Löschen" (click)="stickerCanvas.removeSelected()">
-          <svg viewBox="0 0 20 20" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l8 8M14 6l-8 8" stroke-linecap="round"/></svg>
-        </button>
-
-      } @else {
-        <span class="text-xs select-none" style="color: rgb(214 211 209);">Sticker antippen zum Bearbeiten</span>
       }
     </div>
   }
 
-  <!-- Square canvas wrapper — overflow visible so stickers aren't clipped -->
+  <!-- Square canvas wrapper -->
   <div class="min-h-0 aspect-square max-w-full" style="height: calc(100% - 2.5rem); overflow: visible;">
     <app-sticker-canvas
       #stickerCanvas
@@ -66,11 +68,6 @@
       (placementsChanged)="onPlacementsChanged($event)"
       (stickerRemoved)="onStickerRemoved($event)"
     />
-  </div>
-
-  <!-- Sticker count badge -->
-  <div class="absolute top-2 right-2 bg-white/80 backdrop-blur text-xs font-medium text-stone-600 px-2 py-0.5 rounded-full border border-black/6">
-    {{ placements().length }}/{{ maxStickers() }}
   </div>
 </div>
 

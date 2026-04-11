@@ -38,13 +38,16 @@ export async function renderCanvasToDataUrl(
         const drawW = domImg?.offsetWidth  ?? 64;
         const drawH = domImg?.offsetHeight ?? 64;
 
-        const cx = placement.x + drawW / 2;
-        const cy = placement.y + drawH / 2;
+        const cx = placement.x;  // p.x/p.y = visual center
+        const cy = placement.y;
+        const pp  = placement as any;
+        const sx  = (placement.flipX ? -1 : 1) * placement.scale * (pp.scaleX ?? 1);
+        const sy  = (placement.flipY ? -1 : 1) * placement.scale * (pp.scaleY ?? 1);
 
         ctx.save();
         ctx.translate(cx, cy);
         ctx.rotate((placement.rotation * Math.PI) / 180);
-        ctx.scale(placement.scale, placement.scale);
+        ctx.scale(sx, sy);
         ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
         ctx.restore();
     }

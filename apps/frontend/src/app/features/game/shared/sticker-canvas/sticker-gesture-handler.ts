@@ -1,109 +1,82 @@
 import type {StickerPlacement} from "@birthday/shared";
-import {pointInPolygon} from "./sticker-hit-test.util";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export interface ActivePointer {
-    id: number;
-    x: number;
-    y: number;
-}
-
+export interface ActivePointer { id: number; x: number; y: number; }
 export interface GroupBaseline {
-    instanceId: string;
-    baseX: number;
-    baseY: number;
-    baseScale: number;
-    baseRotation: number;
-    /** Vector from gesture center to sticker center at gesture start */
-    relCx: number;
-    relCy: number;
+    instanceId: string; baseX: number; baseY: number;
+    baseScale: number; baseRotation: number; relCx: number; relCy: number;
 }
-
-export interface MoveBaseline {
-    instanceId: string;
-    baseX: number;
-    baseY: number;
-}
+export interface MoveBaseline { instanceId: string; baseX: number; baseY: number; }
 
 export type GestureCallbacks = {
-    /** Called whenever sticker placements change (move / pinch). */
-    onPlacementsChanged: (placements: StickerPlacement[]) => void;
-    /** Called when the lasso path changes during drawing. */
-    onLassoPathChanged: (path: {x: number; y: number}[] | null) => void;
-    /** Called when lasso selection resolves to a set of instanceIds. */
+    onPlacementsChanged:     (placements: StickerPlacement[]) => void;
+    /** null = lasso cleared; otherwise array of {x,y} canvas-local points */
+    onLassoPathChanged:      (path: {x: number; y: number}[] | null) => void;
     onLassoSelectionChanged: (ids: Set<string>) => void;
-    /** Called when the single selected sticker changes. */
-    onSelectedChanged: (instanceId: string | null) => void;
-    /** Called when sticker(s) are dragged off the canvas edge — should be deleted. First arg is primary id, second is full list. */
-    onStickerDraggedOff?: (id: string, allIds: string[]) => void;
-    /** Called during move when the pointer crosses outside/inside the canvas boundary. */
-    onDragNearEdge?: (outsideCanvas: boolean) => void;
+    onSelectedChanged:       (instanceId: string | null) => void;
+    onStickerDraggedOff?:    (id: string, allIds: string[]) => void;
+    onDragNearEdge?:         (outsideCanvas: boolean) => void;
+    onPointerUpCommit?:      () => void;
 };
 
-// ── GestureHandler ───────────────────────────────────────────────────────────
+// ── Point-in-polygon (ray-casting) ───────────────────────────────────────────
+function pointInPoly(px: number, py: number, poly: {x: number; y: number}[]): boolean {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const xi = poly[i].x, yi = poly[i].y;
+        const xj = poly[j].x, yj = poly[j].y;
+        if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi)
+            inside = !inside;
+    }
+    return inside;
+}
 
-/**
- * Handles all touch/pointer/gesture logic for the sticker canvas.
- *
- * Interaction model:
- *
- * IDLE (nothing selected):
- *   - tap sticker          → select it
- *   - drag on empty area   → draw freehand lasso
- *
- * SELECTION ACTIVE:
- *   - 1 finger anywhere    → move selection
- *   - 2 fingers anywhere   → pinch-scale + rotate selection
- *   - tap empty area       → deselect
- *   - tap other sticker    → switch selection
- */
+// ── GestureHandler ───────────────────────────────────────────────────────────
 export class StickerGestureHandler {
     private pointers: ActivePointer[] = [];
 
-    // Lasso state
+    // Freehand lasso state
     private lassoActive = false;
-    private lassoPath: {x: number; y: number}[] = [];
+    private lassoPath:   {x: number; y: number}[] = [];
 
     // Move state
-    private moveActive = false;
-    private moveOffsetX = 0;
-    private moveOffsetY = 0;
+    private moveActive   = false;
+    private moveOffsetX  = 0;
+    private moveOffsetY  = 0;
     private moveBaselines: MoveBaseline[] = [];
+    private didMove      = false;
 
     // Pinch state
     private pinchBaseDistance = 0;
-    private pinchBaseAngle = 0;
+    private pinchBaseAngle    = 0;
     private pinchBaselines: GroupBaseline[] = [];
 
     // Tap detection
-    private tapStartX = 0;
-    private tapStartY = 0;
-    private tapStartTime = 0;
-    private tapMoved = false;
+    private tapStartX    = 0;
+    private tapStartY    = 0;
+    private tapMoved     = false;
 
-    // Current snapshot of stickers (updated from outside on every change)
+    // Snapshot
     private stickers: StickerPlacement[] = [];
     private selectedInstanceId: string | null = null;
-    private lassoSelection: Set<string> = new Set();
+    private lassoSelection: Set<string>  = new Set();
 
     constructor(
-        private readonly getCanvasRect: () => DOMRect,
-        private readonly hitTest: (clientX: number, clientY: number) => string | null,
+        private readonly getCanvasRect:          () => DOMRect,
+        private readonly hitTest:                (clientX: number, clientY: number) => string | null,
         private readonly getStickerRenderedSize: (instanceId: string) => {w: number; h: number},
-        private readonly callbacks: GestureCallbacks,
+        private readonly callbacks:              GestureCallbacks,
     ) {}
-
-    // ── Public state sync ─────────────────────────────────────────
 
     public syncState(
         stickers: StickerPlacement[],
         selectedInstanceId: string | null,
         lassoSelection: Set<string>,
     ): void {
-        this.stickers = stickers;
-        this.selectedInstanceId = selectedInstanceId;
-        this.lassoSelection = lassoSelection;
+        this.stickers            = stickers;
+        this.selectedInstanceId  = selectedInstanceId;
+        this.lassoSelection      = lassoSelection;
     }
 
     // ── Pointer events ────────────────────────────────────────────
@@ -113,21 +86,21 @@ export class StickerGestureHandler {
 
         // Second finger → upgrade to pinch
         if (this.pointers.length === 2) {
-            this.tapMoved = true;
+            this.tapMoved    = true;
             this.lassoActive = false;
+            this.lassoPath   = [];
             this.callbacks.onLassoPathChanged(null);
-            this.moveActive = false;
-
+            this.moveActive  = false;
             const ids = this.currentSelectionIds();
             if (ids.length > 0) this.initPinch(ids);
             return;
         }
 
         // First finger
-        this.tapStartX    = clientX;
-        this.tapStartY    = clientY;
-        this.tapStartTime = performance.now();
-        this.tapMoved     = false;
+        this.tapStartX   = clientX;
+        this.tapStartY   = clientY;
+        this.tapMoved    = false;
+        this.didMove     = false;
 
         const rect   = this.getCanvasRect();
         const localX = clientX - rect.left;
@@ -135,25 +108,30 @@ export class StickerGestureHandler {
         const hitId  = this.hitTest(clientX, clientY);
 
         if (this.hasSelection()) {
-            if (hitId && !this.isSelected(hitId)) {
-                // Tapped a different sticker → switch selection
+            if (!hitId) {
+                // Tap on empty area → deselect + start lasso
+                this.selectedInstanceId = null;
+                this.lassoSelection     = new Set();
+                this.callbacks.onSelectedChanged(null);
                 this.callbacks.onLassoSelectionChanged(new Set());
-                this.callbacks.onSelectedChanged(hitId);
-                this.selectedInstanceId = hitId;
-                this.lassoSelection = new Set();
+                this.lassoActive = true;
+                this.lassoPath   = [{x: localX, y: localY}];
+                this.callbacks.onLassoPathChanged(this.lassoPath);
+            } else {
+                if (!this.isSelected(hitId)) {
+                    this.selectAndMove(hitId, localX, localY);
+                } else {
+                    // Already selected (single or group) — just start moving
+                    this.startMove(localX, localY);
+                }
             }
-            this.startMove(localX, localY);
         } else if (hitId) {
-            this.callbacks.onSelectedChanged(hitId);
-            this.callbacks.onLassoSelectionChanged(new Set());
-            this.selectedInstanceId = hitId;
-            this.lassoSelection = new Set();
-            this.startMove(localX, localY);
+            this.selectAndMove(hitId, localX, localY);
         } else {
-            // Empty area → draw lasso
+            // Empty area → freehand lasso
             this.lassoActive = true;
             this.lassoPath   = [{x: localX, y: localY}];
-            this.callbacks.onLassoPathChanged([...this.lassoPath]);
+            this.callbacks.onLassoPathChanged(this.lassoPath);
         }
     }
 
@@ -162,19 +140,15 @@ export class StickerGestureHandler {
         if (idx < 0) return;
         this.pointers[idx] = {id, x: clientX, y: clientY};
 
-        if (!this.tapMoved) {
-            if (Math.hypot(clientX - this.tapStartX, clientY - this.tapStartY) > 6) {
-                this.tapMoved = true;
-            }
-        }
+        if (!this.tapMoved && Math.hypot(clientX - this.tapStartX, clientY - this.tapStartY) > 6)
+            this.tapMoved = true;
 
         const rect   = this.getCanvasRect();
         const localX = clientX - rect.left;
         const localY = clientY - rect.top;
 
         if (this.pointers.length === 2 && this.pinchBaselines.length > 0) {
-            this.applyPinch();
-            return;
+            this.applyPinch(); this.didMove = true; return;
         }
 
         if (this.moveActive && this.pointers.length === 1) {
@@ -182,11 +156,11 @@ export class StickerGestureHandler {
             const dy = localY - this.moveOffsetY;
             this.callbacks.onPlacementsChanged(
                 this.stickers.map(p => {
-                    const base = this.moveBaselines.find(b => b.instanceId === p.instanceId);
-                    return base ? {...p, x: base.baseX + dx, y: base.baseY + dy} : p;
+                    const b = this.moveBaselines.find(b => b.instanceId === p.instanceId);
+                    return b ? {...p, x: b.baseX + dx, y: b.baseY + dy} : p;
                 }),
             );
-            // Signal whether the drag has left the canvas boundary (single or group)
+            this.didMove = true;
             if (this.callbacks.onDragNearEdge && this.hasSelection()) {
                 const outside = clientX < rect.left || clientX > rect.right ||
                                 clientY < rect.top  || clientY > rect.bottom;
@@ -196,8 +170,11 @@ export class StickerGestureHandler {
         }
 
         if (this.lassoActive && this.pointers.length === 1) {
-            this.lassoPath.push({x: localX, y: localY});
-            this.callbacks.onLassoPathChanged([...this.lassoPath]);
+            const last = this.lassoPath[this.lassoPath.length - 1];
+            if (!last || Math.hypot(localX - last.x, localY - last.y) > 2) {
+                this.lassoPath.push({x: localX, y: localY});
+                this.callbacks.onLassoPathChanged([...this.lassoPath]);
+            }
         }
     }
 
@@ -205,39 +182,37 @@ export class StickerGestureHandler {
         this.pointers = this.pointers.filter(p => p.id !== id);
 
         if (this.pointers.length === 0) {
-            // Check if selection was dragged off the canvas edge
             if (this.moveActive && this.tapMoved && this.callbacks.onStickerDraggedOff) {
-                const rect = this.getCanvasRect();
+                const rect    = this.getCanvasRect();
                 const outside = clientX < rect.left || clientX > rect.right ||
                                 clientY < rect.top  || clientY > rect.bottom;
                 if (outside && this.hasSelection()) {
-                    // Collect ids to delete before clearing state
                     const ids = this.currentSelectionIds();
                     this.selectedInstanceId = null;
-                    this.lassoSelection = new Set();
-                    this.moveActive = false;
-                    this.moveBaselines = [];
+                    this.lassoSelection     = new Set();
+                    this.moveActive         = false;
+                    this.moveBaselines      = [];
                     this.callbacks.onSelectedChanged(null);
                     this.callbacks.onLassoSelectionChanged(new Set());
-                    // Notify in a single batch call rather than one per id
                     this.callbacks.onDragNearEdge?.(false);
                     this.callbacks.onStickerDraggedOff(ids[0], ids);
                     return;
                 }
             }
 
+            if (this.didMove) this.callbacks.onPointerUpCommit?.();
             this.finaliseLasso();
-            this.handleTapDeselect(clientX, clientY);
-            this.moveActive      = false;
-            this.moveBaselines   = [];
-            this.pinchBaselines  = [];
+            this.moveActive     = false;
+            this.moveBaselines  = [];
+            this.pinchBaselines = [];
+            this.didMove        = false;
             this.callbacks.onDragNearEdge?.(false);
         }
 
-        // Re-anchor move when going 2 → 1 finger
+        // Re-anchor when going 2 → 1 finger
         if (this.pointers.length === 1 && this.moveActive) {
-            const remaining = this.pointers[0];
-            const rect = this.getCanvasRect();
+            const remaining   = this.pointers[0];
+            const rect        = this.getCanvasRect();
             this.moveOffsetX  = remaining.x - rect.left;
             this.moveOffsetY  = remaining.y - rect.top;
             this.moveBaselines = this.selectedStickers()
@@ -251,18 +226,43 @@ export class StickerGestureHandler {
     private hasSelection(): boolean {
         return !!this.selectedInstanceId || this.lassoSelection.size > 0;
     }
-
-    private isSelected(instanceId: string): boolean {
-        return this.selectedInstanceId === instanceId || this.lassoSelection.has(instanceId);
+    private isSelected(id: string): boolean {
+        return this.selectedInstanceId === id || this.lassoSelection.has(id);
     }
-
     private currentSelectionIds(): string[] {
         if (this.lassoSelection.size > 0) return [...this.lassoSelection];
         return this.selectedInstanceId ? [this.selectedInstanceId] : [];
     }
-
     private selectedStickers(): StickerPlacement[] {
         return this.stickers.filter(p => this.isSelected(p.instanceId));
+    }
+    // Returns all instanceIds for the same group if hit sticker belongs to one,
+    // otherwise just [hitId].
+    private resolveHit(hitId: string): string[] {
+        const hit = this.stickers.find(p => p.instanceId === hitId);
+        if (hit?.groupId) {
+            return this.stickers
+                .filter(p => p.groupId === hit.groupId)
+                .map(p => p.instanceId);
+        }
+        return [hitId];
+    }
+
+    private selectAndMove(hitId: string, localX: number, localY: number): void {
+        const ids = this.resolveHit(hitId);
+        if (ids.length > 1) {
+            const groupSet = new Set(ids);
+            this.lassoSelection     = groupSet;
+            this.selectedInstanceId = null;
+            this.callbacks.onLassoSelectionChanged(groupSet);
+            this.callbacks.onSelectedChanged(null);
+        } else {
+            this.selectedInstanceId = hitId;
+            this.lassoSelection     = new Set();
+            this.callbacks.onSelectedChanged(hitId);
+            this.callbacks.onLassoSelectionChanged(new Set());
+        }
+        this.startMove(localX, localY);
     }
 
     private startMove(localX: number, localY: number): void {
@@ -275,119 +275,91 @@ export class StickerGestureHandler {
 
     private finaliseLasso(): void {
         if (!this.lassoActive) return;
-
-        if (this.lassoPath.length > 3) {
-            const captured = this.stickers.filter(p =>
-                this.stickerCentreInLasso(p, this.lassoPath)
-            );
-            if (captured.length > 1) {
-                this.callbacks.onLassoSelectionChanged(new Set(captured.map(p => p.instanceId)));
-                this.callbacks.onSelectedChanged(null);
-            } else if (captured.length === 1) {
-                this.callbacks.onSelectedChanged(captured[0].instanceId);
-                this.callbacks.onLassoSelectionChanged(new Set());
-            }
-        }
-
-        this.lassoPath  = [];
         this.lassoActive = false;
         this.callbacks.onLassoPathChanged(null);
-    }
 
-    private handleTapDeselect(clientX: number, clientY: number): void {
-        const elapsed = performance.now() - this.tapStartTime;
-        if (!this.tapMoved && elapsed < 300) {
-            if (!this.hitTest(clientX, clientY)) {
-                this.callbacks.onSelectedChanged(null);
-                this.callbacks.onLassoSelectionChanged(new Set());
-            }
+        const path = this.lassoPath;
+        this.lassoPath = [];
+
+        if (path.length < 2) return;
+
+        // Build closed polygon — if only 2 points, expand to a rect
+        let poly: {x: number; y: number}[];
+        if (path.length === 2) {
+            const [a, b] = path;
+            poly = [
+                {x: a.x, y: a.y}, {x: b.x, y: a.y},
+                {x: b.x, y: b.y}, {x: a.x, y: b.y},
+                {x: a.x, y: a.y},
+            ];
+        } else {
+            poly = [...path, path[0]];
+        }
+
+        const captured = this.stickers.filter(p => pointInPoly(p.x, p.y, poly));
+
+        if (captured.length > 1) {
+            // First clear single selection, then set the lasso group
+            this.callbacks.onSelectedChanged(null);
+            this.callbacks.onLassoSelectionChanged(new Set(captured.map(p => p.instanceId)));
+        } else if (captured.length === 1) {
+            this.callbacks.onLassoSelectionChanged(new Set());
+            this.callbacks.onSelectedChanged(captured[0].instanceId);
         }
     }
-
-    // ── Pinch ─────────────────────────────────────────────────────
 
     private initPinch(ids: string[]): void {
         if (this.pointers.length < 2) return;
         const [a, b] = this.pointers;
         this.pinchBaseDistance = Math.hypot(a.x - b.x, a.y - b.y) || 1;
         this.pinchBaseAngle    = Math.atan2(b.y - a.y, b.x - a.x);
-
-        const rect     = this.getCanvasRect();
-        const cx       = ((a.x + b.x) / 2) - rect.left;
-        const cy       = ((a.y + b.y) / 2) - rect.top;
-
+        const rect = this.getCanvasRect();
+        const cx   = ((a.x + b.x) / 2) - rect.left;
+        const cy   = ((a.y + b.y) / 2) - rect.top;
         this.pinchBaselines = ids
             .map(iid => this.stickers.find(p => p.instanceId === iid))
             .filter((p): p is StickerPlacement => !!p)
-            .map(p => {
-                const {w: imgW, h: imgH} = this.getStickerRenderedSize(p.instanceId);
-                const scaledW = imgW * p.scale;
-                const scaledH = imgH * p.scale;
-                return {
-                    instanceId:   p.instanceId,
-                    baseX:        p.x,
-                    baseY:        p.y,
-                    baseScale:    p.scale,
-                    baseRotation: p.rotation,
-                    relCx: (p.x + scaledW / 2) - cx,
-                    relCy: (p.y + scaledH / 2) - cy,
-                };
-            });
+            .map(p => ({
+                instanceId:   p.instanceId,
+                baseX:        p.x,
+                baseY:        p.y,
+                baseScale:    p.scale,
+                baseRotation: p.rotation,
+                // p.x/p.y = center
+                relCx: p.x - cx,
+                relCy: p.y - cy,
+            }));
     }
 
     private applyPinch(): void {
-        if (this.pointers.length < 2 || this.pinchBaselines.length === 0) return;
+        if (this.pointers.length < 2 || !this.pinchBaselines.length) return;
         const [a, b] = this.pointers;
-
-        const newDist     = Math.hypot(a.x - b.x, a.y - b.y) || 1;
-        const newAngle    = Math.atan2(b.y - a.y, b.x - a.x);
-        const scaleFactor = newDist / this.pinchBaseDistance;
-        const angleDelta  = (newAngle - this.pinchBaseAngle) * (180 / Math.PI);
-        const angleRad    = newAngle - this.pinchBaseAngle;
-
-        const rect  = this.getCanvasRect();
-        const cx    = ((a.x + b.x) / 2) - rect.left;
-        const cy    = ((a.y + b.y) / 2) - rect.top;
-        const cos   = Math.cos(angleRad);
-        const sin   = Math.sin(angleRad);
-
+        const newDist    = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+        const newAngle   = Math.atan2(b.y - a.y, b.x - a.x);
+        const scale      = newDist / this.pinchBaseDistance;
+        const angleDelta = (newAngle - this.pinchBaseAngle) * (180 / Math.PI);
+        const angleRad   = newAngle - this.pinchBaseAngle;
+        const rect = this.getCanvasRect();
+        const cx   = ((a.x + b.x) / 2) - rect.left;
+        const cy   = ((a.y + b.y) / 2) - rect.top;
+        const cos  = Math.cos(angleRad), sin = Math.sin(angleRad);
         this.callbacks.onPlacementsChanged(
             this.stickers.map(p => {
                 const base = this.pinchBaselines.find(b => b.instanceId === p.instanceId);
                 if (!base) return p;
-
-                const newScale    = Math.max(0.2, Math.min(4, base.baseScale * scaleFactor));
+                const newScale    = Math.max(0.2, Math.min(4, base.baseScale * scale));
                 const newRotation = base.baseRotation + angleDelta;
-
-                // Rotate + scale the relative-center vector around the gesture center
-                const newRelCx = (base.relCx * cos - base.relCy * sin) * scaleFactor;
-                const newRelCy = (base.relCx * sin + base.relCy * cos) * scaleFactor;
-
-                const {w: imgW, h: imgH} = this.getStickerRenderedSize(p.instanceId);
-                const scaledW = imgW * newScale;
-                const scaledH = imgH * newScale;
-
+                const newRelCx    = (base.relCx * cos - base.relCy * sin) * scale;
+                const newRelCy    = (base.relCx * sin + base.relCy * cos) * scale;
+                // p.x/p.y = center, so new center = gesture-center + rotated/scaled relative offset
                 return {
                     ...p,
-                    scale:    newScale,
-                    rotation: newRotation,
-                    x: cx + newRelCx - scaledW / 2,
-                    y: cy + newRelCy - scaledH / 2,
+                    scale: newScale, rotation: newRotation,
+                    x: cx + newRelCx,
+                    y: cy + newRelCy,
                 };
             }),
         );
-    }
-
-    // ── Lasso hit detection ───────────────────────────────────────
-
-    private stickerCentreInLasso(
-        placement: StickerPlacement,
-        path: {x: number; y: number}[],
-    ): boolean {
-        const {w: imgW, h: imgH} = this.getStickerRenderedSize(placement.instanceId);
-        const cx = placement.x + (imgW * placement.scale) / 2;
-        const cy = placement.y + (imgH * placement.scale) / 2;
-        return pointInPolygon(cx, cy, path);
     }
 }
 
