@@ -8,9 +8,7 @@
     (pointerdown)="$event.stopPropagation()"
   >
     <button [class]="BTN_DELETE" (click)="emit('delete')">
-      <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
-        <path d="M2 4h12M5 4V2h6v2M4 4l.8 10h6.4L12 4" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <span class="-m-1 scale-75 material-icons-outlined">delete</span>
       Löschen
     </button>
 

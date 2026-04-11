@@ -20,7 +20,9 @@ export function animateStickerRemoval(
         .filter((el): el is HTMLElement => !!el);
 
     if (!wrappers.length) {
-        for (const id of toAnimate) removingIds.delete(id);
+        for (const id of toAnimate) {
+          removingIds.delete(id);
+        }
         done();
         return;
     }
@@ -30,8 +32,9 @@ export function animateStickerRemoval(
         scale: 0, opacity: 0, duration: 0.18, ease: 'power2.in',
         overwrite: true, transformOrigin: '50% 50%', force3D: true,
         onComplete: () => {
-            for (const id of toAnimate) removingIds.delete(id);
-            gsap.set(wrappers, {clearProps: 'transform,opacity,willChange,transformOrigin'});
+            for (const id of toAnimate) {
+              removingIds.delete(id);
+            }
             done();
         },
     });

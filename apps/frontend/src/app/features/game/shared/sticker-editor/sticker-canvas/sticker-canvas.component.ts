@@ -125,17 +125,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     effect(() => {
       this.gesture?.syncState(this.stickers(), this.selectedInstanceId(), this.lassoSelection());
     });
-    effect(() => {
-      const el = this.deleteZone?.nativeElement;
-      if (!el) return;
-      const near = this.dragNearEdge();
-      gsap.to(el, {
-        opacity: near ? 1 : 0,
-        duration: near ? 0.18 : 0.12,
-        ease: near ? 'power2.out' : 'power2.in',
-        overwrite: true
-      });
-    });
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -417,4 +406,5 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     this.gesture.syncState(this.stickers(), this.selectedInstanceId(), this.lassoSelection());
   }
 }
+
 

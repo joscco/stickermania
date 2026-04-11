@@ -1,89 +1,95 @@
 @if (box()) {
-  @let b   = box()!;
+  @let b = box()!;
   @let pad = 10;
-  @let cx  = b.x + b.w / 2;
-  @let cy  = b.y + b.h / 2;
+  @let cx = b.x + b.w / 2;
+  @let cy = b.y + b.h / 2;
   @let rad = rotation() * Math.PI / 180;
   @let mode = activeMode();
 
   <!-- Selection rectangle -->
-  @let tl = rotatePt(b.x - pad,       b.y - pad,       cx, cy, rad);
-  @let tr = rotatePt(b.x + b.w + pad, b.y - pad,       cx, cy, rad);
+  @let tl = rotatePt(b.x - pad, b.y - pad, cx, cy, rad);
+  @let tr = rotatePt(b.x + b.w + pad, b.y - pad, cx, cy, rad);
   @let br = rotatePt(b.x + b.w + pad, b.y + b.h + pad, cx, cy, rad);
-  @let bl = rotatePt(b.x - pad,       b.y + b.h + pad, cx, cy, rad);
+  @let bl = rotatePt(b.x - pad, b.y + b.h + pad, cx, cy, rad);
   <svg class="absolute inset-0 w-full h-full pointer-events-none overflow-visible" style="z-index:8000;">
     <polygon [attr.points]="svgRect(tl,tr,br,bl)" fill="none" stroke="#a855f7" stroke-width="2" stroke-dasharray="6 3"/>
   </svg>
 
   <!-- Center: move icon (highlighted when moving) -->
-  <div class="absolute flex items-center justify-center w-6 h-6 select-none pointer-events-none"
-       [class.text-purple-500]="mode === 'moving'"
-       [class.text-stone-300]="mode !== 'moving'"
+  <div class="absolute flex items-center justify-center w-7 h-7 select-none pointer-events-none"
        [style.left.px]="cx - 12" [style.top.px]="cy - 12"
        style="z-index:8050;">
-    <span class="material-icons" style="font-size:24px; line-height:1;">open_with</span>
+    <span class="material-icons"
+          [class.text-purple-500]="mode === 'moving'"
+          [class.text-stone-300]="mode !== 'moving'"
+          style="font-size:24px; line-height:1;">open_with</span>
   </div>
 
   <!-- NW: Rotate handle (highlighted when rotating) -->
   @let nw = rotatePt(b.x - pad, b.y - pad, cx, cy, rad);
-  <div class="absolute flex items-center justify-center w-7 h-7 rounded-full shadow select-none touch-none"
-       [class.border-2]="mode !== 'rotating'"
+  <div class="absolute flex items-center justify-center w-7 h-7 rounded-full border-2 shadow select-none touch-none"
        [class.border-purple-500]="mode !== 'rotating'"
        [class.bg-white]="mode !== 'rotating'"
-       [class.border-4]="mode === 'rotating'"
        [class.border-purple-600]="mode === 'rotating'"
        [class.bg-purple-50]="mode === 'rotating'"
        [style.left.px]="nw.x - 14" [style.top.px]="nw.y - 14"
        style="z-index:8100; cursor:grab; pointer-events:auto;"
        (pointerdown)="onHandleDown($event, 'rotate')">
-    <span class="material-icons" [class.text-purple-600]="mode === 'rotating'" [class.text-purple-500]="mode !== 'rotating'" style="font-size:18px; line-height:1;">sync</span>
+    <span class="material-icons"
+          [class.text-purple-600]="mode === 'rotating'"
+          [class.text-purple-500]="mode !== 'rotating'"
+          style="font-size:18px; line-height:1;">sync</span>
   </div>
 
   <!-- NE: Context-menu button (highlighted when menu open) -->
   @let ne = rotatePt(b.x + b.w + pad, b.y - pad, cx, cy, rad);
-  <div class="absolute flex items-center justify-center w-7 h-7 rounded-full shadow select-none touch-none cursor-pointer"
-       [class.border]="mode !== 'menu'"
-       [class.border-slate-300]="mode !== 'menu'"
-       [class.bg-white]="mode !== 'menu'"
-       [class.text-stone-500]="mode !== 'menu'"
-       [class.border-2]="mode === 'menu'"
-       [class.border-purple-500]="mode === 'menu'"
-       [class.bg-purple-50]="mode === 'menu'"
-       [class.text-purple-600]="mode === 'menu'"
-       [style.left.px]="ne.x - 14" [style.top.px]="ne.y - 14"
-       style="z-index:8200; pointer-events:auto;"
-       title="Optionen"
-       (pointerdown)="$event.stopPropagation(); menuToggle.emit()">
-    <span class="material-icons" style="font-size:18px; line-height:1;">more_vert</span>
+  <div
+    class="absolute flex items-center justify-center w-7 h-7 rounded-full border-2 shadow select-none touch-none cursor-pointer"
+    [class.border-purple-500]="mode !== 'menu'"
+    [class.bg-white]="mode !== 'menu'"
+    [class.border-purple-600]="mode === 'menu'"
+    [class.bg-purple-50]="mode === 'menu'"
+    [style.left.px]="ne.x - 14" [style.top.px]="ne.y - 14"
+    style="z-index:8200; pointer-events:auto;"
+    title="Optionen"
+    (pointerdown)="$event.stopPropagation(); menuToggle.emit()">
+    <span class="material-icons"
+          [class.text-purple-600]="mode === 'menu'"
+          [class.text-purple-500]="mode !== 'menu'"
+          style="font-size:18px; line-height:1;">more_vert</span>
   </div>
 
   <!-- SE: Scale handle (highlighted when scaling) -->
   @let se = rotatePt(b.x + b.w + pad, b.y + b.h + pad, cx, cy, rad);
-  <div class="absolute flex items-center justify-center w-7 h-7 rounded shadow select-none touch-none"
-       [class.border-2]="mode !== 'scaling'"
+  <div class="absolute flex items-center justify-center w-7 h-7 rounded-full border-2 shadow select-none touch-none"
        [class.border-purple-500]="mode !== 'scaling'"
        [class.bg-white]="mode !== 'scaling'"
-       [class.border-4]="mode === 'scaling'"
        [class.border-purple-600]="mode === 'scaling'"
        [class.bg-purple-50]="mode === 'scaling'"
        [style.left.px]="se.x - 14" [style.top.px]="se.y - 14"
        style="z-index:8100; cursor:se-resize; pointer-events:auto;"
        (pointerdown)="onHandleDown($event, 'se')">
-    <span class="material-icons" [class.text-purple-600]="mode === 'scaling'" [class.text-purple-500]="mode !== 'scaling'" style="font-size:18px; line-height:1;">open_in_full</span>
+    <span class="material-icons"
+          [class.text-purple-600]="mode === 'scaling'"
+          [class.text-purple-500]="mode !== 'scaling'"
+          style="font-size:18px; line-height:1;">open_in_full</span>
   </div>
 
   <!-- Stretch side handles (stretch mode only) -->
   @if (stretchMode()) {
     @for (side of sides(); track side.id) {
-      <div class="absolute w-3.5 h-3.5 bg-amber-400 border-2 border-amber-600 rounded-full shadow select-none touch-none"
-           [style.left.px]="side.x - 7" [style.top.px]="side.y - 7"
-           [style.cursor]="side.cursor"
-           style="z-index:8100; pointer-events:auto;"
-           (pointerdown)="onHandleDown($event, side.id)">
+      <div
+        class="absolute w-3.5 h-3.5 bg-amber-400 border-2 border-amber-600 rounded-full shadow select-none touch-none"
+        [style.left.px]="side.x - 7" [style.top.px]="side.y - 7"
+        [style.cursor]="side.cursor"
+        style="z-index:8100; pointer-events:auto;"
+        (pointerdown)="onHandleDown($event, side.id)">
       </div>
     }
-    <div class="absolute pointer-events-none text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5"
-         [style.left.px]="b.x" [style.top.px]="b.y - pad - 44"
-         style="z-index:8200;">Verformen</div>
+    <div
+      class="absolute pointer-events-none text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5"
+      [style.left.px]="b.x" [style.top.px]="b.y - pad - 44"
+      style="z-index:8200;">Verformen
+    </div>
   }
 }
