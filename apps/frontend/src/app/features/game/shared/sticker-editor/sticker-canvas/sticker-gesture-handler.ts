@@ -11,16 +11,18 @@ export interface MoveBaseline { instanceId: string; baseX: number; baseY: number
 
 export type GestureCallbacks = {
     onPlacementsChanged:     (placements: StickerPlacement[]) => void;
-    /** null = lasso cleared; otherwise array of {x,y} canvas-local points */
     onLassoPathChanged:      (path: {x: number; y: number}[] | null) => void;
     onLassoSelectionChanged: (ids: Set<string>) => void;
     onSelectedChanged:       (instanceId: string | null) => void;
     onStickerDraggedOff?:    (id: string, allIds: string[]) => void;
     onDragNearEdge?:         (outsideCanvas: boolean) => void;
     onPointerUpCommit?:      () => void;
+    /** Returns the current selection's bounding box (canvas-local) + rotation, or null. */
+    getSelectionBounds?:     () => {box: {x: number; y: number; w: number; h: number}; rotation: number} | null;
 };
 
-// ── Point-in-polygon (ray-casting) ───────────────────────────────────────────
+// ── Geometry helpers ─────────────────────────────────────────────────────────
+
 function pointInPoly(px: number, py: number, poly: {x: number; y: number}[]): boolean {
     let inside = false;
     for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -30,6 +32,28 @@ function pointInPoly(px: number, py: number, poly: {x: number; y: number}[]): bo
             inside = !inside;
     }
     return inside;
+}
+
+/**
+ * Returns true if the canvas-local point (px, py) is inside a rotated rectangle.
+ * The box is axis-aligned before rotation; rotation is around the box center.
+ * `padding` expands the box on all sides (useful for small stickers / fat-finger tolerance).
+ */
+function pointInRotatedRect(
+    px: number, py: number,
+    box: {x: number; y: number; w: number; h: number},
+    rotationDeg: number,
+    padding = 0,
+): boolean {
+    const cx  = box.x + box.w / 2;
+    const cy  = box.y + box.h / 2;
+    const rad = -rotationDeg * Math.PI / 180;
+    const cos = Math.cos(rad), sin = Math.sin(rad);
+    const dx  = px - cx, dy = py - cy;
+    // Rotate point into box-local frame
+    const lx  = dx * cos - dy * sin;
+    const ly  = dx * sin + dy * cos;
+    return Math.abs(lx) <= box.w / 2 + padding && Math.abs(ly) <= box.h / 2 + padding;
 }
 
 // ── GestureHandler ───────────────────────────────────────────────────────────
@@ -79,7 +103,7 @@ export class StickerGestureHandler {
         this.lassoSelection      = lassoSelection;
     }
 
-    // ── Pointer events ────────────────────────────────────────────
+    // ── Pointer events ────────────────────────────────────────────────────────
 
     public onPointerDown(id: number, clientX: number, clientY: number): void {
         this.pointers.push({id, x: clientX, y: clientY});
@@ -108,8 +132,19 @@ export class StickerGestureHandler {
         const hitId  = this.hitTest(clientX, clientY);
 
         if (this.hasSelection()) {
-            if (!hitId) {
-                // Tap on empty area → deselect + start lasso
+            // If the tap lands inside the selection's bounding box, drag it —
+            // regardless of whether a sticker hitbox was actually hit.
+            // This makes small stickers and groups much easier to move.
+            const selBounds = this.callbacks.getSelectionBounds?.();
+            const inBounds  = selBounds
+                ? pointInRotatedRect(localX, localY, selBounds.box, selBounds.rotation, 8)
+                : false;
+
+            if (inBounds) {
+                // Inside the overlay → move current selection
+                this.startMove(localX, localY);
+            } else if (!hitId) {
+                // Outside bounds, no hitbox hit → deselect + start lasso
                 this.selectedInstanceId = null;
                 this.lassoSelection     = new Set();
                 this.callbacks.onSelectedChanged(null);
@@ -117,13 +152,12 @@ export class StickerGestureHandler {
                 this.lassoActive = true;
                 this.lassoPath   = [{x: localX, y: localY}];
                 this.callbacks.onLassoPathChanged(this.lassoPath);
+            } else if (!this.isSelected(hitId)) {
+                // Hit a different sticker outside the selection → switch to it
+                this.selectAndMove(hitId, localX, localY);
             } else {
-                if (!this.isSelected(hitId)) {
-                    this.selectAndMove(hitId, localX, localY);
-                } else {
-                    // Already selected (single or group) — just start moving
-                    this.startMove(localX, localY);
-                }
+                // Hit an already-selected sticker → move
+                this.startMove(localX, localY);
             }
         } else if (hitId) {
             this.selectAndMove(hitId, localX, localY);
@@ -221,7 +255,7 @@ export class StickerGestureHandler {
         }
     }
 
-    // ── Private helpers ───────────────────────────────────────────
+    // ── Private helpers ───────────────────────────────────────────────────────
 
     private hasSelection(): boolean {
         return !!this.selectedInstanceId || this.lassoSelection.size > 0;
@@ -325,7 +359,6 @@ export class StickerGestureHandler {
                 baseY:        p.y,
                 baseScale:    p.scale,
                 baseRotation: p.rotation,
-                // p.x/p.y = center
                 relCx: p.x - cx,
                 relCy: p.y - cy,
             }));

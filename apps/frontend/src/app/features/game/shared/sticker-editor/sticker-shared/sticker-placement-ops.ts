@@ -214,18 +214,23 @@ export function duplicatePlacements(
 
 /**
  * Computes the bounding box + rotation for the current selection.
- * Single selection: box is axis-aligned around the sticker center, rotation = sticker rotation.
- * Multi selection: axis-aligned envelope of all rotated corners, rotation = 0.
+ *
+ * - Single sticker:      box in sticker-local frame, rotation = sticker.rotation
+ * - Persistent group:    box in group-local frame, rotation = average group rotation
+ * - Lasso / ad-hoc multi: box in the frame of `overrideRotation` (default 0),
+ *   so the overlay can rotate along with accumulated handle drags
  */
 export function computeSelectionInfo(
     placements: StickerPlacement[],
     ids: string[],
     getSize: (instanceId: string) => {w: number; h: number},
+    overrideRotation = 0,
 ): {box: BoundingBox; rotation: number} | null {
     if (!ids.length) return null;
     const selected = placements.filter(p => ids.includes(p.instanceId));
     if (!selected.length) return null;
 
+    // ── Single sticker ────────────────────────────────────────────
     if (ids.length === 1) {
         const p  = selected[0];
         const pp = p as any;
@@ -235,21 +240,60 @@ export function computeSelectionInfo(
         return {box: {x: p.x - hw, y: p.y - hh, w: hw * 2, h: hh * 2}, rotation: p.rotation};
     }
 
+    // ── Check for persistent group (all share the same non-null groupId) ─────
+    const firstGroupId = (selected[0] as any).groupId as string | undefined;
+    const isGroup      = !!firstGroupId && selected.every(p => (p as any).groupId === firstGroupId);
+
+    if (isGroup) {
+        const rotation = selected.reduce((sum, p) => sum + p.rotation, 0) / selected.length;
+        const rad      = rotation * Math.PI / 180;
+        const cos      = Math.cos(-rad), sin = Math.sin(-rad);
+        const cx       = selected.reduce((s, p) => s + p.x, 0) / selected.length;
+        const cy       = selected.reduce((s, p) => s + p.y, 0) / selected.length;
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const p of selected) {
+            const pp = p as any;
+            const {w, h} = getSize(p.instanceId);
+            const hw   = w * p.scale * (pp.scaleX ?? 1) / 2;
+            const hh   = h * p.scale * (pp.scaleY ?? 1) / 2;
+            const pRad = p.rotation * Math.PI / 180;
+            const pCos = Math.cos(pRad), pSin = Math.sin(pRad);
+            for (const [ex, ey] of [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]] as [number, number][]) {
+                const wx = p.x + ex * pCos - ey * pSin;
+                const wy = p.y + ex * pSin + ey * pCos;
+                const dx = wx - cx, dy = wy - cy;
+                const lx = cx + dx * cos - dy * sin;
+                const ly = cy + dx * sin + dy * cos;
+                if (lx < minX) minX = lx; if (lx > maxX) maxX = lx;
+                if (ly < minY) minY = ly; if (ly > maxY) maxY = ly;
+            }
+        }
+        return {box: {x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY)}, rotation};
+    }
+
+    // ── Lasso / ad-hoc multi: envelope in the overrideRotation frame ─────────
+    const rad = overrideRotation * Math.PI / 180;
+    const cos = Math.cos(-rad), sin = Math.sin(-rad);
+    const cx  = selected.reduce((s, p) => s + p.x, 0) / selected.length;
+    const cy  = selected.reduce((s, p) => s + p.y, 0) / selected.length;
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const p of selected) {
         const pp = p as any;
         const {w, h} = getSize(p.instanceId);
-        const hw  = w * p.scale * (pp.scaleX ?? 1) / 2;
-        const hh  = h * p.scale * (pp.scaleY ?? 1) / 2;
-        const rad = p.rotation * Math.PI / 180;
-        const cos = Math.cos(rad), sin = Math.sin(rad);
+        const hw   = w * p.scale * (pp.scaleX ?? 1) / 2;
+        const hh   = h * p.scale * (pp.scaleY ?? 1) / 2;
+        const pRad = p.rotation * Math.PI / 180;
+        const pCos = Math.cos(pRad), pSin = Math.sin(pRad);
         for (const [ex, ey] of [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]] as [number, number][]) {
-            const rx = p.x + ex * cos - ey * sin;
-            const ry = p.y + ex * sin + ey * cos;
-            if (rx < minX) minX = rx; if (rx > maxX) maxX = rx;
-            if (ry < minY) minY = ry; if (ry > maxY) maxY = ry;
+            const wx = p.x + ex * pCos - ey * pSin;
+            const wy = p.y + ex * pSin + ey * pCos;
+            const dx = wx - cx, dy = wy - cy;
+            const lx = cx + dx * cos - dy * sin;
+            const ly = cy + dx * sin + dy * cos;
+            if (lx < minX) minX = lx; if (lx > maxX) maxX = lx;
+            if (ly < minY) minY = ly; if (ly > maxY) maxY = ly;
         }
     }
-    return {box: {x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY)}, rotation: 0};
+    return {box: {x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY)}, rotation: overrideRotation};
 }
 

@@ -65,7 +65,7 @@ export class StickerEditorComponent {
         const current = this.placements();
         const maxZ = current.length > 0 ? Math.max(...current.map(p => p.zIndex)) : 0;
 
-        const newPlacements = [...current, {
+        const newPlacement = {
             instanceId: this.stickerCanvas?.generateInstanceId()
                 ?? `inst_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
             stickerId: event.stickerId,
@@ -74,10 +74,23 @@ export class StickerEditorComponent {
             rotation: 0,
             scale: 1,
             zIndex: maxZ + 1,
-        }];
+        };
 
+        const newPlacements = [...current, newPlacement];
         this.placements.set(newPlacements);
         this.placementsChanged.emit(newPlacements);
+
+        // Cache the rendered size from the palette ghost so the overlay is correct
+        // before the canvas <img> has finished loading
+        this.stickerCanvas.cacheRenderedSize(
+            newPlacement.instanceId,
+            event.renderedWidth,
+            event.renderedHeight,
+        );
+
+        // Select the freshly dropped sticker, clear any previous selection
+        this.stickerCanvas.selectedInstanceId.set(newPlacement.instanceId);
+        this.stickerCanvas.lassoSelection.set(new Set());
     }
 
     public onPlacementsChanged(placements: StickerPlacement[]): void {
