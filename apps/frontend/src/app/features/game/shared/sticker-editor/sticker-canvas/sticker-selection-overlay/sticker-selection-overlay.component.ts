@@ -1,6 +1,6 @@
 import {Component, input, output, computed, OnDestroy} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import type {BoundingBox} from '../sticker-shared/sticker-types';
+import {BoundingBox} from '../../sticker-shared/sticker-types';
 
 export interface HandleDragEvent {
     handle: 'nw' | 'ne' | 'se' | 'sw' | 'rotate' | 'n' | 's' | 'e' | 'w';

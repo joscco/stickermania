@@ -8,9 +8,6 @@ import {
 } from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {StickerDefinition, StickerPlacement} from "@birthday/shared";
-import {StickerPaletteComponent} from '../sticker-palette/sticker-palette.component';
-import type {StickerDroppedEvent} from '../sticker-palette/sticker-palette.component';
-import {StickerCanvasComponent} from '../sticker-canvas/sticker-canvas.component';
 
 /**
  * Shared Sticker-Editor.
@@ -25,13 +22,13 @@ import {StickerCanvasComponent} from '../sticker-canvas/sticker-canvas.component
  * matching the ghost visual.
  */
 
-import {CANVAS_STICKER_PX} from '../sticker-shared/sticker-types';
-export {CANVAS_STICKER_PX};
+import {StickerCanvasComponent} from './sticker-canvas/sticker-canvas.component';
+import {StickerDroppedEvent, StickerPaletteComponent} from './sticker-palette/sticker-palette.component';
 
 @Component({
     selector: "app-sticker-editor",
     standalone: true,
-    imports: [CommonModule, StickerCanvasComponent, StickerPaletteComponent],
+  imports: [CommonModule, StickerCanvasComponent, StickerPaletteComponent, StickerCanvasComponent],
     templateUrl: "./sticker-editor.component.html",
     host: {"class": "flex flex-col overflow-hidden"},
 })
