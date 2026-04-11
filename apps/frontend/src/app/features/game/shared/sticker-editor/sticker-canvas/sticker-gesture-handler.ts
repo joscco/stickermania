@@ -17,6 +17,7 @@ export type GestureCallbacks = {
     onStickerDraggedOff?:    (id: string, allIds: string[]) => void;
     onDragNearEdge?:         (outsideCanvas: boolean) => void;
     onPointerUpCommit?:      () => void;
+    onMoveActiveChanged?:    (active: boolean) => void;
     /** Returns the current selection's bounding box (canvas-local) + rotation, or null. */
     getSelectionBounds?:     () => {box: {x: number; y: number; w: number; h: number}; rotation: number} | null;
 };
@@ -226,6 +227,7 @@ export class StickerGestureHandler {
                     this.lassoSelection     = new Set();
                     this.moveActive         = false;
                     this.moveBaselines      = [];
+                    this.callbacks.onMoveActiveChanged?.(false);
                     this.callbacks.onSelectedChanged(null);
                     this.callbacks.onLassoSelectionChanged(new Set());
                     this.callbacks.onDragNearEdge?.(false);
@@ -240,6 +242,7 @@ export class StickerGestureHandler {
             this.moveBaselines  = [];
             this.pinchBaselines = [];
             this.didMove        = false;
+            this.callbacks.onMoveActiveChanged?.(false);
             this.callbacks.onDragNearEdge?.(false);
         }
 

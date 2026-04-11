@@ -37,6 +37,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   @ViewChild('canvasArea') private canvasArea!: ElementRef<HTMLDivElement>;
   @ViewChild('deleteZone') private deleteZone!: ElementRef<HTMLDivElement>;
+  @ViewChild('contextMenu') private contextMenu?: StickerContextMenuComponent;
 
   get canvasNativeElement(): HTMLDivElement | null {
     return this.canvasArea?.nativeElement ?? null;
@@ -48,6 +49,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   readonly lassoSelection = signal<Set<string>>(new Set());
   readonly stretchMode = signal<boolean>(false);
   readonly menuVisible = signal<boolean>(false);
+  readonly isMoveActive = signal<boolean>(false);
   /** Accumulated overlay rotation for ad-hoc lasso multi-selections. Reset on new selection. */
   readonly multiSelectionRotation = signal<number>(0);
 
@@ -176,6 +178,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         },
         onDragNearEdge: near => this.dragNearEdge.set(near),
         onPointerUpCommit: () => this.undo.push(this.stickers()),
+        onMoveActiveChanged: active => this.isMoveActive.set(active),
         getSelectionBounds: () => this.selectionInfo(),
       },
     );
@@ -227,8 +230,13 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   // ── Context menu ──────────────────────────────────────────────────────────
 
-  onMenuToggle(): void {
-    this.menuVisible.set(!this.menuVisible());
+  async onMenuToggle(): Promise<void> {
+    if (this.menuVisible()) {
+      await this.contextMenu?.animateOut();
+      this.menuVisible.set(false);
+    } else {
+      this.menuVisible.set(true);
+    }
   }
 
   onContextMenuAction(action: ContextMenuAction): void {
@@ -287,11 +295,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       if (ev.done) this.undo.push(this.stickers());
       return;
     }
+    // 'se' — uniform scale
     const bb = this.boundingBox();
-    this.emitPlacements(ops.applyCornerScale(this.stickers(), ids, ev.handle as 'nw' | 'ne' | 'se' | 'sw', ev.dx, ev.dy, bb ? {
-      w: bb.w,
-      h: bb.h
-    } : null, id => this.getRenderedSize(id)));
+    this.emitPlacements(ops.applyCornerScale(this.stickers(), ids, ev.handle as 'nw' | 'ne' | 'se' | 'sw', ev.dx, ev.dy, bb ? {w: bb.w, h: bb.h} : null, id => this.getRenderedSize(id)));
     if (ev.done) this.undo.push(this.stickers());
   }
 

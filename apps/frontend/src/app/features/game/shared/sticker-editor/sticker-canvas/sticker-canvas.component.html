@@ -75,6 +75,8 @@
         [box]="si.box"
         [rotation]="si.rotation"
         [stretchMode]="stretchMode()"
+        [isDragging]="isMoveActive()"
+        [isMenuOpen]="menuVisible()"
         (handleDrag)="onHandleDrag($event)"
         (menuToggle)="onMenuToggle()"
       />
@@ -85,6 +87,7 @@
   @if (interactive() && menuVisible()) {
     <div data-canvas-overlay style="pointer-events:none;position:absolute;inset:0;z-index:9400;">
       <app-sticker-context-menu
+        #contextMenu
         [visible]="menuVisible()"
         [anchorX]="menuAnchorX()"
         [anchorY]="menuAnchorY()"
