@@ -3,7 +3,6 @@ import {
   ElementRef, ViewChild, AfterViewInit, OnDestroy,
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
-import gsap from 'gsap';
 import type {StickerPlacement, StickerDefinition} from '@birthday/shared';
 import {hitTestOnCanvas} from './sticker-hit-test.util';
 import {StickerGestureHandler} from './sticker-gesture-handler';
@@ -56,8 +55,8 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   readonly hasSelection = computed(() => !!this.selectedInstanceId() || this.lassoSelection().size > 0);
   readonly isMultiSelection = computed(() => this.lassoSelection().size > 1);
   readonly selectionIds = computed<string[]>(() => {
-    const s = this.lassoSelection();
-    if (s.size > 0) return [...s];
+    const lassoSelection = this.lassoSelection();
+    if (lassoSelection.size > 0) return [...lassoSelection];
     const id = this.selectedInstanceId();
     return id ? [id] : [];
   });

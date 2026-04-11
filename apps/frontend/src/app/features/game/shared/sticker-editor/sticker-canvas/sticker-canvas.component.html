@@ -9,7 +9,10 @@
        style="background-image: radial-gradient(circle, #6b7280 1px, transparent 1px); background-size: 20px 20px;"></div>
 
   <!-- Delete-zone overlay -->
-  <div #deleteZone class="absolute inset-0 pointer-events-none flex items-center justify-center" style="opacity: 0; z-index: 9999;">
+  <div #deleteZone
+       class="absolute inset-0 pointer-events-none flex items-center justify-center opacity-0 transition-opacity duration-150"
+       [style.opacity]="dragNearEdge() ? '1' : '0'"
+       style="z-index: 9999;">
     <div class="absolute inset-0" style="background: repeating-linear-gradient(-45deg, rgba(239,68,68,0.09) 0px, rgba(239,68,68,0.09) 8px, transparent 8px, transparent 16px);"></div>
     <div class="relative flex flex-col items-center gap-1.5 text-white rounded-2xl px-5 py-3 shadow-xl" style="background: rgba(239,68,68,0.88); backdrop-filter: blur(4px);">
       <svg viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -60,8 +63,8 @@
         [attr.points]="lassoPoints()"
         fill="none"
         stroke="#a855f7"
-        stroke-width="1.5"
-        stroke-dasharray="5 3"
+        stroke-width="2.5"
+        stroke-dasharray="5"
         stroke-linejoin="round"
         stroke-linecap="round"
       />
