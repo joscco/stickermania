@@ -3,7 +3,7 @@
 
   <!-- Avatar ring + image/fallback + badge -->
   <div class="relative">
-    <div [class]="sizeClasses() + ' bg-stone-100 shadow-md overflow-hidden grid place-items-center ' + borderClass()">
+    <div [class]="sizeClasses + ' bg-stone-100 shadow-md overflow-hidden grid place-items-center ' + borderClass()">
       @if (player().avatarUrl) {
         <img [src]="player().avatarUrl"
              [alt]="player().name"

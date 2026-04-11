@@ -24,11 +24,12 @@ import type {StickerDefinition, StickerPlacement} from "@birthday/shared";
 
 import {StickerCanvasComponent} from './sticker-canvas/sticker-canvas.component';
 import {StickerDroppedEvent, StickerPaletteComponent} from './sticker-palette/sticker-palette.component';
+import {AnimOnInitDirective} from '../../../shared/animations/anim-on-init.directive';
 
 @Component({
     selector: "app-sticker-editor",
     standalone: true,
-  imports: [CommonModule, StickerCanvasComponent, StickerPaletteComponent, StickerCanvasComponent],
+  imports: [CommonModule, StickerCanvasComponent, StickerPaletteComponent, StickerCanvasComponent, AnimOnInitDirective],
     templateUrl: "./sticker-editor.component.html",
     host: {"class": "flex flex-col overflow-hidden"},
 })

@@ -1,5 +1,6 @@
 <!-- ── Canvas area ── -->
 <div
+  animOnInit="item"
   #canvasArea
   class="w-full h-full relative bg-white overflow-visible"
   [style.box-shadow]="interactive() && !dragNearEdge() ? 'inset 0 0 0 2px #e9d5ff' : 'none'"
@@ -106,7 +107,7 @@
   }
 
   @if (interactive() && stickers().length === 0) {
-    <div class="absolute inset-0 flex items-center justify-center text-stone-300 pointer-events-none">
+    <div animOnInit="item" class="absolute inset-0 flex items-center justify-center text-stone-300 pointer-events-none">
       <div class="text-center">
         <div class="mb-2">
           <span class="scale-150 material-symbols-rounded">drag_pan</span>

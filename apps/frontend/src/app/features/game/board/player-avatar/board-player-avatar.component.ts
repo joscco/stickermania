@@ -33,18 +33,10 @@ export type PlayerAvatarStatus =
 export class BoardPlayerAvatarComponent {
     public readonly player = input.required<SessionPlayer>();
     public readonly status = input<PlayerAvatarStatus>("idle");
-    /** Avatar size in Tailwind units (default: 14 = 3.5rem) */
-    public readonly size = input<"sm" | "md" | "lg">("md");
     /** Optional emoji/text overlaid in the top-right corner (e.g. podium medals) */
     public readonly medal = input<string | null>(null);
 
-    public readonly sizeClasses = computed(() => {
-        switch (this.size()) {
-            case "sm": return "w-12 h-12 rounded-xl border-2 text-lg";
-            case "lg": return "w-24 h-24 rounded-2xl border-4 text-4xl";
-            default:   return "w-14 h-14 rounded-2xl border-2 text-xl";
-        }
-    });
+    public readonly sizeClasses = "w-24 h-24 rounded-2xl border-4 text-4xl";
 
     public readonly borderClass = computed(() => {
         switch (this.status()) {

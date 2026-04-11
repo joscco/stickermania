@@ -4,7 +4,7 @@ import type {StickerCollageClientAction, StickerCollageGameState, SessionPlayer,
 import {WorldStore} from '../../../../../core/world.store';
 import {WebSocketService} from '../../../../../core/websocket.service';
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
-import {BoardPlayerAvatarComponent, type PlayerAvatarStatus} from '../../components/player-avatar/board-player-avatar.component';
+import {BoardPlayerAvatarComponent, type PlayerAvatarStatus} from '../../player-avatar/board-player-avatar.component';
 
 @Component({
     selector: "app-board-building-scene",

@@ -12,7 +12,6 @@
         <app-board-player-avatar
           [player]="getPlayer(topResults()[1].playerId)!"
           status="podium-2"
-          size="lg"
           medal="🥈"
         />
         <span class="text-xs text-stone-500 mt-1">{{ topResults()[1].voteCount }} Stimmen · +{{ topResults()[1].pointsAwarded }}</span>
@@ -28,7 +27,6 @@
         <app-board-player-avatar
           [player]="getPlayer(topResults()[0].playerId)!"
           status="podium-1"
-          size="lg"
           medal="🥇"
         />
         <span class="text-xs text-stone-500 mt-1">{{ topResults()[0].voteCount }} Stimmen · +{{ topResults()[0].pointsAwarded }}</span>
@@ -44,7 +42,6 @@
         <app-board-player-avatar
           [player]="getPlayer(topResults()[2].playerId)!"
           status="podium-3"
-          size="lg"
           medal="🥉"
         />
         <span class="text-xs text-stone-500 mt-1">{{ topResults()[2].voteCount }} Stimmen · +{{ topResults()[2].pointsAwarded }}</span>

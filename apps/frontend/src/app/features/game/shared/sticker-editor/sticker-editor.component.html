@@ -1,5 +1,5 @@
 <!-- Canvas area + Global Top-Bar. -->
-<div class="flex-1 min-h-0 relative bg-stone-50 flex flex-col items-center justify-center p-2">
+<div animOnInit="banner" class="flex-1 min-h-0 relative bg-stone-50 flex flex-col items-center justify-center p-2">
 
   <!-- Global Top-Bar: only canvas-wide actions -->
   @if (stickerCanvas.interactive()) {
@@ -72,7 +72,7 @@
 </div>
 
 <!-- Palette strip -->
-<div class="shrink-0 border-t border-black/10 bg-white">
+<div animOnInit="item" class="shrink-0 border-t border-black/10 bg-white">
   <app-sticker-palette
     [stickers]="paletteStickers()"
     [canAddMore]="canAddMore()"

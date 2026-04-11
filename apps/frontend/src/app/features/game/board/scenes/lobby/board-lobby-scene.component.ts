@@ -4,7 +4,7 @@ import type {SessionPlayer, StickerCollageClientAction} from "@birthday/shared";
 import {WorldStore} from '../../../../../core/world.store';
 import {WebSocketService} from '../../../../../core/websocket.service';
 import {AnimGroupDirective, AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
-import {BoardPlayerAvatarComponent} from '../../components/player-avatar/board-player-avatar.component';
+import {BoardPlayerAvatarComponent} from '../../player-avatar/board-player-avatar.component';
 
 @Component({
   selector: "app-board-lobby-scene",

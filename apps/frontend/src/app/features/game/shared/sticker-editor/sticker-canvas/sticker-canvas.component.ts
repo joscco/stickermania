@@ -14,11 +14,12 @@ import {StickerUndoStack} from '../sticker-shared/sticker-undo-stack';
 import type {BoundingBox} from '../sticker-shared/sticker-types';
 import * as ops from '../sticker-shared/sticker-placement-ops';
 import {HandleDragEvent, StickerSelectionOverlayComponent} from './sticker-selection-overlay/sticker-selection-overlay.component';
+import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 
 @Component({
   selector: 'app-sticker-canvas',
   standalone: true,
-  imports: [CommonModule, StickerSelectionOverlayComponent, StickerContextMenuComponent, StickerSelectionOverlayComponent],
+  imports: [CommonModule, StickerSelectionOverlayComponent, StickerContextMenuComponent, StickerSelectionOverlayComponent, AnimOnInitDirective],
   templateUrl: './sticker-canvas.component.html',
   host: {style: 'display: block; width: 100%; height: 100%;'},
 })
