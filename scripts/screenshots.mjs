@@ -36,10 +36,11 @@ const EXTERNAL_URL = process.env.SCREENSHOT_BASE_URL ?? null;
  *   Player screens: /#/player?session=MOCK
  *   Board screens:  /#/board/MOCK
  */
+
 const SCREENS = [
     // ── Player – connection states ─────────────────────────────────────────────
-    {id: 'player-connecting',         screenKey: 'connecting',         vp: PHONE_VP, path: '/#/player?session=MOCK', waitMs: 600},
-    {id: 'player-reconnecting',       screenKey: 'reconnecting',       vp: PHONE_VP, path: '/#/player?session=MOCK', waitMs: 1200},
+    {id: 'player-connecting',         screenKey: 'connecting',         vp: PHONE_VP, path: '/#/player?session=MOCK&screen=connecting'},
+    {id: 'player-reconnecting',       screenKey: 'reconnecting',       vp: PHONE_VP, path: '/#/player?session=MOCK&screen=reconnecting'},
     {id: 'player-disconnected',       screenKey: 'disconnected',       vp: PHONE_VP, path: '/#/player?session=MOCK', waitMs: 600},
 
     // ── Player – lobby ─────────────────────────────────────────────────────────
@@ -54,6 +55,8 @@ const SCREENS = [
 
     // ── Player – voting / results ──────────────────────────────────────────────
     {id: 'player-voting',             screenKey: 'voting',             vp: PHONE_VP, path: '/#/player?session=MOCK'},
+    {id: 'player-voting-done',        screenKey: 'voting-done',        vp: PHONE_VP, path: '/#/player?session=MOCK'},
+    {id: 'player-voting-all-done',    screenKey: 'voting-all-done',    vp: PHONE_VP, path: '/#/player?session=MOCK'},
     {id: 'player-results',            screenKey: 'results',            vp: PHONE_VP, path: '/#/player?session=MOCK'},
     {id: 'player-next-round',         screenKey: 'next-round',         vp: PHONE_VP, path: '/#/player?session=MOCK'},
 

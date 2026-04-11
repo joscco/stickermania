@@ -5,22 +5,51 @@
     <p class="text-xs text-emerald-600 mb-2 font-medium">✅ Alle Stimmen abgegeben!</p>
   }
 
+  @if (ownSubmission(); as mine) {
+    <div class="mb-3 rounded-xl border border-purple-200 bg-purple-50/40 p-2">
+      <div class="mb-1 text-[11px] font-semibold text-purple-700">Dein Bild</div>
+      <div class="flex items-center gap-2">
+        <div class="h-20 w-20 shrink-0 rounded-lg bg-white overflow-hidden border border-purple-100">
+          @if (mine.snapshotUrl) {
+            <img [src]="mine.snapshotUrl" alt="Eigene Collage" class="w-full h-full object-contain" draggable="false"/>
+          } @else {
+            <div class="relative w-full h-full bg-stone-50">
+              @for (placement of mine.placements; track placement.instanceId) {
+                <img
+                  [src]="getStickerUrl(placement.stickerId)"
+                  [alt]="placement.stickerId"
+                  class="absolute w-6 h-6 object-contain"
+                  [style.left.px]="placement.x * 0.24"
+                  [style.top.px]="placement.y * 0.24"
+                  [style.transform]="'rotate(' + placement.rotation + 'deg) scale(' + (placement.scale * 0.24) + ')'"
+                  draggable="false"
+                />
+              }
+            </div>
+          }
+        </div>
+        <div class="min-w-0">
+          <div class="text-xs text-stone-600 font-medium truncate">{{ getPlayerName(mine.playerId) }}</div>
+          <div class="text-[11px] text-stone-400">Nicht abstimmbar</div>
+        </div>
+      </div>
+    </div>
+  }
+
   <div class="grid grid-cols-2 gap-3">
-    @for (submission of submissions; track submission.id) {
+    @for (submission of votableSubmissions(); track submission.id) {
       <button
-        class="relative rounded-xl border-2 p-1 bg-white transition-all"
+        class="relative w-full max-w-[220px] justify-self-center rounded-xl border-2 p-1 bg-white transition-colors"
         [class.border-amber-400]="myVotes.includes(submission.id)"
         [class.shadow-amber-200]="myVotes.includes(submission.id)"
         [class.shadow-md]="myVotes.includes(submission.id)"
-        [class.border-stone-200]="!myVotes.includes(submission.id) && !isOwnSubmission(submission)"
-        [class.border-purple-200]="isOwnSubmission(submission) && !myVotes.includes(submission.id)"
-        [class.active:scale-95]="!isOwnSubmission(submission)"
-        [disabled]="isOwnSubmission(submission) || (votesRemaining <= 0 && !myVotes.includes(submission.id))"
-        [class.opacity-50]="!isOwnSubmission(submission) && votesRemaining <= 0 && !myVotes.includes(submission.id)"
+        [class.border-stone-200]="!myVotes.includes(submission.id)"
+        [class.active:scale-95]="votesRemaining > 0 || myVotes.includes(submission.id)"
+        [disabled]="votesRemaining <= 0 && !myVotes.includes(submission.id)"
+        [class.opacity-50]="votesRemaining <= 0 && !myVotes.includes(submission.id)"
         (click)="onVote(submission.id)"
       >
-        <!-- Mini canvas preview -->
-        <div class="relative w-full aspect-square bg-stone-50 rounded-lg overflow-hidden">
+        <div class="relative w-full aspect-square max-h-[220px] bg-stone-50 rounded-lg overflow-hidden">
           @if (submission.snapshotUrl) {
             <img
               [src]="submission.snapshotUrl"
@@ -48,11 +77,6 @@
         @if (myVotes.includes(submission.id)) {
           <div class="absolute top-1 right-1 bg-amber-400 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold">
             ⭐
-          </div>
-        }
-        @if (isOwnSubmission(submission)) {
-          <div class="absolute top-1 left-1 bg-purple-400 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-            Deine
           </div>
         }
       </button>

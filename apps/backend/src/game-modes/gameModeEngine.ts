@@ -1,61 +1,44 @@
-import type {ClientKind, GameClientActionMap, GameModeId, GameServerEventMap, SessionPlayer, SessionState,} from "@birthday/shared";
-import {ConnectedClientSession} from "../session/sessionRuntimeTypes.js";
+import type {SessionPlayer, SessionState} from "@birthday/shared";
+import type {ConnectedClientSession} from "../session/sessionRuntimeTypes.js";
 
-export interface GameActionContext {
-    sessionId: string;
-    playerId: string;
-    clientId: string;
-    clientKind: ClientKind;
-    now: number;
-}
-
-export interface GameActionResult<TMode extends GameModeId> {
+export interface GameActionResult {
     stateChanged: boolean;
-    emittedEvents: GameServerEventMap[TMode][];
+    emittedEvents: import("@birthday/shared").StickerCollageServerEvent[];
 }
 
-export interface GameModeEngine<TMode extends GameModeId, TModeState> {
-    readonly mode: TMode;
-
-    createInitialState(): TModeState;
+export interface GameEngine {
+    createInitialState(): import("@birthday/shared").StickerCollageGameState;
 
     onPlayerJoined(args: {
-        sessionState: SessionState<TModeState>;
+        sessionState: SessionState;
         player: SessionPlayer;
         connectedClient: ConnectedClientSession;
         now: number;
-    }): GameActionResult<TMode>;
+    }): GameActionResult;
 
-    onPlayerLeft?(args: {
-        sessionState: SessionState<TModeState>;
-        playerId: string;
-        clientId: string;
+    startGame(args: {
+        sessionState: SessionState;
         now: number;
-    }): GameActionResult<TMode>;
+    }): GameActionResult;
 
-    startMode(args: {
-        sessionState: SessionState<TModeState>;
+    resetGame(args: {
+        sessionState: SessionState;
         now: number;
-    }): GameActionResult<TMode>;
-
-    resetMode(args: {
-        sessionState: SessionState<TModeState>;
-        now: number;
-    }): GameActionResult<TMode>;
+    }): GameActionResult;
 
     applyAction(args: {
-        sessionState: SessionState<TModeState>;
-        action: GameClientActionMap[TMode];
-        context: GameActionContext;
-    }): Promise<GameActionResult<TMode>> | GameActionResult<TMode>;
+        sessionState: SessionState;
+        action: import("@birthday/shared").StickerCollageClientAction;
+        context: {sessionId: string; playerId: string; clientId: string; clientKind: import("@birthday/shared").ClientKind; now: number};
+    }): GameActionResult;
 
-    getNextTimerAt?(args: {
-        sessionState: SessionState<TModeState>;
+    getNextTimerAt(args: {
+        sessionState: SessionState;
         now: number;
     }): number | null;
 
-    onTimerElapsed?(args: {
-        sessionState: SessionState<TModeState>;
+    onTimerElapsed(args: {
+        sessionState: SessionState;
         now: number;
-    }): Promise<GameActionResult<TMode>> | GameActionResult<TMode>;
+    }): GameActionResult;
 }

@@ -1,4 +1,4 @@
-import type {GameModeId, SessionState} from "@birthday/shared";
+import type {SessionState, StickerCollageServerEvent} from "@birthday/shared";
 import type {SessionRepository} from "../infra/sessionRepository.js";
 import type {SessionEventPublisher} from "./sessionEventPublisher.js";
 import {SessionLock} from "./sessionLock.js";
@@ -13,7 +13,7 @@ import {SessionLock} from "./sessionLock.js";
  */
 export interface MutationResult<TExtra = void> {
     stateChanged: boolean;
-    gameEvents?: { mode: GameModeId; events: any[] };
+    gameEvents?: StickerCollageServerEvent[];
     extra: TExtra;
 }
 
@@ -52,7 +52,9 @@ export class SessionMutator {
     ): Promise<{ state: SessionState; extra: TExtra } | null> {
         return this.sessionLock.run(sessionId, async () => {
             const state = await this.sessionRepository.load(sessionId);
-            if (!state) return null;
+            if (!state) {
+                return null;
+            }
 
             const result = await fn(state);
 
@@ -62,16 +64,11 @@ export class SessionMutator {
                 await this.eventPublisher.publishState(state);
             }
 
-            if (result.gameEvents && result.gameEvents.events.length > 0) {
-                await this.eventPublisher.publishGameEvents(
-                    sessionId,
-                    result.gameEvents.mode,
-                    result.gameEvents.events,
-                );
+            if (result.gameEvents && result.gameEvents.length > 0) {
+                await this.eventPublisher.publishGameEvents(sessionId, result.gameEvents);
             }
 
             return {state, extra: result.extra};
         });
     }
 }
-

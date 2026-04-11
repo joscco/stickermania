@@ -1,27 +1,24 @@
-import type {GameConfig, GameModeId, SessionPlayer, SessionState,} from "@birthday/shared";
-import {GameModeRegistry} from "../game-modes/gameModeRegistry.js";
+import type {GameConfig, SessionPlayer, SessionState} from "@birthday/shared";
+import type {GameEngineRegistry} from "../game-modes/gameModeRegistry.js";
 
 export class SessionStateFactory {
     public constructor(
         private readonly config: GameConfig,
-        private readonly gameModeRegistry: GameModeRegistry,
+        private readonly engineRegistry: GameEngineRegistry,
     ) {}
 
     public createEmpty(args: {
         sessionId: string;
         sessionCode: string;
-        initialMode?: GameModeId;
         now?: number;
     }): SessionState {
         const now = args.now ?? Date.now();
-        const initialMode = args.initialMode ?? "sticker-collage";
 
         return {
             sessionId: args.sessionId,
             sessionCode: args.sessionCode,
             players: {},
-            activeMode: initialMode,
-            modeState: this.gameModeRegistry.createInitialModeState(initialMode),
+            gameState: this.engineRegistry.createInitialGameState(),
             revision: 0,
             updatedAt: now,
             createdAt: now,

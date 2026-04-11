@@ -2,373 +2,393 @@ import crypto from "node:crypto";
 import type {
     GameConfig,
     SessionState,
-    StickerCollageModeState,
+    StickerCollageGameState,
     StickerCollageServerEvent,
     StickerPlacement,
     StickerDefinition,
     StickerCollage,
+    StickerCollageBuildingState,
+    StickerCollageVotingState,
+    StickerCollageResultsState,
 } from "@birthday/shared";
 import {dealHand} from "./stickerCatalog.js";
-import {startBuilding, startVoting, startResults, advanceFromResults} from "./roundManager.js";
+import {transitionToBuilding, transitionToVoting, transitionToResults, transitionToNextRound} from "./roundManager.js";
 
-/**
- * Handle "request-hand": deal a sticker hand to the requesting player if they don't have one yet.
- */
-export function handleRequestHand(
-    state: SessionState<StickerCollageModeState>,
-    playerId: string,
-    config: GameConfig,
-): {stateChanged: boolean; events: StickerCollageServerEvent[]} {
-    const ms = state.modeState;
+// ─── Helpers ────────────────────────────────────────────────────
 
-    if (ms.phase !== "BUILDING") {
-        return {stateChanged: false, events: []};
-    }
+type HandlerResult = {stateChanged: boolean; events: StickerCollageServerEvent[]};
+const noChange: HandlerResult = {stateChanged: false, events: []};
 
-    if (ms.playerHands[playerId]) {
-        return {stateChanged: false, events: []};
-    }
-
-    const hand = dealHand(
-        ms.stickerCatalog,
-        config.stickerCollage,
-        ms.unlockedPackIds,
-        ms.guaranteedPackId,
-        ms.stickerPacks,
-    );
-    ms.playerHands[playerId] = hand;
-
-    return {
-        stateChanged: true,
-        events: [{type: "hand-dealt", targetPlayerId: playerId, hand}],
-    };
+function asBuildingPhase(gameState: StickerCollageGameState): StickerCollageBuildingState | null {
+    return gameState.phaseState.phase === "BUILDING" ? gameState.phaseState : null;
 }
 
-/**
- * Handle "swap-sticker": replace one sticker in the hand with a new one.
- */
-export function handleSwapSticker(
-    state: SessionState<StickerCollageModeState>,
-    playerId: string,
-    handIndex: number,
-    newStickerId: string,
-): {stateChanged: boolean; events: StickerCollageServerEvent[]} {
-    const ms = state.modeState;
-
-    if (ms.phase !== "BUILDING") {
-        return {stateChanged: false, events: []};
-    }
-
-    const hand = ms.playerHands[playerId];
-    if (!hand) return {stateChanged: false, events: []};
-    if (hand.swapsRemaining <= 0) return {stateChanged: false, events: []};
-    if (handIndex < 0 || handIndex >= hand.stickerIds.length) return {stateChanged: false, events: []};
-    if (!ms.stickerCatalog.find((s: StickerDefinition) => s.id === newStickerId)) return {stateChanged: false, events: []};
-    if (hand.stickerIds.includes(newStickerId)) return {stateChanged: false, events: []};
-
-    hand.stickerIds[handIndex] = newStickerId;
-    hand.swapsRemaining -= 1;
-
-    return {
-        stateChanged: true,
-        events: [{type: "hand-dealt", targetPlayerId: playerId, hand}],
-    };
+function asVotingPhase(gameState: StickerCollageGameState): StickerCollageVotingState | null {
+    return gameState.phaseState.phase === "VOTING" ? gameState.phaseState : null;
 }
 
+function asResultsPhase(gameState: StickerCollageGameState): StickerCollageResultsState | null {
+    return gameState.phaseState.phase === "RESULTS" ? gameState.phaseState : null;
+}
+
+// ─── LOBBY ──────────────────────────────────────────────────────
+
 /**
- * Handle "submit-collage": save a player's collage submission for the current round.
+ * "start-game": LOBBY → BUILDING (first round).
  */
-export function handleSubmitCollage(
-    state: SessionState<StickerCollageModeState>,
-    playerId: string,
-    placements: StickerPlacement[],
+export function startGame(
+    state: SessionState,
     config: GameConfig,
     now: number,
-): {stateChanged: boolean; events: StickerCollageServerEvent[]} {
-    const ms = state.modeState;
-
-    if (ms.phase !== "BUILDING") {
-        return {stateChanged: false, events: []};
+): HandlerResult {
+    if (state.gameState.phaseState.phase !== "LOBBY") {
+        return noChange;
     }
 
-    const hand = ms.playerHands[playerId];
-    if (!hand) return {stateChanged: false, events: []};
+    transitionToBuilding(state, config.stickerCollage, now);
 
-    const handSet = new Set(hand.stickerIds);
-    for (const p of placements) {
-        if (!handSet.has(p.stickerId)) return {stateChanged: false, events: []};
+    const {gameState} = state;
+    const buildingPhase = gameState.phaseState;
+    if (buildingPhase.phase !== "BUILDING") {
+        return noChange;
     }
-
-    if (placements.length > config.stickerCollage.maxStickersOnCanvas) {
-        return {stateChanged: false, events: []};
-    }
-
-    const roundSubs = ms.submissions[ms.currentRoundIndex] ?? [];
-    ms.submissions[ms.currentRoundIndex] = roundSubs.filter((s: StickerCollage) => s.playerId !== playerId);
-
-    const collageId = `collage_${playerId}_${ms.currentRoundIndex}_${crypto.randomUUID().slice(0, 6)}`;
-    const collage: StickerCollage = {
-        id: collageId,
-        playerId,
-        roundIndex: ms.currentRoundIndex,
-        placements,
-        submittedAt: now,
-    };
-
-    ms.submissions[ms.currentRoundIndex].push(collage);
-
-    const events: StickerCollageServerEvent[] = [{type: "collage-submitted", playerId, collageId}];
-
-    return {stateChanged: true, events};
-}
-
-/**
- * Handle "skip-round": mark player as skipping this round (no submission).
- * Does NOT auto-advance to voting — that requires an explicit "end-round-early".
- */
-export function handleSkipRound(
-    state: SessionState<StickerCollageModeState>,
-    playerId: string,
-): {stateChanged: boolean; events: StickerCollageServerEvent[]} {
-    const ms = state.modeState;
-    if (ms.phase !== "BUILDING") {
-        return {stateChanged: false, events: []};
-    }
-    if (ms.skippedPlayerIds.includes(playerId)) {
-        return {stateChanged: false, events: []};
-    }
-
-    ms.skippedPlayerIds.push(playerId);
-
-    return {stateChanged: true, events: []};
-}
-
-/**
- * Handle "cast-vote": vote for a collage from the CURRENT round (during VOTING phase).
- */
-export function handleCastVote(
-    state: SessionState<StickerCollageModeState>,
-    playerId: string,
-    collageId: string,
-    config: GameConfig,
-): {stateChanged: boolean; events: StickerCollageServerEvent[]} {
-    const ms = state.modeState;
-
-    if (ms.phase !== "VOTING") {
-        return {stateChanged: false, events: []};
-    }
-
-    const currentSubmissions = ms.submissions[ms.currentRoundIndex] ?? [];
-    const targetCollage = currentSubmissions.find((c: StickerCollage) => c.id === collageId);
-    if (!targetCollage) return {stateChanged: false, events: []};
-
-    // Can't vote for your own collage
-    if (targetCollage.playerId === playerId) return {stateChanged: false, events: []};
-
-    const existingVotes = ms.currentVotes[playerId] ?? [];
-    if (existingVotes.length >= config.stickerCollage.votesPerPlayer) return {stateChanged: false, events: []};
-    if (existingVotes.includes(collageId)) return {stateChanged: false, events: []};
-
-    ms.currentVotes[playerId] = [...existingVotes, collageId];
-
-    return {
-        stateChanged: true,
-        events: [{type: "vote-registered", voterId: playerId, collageId}],
-    };
-}
-
-/**
- * Handle "start-game": LOBBY → BUILDING (first round).
- */
-export function handleStartGame(
-    state: SessionState<StickerCollageModeState>,
-    config: GameConfig,
-    now: number,
-): {stateChanged: boolean; events: StickerCollageServerEvent[]} {
-    const ms = state.modeState;
-    if (ms.phase !== "LOBBY") return {stateChanged: false, events: []};
-
-    startBuilding(state, config.stickerCollage, now);
 
     return {
         stateChanged: true,
         events: [
             {type: "game-started"},
-            {
-                type: "round-started",
-                roundIndex: ms.currentRoundIndex,
-                prompt: ms.currentPrompt,
-                endsAt: ms.roundEndsAt!,
-            },
+            {type: "round-started", roundIndex: gameState.currentRoundIndex, prompt: gameState.currentPrompt, endsAt: buildingPhase.roundEndsAt},
         ],
     };
 }
 
+// ─── BUILDING ───────────────────────────────────────────────────
+
 /**
- * Handle "end-round-early": BUILDING → VOTING.
+ * "request-hand": deal a sticker hand to the requesting player.
  */
-export function handleEndRoundEarly(
-    state: SessionState<StickerCollageModeState>,
+export function dealHandToPlayer(
+    state: SessionState,
+    playerId: string,
+    config: GameConfig,
+): HandlerResult {
+    const {gameState} = state;
+    const buildingPhase = asBuildingPhase(gameState);
+    if (!buildingPhase) {
+        return noChange;
+    }
+    if (buildingPhase.playerHands[playerId]) {
+        return noChange;
+    }
+
+    const hand = dealHand(gameState.stickerCatalog, config.stickerCollage, gameState.unlockedPackIds, gameState.guaranteedPackId, gameState.stickerPacks);
+    buildingPhase.playerHands[playerId] = hand;
+
+    if (!gameState.roundParticipantIds.includes(playerId)) {
+        gameState.roundParticipantIds.push(playerId);
+    }
+
+    return {stateChanged: true, events: [{type: "hand-dealt", targetPlayerId: playerId, hand}]};
+}
+
+/**
+ * "submit-collage": save a player's collage for the current round.
+ */
+export function submitCollage(
+    state: SessionState,
+    playerId: string,
+    placements: StickerPlacement[],
     config: GameConfig,
     now: number,
-): {stateChanged: boolean; events: StickerCollageServerEvent[]} {
-    const ms = state.modeState;
-    if (ms.phase !== "BUILDING") return {stateChanged: false, events: []};
+): HandlerResult {
+    const {gameState} = state;
+    const buildingPhase = asBuildingPhase(gameState);
+    if (!buildingPhase) {
+        return noChange;
+    }
 
-    startVoting(state, config.stickerCollage, now);
+    const hand = buildingPhase.playerHands[playerId];
+    if (!hand) {
+        return noChange;
+    }
 
-    return {
-        stateChanged: true,
-        events: [{type: "voting-started", votingEndsAt: ms.votingEndsAt!}],
-    };
+    const handSet = new Set(hand.stickerIds);
+    if (placements.some(placement => !handSet.has(placement.stickerId))) {
+        return noChange;
+    }
+    if (placements.length > config.stickerCollage.maxStickersOnCanvas) {
+        return noChange;
+    }
+
+    const {currentRoundIndex} = gameState;
+    const existingSubmissions = gameState.submissions[currentRoundIndex] ?? [];
+    gameState.submissions[currentRoundIndex] = existingSubmissions.filter((sub: StickerCollage) => sub.playerId !== playerId);
+
+    const collageId = `collage_${playerId}_${currentRoundIndex}_${crypto.randomUUID().slice(0, 6)}`;
+    const collage: StickerCollage = {id: collageId, playerId, roundIndex: currentRoundIndex, placements, submittedAt: now};
+    gameState.submissions[currentRoundIndex].push(collage);
+
+    return {stateChanged: true, events: [{type: "collage-submitted", playerId, collageId}]};
 }
 
 /**
- * Handle "end-voting-early": VOTING → RESULTS.
+ * "skip-round": mark the player as skipping (no collage this round).
  */
-export function handleEndVotingEarly(
-    state: SessionState<StickerCollageModeState>,
+export function skipRound(
+    state: SessionState,
+    playerId: string,
+): HandlerResult {
+    const buildingPhase = asBuildingPhase(state.gameState);
+    if (!buildingPhase) {
+        return noChange;
+    }
+    if (buildingPhase.skippedPlayerIds.includes(playerId)) {
+        return noChange;
+    }
+
+    buildingPhase.skippedPlayerIds.push(playerId);
+    return {stateChanged: true, events: []};
+}
+
+/**
+ * "end-round-early": BUILDING → VOTING (triggered by a player or the board).
+ */
+export function endBuildingPhaseEarly(
+    state: SessionState,
     config: GameConfig,
     now: number,
-): {stateChanged: boolean; events: StickerCollageServerEvent[]} {
-    const ms = state.modeState;
-    if (ms.phase !== "VOTING") return {stateChanged: false, events: []};
-
-    startResults(state, config.stickerCollage, now);
-
-    const events: StickerCollageServerEvent[] = [];
-
-    // Score updates
-    for (const result of ms.lastVoteResults) {
-        if (result.pointsAwarded > 0 && state.players[result.playerId]) {
-            events.push({
-                type: "score-update",
-                playerId: result.playerId,
-                newScore: state.players[result.playerId].score,
-            });
-        }
+): HandlerResult {
+    if (!asBuildingPhase(state.gameState)) {
+        return noChange;
     }
 
-    events.push({
-        type: "results-ready",
-        winnerId: ms.winnerId,
-        results: ms.lastVoteResults,
-    });
+    transitionToVoting(state, config.stickerCollage, now);
 
-    return {stateChanged: true, events};
+    const {phaseState} = state.gameState;
+    if (phaseState.phase !== "VOTING") {
+        return noChange;
+    }
+
+    return {stateChanged: true, events: [{type: "voting-started", votingEndsAt: phaseState.votingEndsAt}]};
 }
 
+// ─── VOTING ─────────────────────────────────────────────────────
+
 /**
- * Handle "pick-prompt": winner picks the next round's prompt.
+ * "cast-vote": vote for a collage (max votesPerPlayer per player, no self-votes).
  */
-export function handlePickPrompt(
-    state: SessionState<StickerCollageModeState>,
+export function castVote(
+    state: SessionState,
     playerId: string,
-    prompt: string,
-): {stateChanged: boolean; events: StickerCollageServerEvent[]} {
-    const ms = state.modeState;
-    if (ms.phase !== "RESULTS") {
-        return {stateChanged: false, events: []};
-    }
-    if (ms.winnerId !== playerId) {
-        return {stateChanged: false, events: []};
-    }
-    if (!ms.promptChoices.includes(prompt)) {
-        return {stateChanged: false, events: []};
+    collageId: string,
+    config: GameConfig,
+): HandlerResult {
+    const {gameState} = state;
+    const votingPhase = asVotingPhase(gameState);
+    if (!votingPhase) {
+        return noChange;
     }
 
-    // Store for use when advancing to next round
-    ms.promptHistory[ms.currentRoundIndex + 1] = prompt;
+    const roundSubmissions = gameState.submissions[gameState.currentRoundIndex] ?? [];
+    const targetCollage = roundSubmissions.find((sub: StickerCollage) => sub.id === collageId);
+    if (!targetCollage || targetCollage.playerId === playerId) {
+        return noChange;
+    }
 
-    return {
-        stateChanged: true,
-        events: [{type: "prompt-chosen", prompt}],
-    };
+    const myVotes = votingPhase.currentVotes[playerId] ?? [];
+    if (myVotes.length >= config.stickerCollage.votesPerPlayer) {
+        return noChange;
+    }
+    if (myVotes.includes(collageId)) {
+        return noChange;
+    }
+
+    votingPhase.currentVotes[playerId] = [...myVotes, collageId];
+    return {stateChanged: true, events: [{type: "vote-registered", voterId: playerId, collageId}]};
 }
 
 /**
- * Handle "unlock-pack": winner unlocks a new sticker pack.
+ * "done-voting": signal that this player has finished voting.
+ * Does NOT auto-advance — when all connected participants are done,
+ * the client shows an "end voting" button that requires an explicit press.
  */
-export function handleUnlockPack(
-    state: SessionState<StickerCollageModeState>,
+export function markPlayerDoneVoting(
+    state: SessionState,
     playerId: string,
-    packId: string,
-): {stateChanged: boolean; events: StickerCollageServerEvent[]} {
-    const ms = state.modeState;
-    if (ms.phase !== "RESULTS") {
-        return {stateChanged: false, events: []};
+): HandlerResult {
+    const votingPhase = asVotingPhase(state.gameState);
+    if (!votingPhase) {
+        return noChange;
     }
-    if (ms.winnerId !== playerId) {
-        return {stateChanged: false, events: []};
-    }
-    if (!ms.packUnlockChoices.includes(packId)) {
-        return {stateChanged: false, events: []};
-    }
-    if (ms.unlockedPackIds.includes(packId)) {
-        return {stateChanged: false, events: []};
+    if (votingPhase.doneVotingIds.includes(playerId)) {
+        return noChange;
     }
 
-    ms.unlockedPackIds.push(packId);
-    ms.lastUnlockedPackId = packId;
-
-    const pack = ms.stickerPacks.find(p => p.id === packId);
-    const packName = pack?.name ?? packId;
-
-    return {
-        stateChanged: true,
-        events: [{type: "pack-unlocked", packId, packName}],
-    };
+    votingPhase.doneVotingIds.push(playerId);
+    return {stateChanged: true, events: []};
 }
 
 /**
- * Handle "pick-guaranteed-pack": winner picks which pack is guaranteed in next round's hands.
+ * "end-voting-early": VOTING → RESULTS (explicit trigger from player or board).
  */
-export function handlePickGuaranteedPack(
-    state: SessionState<StickerCollageModeState>,
-    playerId: string,
-    packId: string,
-): {stateChanged: boolean; events: StickerCollageServerEvent[]} {
-    const ms = state.modeState;
-    if (ms.phase !== "RESULTS") return {stateChanged: false, events: []};
-    if (ms.winnerId !== playerId) return {stateChanged: false, events: []};
-    if (!ms.unlockedPackIds.includes(packId)) return {stateChanged: false, events: []};
-
-    ms.guaranteedPackId = packId;
-
-    // Mark winner choices as done
-    ms.winnerChoicesDone = true;
-
-    const pack = ms.stickerPacks.find(p => p.id === packId);
-    const packName = pack?.name ?? packId;
-
-    return {
-        stateChanged: true,
-        events: [{type: "guaranteed-pack-chosen", packId, packName}],
-    };
-}
-
-/**
- * Handle "advance-from-results": RESULTS → next round (board or winner trigger).
- */
-export function handleAdvanceFromResults(
-    state: SessionState<StickerCollageModeState>,
+export function endVotingPhaseEarly(
+    state: SessionState,
     config: GameConfig,
     now: number,
-): {stateChanged: boolean; events: StickerCollageServerEvent[]} {
-    const ms = state.modeState;
-    if (ms.phase !== "RESULTS") return {stateChanged: false, events: []};
+): HandlerResult {
+    if (!asVotingPhase(state.gameState)) {
+        return noChange;
+    }
 
-    advanceFromResults(state, config.stickerCollage, now);
+    transitionToResults(state, config.stickerCollage, now);
+    return buildResultsEvents(state);
+}
+
+function buildResultsEvents(state: SessionState): HandlerResult {
+    const resultsPhase = asResultsPhase(state.gameState)!;
+    const scoreEvents: StickerCollageServerEvent[] = resultsPhase.lastVoteResults
+        .filter(result => result.pointsAwarded > 0 && state.players[result.playerId])
+        .map(result => ({type: "score-update", playerId: result.playerId, newScore: state.players[result.playerId].score}));
 
     return {
         stateChanged: true,
         events: [
-            {
-                type: "round-started",
-                roundIndex: ms.currentRoundIndex,
-                prompt: ms.currentPrompt,
-                endsAt: ms.roundEndsAt!,
-            },
+            ...scoreEvents,
+            {type: "results-ready", winnerId: resultsPhase.winnerId, results: resultsPhase.lastVoteResults},
         ],
+    };
+}
+
+// ─── RESULTS ────────────────────────────────────────────────────
+
+/**
+ * "pick-prompt": winner picks the next round's prompt from the offered choices.
+ */
+export function winnerPicksPrompt(
+    state: SessionState,
+    playerId: string,
+    prompt: string,
+): HandlerResult {
+    const {gameState} = state;
+    const resultsPhase = asResultsPhase(gameState);
+    if (!resultsPhase || resultsPhase.winnerId !== playerId) {
+        return noChange;
+    }
+    if (!resultsPhase.promptChoices.includes(prompt)) {
+        return noChange;
+    }
+
+    gameState.promptHistory[gameState.currentRoundIndex + 1] = prompt;
+    return {stateChanged: true, events: [{type: "prompt-chosen", prompt}]};
+}
+
+/**
+ * "unlock-pack": winner unlocks a new sticker pack.
+ */
+export function winnerUnlocksPack(
+    state: SessionState,
+    playerId: string,
+    packId: string,
+): HandlerResult {
+    const {gameState} = state;
+    const resultsPhase = asResultsPhase(gameState);
+    if (!resultsPhase || resultsPhase.winnerId !== playerId) {
+        return noChange;
+    }
+    if (!resultsPhase.packUnlockChoices.includes(packId)) {
+        return noChange;
+    }
+    if (gameState.unlockedPackIds.includes(packId)) {
+        return noChange;
+    }
+
+    gameState.unlockedPackIds.push(packId);
+    resultsPhase.lastUnlockedPackId = packId;
+
+    const pack = gameState.stickerPacks.find(p => p.id === packId);
+    return {stateChanged: true, events: [{type: "pack-unlocked", packId, packName: pack?.name ?? packId}]};
+}
+
+/**
+ * "pick-guaranteed-pack": winner picks which pack is guaranteed in next round's hands.
+ * This also marks all winner choices as done.
+ */
+export function winnerPicksGuaranteedPack(
+    state: SessionState,
+    playerId: string,
+    packId: string,
+): HandlerResult {
+    const {gameState} = state;
+    const resultsPhase = asResultsPhase(gameState);
+    if (!resultsPhase || resultsPhase.winnerId !== playerId) {
+        return noChange;
+    }
+    if (!gameState.unlockedPackIds.includes(packId)) {
+        return noChange;
+    }
+
+    gameState.guaranteedPackId = packId;
+    resultsPhase.winnerChoicesDone = true;
+
+    const pack = gameState.stickerPacks.find(p => p.id === packId);
+    return {stateChanged: true, events: [{type: "guaranteed-pack-chosen", packId, packName: pack?.name ?? packId}]};
+}
+
+/**
+ * "ready-to-advance": any player pressing this immediately starts the next round.
+ * Only available once the winner has completed their choices (or there is no winner).
+ */
+export function advanceToNextRound(
+    state: SessionState,
+    playerId: string,
+    config: GameConfig,
+    now: number,
+): HandlerResult {
+    const resultsPhase = asResultsPhase(state.gameState);
+    if (!resultsPhase) {
+        return noChange;
+    }
+    if (resultsPhase.readyToAdvanceIds.includes(playerId)) {
+        return noChange;
+    }
+
+    resultsPhase.readyToAdvanceIds.push(playerId);
+    transitionToNextRound(state, config.stickerCollage, now);
+
+    const {gameState} = state;
+    const {phaseState} = gameState;
+    if (phaseState.phase !== "BUILDING") {
+        return noChange;
+    }
+
+    return {
+        stateChanged: true,
+        events: [{type: "round-started", roundIndex: gameState.currentRoundIndex, prompt: gameState.currentPrompt, endsAt: phaseState.roundEndsAt}],
+    };
+}
+
+/**
+ * "advance-from-results": board-triggered advance to the next round.
+ */
+export function boardAdvancesToNextRound(
+    state: SessionState,
+    config: GameConfig,
+    now: number,
+): HandlerResult {
+    if (!asResultsPhase(state.gameState)) {
+        return noChange;
+    }
+
+    transitionToNextRound(state, config.stickerCollage, now);
+
+    const {gameState} = state;
+    const {phaseState} = gameState;
+    if (phaseState.phase !== "BUILDING") {
+        return noChange;
+    }
+
+    return {
+        stateChanged: true,
+        events: [{type: "round-started", roundIndex: gameState.currentRoundIndex, prompt: gameState.currentPrompt, endsAt: phaseState.roundEndsAt}],
     };
 }

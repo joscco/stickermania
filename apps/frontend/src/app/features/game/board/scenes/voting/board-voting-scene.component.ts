@@ -1,6 +1,6 @@
 import {Component, computed, inject, input, signal, ElementRef, AfterViewInit, OnDestroy, ViewChild} from "@angular/core";
 import {CommonModule} from "@angular/common";
-import type {StickerCollageClientAction, StickerCollageModeState, StickerCollage, SessionPlayer} from "@birthday/shared";
+import type {StickerCollageClientAction, StickerCollageGameState, StickerCollage, SessionPlayer} from "@birthday/shared";
 import {WorldStore} from '../../../../../core/world.store';
 import {WebSocketService} from '../../../../../core/websocket.service';
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
@@ -20,7 +20,7 @@ export class BoardVotingSceneComponent implements AfterViewInit, OnDestroy {
     private readonly worldStore = inject(WorldStore);
     private readonly wsService = inject(WebSocketService);
 
-    public readonly modeState = input<StickerCollageModeState | null>(null);
+    public readonly gameState = input<StickerCollageGameState | null>(null);
 
     @ViewChild("strip") stripEl!: ElementRef<HTMLDivElement>;
 
@@ -28,7 +28,7 @@ export class BoardVotingSceneComponent implements AfterViewInit, OnDestroy {
     private resizeObserver: ResizeObserver | null = null;
 
     public readonly submissions = computed<StickerCollage[]>(() => {
-        const ms = this.modeState();
+        const ms = this.gameState();
         if (!ms) return [];
         return ms.submissions[ms.currentRoundIndex] ?? [];
     });
@@ -71,12 +71,18 @@ export class BoardVotingSceneComponent implements AfterViewInit, OnDestroy {
         this.resizeObserver?.disconnect();
     }
 
+    public readonly doneVotingCount = computed(() => {
+        const ps = this.gameState()?.phaseState;
+        return ps?.phase === "VOTING" ? ps.doneVotingIds.length : 0;
+    });
+    public readonly roundParticipantCount = computed(() => this.gameState()?.roundParticipantIds.length ?? 0);
+
     public getPlayer(playerId: string): SessionPlayer | undefined {
         return this.worldStore.players()[playerId];
     }
 
     public endVotingEarly(): void {
         const action: StickerCollageClientAction = {type: "end-voting-early"};
-        this.wsService.send({type: "game-action", mode: "sticker-collage", action});
+        this.wsService.send({type: "game-action", action});
     }
 }

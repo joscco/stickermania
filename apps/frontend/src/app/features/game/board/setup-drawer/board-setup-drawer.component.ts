@@ -1,10 +1,11 @@
 import { CommonModule } from "@angular/common";
 import {Component, input, output, signal} from "@angular/core";
+import {AnimPresenceDirective} from '../../../shared/animations/anim-on-init.directive';
 
 @Component({
   selector: "app-board-setup-drawer",
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AnimPresenceDirective],
   templateUrl: "./board-setup-drawer.component.html"
 })
 export class BoardSetupDrawerComponent {
@@ -17,20 +18,7 @@ export class BoardSetupDrawerComponent {
   public readonly resetRequested = output();
   public readonly deleteRequested = output();
 
-  public readonly copyHint = signal<string | null>(null);
-
   public requestClose(): void {
     this.onCloseRequested.emit();
-  }
-
-  public async copyPlayerUrl(): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(this.playerUrl());
-      this.copyHint.set("Kopiert!");
-    } catch {
-      this.copyHint.set("Kopieren nicht möglich.");
-    }
-
-    window.setTimeout(() => this.copyHint.set(null), 1500);
   }
 }

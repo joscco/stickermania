@@ -1,9 +1,9 @@
 import crypto from "node:crypto";
-import type {ClientKind, ClientToServerMessage, GameConfig, GameModeId, GameServerEnvelope, SessionInfo, SessionPlayer, SessionState,} from "@birthday/shared";
+import type {ClientKind, ClientToServerMessage, GameConfig, GameServerEnvelope, SessionInfo, SessionPlayer, SessionState, StickerCollageServerEvent} from "@birthday/shared";
 import type {AssetRepository} from "../infra/assetRepository.js";
 import type {SessionRepository} from "../infra/sessionRepository.js";
 import {StickerCollageEngine} from "../game-modes/sticker-collage/stickerCollageEngine.js";
-import {GameModeRegistry} from "../game-modes/gameModeRegistry.js";
+import {GameEngineRegistry} from "../game-modes/gameModeRegistry.js";
 import {SessionStateFactory} from "./sessionStateFactory.js";
 import type {ConnectedClientSession, RuntimeEntry} from "./sessionRuntimeTypes.js";
 import {SessionEventPublisher} from "./sessionEventPublisher.js";
@@ -14,17 +14,16 @@ import {SessionMutator} from "./sessionMutator.js";
 const SESSION_CODE_ALPHABET = "0123456789";
 
 function generateSessionCode(length: number = 4): string {
-    let sessionCode = "";
-    for (let index = 0; index < length; index += 1) {
-        const randomIndex = Math.floor(Math.random() * SESSION_CODE_ALPHABET.length);
-        sessionCode += SESSION_CODE_ALPHABET[randomIndex];
+    let code = "";
+    for (let i = 0; i < length; i += 1) {
+        code += SESSION_CODE_ALPHABET[Math.floor(Math.random() * SESSION_CODE_ALPHABET.length)];
     }
-    return sessionCode;
+    return code;
 }
 
 export class SessionService {
     private readonly runtimes = new Map<string, RuntimeEntry>();
-    private readonly gameModeRegistry = new GameModeRegistry();
+    private readonly engineRegistry = new GameEngineRegistry();
     private readonly sessionStateFactory: SessionStateFactory;
     private readonly eventPublisher = new SessionEventPublisher();
     private readonly mutator: SessionMutator;
@@ -36,28 +35,14 @@ export class SessionService {
         private readonly sessionRepository: SessionRepository,
         private readonly assetRepository: AssetRepository,
     ) {
-        this.gameModeRegistry.register(new StickerCollageEngine(config));
-
-        this.sessionStateFactory = new SessionStateFactory(config, this.gameModeRegistry);
-
+        this.engineRegistry.register(new StickerCollageEngine(config));
+        this.sessionStateFactory = new SessionStateFactory(config, this.engineRegistry);
         this.mutator = new SessionMutator(sessionRepository, this.eventPublisher);
-
-        this.phaseTimer = new PhaseTimerScheduler(
-            this.runtimes,
-            this.gameModeRegistry,
-            this.mutator,
-        );
-
-        this.playerManager = new PlayerManager(
-            assetRepository,
-            this.gameModeRegistry,
-            this.sessionStateFactory,
-            this.mutator,
-            this.runtimes,
-        );
+        this.phaseTimer = new PhaseTimerScheduler(this.runtimes, this.engineRegistry, this.mutator);
+        this.playerManager = new PlayerManager(assetRepository, this.engineRegistry, this.sessionStateFactory, this.mutator, this.runtimes);
     }
 
-    // ─── Event callback registration (delegated to publisher) ────────
+    // ─── Event callback registration ────────────────────────────────
 
     public setOnSessionStateChanged(callback: (sessionId: string, state: SessionState) => void | Promise<void>): void {
         this.eventPublisher.setOnSessionStateChanged(callback);
@@ -69,22 +54,15 @@ export class SessionService {
 
     // ─── Session CRUD ────────────────────────────────────────────────
 
-    public async createSession(args: {baseUrl: string; initialMode?: GameModeId}): Promise<SessionInfo> {
+    public async createSession(args: {baseUrl: string}): Promise<SessionInfo> {
         const sessionId = crypto.randomUUID().slice(0, 8);
         const sessionCode = await this.generateUniqueSessionCode();
 
-        const state = this.sessionStateFactory.createEmpty({
-            sessionId,
-            sessionCode,
-            initialMode: args.initialMode ?? "sticker-collage",
-        });
+        const state = this.sessionStateFactory.createEmpty({sessionId, sessionCode});
 
         await this.sessionRepository.create(state);
         this.runtimes.set(sessionId, {
-            sessionRuntime: {
-                activeMode: state.activeMode,
-                connectedClients: new Map<string, ConnectedClientSession>(),
-            },
+            sessionRuntime: {connectedClients: new Map<string, ConnectedClientSession>()},
             phaseTimer: null,
         });
 
@@ -101,21 +79,23 @@ export class SessionService {
     public async listSessions(): Promise<SessionState[]> {
         const allSessions = await this.sessionRepository.listAll();
         return allSessions
-            .filter((session) => session.expiresAt > Date.now())
+            .filter(session => session.expiresAt > Date.now())
             .sort((a, b) => b.createdAt - a.createdAt);
     }
 
     public async loadState(sessionId: string): Promise<SessionState | null> {
-        return await this.sessionRepository.load(sessionId);
+        return this.sessionRepository.load(sessionId);
     }
 
     public async loadStateByCode(sessionCode: string): Promise<SessionState | null> {
-        return await this.sessionRepository.loadByCode(sessionCode);
+        return this.sessionRepository.loadByCode(sessionCode);
     }
 
     public async deleteSession(sessionId: string): Promise<boolean> {
         const existing = await this.sessionRepository.load(sessionId);
-        if (!existing) return false;
+        if (!existing) {
+            return false;
+        }
 
         this.phaseTimer.clear(sessionId);
         await this.sessionRepository.delete(sessionId);
@@ -130,9 +110,8 @@ export class SessionService {
         clientId: string;
         kind: ClientKind;
         existingPlayerId?: string;
-    }): Promise<{state: SessionState; player: SessionPlayer; gameEvents: any[]} | null> {
+    }): Promise<{state: SessionState; player: SessionPlayer; gameEvents: StickerCollageServerEvent[]} | null> {
         const result = await this.playerManager.join(args);
-        // Re-schedule the phase timer after join/reconnect so accrual keeps running
         if (result) {
             this.phaseTimer.schedule(args.sessionId, result.state);
         }
@@ -145,17 +124,12 @@ export class SessionService {
 
     public async saveAvatar(sessionId: string, playerId: string, avatarDataUrl: string): Promise<SessionState | null> {
         const result = await this.playerManager.saveAvatar(sessionId, playerId, avatarDataUrl);
-        if (!result) return null;
-
-        // Publish game events (e.g. assign-task after profile complete)
-        if (result.gameEvents.length > 0) {
-            await this.eventPublisher.publishGameEvents(
-                sessionId,
-                result.state.activeMode,
-                result.gameEvents,
-            );
+        if (!result) {
+            return null;
         }
-
+        if (result.gameEvents.length > 0) {
+            await this.eventPublisher.publishGameEvents(sessionId, result.gameEvents);
+        }
         return result.state;
     }
 
@@ -167,33 +141,14 @@ export class SessionService {
         return this.playerManager.markDisconnected(sessionId, playerId);
     }
 
-    // ─── Game-mode orchestration ────────────────────────────────────
+    // ─── Game orchestration ──────────────────────────────────────────
 
-    public async selectMode(sessionId: string, mode: GameModeId): Promise<SessionState | null> {
+    public async startGameSession(sessionId: string): Promise<SessionState | null> {
         const result = await this.mutator.mutate(sessionId, (state) => {
-            this.phaseTimer.clear(sessionId);
-
-            state.activeMode = mode;
-            state.modeState = this.gameModeRegistry.createInitialModeState(mode);
-
-            const runtime = this.getOrCreateRuntime(state);
-            runtime.sessionRuntime.activeMode = mode;
-
-            return {stateChanged: true, extra: undefined};
-        });
-        return result?.state ?? null;
-    }
-
-    public async startMode(sessionId: string): Promise<SessionState | null> {
-        const result = await this.mutator.mutate(sessionId, (state) => {
-            const engine = this.gameModeRegistry.get(state.activeMode);
-            const engineResult = engine.startMode({sessionState: state as never, now: Date.now()});
-
+            const engineResult = this.engineRegistry.get().startGame({sessionState: state, now: Date.now()});
             return {
                 stateChanged: engineResult.stateChanged,
-                gameEvents: engineResult.emittedEvents.length > 0
-                    ? {mode: state.activeMode, events: engineResult.emittedEvents as any[]}
-                    : undefined,
+                gameEvents: engineResult.emittedEvents.length > 0 ? engineResult.emittedEvents : undefined,
                 extra: undefined,
             };
         });
@@ -207,15 +162,10 @@ export class SessionService {
     public async resetSession(sessionId: string): Promise<SessionState | null> {
         const result = await this.mutator.mutate(sessionId, (state) => {
             this.phaseTimer.clear(sessionId);
-
-            const engine = this.gameModeRegistry.get(state.activeMode);
-            const engineResult = engine.resetMode({sessionState: state as never, now: Date.now()});
-
+            const engineResult = this.engineRegistry.get().resetGame({sessionState: state, now: Date.now()});
             return {
                 stateChanged: engineResult.stateChanged,
-                gameEvents: engineResult.emittedEvents.length > 0
-                    ? {mode: state.activeMode, events: engineResult.emittedEvents as any[]}
-                    : undefined,
+                gameEvents: engineResult.emittedEvents.length > 0 ? engineResult.emittedEvents : undefined,
                 extra: undefined,
             };
         });
@@ -230,14 +180,9 @@ export class SessionService {
         message: Extract<ClientToServerMessage, {type: "game-action"}>;
     }): Promise<SessionState | null> {
         const result = await this.mutator.mutate(args.sessionId, async (state) => {
-            if (state.activeMode !== args.message.mode) {
-                return {stateChanged: false, extra: undefined};
-            }
-
-            const engine = this.gameModeRegistry.get(state.activeMode);
-            const engineResult = await engine.applyAction({
-                sessionState: state as never,
-                action: args.message.action as never,
+            const engineResult = await this.engineRegistry.get().applyAction({
+                sessionState: state,
+                action: args.message.action,
                 context: {
                     sessionId: args.sessionId,
                     playerId: args.playerId,
@@ -249,9 +194,7 @@ export class SessionService {
 
             return {
                 stateChanged: engineResult.stateChanged,
-                gameEvents: engineResult.emittedEvents.length > 0
-                    ? {mode: state.activeMode, events: engineResult.emittedEvents as any[]}
-                    : undefined,
+                gameEvents: engineResult.emittedEvents.length > 0 ? engineResult.emittedEvents : undefined,
                 extra: undefined,
             };
         });
@@ -262,36 +205,33 @@ export class SessionService {
         return result?.state ?? null;
     }
 
-    private getOrCreateRuntime(state: SessionState): RuntimeEntry {
-        const existing = this.runtimes.get(state.sessionId);
-        if (existing) return existing;
+    private getOrCreateRuntime(sessionId: string): RuntimeEntry {
+        const existing = this.runtimes.get(sessionId);
+        if (existing) {
+            return existing;
+        }
 
         const created: RuntimeEntry = {
-            sessionRuntime: {
-                activeMode: state.activeMode,
-                connectedClients: new Map<string, ConnectedClientSession>(),
-            },
+            sessionRuntime: {connectedClients: new Map<string, ConnectedClientSession>()},
             phaseTimer: null,
         };
-
-        this.runtimes.set(state.sessionId, created);
+        this.runtimes.set(sessionId, created);
         return created;
     }
 
     private async generateUniqueSessionCode(): Promise<string> {
-        for (let attemptIndex = 0; attemptIndex < 20; attemptIndex += 1) {
-            const sessionCode = generateSessionCode();
-            const existingState = await this.sessionRepository.loadByCode(sessionCode);
-            if (!existingState) return sessionCode;
+        for (let attempt = 0; attempt < 20; attempt += 1) {
+            const code = generateSessionCode();
+            const existing = await this.sessionRepository.loadByCode(code);
+            if (!existing) {
+                return code;
+            }
         }
         throw new Error("Could not generate unique session code");
     }
 
     // ─── Collage snapshot ───────────────────────────────────────────
 
-    /**
-     * Set the snapshotUrl on a submitted collage (called after the PNG is uploaded).
-     */
     public async updateCollageSnapshot(
         sessionId: string,
         collageId: string,
@@ -299,10 +239,12 @@ export class SessionService {
         snapshotUrl: string,
     ): Promise<SessionState | null> {
         const result = await this.mutator.mutate(sessionId, (state) => {
-            const ms = state.modeState as any;
-            if (!ms?.submissions) return {stateChanged: false, extra: undefined};
+            const {submissions} = state.gameState;
+            if (!submissions) {
+                return {stateChanged: false, extra: undefined};
+            }
 
-            for (const roundSubs of Object.values(ms.submissions) as any[]) {
+            for (const roundSubs of Object.values(submissions)) {
                 for (const collage of roundSubs) {
                     if (collage.id === collageId && collage.playerId === playerId) {
                         collage.snapshotUrl = snapshotUrl;

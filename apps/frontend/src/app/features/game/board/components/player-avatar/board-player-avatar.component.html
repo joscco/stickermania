@@ -1,0 +1,33 @@
+<div class="flex flex-col items-center gap-1.5"
+     [class.opacity-40]="dimmed()">
+
+  <!-- Avatar ring + image/fallback + badge -->
+  <div class="relative">
+    <div [class]="sizeClasses() + ' bg-stone-100 shadow-md overflow-hidden grid place-items-center ' + borderClass()">
+      @if (player().avatarUrl) {
+        <img [src]="player().avatarUrl"
+             [alt]="player().name"
+             class="w-full h-full object-cover"
+             (error)="$any($event.target).style.display='none'" />
+      } @else {
+        <span>?</span>
+      }
+    </div>
+
+    <!-- Medal overlay (e.g. podium) — takes priority over status badge -->
+    @if (medal()) {
+      <div class="absolute -top-3 -right-3 text-2xl leading-none select-none">{{ medal() }}</div>
+    } @else if (badge(); as b) {
+      <div class="absolute -top-1 -right-1 w-5 h-5 rounded-full grid place-items-center text-white text-xs shadow"
+           [ngClass]="b.bg"
+           [class.animate-pulse]="b.animate">
+        {{ b.emoji }}
+      </div>
+    }
+  </div>
+
+  <!-- Name -->
+  <span class="text-xs font-medium truncate max-w-14 text-stone-600">
+    {{ player().name || 'Spieler' }}
+  </span>
+</div>

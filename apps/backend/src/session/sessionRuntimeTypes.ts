@@ -1,4 +1,4 @@
-import type { ClientKind, GameModeId } from "@birthday/shared";
+import type { ClientKind } from "@birthday/shared";
 
 export interface ConnectedClientSession {
   playerId: string;
@@ -13,6 +13,5 @@ export interface RuntimeEntry {
 }
 
 export interface SessionRuntime {
-  activeMode: GameModeId;
   connectedClients: Map<string, ConnectedClientSession>;
 }

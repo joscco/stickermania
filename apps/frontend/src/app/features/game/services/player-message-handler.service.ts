@@ -1,6 +1,6 @@
-import { inject, Injectable, signal } from "@angular/core";
-import { Router } from "@angular/router";
-import type { ServerToClientMessage } from "@birthday/shared";
+import {inject, Injectable, signal} from "@angular/core";
+import {Router} from "@angular/router";
+import type {ServerToClientMessage} from "@birthday/shared";
 import {ReconnectService} from '../../../core/reconnect.service';
 import {WebSocketService} from '../../../core/websocket.service';
 import {WorldStore} from '../../../core/world.store';
@@ -19,10 +19,7 @@ export class PlayerMessageHandler {
   /** Expose the playerId so the component can read it after 'welcome'. */
   public readonly playerId = signal<string | null>(null);
 
-  /**
-   * Session code used for reconnect storage.
-   * Set by the component after route resolution.
-   */
+  /** Session code, set by the component after route resolution. */
   public sessionCode = "";
 
   // ─── Main dispatch ──────────────────────────────────────────
@@ -30,28 +27,24 @@ export class PlayerMessageHandler {
   public handle(message: ServerToClientMessage): void {
     switch (message.type) {
       case "welcome":
-        this.handleWelcome(message);
+        this.onWelcome(message);
         break;
       case "session-state":
         this.worldStore.setSessionState(message.state);
         this.syncPlayerModeFromState();
         break;
       case "game-event":
-        if (message.mode === "sticker-collage") {
-          this.stickerHandler.handleEvent(message.event);
-        }
+        this.stickerHandler.handleEvent(message.event);
         break;
       case "error":
-        this.handleError(message.message);
+        this.onError(message.message);
         break;
     }
   }
 
   // ─── Welcome ────────────────────────────────────────────────
 
-  private handleWelcome(message: Extract<ServerToClientMessage, { type: "welcome" }>): void {
-    localStorage.setItem("birthday_server_session", message.serverSessionId);
-
+  private onWelcome(message: Extract<ServerToClientMessage, { type: "welcome" }>): void {
     this.sessionStore.setJoined({
       sessionId: message.sessionId,
       playerId: message.playerId,
@@ -59,7 +52,6 @@ export class PlayerMessageHandler {
     });
 
     this.playerId.set(message.playerId);
-    localStorage.setItem("birthday_player_id", message.playerId);
 
     this.wsService.updatePendingJoin({
       type: "join",
@@ -68,19 +60,10 @@ export class PlayerMessageHandler {
       playerId: message.playerId,
     });
 
-    // Resolve session code: prefer the one set by the component, fall back to localStorage
-    const resolvedCode = this.sessionCode
-      || localStorage.getItem("birthday_last_session_code")
-      || "";
-
-    if (resolvedCode) {
-      this.reconnectService.save({
-        playerId: message.playerId,
-        sessionId: message.sessionId,
-        sessionCode: resolvedCode,
-        playerName: this.sessionStore.playerName(),
-      });
-    }
+    this.reconnectService.save({
+      playerId: message.playerId,
+      sessionId: message.sessionId,
+    });
   }
 
   // ─── State sync on reconnect ────────────────────────────────
@@ -92,52 +75,35 @@ export class PlayerMessageHandler {
 
     const player = sessionState.players[playerId];
     if (!player) {
-      // Player not yet in state — can happen during initial join.
-      // The isReady computed will keep showing a loading spinner;
-      // the next session-state push should include us.
+      // Not yet in state — initial join in progress; next state push will include us.
       return;
     }
 
-    // ── Name ──────────────────────────────────────────────────
     if (player.name.trim().length > 0) {
-      // Server already knows our name → use it
       this.sessionStore.playerName.set(player.name);
-      this.reconnectService.update({ playerName: player.name });
     } else if (this.sessionStore.playerName().trim().length > 0) {
-      // Server doesn't know our name yet → send device-level name
-      this.wsService.send({ type: "set-name", name: this.sessionStore.playerName() });
+      // We have a device-level name the server doesn't know yet → send it
+      this.wsService.send({type: "set-name", name: this.sessionStore.playerName()});
     }
 
-    // ── Avatar ────────────────────────────────────────────────
-    // Avatar is fully server-managed. Player must draw one if the server
-    // has none — no local cache re-upload.
-
-    // If name or avatar still missing → lobby
     if (this.sessionStore.playerName().trim().length === 0 || !player.avatarUrl) {
       this.sessionStore.currentMode.set("LOBBY");
       return;
     }
 
-    // Delegate mode-specific sync to the respective handler
-    switch (sessionState.activeMode) {
-      case "sticker-collage":
-        this.stickerHandler.syncMode();
-        return;
-    }
+    this.stickerHandler.syncMode();
   }
 
   // ─── Error handling ─────────────────────────────────────────
 
-  private handleError(message: string): void {
+  private onError(message: string): void {
     this.sessionStore.showFeedback(message, "error");
 
-    // Session-fatal errors → stop reconnect, clear data, redirect to /join
-    const fatal = /nicht gefunden|abgelaufen|gelöscht|wurde gelöscht|closed|deleted/i.test(message);
-    if (fatal) {
-      this.wsService.disconnect();      // stop reconnect loop → status stays "disconnected"
+    const isFatal = /nicht gefunden|abgelaufen|gelöscht|wurde gelöscht|closed|deleted/i.test(message);
+    if (isFatal) {
+      this.wsService.disconnect();
       this.reconnectService.clear();
-      setTimeout(() => this.router.navigate(["/join"]), 2000);
+      setTimeout(() => this.router.navigate(["/"]), 2000);
     }
   }
 }
-

@@ -3,7 +3,6 @@ import type {ClientToServerMessage, ServerToClientMessage, SessionState} from "@
 import type {FastifyInstance} from "fastify";
 import type {SessionService} from "../session/sessionService.js";
 
-/** Minimal WebSocket interface matching the `ws` library. */
 interface WsSocket {
     readyState: number;
     send(data: string): void;
@@ -25,7 +24,7 @@ interface ConnectedClient {
 const clients = new Map<string, ConnectedClient>();
 
 function sendToClient(ws: WsSocket, message: ServerToClientMessage): void {
-    if (ws.readyState === 1 /* WebSocket.OPEN */) {
+    if (ws.readyState === 1) {
         ws.send(JSON.stringify(message));
     }
 }
@@ -81,11 +80,7 @@ export async function registerWebSocket(
         for (const event of events) {
             if (event.targetPlayerId) {
                 for (const client of clients.values()) {
-                    if (
-                        client.sessionId === sessionId &&
-                        client.playerId === event.targetPlayerId &&
-                        client.ws.readyState === 1
-                    ) {
+                    if (client.sessionId === sessionId && client.playerId === event.targetPlayerId && client.ws.readyState === 1) {
                         client.ws.send(JSON.stringify(event));
                     }
                 }
@@ -102,16 +97,12 @@ export async function registerWebSocket(
         const clientId = crypto.randomUUID();
 
         ws.on("message", async (rawMessage: Buffer) => {
-            let parsedMessage: ClientToServerMessage | null = null;
+            let parsedMessage: ClientToServerMessage;
 
             try {
                 parsedMessage = JSON.parse(rawMessage.toString("utf-8")) as ClientToServerMessage;
             } catch {
                 sendToClient(ws, {type: "error", message: "Ungültige Nachricht."});
-                return;
-            }
-
-            if (!parsedMessage) {
                 return;
             }
 
@@ -149,18 +140,10 @@ export async function registerWebSocket(
 
                 sendToClient(ws, {type: "session-state", state: joined.state});
 
-                // Send game events (e.g. assign-task) directly to the joining client.
-                // These can't be broadcast-published in playerManager.join() because
-                // the client isn't in the clients map yet at that point.
-                if (joined.gameEvents.length > 0) {
-                    const mode = joined.state.activeMode;
-                    for (const event of joined.gameEvents) {
-                        const envelope: any = {type: "game-event", mode, event};
-                        if (event.targetPlayerId) {
-                            envelope.targetPlayerId = event.targetPlayerId;
-                        }
-                        sendToClient(ws, envelope);
-                    }
+                // Send game events directly to the joining client (not yet in the clients map during join)
+                for (const event of joined.gameEvents) {
+                    const envelope: ServerToClientMessage = {type: "game-event", event};
+                    sendToClient(ws, envelope);
                 }
 
                 return;
@@ -185,12 +168,8 @@ export async function registerWebSocket(
                     await sessionService.saveAvatar(connectedClient.sessionId, connectedClient.playerId, parsedMessage.avatarDataUrl);
                     return;
 
-                case "select-mode":
-                    await sessionService.selectMode(connectedClient.sessionId, parsedMessage.mode);
-                    return;
-
-                case "start-mode":
-                    await sessionService.startMode(connectedClient.sessionId);
+                case "start-game-session":
+                    await sessionService.startGameSession(connectedClient.sessionId);
                     return;
 
                 case "reset-session":
@@ -218,7 +197,9 @@ export async function registerWebSocket(
 
         ws.on("close", async () => {
             const connectedClient = clients.get(clientId);
-            if (!connectedClient) return;
+            if (!connectedClient) {
+                return;
+            }
 
             sessionService.removeConnectionSession(connectedClient.sessionId, clientId);
             clients.delete(clientId);
@@ -231,4 +212,3 @@ export async function registerWebSocket(
         });
     });
 }
-

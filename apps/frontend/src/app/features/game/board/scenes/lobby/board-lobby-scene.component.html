@@ -7,21 +7,10 @@
   <!-- Connected players -->
   <div animOnInit="item" class="flex flex-wrap justify-center gap-3 max-w-2xl">
     @for (player of connectedPlayers(); track player.id) {
-      <div class="flex flex-col items-center gap-1">
-        <div
-          class="w-16 h-16 rounded-2xl border-2 bg-stone-100 shadow-md overflow-hidden grid place-items-center text-2xl"
-          [class.border-emerald-400]="player.connected"
-          [class.border-stone-200]="!player.connected">
-          @if (player.avatarUrl) {
-            <img [src]="player.avatarUrl" [alt]="player.name"
-                 class="w-full h-full object-cover"
-                 (error)="$any($event.target).style.display='none'"/>
-          } @else {
-            🙂
-          }
-        </div>
-        <span class="text-xs font-medium text-stone-600 max-w-16 truncate">{{ player.name || 'Spieler' }}</span>
-      </div>
+      <app-board-player-avatar
+        [player]="player"
+        [status]="player.connected ? 'connected' : 'offline'"
+      />
     }
   </div>
 
@@ -36,4 +25,3 @@
     Spiel starten 🚀
   </button>
 </div>
-

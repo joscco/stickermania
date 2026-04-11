@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
-import type {ClientKind, SessionPlayer, SessionState} from "@birthday/shared";
+import type {ClientKind, SessionPlayer, SessionState, StickerCollageServerEvent} from "@birthday/shared";
 import type {AssetRepository} from "../infra/assetRepository.js";
-import type {GameModeRegistry} from "../game-modes/gameModeRegistry.js";
+import type {GameEngineRegistry} from "../game-modes/gameModeRegistry.js";
 import type {ConnectedClientSession, RuntimeEntry} from "./sessionRuntimeTypes.js";
 import type {SessionStateFactory} from "./sessionStateFactory.js";
 import type {SessionMutator} from "./sessionMutator.js";
@@ -12,7 +12,7 @@ import type {SessionMutator} from "./sessionMutator.js";
 export class PlayerManager {
     public constructor(
         private readonly assetRepository: AssetRepository,
-        private readonly gameModeRegistry: GameModeRegistry,
+        private readonly engineRegistry: GameEngineRegistry,
         private readonly sessionStateFactory: SessionStateFactory,
         private readonly mutator: SessionMutator,
         private readonly runtimes: Map<string, RuntimeEntry>,
@@ -87,9 +87,9 @@ export class PlayerManager {
                     connectedAt: Date.now(),
                 });
 
-                const engine = this.gameModeRegistry.get(state.activeMode);
+                const engine = this.engineRegistry.get();
                 const engineResult = engine.onPlayerJoined({
-                    sessionState: state as never,
+                    sessionState: state,
                     player,
                     connectedClient: runtime.sessionRuntime.connectedClients.get(args.clientId)!,
                     now: Date.now(),
@@ -97,10 +97,8 @@ export class PlayerManager {
 
                 return {
                     stateChanged: true,
-                    gameEvents: engineResult.emittedEvents.length > 0
-                        ? {mode: state.activeMode, events: engineResult.emittedEvents as any[]}
-                        : undefined,
-                    extra: {player, gameEvents: engineResult.emittedEvents as any[]},
+                    gameEvents: engineResult.emittedEvents.length > 0 ? engineResult.emittedEvents : undefined,
+                    extra: {player, gameEvents: engineResult.emittedEvents},
                 };
             },
         );
@@ -136,9 +134,7 @@ export class PlayerManager {
             player.avatarUrl = savedAsset.publicUrl;
             player.avatarAssetPath = savedAsset.assetPath;
 
-            // If the player now has name + avatar, notify the engine so it can
-            // assign an initial task (e.g. draw-search DRAW task).
-            let gameEvents: any[] = [];
+            let gameEvents: StickerCollageServerEvent[] = [];
             if (player.name.trim() && player.avatarUrl) {
                 const runtime = this.runtimes.get(sessionId);
                 const connectedClient = runtime
@@ -146,22 +142,15 @@ export class PlayerManager {
                     : undefined;
 
                 if (connectedClient) {
-                    const engine = this.gameModeRegistry.get(state.activeMode);
-                    const engineResult = engine.onPlayerJoined({
-                        sessionState: state as never,
-                        player,
-                        connectedClient,
-                        now: Date.now(),
-                    });
-                    gameEvents = engineResult.emittedEvents as any[];
+                    const engine = this.engineRegistry.get();
+                    const engineResult = engine.onPlayerJoined({sessionState: state, player, connectedClient, now: Date.now()});
+                    gameEvents = engineResult.emittedEvents;
                 }
             }
 
             return {
                 stateChanged: true,
-                gameEvents: gameEvents.length > 0
-                    ? {mode: state.activeMode, events: gameEvents}
-                    : undefined,
+                gameEvents: gameEvents.length > 0 ? gameEvents : undefined,
                 extra: {gameEvents},
             };
         });
@@ -194,7 +183,6 @@ export class PlayerManager {
 
         const created: RuntimeEntry = {
             sessionRuntime: {
-                activeMode: state.activeMode,
                 connectedClients: new Map<string, ConnectedClientSession>(),
             },
             phaseTimer: null,

@@ -9,17 +9,13 @@
     <!-- 2nd place -->
     @if (topResults().length > 1) {
       <div class="flex flex-col items-center">
-        <div class="relative mb-2">
-          @if (getPlayer(topResults()[1].playerId)?.avatarUrl; as url) {
-            <img [src]="url" alt="" class="w-20 h-20 rounded-2xl border-4 border-stone-300 bg-white object-cover shadow-lg"
-                 (error)="$any($event.target).style.display='none'" />
-          } @else {
-            <div class="w-20 h-20 rounded-2xl border-4 border-stone-300 bg-stone-100 grid place-items-center text-3xl shadow-lg">🙂</div>
-          }
-          <div class="absolute -top-3 -right-3 text-3xl">🥈</div>
-        </div>
-        <span class="text-sm font-bold text-stone-700 mb-1">{{ getPlayer(topResults()[1].playerId)?.name ?? 'Spieler' }}</span>
-        <span class="text-xs text-stone-500">{{ topResults()[1].voteCount }} Stimmen · +{{ topResults()[1].pointsAwarded }}</span>
+        <app-board-player-avatar
+          [player]="getPlayer(topResults()[1].playerId)!"
+          status="podium-2"
+          size="lg"
+          medal="🥈"
+        />
+        <span class="text-xs text-stone-500 mt-1">{{ topResults()[1].voteCount }} Stimmen · +{{ topResults()[1].pointsAwarded }}</span>
         <div class="w-32 h-28 bg-stone-200 rounded-t-xl mt-2 flex items-center justify-center">
           <span class="text-5xl font-black text-stone-400">2</span>
         </div>
@@ -29,17 +25,13 @@
     <!-- 1st place -->
     @if (topResults().length > 0) {
       <div class="flex flex-col items-center">
-        <div class="relative mb-2">
-          @if (getPlayer(topResults()[0].playerId)?.avatarUrl; as url) {
-            <img [src]="url" alt="" class="w-24 h-24 rounded-2xl border-4 border-amber-400 bg-white object-cover shadow-lg"
-                 (error)="$any($event.target).style.display='none'" />
-          } @else {
-            <div class="w-24 h-24 rounded-2xl border-4 border-amber-400 bg-stone-100 grid place-items-center text-4xl shadow-lg">🙂</div>
-          }
-          <div class="absolute -top-4 -right-4 text-4xl">🥇</div>
-        </div>
-        <span class="text-base font-black text-stone-800 mb-1">{{ getPlayer(topResults()[0].playerId)?.name ?? 'Spieler' }}</span>
-        <span class="text-xs text-stone-500">{{ topResults()[0].voteCount }} Stimmen · +{{ topResults()[0].pointsAwarded }}</span>
+        <app-board-player-avatar
+          [player]="getPlayer(topResults()[0].playerId)!"
+          status="podium-1"
+          size="lg"
+          medal="🥇"
+        />
+        <span class="text-xs text-stone-500 mt-1">{{ topResults()[0].voteCount }} Stimmen · +{{ topResults()[0].pointsAwarded }}</span>
         <div class="w-36 h-40 bg-amber-300 rounded-t-xl mt-2 flex items-center justify-center">
           <span class="text-6xl font-black text-amber-600">1</span>
         </div>
@@ -49,17 +41,13 @@
     <!-- 3rd place -->
     @if (topResults().length > 2) {
       <div class="flex flex-col items-center">
-        <div class="relative mb-2">
-          @if (getPlayer(topResults()[2].playerId)?.avatarUrl; as url) {
-            <img [src]="url" alt="" class="w-20 h-20 rounded-2xl border-4 border-orange-300 bg-white object-cover shadow-lg"
-                 (error)="$any($event.target).style.display='none'" />
-          } @else {
-            <div class="w-20 h-20 rounded-2xl border-4 border-orange-300 bg-stone-100 grid place-items-center text-3xl shadow-lg">🙂</div>
-          }
-          <div class="absolute -top-3 -right-3 text-3xl">🥉</div>
-        </div>
-        <span class="text-sm font-bold text-stone-700 mb-1">{{ getPlayer(topResults()[2].playerId)?.name ?? 'Spieler' }}</span>
-        <span class="text-xs text-stone-500">{{ topResults()[2].voteCount }} Stimmen · +{{ topResults()[2].pointsAwarded }}</span>
+        <app-board-player-avatar
+          [player]="getPlayer(topResults()[2].playerId)!"
+          status="podium-3"
+          size="lg"
+          medal="🥉"
+        />
+        <span class="text-xs text-stone-500 mt-1">{{ topResults()[2].voteCount }} Stimmen · +{{ topResults()[2].pointsAwarded }}</span>
         <div class="w-32 h-20 bg-orange-200 rounded-t-xl mt-2 flex items-center justify-center">
           <span class="text-5xl font-black text-orange-400">3</span>
         </div>
@@ -109,7 +97,10 @@
   </div>
 
   <!-- Advance button -->
-  <div animOnInit="item" [animDelay]="0.85" class="text-center pb-6">
+  <div animOnInit="item" [animDelay]="0.85" class="text-center pb-6 flex flex-col items-center gap-2">
+    @if (winnerChoicesDone()) {
+      <p class="text-sm text-stone-400">{{ readyToAdvanceCount() }}/{{ gameState()?.roundParticipantIds?.length ?? 0 }} bereit</p>
+    }
     <button
       class="bg-purple-600 text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-purple-700 active:scale-95 transition-all"
       (click)="advanceFromResults()"

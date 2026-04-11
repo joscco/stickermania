@@ -1,40 +1,36 @@
 <div class="min-h-dvh bg-stone-100 flex flex-col items-center justify-center px-4">
-  <div class="w-full max-w-md rounded-3xl bg-white border border-black/5 shadow-sm p-6 text-center">
+  <div animOnInit="item" class="w-full max-w-md rounded-3xl bg-white border border-black/5 shadow-sm p-6 text-center">
     <div class="text-2xl font-bold text-stone-900">Stickermania 🎉</div>
     <p class="mt-2 text-sm text-stone-500">
       Gib den Session-Code vom Board ein, um mitzuspielen.
     </p>
 
-    <input
-      class="mt-6 w-full rounded-2xl border border-black/10 px-4 py-4 text-center text-2xl tracking-[0.3em] bg-white text-stone-900 outline-none focus:border-stone-400"
-      type="text"
-      inputmode="numeric"
-      maxlength="4"
-      placeholder="0000"
-      autocomplete="off"
-      autocorrect="off"
-      spellcheck="false"
-      [value]="sessionCode()"
-      (input)="onCodeInput($event)"
-      (keydown.enter)="joinSession()"
-    />
+    <div class="mt-6 flex items-center justify-center gap-2" [class.ui-shake]="sessionCodeShakeActive()">
+      @for (index of digitSlots; track index) {
+        <input
+          #codeInput
+          class="h-14 w-14 rounded-xl border border-black/10 bg-white text-center text-2xl text-stone-900 outline-none focus:border-stone-400"
+          type="text"
+          inputmode="numeric"
+          maxlength="1"
+          autocomplete="one-time-code"
+          autocorrect="off"
+          spellcheck="false"
+          [value]="codeDigits()[index]"
+          (input)="onCodeDigitInput(index, $event)"
+          (keydown)="onCodeDigitKeydown(index, $event)"
+          (paste)="onCodePaste(index, $event)"
+        />
+      }
+    </div>
 
     <button
-      class="mt-4 w-full rounded-2xl bg-stone-900 text-white px-4 py-3 text-sm font-medium hover:bg-stone-800 disabled:opacity-40 transition-colors"
-      [disabled]="sessionCode().length < 4"
+      class="mt-4 w-full rounded-2xl bg-stone-900 text-white px-4 py-3 text-sm font-medium hover:bg-stone-800 disabled:opacity-40 transition-all"
+      [disabled]="sessionCode().length < 4 || sessionJoinLoading()"
       (click)="joinSession()"
     >
       Beitreten
     </button>
-
-    @if (lastSessionCode()) {
-      <button
-        class="mt-3 text-sm text-stone-500 underline"
-        (click)="useLastSession()"
-      >
-        Letzte Session {{ lastSessionCode() }} verwenden
-      </button>
-    }
 
     <div class="mt-6 border-t border-black/5 pt-4">
       <button
@@ -48,41 +44,46 @@
 </div>
 
 <!-- Password dialog -->
-@if (showPasswordDialog()) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-    <div class="w-full max-w-sm rounded-3xl bg-white shadow-2xl p-6">
-      <div class="text-lg font-bold text-stone-900">Board-Zugang</div>
-      <p class="mt-1 text-sm text-stone-500">Bitte das Board-Passwort eingeben.</p>
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+  [animPresence]="showPasswordDialog()"
+  animPresenceType="overlay"
+  (click)="cancelPasswordDialog()"
+>
+  <div
+    class="w-full max-w-sm rounded-3xl bg-white shadow-2xl p-6"
+    [animPresence]="showPasswordDialog()"
+    animPresenceType="item"
+    [class.ui-shake]="passwordShakeActive()"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="text-lg font-bold text-stone-900">Board-Zugang</div>
+    <p class="mt-1 text-sm text-stone-500">Bitte das Board-Passwort eingeben.</p>
 
-      <input
-        class="mt-4 w-full rounded-2xl border border-black/10 px-4 py-3 text-sm text-stone-900 outline-none focus:border-stone-400"
-        type="password"
-        placeholder="Passwort"
-        autocomplete="current-password"
-        [value]="boardPassword()"
-        (input)="boardPassword.set($any($event.target).value)"
-        (keydown.enter)="submitPassword()"
-      />
+    <input
+      class="mt-4 w-full rounded-2xl border border-black/10 px-4 py-3 text-sm text-stone-900 outline-none focus:border-stone-400"
+      type="password"
+      placeholder="Passwort"
+      autocomplete="current-password"
+      [value]="boardPassword()"
+      (input)="boardPassword.set($any($event.target).value)"
+      (keydown.enter)="submitPassword()"
+    />
 
-      @if (passwordError()) {
-        <p class="mt-2 text-sm text-red-500">{{ passwordError() }}</p>
-      }
-
-      <div class="mt-4 flex gap-2">
-        <button
-          class="flex-1 rounded-2xl border border-black/10 bg-stone-50 px-4 py-2 text-sm hover:bg-stone-100"
-          (click)="cancelPasswordDialog()"
-        >
-          Abbrechen
-        </button>
-        <button
-          class="flex-1 rounded-2xl bg-stone-900 text-white px-4 py-2 text-sm hover:bg-stone-800 disabled:opacity-40"
-          [disabled]="passwordLoading()"
-          (click)="submitPassword()"
-        >
-          {{ passwordLoading() ? 'Prüfe...' : 'Weiter' }}
-        </button>
-      </div>
+    <div class="mt-4 flex gap-2">
+      <button
+        class="flex-1 rounded-2xl border border-black/10 bg-stone-50 px-4 py-2 text-sm hover:bg-stone-100"
+        (click)="cancelPasswordDialog()"
+      >
+        Abbrechen
+      </button>
+      <button
+        class="flex-1 rounded-2xl bg-stone-900 text-white px-4 py-2 text-sm hover:bg-stone-800 disabled:opacity-40 transition-all"
+        [disabled]="passwordLoading()"
+        (click)="submitPassword()"
+      >
+        Weiter
+      </button>
     </div>
   </div>
-}
+</div>

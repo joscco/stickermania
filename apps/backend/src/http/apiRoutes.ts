@@ -1,14 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import type {FastifyInstance} from "fastify";
-import type {GameModeId, StickerCollageModeState} from "@birthday/shared";
 import type {SessionService} from "../session/sessionService.js";
 import type {BackendConfig} from "../config.js";
 import type {AssetRepository} from "../infra/assetRepository.js";
 import {disconnectSessionClients} from "./wsPlugin.js";
 import {hasBoardAuth} from "./authPlugin.js";
-
-const VALID_MODES: GameModeId[] = ["sticker-collage"];
 
 function buildBaseUrl(protocol: string, hostname: string, port: number): string {
     return `${protocol}://${hostname.includes(":") ? hostname : `${hostname}:${port}`}`;
@@ -25,26 +22,21 @@ export async function registerApiRoutes(
 
     app.get("/api/sessions", async () => {
         const sessions = await sessionService.listSessions();
-        return sessions.map((s) => ({
-            sessionId: s.sessionId,
-            sessionCode: s.sessionCode,
-            activeMode: s.activeMode,
-            playerCount: Object.keys(s.players).length,
-            createdAt: s.createdAt,
-            expiresAt: s.expiresAt,
+        return sessions.map(session => ({
+            sessionId: session.sessionId,
+            sessionCode: session.sessionCode,
+            playerCount: Object.keys(session.players).length,
+            createdAt: session.createdAt,
+            expiresAt: session.expiresAt,
         }));
     });
 
-    app.post<{Body: {mode?: string}}>("/api/sessions", async (request, reply) => {
+    app.post("/api/sessions", async (request, reply) => {
         if (!hasBoardAuth(request)) {
             return reply.status(401).send({message: "Nicht autorisiert."});
         }
-        const mode = (typeof request.body?.mode === "string" && VALID_MODES.includes(request.body.mode as GameModeId))
-            ? request.body.mode as GameModeId
-            : "sticker-collage";
-
         const baseUrl = buildBaseUrl(request.protocol, request.hostname, backendConfig.gameConfig.port);
-        const createdSession = await sessionService.createSession({baseUrl, initialMode: mode});
+        const createdSession = await sessionService.createSession({baseUrl});
         return reply.status(201).send(createdSession);
     });
 
@@ -58,12 +50,7 @@ export async function registerApiRoutes(
             return reply.status(404).send({message: "Session not found"});
         }
 
-        return {
-            sessionId: state.sessionId,
-            sessionCode: state.sessionCode,
-            createdAt: state.createdAt,
-            expiresAt: state.expiresAt,
-        };
+        return {sessionId: state.sessionId, sessionCode: state.sessionCode, createdAt: state.createdAt, expiresAt: state.expiresAt};
     });
 
     // ─── Session state ──────────────────────────────────────────
@@ -102,12 +89,11 @@ export async function registerApiRoutes(
         if (!hasBoardAuth(request)) {
             return reply.status(401).send({message: "Nicht autorisiert."});
         }
-        const deletedSessionId = request.params.id;
-        const deleted = await sessionService.deleteSession(deletedSessionId);
+        const deleted = await sessionService.deleteSession(request.params.id);
         if (!deleted) {
             return reply.status(404).send({message: "Session not found"});
         }
-        disconnectSessionClients(deletedSessionId);
+        disconnectSessionClients(request.params.id);
         return {ok: true};
     });
 
@@ -131,9 +117,13 @@ export async function registerApiRoutes(
 
         for (const subdir of ["avatars", "collages"] as const) {
             const dir = path.join(sessionAssetsPath, subdir);
-            if (!fs.existsSync(dir)) continue;
+            if (!fs.existsSync(dir)) {
+                continue;
+            }
             for (const filename of fs.readdirSync(dir)) {
-                if (!filename.endsWith(".png")) continue;
+                if (!filename.endsWith(".png")) {
+                    continue;
+                }
                 result.push({
                     type: subdir === "avatars" ? "avatar" : "collage",
                     filename,
@@ -154,8 +144,6 @@ export async function registerApiRoutes(
         const sessionId = request.params.id;
         const {playerId, collageId, imageDataUrl} = request.body ?? {};
 
-        console.log(`[collage-image] POST for session=${sessionId}, player=${playerId}, collage=${collageId}, dataLen=${imageDataUrl?.length ?? 0}`);
-
         if (!playerId || !collageId || !imageDataUrl) {
             return reply.status(400).send({message: "Missing playerId, collageId, or imageDataUrl"});
         }
@@ -166,17 +154,9 @@ export async function registerApiRoutes(
         }
 
         const playerName = state.players[playerId]?.name ?? "anon";
+        const prompt = state.gameState.currentPrompt ?? "";
 
-        // Retrieve current round prompt from modeState
-        const modeState = state.modeState as StickerCollageModeState | undefined;
-        const prompt = modeState?.currentPrompt ?? "";
-
-        // Save the image asset
-        const saved = await assetRepository.saveCollage({
-            sessionId, playerId, playerName, collageId, imageDataUrl, prompt,
-        });
-
-        // Update snapshotUrl on the matching collage in session state
+        const saved = await assetRepository.saveCollage({sessionId, playerId, playerName, collageId, imageDataUrl, prompt});
         await sessionService.updateCollageSnapshot(sessionId, collageId, playerId, saved.publicUrl);
 
         return {ok: true, publicUrl: saved.publicUrl};

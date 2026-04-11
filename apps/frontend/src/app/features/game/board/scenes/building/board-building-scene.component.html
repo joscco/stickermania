@@ -1,8 +1,8 @@
 <div class="h-full flex flex-col">
   <!-- Prompt banner -->
   <div animOnInit="banner" class="bg-linear-to-r from-purple-600 to-pink-500 text-white px-8 py-6 text-center rounded-2xl mx-4 mt-4 shadow-lg">
-    <span class="text-sm font-medium opacity-70 uppercase tracking-wider">Runde {{ modeState()?.currentRoundIndex ?? 0 }}</span>
-    <h1 class="text-3xl font-black mt-1">{{ modeState()?.currentPrompt ?? '' }}</h1>
+    <span class="text-sm font-medium opacity-70 uppercase tracking-wider">Runde {{ gameState()?.currentRoundIndex ?? 0 }}</span>
+    <h1 class="text-3xl font-black mt-1">{{ gameState()?.currentPrompt ?? '' }}</h1>
   </div>
 
   <!-- Round info: newly unlocked pack + guaranteed pack -->
@@ -26,38 +26,16 @@
   <!-- Player status -->
   <div class="flex-1 flex flex-col items-center justify-center px-8">
     <div animOnInit="players" [animDelay]="0.2" class="flex flex-wrap justify-center gap-4 max-w-3xl">
-      @for (player of connectedPlayers(); track player.id) {
-        <div class="flex flex-col items-center gap-1.5 transition-[opacity]"
-             [class.opacity-40]="!isDrawing(player.id) && !hasSubmitted(player.id)">
-          <div class="relative">
-            @if (player.avatarUrl) {
-              <img [src]="player.avatarUrl" [alt]="player.name"
-                   class="w-14 h-14 rounded-2xl border-2 bg-white object-cover shadow-md"
-                   [class.border-purple-400]="isDrawing(player.id)"
-                   [class.border-emerald-400]="hasSubmitted(player.id)"
-                   [class.border-stone-200]="!isDrawing(player.id) && !hasSubmitted(player.id)"
-                   (error)="$any($event.target).style.display='none'" />
-            } @else {
-              <div class="w-14 h-14 rounded-2xl border-2 bg-stone-100 grid place-items-center text-xl shadow-md"
-                   [class.border-purple-400]="isDrawing(player.id)"
-                   [class.border-emerald-400]="hasSubmitted(player.id)"
-                   [class.border-stone-200]="!isDrawing(player.id) && !hasSubmitted(player.id)">
-                🙂
-              </div>
-            }
-            @if (hasSubmitted(player.id)) {
-              <div class="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full grid place-items-center text-white text-xs shadow">✓</div>
-            } @else if (isDrawing(player.id)) {
-              <div class="absolute -top-1 -right-1 w-5 h-5 bg-purple-500 rounded-full grid place-items-center text-white text-xs shadow animate-pulse">🎨</div>
-            }
-          </div>
-          <span class="text-xs font-medium text-stone-600 max-w-14 truncate">{{ player.name || 'Spieler' }}</span>
-        </div>
+      @for (player of roundParticipants(); track player.id) {
+        <app-board-player-avatar
+          [player]="player"
+          [status]="playerStatus(player.id)"
+        />
       }
     </div>
 
     <div animOnInit="item" [animDelay]="0.35" class="mt-8 text-center">
-      <p class="text-lg font-medium text-stone-600">{{ submissionCount() }}/{{ connectedPlayers().length }} eingereicht</p>
+      <p class="text-lg font-medium text-stone-600">{{ submissionCount() }}/{{ roundParticipants().length }} eingereicht</p>
     </div>
   </div>
 

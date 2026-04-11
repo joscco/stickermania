@@ -54,7 +54,7 @@ export class PlayerBuildingComponent implements OnDestroy {
 
         let collageId: string | null = null;
         for (let attempt = 0; attempt < 30; attempt++) {
-            const ms = this.stickerService.modeState();
+            const ms = this.stickerService.gameState();
             if (ms) {
                 const mine = (ms.submissions[ms.currentRoundIndex] ?? []).find(s => s.playerId === playerId);
                 if (mine) { collageId = mine.id; break; }

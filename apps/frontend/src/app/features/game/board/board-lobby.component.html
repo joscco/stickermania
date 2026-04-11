@@ -45,14 +45,17 @@
           @for (session of sessions(); track session.sessionId) {
             <div
               animOnInit="item"
+              [animPresence]="!isSessionLeaving(session.sessionId)"
+              animPresenceType="item"
               class="rounded-2xl bg-white border border-black/5 px-4 py-3 flex items-center gap-4 hover:bg-stone-50 cursor-pointer transition-colors group"
+              [class.pointer-events-none]="isSessionLeaving(session.sessionId)"
               (click)="openSession(session.sessionCode)"
             >
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
                   <span class="font-bold tracking-widest text-stone-900">{{ session.sessionCode }}</span>
                   <span
-                    class="text-xs px-2 py-0.5 rounded-full bg-stone-100 text-stone-500">{{ modeLabel(session.activeMode) }}</span>
+                    class="text-xs px-2 py-0.5 rounded-full bg-stone-100 text-stone-500">Stickermania</span>
                 </div>
                 <div class="text-xs text-stone-400 mt-0.5">
                   {{ session.playerCount }} Spieler · {{ timeAgo(session.createdAt) }}
