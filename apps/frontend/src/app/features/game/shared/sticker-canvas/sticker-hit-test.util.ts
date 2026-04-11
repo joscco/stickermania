@@ -1,11 +1,8 @@
 import type { StickerPlacement, StickerDefinition } from "@birthday/shared";
 
-/** Size in px of the rendered sticker (matches w-16 h-16 = 64px). */
-const STICKER_RENDER_SIZE = 64;
-
 /**
- * Point-in-polygon test using the ray-casting algorithm.
- * `polygon` is an array of {x, y} vertices forming a closed polygon.
+ * Point-in-polygon test (ray-casting).
+ * Polygon vertices are normalised 0–1 relative to the sticker bounding box.
  */
 export function pointInPolygon(
     px: number,
@@ -16,99 +13,58 @@ export function pointInPolygon(
     for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
         const xi = polygon[i].x, yi = polygon[i].y;
         const xj = polygon[j].x, yj = polygon[j].y;
-
-        const intersect =
-            yi > py !== yj > py &&
-            px < ((xj - xi) * (py - yi)) / (yj - yi) + xi;
-
-        if (intersect) inside = !inside;
+        if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi)
+            inside = !inside;
     }
     return inside;
 }
 
 /**
- * Transform a canvas-local point into a sticker's local coordinate space,
- * accounting for position, scale, and rotation.
+ * Hit-test a client-space point against all stickers, topmost first.
  *
- * Returns normalised coordinates (0–1) relative to the sticker's bounding box.
- * Returns null if the point is outside the bounding box entirely.
- */
-export function canvasPointToStickerLocal(
-    canvasX: number,
-    canvasY: number,
-    placement: StickerPlacement,
-): { localX: number; localY: number } | null {
-    const size = STICKER_RENDER_SIZE * placement.scale;
-    // Sticker center = top-left + half size
-    const cx = placement.x + size / 2;
-    const cy = placement.y + size / 2;
-
-    // Translate to sticker center
-    let dx = canvasX - cx;
-    let dy = canvasY - cy;
-
-    // Inverse-rotate around the center
-    const rad = (-placement.rotation * Math.PI) / 180;
-    const cos = Math.cos(rad);
-    const sin = Math.sin(rad);
-    const rx = dx * cos - dy * sin;
-    const ry = dx * sin + dy * cos;
-
-    // Back to top-left relative, then normalise to 0–1
-    const localX = (rx + size / 2) / size;
-    const localY = (ry + size / 2) / size;
-
-    // Quick bounding-box rejection
-    if (localX < 0 || localX > 1 || localY < 0 || localY > 1) {
-        return null;
-    }
-
-    return { localX, localY };
-}
-
-/**
- * Hit-test a point against a single sticker placement.
+ * Coordinate model: p.x / p.y = visual center of each sticker.
+ * Supports scale, scaleX, scaleY, flipX, flipY, rotation.
  *
- * 1. Transform the point into the sticker's local (rotation-aware) coordinate space.
- * 2. If the sticker has a `hitboxPolygon`, use point-in-polygon.
- * 3. Otherwise, the bounding-box check suffices.
+ * @param clientX      Pointer position in client (viewport) pixels
+ * @param clientY      Pointer position in client (viewport) pixels
+ * @param canvasRect   getBoundingClientRect() of the canvas element
+ * @param stickers     Current placement array
+ * @param getSize      Returns rendered {w, h} for a given instanceId
+ * @param catalogMap   stickerId → StickerDefinition (for hitbox polygons)
  */
-export function hitTestSingleSticker(
-    canvasX: number,
-    canvasY: number,
-    placement: StickerPlacement,
-    definition: StickerDefinition | undefined,
-): boolean {
-    const local = canvasPointToStickerLocal(canvasX, canvasY, placement);
-    if (!local) return false;
-
-    // If polygon is defined, use it
-    if (definition?.hitboxPolygon && definition.hitboxPolygon.length >= 3) {
-        return pointInPolygon(local.localX, local.localY, definition.hitboxPolygon);
-    }
-
-    // Bounding box already passed
-    return true;
-}
-
-/**
- * Hit-test all stickers on the canvas (highest z-index first).
- * Returns the instanceId of the topmost hit sticker, or null.
- */
-export function hitTestStickers(
-    canvasX: number,
-    canvasY: number,
+export function hitTestOnCanvas(
+    clientX: number,
+    clientY: number,
+    canvasRect: DOMRect,
     stickers: StickerPlacement[],
+    getSize: (instanceId: string) => { w: number; h: number },
     catalogMap: Map<string, StickerDefinition>,
 ): string | null {
     const sorted = [...stickers].sort((a, b) => b.zIndex - a.zIndex);
 
     for (const p of sorted) {
+        const { w, h } = getSize(p.instanceId);
+        // Offset from sticker center in client space
+        const ox = clientX - (canvasRect.left + p.x);
+        const oy = clientY - (canvasRect.top + p.y);
+        // Rotate into sticker-local space
+        const negRad = -p.rotation * Math.PI / 180;
+        const ux = ox * Math.cos(negRad) - oy * Math.sin(negRad);
+        const uy = ox * Math.sin(negRad) + oy * Math.cos(negRad);
+        const pp = p as any;
+        const scaleX = (p.flipX ? -1 : 1) * p.scale * (pp.scaleX ?? 1);
+        const scaleY = (p.flipY ? -1 : 1) * p.scale * (pp.scaleY ?? 1);
+        if (scaleX === 0 || scaleY === 0) continue;
+        // Normalised 0–1 coordinates (0.5, 0.5 = center)
+        const lx = ux / (w * scaleX) + 0.5;
+        const ly = uy / (h * scaleY) + 0.5;
+        if (lx < 0 || lx > 1 || ly < 0 || ly > 1) continue;
         const def = catalogMap.get(p.stickerId);
-        if (hitTestSingleSticker(canvasX, canvasY, p, def)) {
-            return p.instanceId;
+        if (def?.hitboxPolygon && def.hitboxPolygon.length >= 3) {
+            if (pointInPolygon(lx, ly, def.hitboxPolygon)) return p.instanceId;
+            continue;
         }
+        return p.instanceId;
     }
     return null;
 }
-

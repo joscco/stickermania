@@ -1,0 +1,67 @@
+@if (box()) {
+  @let b   = box()!;
+  @let pad = 10;
+  @let cx  = b.x + b.w / 2;
+  @let cy  = b.y + b.h / 2;
+  @let rad = rotation() * Math.PI / 180;
+
+  <!-- Selection rectangle -->
+  @let tl = rotatePt(b.x - pad,       b.y - pad,       cx, cy, rad);
+  @let tr = rotatePt(b.x + b.w + pad, b.y - pad,       cx, cy, rad);
+  @let br = rotatePt(b.x + b.w + pad, b.y + b.h + pad, cx, cy, rad);
+  @let bl = rotatePt(b.x - pad,       b.y + b.h + pad, cx, cy, rad);
+  <svg class="absolute inset-0 w-full h-full pointer-events-none overflow-visible" style="z-index:8000;">
+    <polygon [attr.points]="svgRect(tl,tr,br,bl)" fill="none" stroke="#a855f7" stroke-width="2" stroke-dasharray="6 3"/>
+  </svg>
+
+  <!-- Rotation stem + handle -->
+  @let rotAnchor = rotatePt(cx, b.y - pad - 24, cx, cy, rad);
+  @let rotStem0  = rotatePt(cx, b.y - pad,      cx, cy, rad);
+  <svg class="absolute inset-0 w-full h-full pointer-events-none overflow-visible" style="z-index:8050;">
+    <line [attr.x1]="rotStem0.x" [attr.y1]="rotStem0.y" [attr.x2]="rotAnchor.x" [attr.y2]="rotAnchor.y" stroke="#a855f7" stroke-width="2"/>
+  </svg>
+  <div class="absolute select-none touch-none"
+       [style.left.px]="rotAnchor.x - 8" [style.top.px]="rotAnchor.y - 8"
+       style="z-index:8100; cursor:grab; pointer-events:auto;"
+       (pointerdown)="onHandleDown($event, 'rotate')">
+    <div class="w-4 h-4 rounded-full bg-white border-2 border-purple-500 shadow" style="box-shadow:0 1px 4px rgba(0,0,0,.2);"></div>
+  </div>
+
+  <!-- Corner handles -->
+  @for (corner of corners(); track corner.id) {
+    <div class="absolute w-4 h-4 bg-white border-2 border-purple-500 rounded shadow select-none touch-none"
+         [style.left.px]="corner.x - 8" [style.top.px]="corner.y - 8"
+         [style.cursor]="corner.cursor"
+         style="z-index:8100; pointer-events:auto;"
+         (pointerdown)="onHandleDown($event, corner.id)">
+    </div>
+  }
+
+  <!-- Stretch side handles (stretch mode only) -->
+  @if (stretchMode()) {
+    @for (side of sides(); track side.id) {
+      <div class="absolute w-3.5 h-3.5 bg-amber-400 border-2 border-amber-600 rounded-full shadow select-none touch-none"
+           [style.left.px]="side.x - 7" [style.top.px]="side.y - 7"
+           [style.cursor]="side.cursor"
+           style="z-index:8100; pointer-events:auto;"
+           (pointerdown)="onHandleDown($event, side.id)">
+      </div>
+    }
+    <div class="absolute pointer-events-none text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5"
+         [style.left.px]="b.x" [style.top.px]="b.y - pad - 44"
+         style="z-index:8200;">Verformen</div>
+  }
+
+  <!-- Context-menu toggle -->
+  @let menuPt = rotatePt(b.x + b.w + pad + 4, b.y - pad, cx, cy, rad);
+  <div class="absolute flex items-center justify-center w-7 h-7 rounded-full bg-white border border-black/12 shadow text-stone-500 select-none touch-none cursor-pointer"
+       [style.left.px]="menuPt.x" [style.top.px]="menuPt.y - 14"
+       style="z-index:8200; pointer-events:auto;"
+       title="Optionen"
+       (pointerdown)="$event.stopPropagation(); menuToggle.emit()">
+    <svg viewBox="0 0 16 16" class="w-4 h-4" fill="currentColor">
+      <circle cx="8" cy="3" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="8" cy="13" r="1.3"/>
+    </svg>
+  </div>
+}
+

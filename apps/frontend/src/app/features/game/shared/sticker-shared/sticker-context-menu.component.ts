@@ -16,110 +16,11 @@ const BTN_ACTIVE = BTN + ' bg-purple-50 text-purple-700';
     selector: 'app-sticker-context-menu',
     standalone: true,
     imports: [CommonModule],
-    template: `
-    @if (visible()) {
-      <div
-        #panel
-        class="absolute bg-white rounded-xl shadow-lg border border-black/8 flex flex-col gap-0.5 p-1 min-w-36 text-xs select-none"
-        style="z-index: 9500;"
-        [style.left.px]="clampedX()"
-        [style.top.px]="clampedY()"
-        (pointerdown)="$event.stopPropagation()"
-      >
-        <button [class]="BTN_DELETE" (click)="emit('delete')">
-          <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M2 4h12M5 4V2h6v2M4 4l.8 10h6.4L12 4" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Löschen
-        </button>
-
-        <div class="h-px bg-black/6 my-0.5"></div>
-
-        <button [class]="BTN" (click)="emit('duplicate')">
-          <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
-            <rect x="1" y="5" width="9" height="10" rx="1.5" stroke-linecap="round"/>
-            <path d="M5 5V3a1 1 0 011-1h7a1 1 0 011 1v9a1 1 0 01-1 1h-2" stroke-linecap="round"/>
-          </svg>
-          Duplizieren
-        </button>
-
-        <button [class]="BTN" (click)="emit('flipH')">
-          <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M8 2v12M3 5l2.5 3L3 11M13 5l-2.5 3L13 11" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Spiegeln
-        </button>
-
-        @if (!isMulti()) {
-          <button [class]="stretchMode() ? BTN_ACTIVE : BTN" (click)="emit('toggleStretch')">
-            <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
-              <rect x="2" y="5" width="12" height="6" rx="1" stroke-linecap="round"/>
-              <path d="M5 8h6M2 8H0M16 8h-2" stroke-linecap="round"/>
-            </svg>
-            {{ stretchMode() ? 'Verformen beenden' : 'Verformen' }}
-          </button>
-        }
-
-        <div class="h-px bg-black/6 my-0.5"></div>
-
-        <button [class]="BTN" (click)="emit('zFront')">
-          <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M2 12l6-8 6 8" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M2 8l6-4 6 4" stroke-linecap="round" stroke-linejoin="round" opacity=".4"/>
-          </svg>
-          Ganz nach vorne
-        </button>
-        <button [class]="BTN" (click)="emit('zForward')">
-          <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M2 11l6-6 6 6" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Eine Ebene nach vorne
-        </button>
-        <button [class]="BTN" (click)="emit('zBackward')">
-          <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M2 5l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Eine Ebene nach hinten
-        </button>
-        <button [class]="BTN" (click)="emit('zBack')">
-          <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M2 4l6 8 6-8" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M2 8l6 4 6-4" stroke-linecap="round" stroke-linejoin="round" opacity=".4"/>
-          </svg>
-          Ganz nach hinten
-        </button>
-
-        @if (canGroup() || canUngroup()) {
-          <div class="h-px bg-black/6 my-0.5"></div>
-          @if (canGroup()) {
-            <button [class]="BTN" (click)="emit('group')">
-              <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
-                <rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/>
-                <rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/>
-                <path d="M4 7v2M12 7v2M7 4h2M7 12h2" stroke-linecap="round"/>
-              </svg>
-              Gruppieren
-            </button>
-          }
-          @if (canUngroup()) {
-            <button [class]="BTN" (click)="emit('ungroup')">
-              <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
-                <rect x="1" y="1" width="6" height="6" rx="1" stroke-dasharray="2 1.5"/>
-                <rect x="9" y="1" width="6" height="6" rx="1" stroke-dasharray="2 1.5"/>
-                <rect x="1" y="9" width="6" height="6" rx="1" stroke-dasharray="2 1.5"/>
-                <rect x="9" y="9" width="6" height="6" rx="1" stroke-dasharray="2 1.5"/>
-              </svg>
-              Gruppierung aufheben
-            </button>
-          }
-        }
-      </div>
-    }
-  `,
+    templateUrl: './sticker-context-menu.component.html',
     host: {'style': 'pointer-events: none;', '[attr.data-canvas-overlay]': '""'},
 })
 export class StickerContextMenuComponent implements AfterViewChecked {
-    protected readonly BTN       = BTN;
+    protected readonly BTN        = BTN;
     protected readonly BTN_ACTIVE = BTN_ACTIVE;
     protected readonly BTN_DELETE = BTN + ' text-red-500';
 
@@ -150,8 +51,6 @@ export class StickerContextMenuComponent implements AfterViewChecked {
         this.clampedY.set(Math.min(this.anchorY(), this.canvasH() - ph - pad));
     }
 
-    emit(action: ContextMenuAction): void {
-        this.action.emit(action);
-    }
+    emit(action: ContextMenuAction): void {this.action.emit(action);}
 }
 

@@ -1,4 +1,5 @@
 import type {StickerPlacement} from '@birthday/shared';
+import type {BoundingBox} from './sticker-types';
 
 /**
  * Pure functions for transforming StickerPlacement arrays.
@@ -207,5 +208,48 @@ export function duplicatePlacements(
         return orig ? [{...orig, instanceId: generateInstanceId(), x: orig.x + 16, y: orig.y + 16, zIndex: maxZ + i + 1, groupId: undefined}] : [];
     });
     return {updated: [...placements, ...copies], newIds: copies.map(c => c.instanceId)};
+}
+
+// ── Selection geometry ────────────────────────────────────────────────────────
+
+/**
+ * Computes the bounding box + rotation for the current selection.
+ * Single selection: box is axis-aligned around the sticker center, rotation = sticker rotation.
+ * Multi selection: axis-aligned envelope of all rotated corners, rotation = 0.
+ */
+export function computeSelectionInfo(
+    placements: StickerPlacement[],
+    ids: string[],
+    getSize: (instanceId: string) => {w: number; h: number},
+): {box: BoundingBox; rotation: number} | null {
+    if (!ids.length) return null;
+    const selected = placements.filter(p => ids.includes(p.instanceId));
+    if (!selected.length) return null;
+
+    if (ids.length === 1) {
+        const p  = selected[0];
+        const pp = p as any;
+        const {w, h} = getSize(p.instanceId);
+        const hw = w * p.scale * (pp.scaleX ?? 1) / 2;
+        const hh = h * p.scale * (pp.scaleY ?? 1) / 2;
+        return {box: {x: p.x - hw, y: p.y - hh, w: hw * 2, h: hh * 2}, rotation: p.rotation};
+    }
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const p of selected) {
+        const pp = p as any;
+        const {w, h} = getSize(p.instanceId);
+        const hw  = w * p.scale * (pp.scaleX ?? 1) / 2;
+        const hh  = h * p.scale * (pp.scaleY ?? 1) / 2;
+        const rad = p.rotation * Math.PI / 180;
+        const cos = Math.cos(rad), sin = Math.sin(rad);
+        for (const [ex, ey] of [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]] as [number, number][]) {
+            const rx = p.x + ex * cos - ey * sin;
+            const ry = p.y + ex * sin + ey * cos;
+            if (rx < minX) minX = rx; if (rx > maxX) maxX = rx;
+            if (ry < minY) minY = ry; if (ry > maxY) maxY = ry;
+        }
+    }
+    return {box: {x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY)}, rotation: 0};
 }
 

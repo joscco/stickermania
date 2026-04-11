@@ -3,7 +3,6 @@ import {
     computed,
     input,
     output,
-    OnDestroy,
     signal,
     ViewChild,
 } from "@angular/core";
@@ -36,7 +35,7 @@ export {CANVAS_STICKER_PX};
     templateUrl: "./sticker-editor.component.html",
     host: {"class": "flex flex-col overflow-hidden"},
 })
-export class StickerEditorComponent implements OnDestroy {
+export class StickerEditorComponent {
     // ── Inputs / Outputs ──────────────────────────────────────────
     /** Stickers available in the palette (player hand or full catalog). */
     readonly paletteStickers  = input<StickerDefinition[]>([]);
@@ -105,5 +104,4 @@ export class StickerEditorComponent implements OnDestroy {
         return this.stickerCanvas.toDataUrl();
     }
 
-    ngOnDestroy(): void {}
 }
