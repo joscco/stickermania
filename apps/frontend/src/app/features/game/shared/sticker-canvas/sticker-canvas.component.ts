@@ -632,11 +632,13 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         this.gesture.onPointerDown(t.identifier, t.clientX, t.clientY);
     };
     const onTouchMove = (ev: TouchEvent) => {
+      if (isOverlay(ev)) return;
       ev.preventDefault();
       for (const t of Array.from(ev.changedTouches))
         this.gesture.onPointerMove(t.identifier, t.clientX, t.clientY);
     };
     const onTouchEnd = (ev: TouchEvent) => {
+      if (isOverlay(ev)) return;
       ev.preventDefault();
       for (const t of Array.from(ev.changedTouches))
         this.gesture.onPointerUp(t.identifier, t.clientX, t.clientY);

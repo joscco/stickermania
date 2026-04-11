@@ -19,7 +19,7 @@ import {registerWebSocket} from "./http/wsPlugin.js";
 const backendConfig = loadBackendConfig({argv: process.argv, cwd: process.cwd()});
 const {devMode} = backendConfig;
 
-const app = Fastify({logger: false, bodyLimit: 10 * 1024 * 1024}); // 10 MB for collage image uploads
+const app = Fastify({logger: false, bodyLimit: 10 * 1024 * 1024, trustProxy: true}); // 10 MB for collage image uploads
 
 // ─── Plugins ────────────────────────────────────────────────────
 
