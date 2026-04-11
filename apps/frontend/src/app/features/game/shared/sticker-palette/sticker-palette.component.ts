@@ -13,7 +13,7 @@ import {
 import {CommonModule} from "@angular/common";
 import gsap from "gsap";
 import type {StickerDefinition} from "@birthday/shared";
-import {CANVAS_STICKER_PX} from '../sticker-editor/sticker-editor.component';
+import {CANVAS_STICKER_PX} from '../sticker-shared/sticker-types';
 
 export interface StickerDroppedEvent {
     stickerId: string;

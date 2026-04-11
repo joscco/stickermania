@@ -27,17 +27,12 @@
        all around the same pivot point (p.x, p.y). -->
   @for (sticker of stickers(); track sticker.instanceId) {
     <div
-      class="absolute select-none w-max"
-      [class.ring-2]="interactive() && isSelected(sticker.instanceId)"
-      [class.ring-purple-400]="interactive() && isSelected(sticker.instanceId) && !isLassoSelected(sticker.instanceId)"
-      [class.ring-amber-400]="interactive() && isLassoSelected(sticker.instanceId)"
-      [class.rounded-lg]="interactive() && isSelected(sticker.instanceId)"
+      class="absolute select-none w-max transition-opacity origin-top-left"
       [class.opacity-40]="interactive() && dragNearEdge() && isSelected(sticker.instanceId)"
       [style.left.px]="sticker.x"
       [style.top.px]="sticker.y"
       [style.transform]="getStickerTransform(sticker)"
       [style.z-index]="sticker.zIndex"
-      style="transform-origin: 0 0;"
       [attr.data-instance-id]="sticker.instanceId"
       [attr.data-removal-wrapper-for]="sticker.instanceId"
     >
@@ -47,8 +42,8 @@
         <svg class="absolute pointer-events-none" style="left:-5%;top:-5%;width:110%;height:110%;overflow:visible;" viewBox="-0.05 -0.05 1.1 1.1" preserveAspectRatio="none">
           <polygon
             [attr.points]="getHitboxSvgPoints(sticker.stickerId)"
-            fill="none"
             [attr.stroke]="isLassoSelected(sticker.instanceId) ? '#f59e0b' : '#a855f7'"
+            fill="none"
             vector-effect="non-scaling-stroke"
             stroke-width="2"
             stroke-linejoin="round"
@@ -62,8 +57,8 @@
   @if (interactive() && lassoPath() && lassoPath()!.length > 1) {
     <svg class="absolute inset-0 w-full h-full pointer-events-none" style="z-index:8900;overflow:visible;">
       <polyline
-        [attr.points]="lassoPath()!.map(p => p.x + ',' + p.y).join(' ')"
-        fill="rgba(168,85,247,0.08)"
+        [attr.points]="lassoPoints()"
+        fill="none"
         stroke="#a855f7"
         stroke-width="1.5"
         stroke-dasharray="5 3"

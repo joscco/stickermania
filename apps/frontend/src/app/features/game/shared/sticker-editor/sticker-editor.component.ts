@@ -26,8 +26,8 @@ import {StickerCanvasComponent} from '../sticker-canvas/sticker-canvas.component
  * matching the ghost visual.
  */
 
-/** Base rendered size of a sticker on the canvas (matches `h-16` in the template). */
-export const CANVAS_STICKER_PX = 64;
+import {CANVAS_STICKER_PX} from '../sticker-shared/sticker-types';
+export {CANVAS_STICKER_PX};
 
 @Component({
     selector: "app-sticker-editor",

@@ -5,9 +5,9 @@ const MAX_HISTORY = 50;
 
 /**
  * Linear undo/redo stack for placement arrays.
- * Instantiated per StickerEditorComponent.
+ * Instantiated once per canvas/editor.
  */
-export class EditorUndoStack {
+export class StickerUndoStack {
     private history: StickerPlacement[][] = [];
     private pointer = -1;
 
@@ -15,12 +15,9 @@ export class EditorUndoStack {
     readonly canRedo = signal(false);
 
     push(placements: StickerPlacement[]): void {
-        // Trim forward history
         this.history = this.history.slice(0, this.pointer + 1);
-        // Deduplicate: don't push if nothing changed
         const last = this.history[this.pointer];
         if (last && JSON.stringify(last) === JSON.stringify(placements)) return;
-        // Enforce max size
         if (this.history.length >= MAX_HISTORY) {
             this.history.shift();
             this.pointer = Math.max(0, this.pointer - 1);

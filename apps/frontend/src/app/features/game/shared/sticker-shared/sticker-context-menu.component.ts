@@ -9,8 +9,7 @@ export type ContextMenuAction =
     | 'group' | 'ungroup'
     | 'toggleStretch' | 'duplicate';
 
-/** Shared button classes for context menu items. */
-const BTN = 'flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-left text-stone-700 hover:bg-stone-100 active:bg-stone-200 transition-colors pointer-events-auto text-xs';
+const BTN       = 'flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-left text-stone-700 hover:bg-stone-100 active:bg-stone-200 transition-colors pointer-events-auto text-xs';
 const BTN_ACTIVE = BTN + ' bg-purple-50 text-purple-700';
 
 @Component({
@@ -27,8 +26,7 @@ const BTN_ACTIVE = BTN + ' bg-purple-50 text-purple-700';
         [style.top.px]="clampedY()"
         (pointerdown)="$event.stopPropagation()"
       >
-        <!-- Delete -->
-        <button [class]="BTN + ' text-red-500'" (click)="emit('delete')">
+        <button [class]="BTN_DELETE" (click)="emit('delete')">
           <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
             <path d="M2 4h12M5 4V2h6v2M4 4l.8 10h6.4L12 4" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -37,7 +35,6 @@ const BTN_ACTIVE = BTN + ' bg-purple-50 text-purple-700';
 
         <div class="h-px bg-black/6 my-0.5"></div>
 
-        <!-- Duplicate -->
         <button [class]="BTN" (click)="emit('duplicate')">
           <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
             <rect x="1" y="5" width="9" height="10" rx="1.5" stroke-linecap="round"/>
@@ -46,7 +43,6 @@ const BTN_ACTIVE = BTN + ' bg-purple-50 text-purple-700';
           Duplizieren
         </button>
 
-        <!-- Flip -->
         <button [class]="BTN" (click)="emit('flipH')">
           <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
             <path d="M8 2v12M3 5l2.5 3L3 11M13 5l-2.5 3L13 11" stroke-linecap="round" stroke-linejoin="round"/>
@@ -55,7 +51,6 @@ const BTN_ACTIVE = BTN + ' bg-purple-50 text-purple-700';
         </button>
 
         @if (!isMulti()) {
-          <!-- Stretch mode -->
           <button [class]="stretchMode() ? BTN_ACTIVE : BTN" (click)="emit('toggleStretch')">
             <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
               <rect x="2" y="5" width="12" height="6" rx="1" stroke-linecap="round"/>
@@ -67,7 +62,6 @@ const BTN_ACTIVE = BTN + ' bg-purple-50 text-purple-700';
 
         <div class="h-px bg-black/6 my-0.5"></div>
 
-        <!-- Z-order -->
         <button [class]="BTN" (click)="emit('zFront')">
           <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8">
             <path d="M2 12l6-8 6 8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -122,11 +116,12 @@ const BTN_ACTIVE = BTN + ' bg-purple-50 text-purple-700';
       </div>
     }
   `,
-    host: {style: 'pointer-events: none;', 'data-canvas-overlay': ''},
+    host: {'style': 'pointer-events: none;', '[attr.data-canvas-overlay]': '""'},
 })
 export class StickerContextMenuComponent implements AfterViewChecked {
     protected readonly BTN       = BTN;
     protected readonly BTN_ACTIVE = BTN_ACTIVE;
+    protected readonly BTN_DELETE = BTN + ' text-red-500';
 
     readonly visible     = input<boolean>(false);
     readonly anchorX     = input<number>(0);
@@ -147,9 +142,9 @@ export class StickerContextMenuComponent implements AfterViewChecked {
 
     ngAfterViewChecked(): void {
         if (!this.visible() || !this.panelRef) return;
-        const el = this.panelRef.nativeElement;
-        const pw = el.offsetWidth  || 148;
-        const ph = el.offsetHeight || 200;
+        const el  = this.panelRef.nativeElement;
+        const pw  = el.offsetWidth  || 148;
+        const ph  = el.offsetHeight || 200;
         const pad = 6;
         this.clampedX.set(Math.min(this.anchorX(), this.canvasW() - pw - pad));
         this.clampedY.set(Math.min(this.anchorY(), this.canvasH() - ph - pad));
