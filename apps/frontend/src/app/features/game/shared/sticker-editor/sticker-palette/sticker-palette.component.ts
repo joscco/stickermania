@@ -1,19 +1,11 @@
 import {
-    Component,
-    ElementRef,
-    input,
-    output,
-    signal,
-    computed,
-    ViewChild,
-    AfterViewInit,
-    OnDestroy,
-    NgZone,
-} from "@angular/core";
-import {CommonModule} from "@angular/common";
-import gsap from "gsap";
-import type {StickerDefinition} from "@birthday/shared";
-import {CANVAS_STICKER_PX} from '../sticker-shared/sticker-types';
+    Component, ElementRef, input, output, signal, computed,
+    ViewChild, AfterViewInit, OnDestroy, NgZone,
+} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import gsap from 'gsap';
+import type {StickerDefinition} from '@birthday/shared';
+import {PaletteDragController} from './palette-drag-controller';
 
 export interface StickerDroppedEvent {
     stickerId: string;
@@ -24,60 +16,97 @@ export interface StickerDroppedEvent {
 }
 
 @Component({
-    selector: "app-sticker-palette",
+    selector: 'app-sticker-palette',
     standalone: true,
     imports: [CommonModule],
-    templateUrl: "./sticker-palette.component.html",
-    host: {"class": "flex flex-col"},
+    templateUrl: './sticker-palette.component.html',
+    host: {'class': 'flex flex-col'},
 })
 export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
-    // ── Inputs / Outputs ──────────────────────────────────────────
-    readonly stickers    = input<StickerDefinition[]>([]);
-    readonly canAddMore  = input<boolean>(true);
+
+    // ── Inputs / Outputs ──────────────────────────────────────────────────────
+
+    readonly stickers       = input<StickerDefinition[]>([]);
+    readonly canAddMore     = input<boolean>(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    readonly dropTarget  = input<any>(null);
+    readonly dropTarget     = input<any>(null);
     readonly stickerDropped = output<StickerDroppedEvent>();
 
-    @ViewChild("rowEl") rowEl!: ElementRef<HTMLDivElement>;
+    @ViewChild('rowEl') rowEl!: ElementRef<HTMLDivElement>;
 
-    public readonly activeDragId = signal<string | null>(null);
+    readonly activeDragId = signal<string | null>(null);
 
-    // ── Paging ───────────────────────────────────────────────────
-    public readonly pageSize    = signal(6);
-    public readonly currentPage = signal(0);
+    // ── Paging ────────────────────────────────────────────────────────────────
 
-    public readonly pageCount = computed(() =>
-        Math.max(1, Math.ceil(this.stickers().length / this.pageSize()))
+    readonly pageSize    = signal(6);
+    readonly currentPage = signal(0);
+
+    readonly pageCount = computed(() =>
+        Math.max(1, Math.ceil(this.stickers().length / this.pageSize())),
     );
-    public readonly pageStickers = computed(() => {
+    readonly pageStickers = computed(() => {
         const start = this.currentPage() * this.pageSize();
         return this.stickers().slice(start, start + this.pageSize());
     });
-    public readonly canPrev = computed(() => this.currentPage() > 0);
-    public readonly canNext = computed(() => this.currentPage() < this.pageCount() - 1);
+    readonly canPrev = computed(() => this.currentPage() > 0);
+    readonly canNext = computed(() => this.currentPage() < this.pageCount() - 1);
 
-    // ── Drag state ───────────────────────────────────────────────
-    private ghostEl: HTMLElement | null = null;
-    private dragRenderedWidth  = CANVAS_STICKER_PX;
-    private dragRenderedHeight = CANVAS_STICKER_PX;
-    private dragStickerId: string | null = null;
-    private activePointerId: number | null = null;
+    // ── Internals ─────────────────────────────────────────────────────────────
 
+    private dragController!: PaletteDragController;
     private resizeObserver: ResizeObserver | null = null;
-    private boundMove = this.onGlobalMove.bind(this);
-    private boundUp   = this.onGlobalUp.bind(this);
 
-    constructor(private zone: NgZone) {}
+    constructor(private readonly zone: NgZone) {}
 
     ngAfterViewInit(): void {
+        this.dragController = new PaletteDragController(
+            () => this.resolveDropTarget(),
+            ev  => this.stickerDropped.emit(ev),
+            id  => this.activeDragId.set(id),
+        );
         this.resizeObserver = new ResizeObserver(() => this.recalcPageSize());
         if (this.rowEl?.nativeElement) this.resizeObserver.observe(this.rowEl.nativeElement);
         this.recalcPageSize();
     }
 
     ngOnDestroy(): void {
-        this.cleanup(this.canvasEl ?? undefined);
+        this.dragController?.destroy();
         this.resizeObserver?.disconnect();
+    }
+
+    // ── Paging ────────────────────────────────────────────────────────────────
+
+    prevPage(): void {
+        if (this.canPrev()) this.animatePage(() => this.currentPage.update(p => p - 1));
+    }
+
+    nextPage(): void {
+        if (this.canNext()) this.animatePage(() => this.currentPage.update(p => p + 1));
+    }
+
+    range(n: number): number[] {
+        return Array.from({length: Math.max(0, n)}, (_, i) => i);
+    }
+
+    // ── Drag ─────────────────────────────────────────────────────────────────
+
+    onPointerDown(event: PointerEvent, sticker: StickerDefinition, thumbEl: HTMLElement): void {
+        if (!this.canAddMore()) return;
+        this.dragController.start(event, sticker.id, sticker.imageUrl, thumbEl);
+    }
+
+    // ── Template helpers ──────────────────────────────────────────────────────
+
+    getStickerUrl(stickerId: string): string {
+        return this.stickers().find(s => s.id === stickerId)?.imageUrl ?? '';
+    }
+
+    // ── Private ───────────────────────────────────────────────────────────────
+
+    private resolveDropTarget(): HTMLElement | null {
+        const t = this.dropTarget();
+        if (!t) return null;
+        return (t as ElementRef<HTMLElement>).nativeElement ?? (t as HTMLElement) ?? null;
     }
 
     private recalcPageSize(): void {
@@ -91,169 +120,27 @@ export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
         });
     }
 
-    public prevPage(): void {
-        if (!this.canPrev()) return;
-        this.animatePage(() => this.currentPage.update(p => p - 1));
-    }
-
-    public nextPage(): void {
-        if (!this.canNext()) return;
-        this.animatePage(() => this.currentPage.update(p => p + 1));
-    }
-
     private animatePage(updateFn: () => void): void {
         const el = this.rowEl?.nativeElement;
         if (!el) { updateFn(); return; }
-
-        const items = Array.from(el.querySelectorAll<HTMLElement>("[data-thumb]"));
+        const items   = Array.from(el.querySelectorAll<HTMLElement>('[data-thumb]'));
         const targets = items.length ? items : [el];
-
         gsap.to(targets, {
-            y: -10, opacity: 0, duration: 0.16, ease: "power2.in",
+            y: -10, opacity: 0, duration: 0.16, ease: 'power2.in',
             onComplete: () => {
                 this.zone.run(() => {
                     updateFn();
                     setTimeout(() => {
-                        const newItems = Array.from(el.querySelectorAll<HTMLElement>("[data-thumb]"));
+                        const next = Array.from(el.querySelectorAll<HTMLElement>('[data-thumb]'));
                         gsap.fromTo(
-                            newItems.length ? newItems : [el],
+                            next.length ? next : [el],
                             {y: 12, opacity: 0},
-                            {y: 0, opacity: 1, duration: 0.22, ease: "power2.out", stagger: 0.025},
+                            {y: 0, opacity: 1, duration: 0.22, ease: 'power2.out', stagger: 0.025},
                         );
                     }, 0);
                 });
             },
         });
-    }
-
-    /** Returns [0, 1, ..., n-1] — for use in @for loops in the template. */
-    public range(n: number): number[] {
-        return Array.from({length: Math.max(0, n)}, (_, i) => i);
-    }
-
-    private get canvasEl(): HTMLElement | null {
-        const t = this.dropTarget();
-        if (!t) return null;
-        return (t as ElementRef<HTMLElement>).nativeElement ?? (t as HTMLElement) ?? null;
-    }
-
-    public getStickerUrl(stickerId: string): string {
-        return this.stickers().find(s => s.id === stickerId)?.imageUrl ?? "";
-    }
-
-    // ── Pointer drag ─────────────────────────────────────────────
-
-    public onPointerDown(event: PointerEvent, sticker: StickerDefinition, thumbEl: HTMLElement): void {
-        if (!this.canAddMore()) return;
-        if (event.button !== 0 && event.button !== undefined) return;
-        event.preventDefault();
-
-        this.dragStickerId   = sticker.id;
-        this.activePointerId = event.pointerId;
-        this.activeDragId.set(sticker.id);
-
-        const thumbImg = thumbEl.querySelector("img") as HTMLImageElement | null;
-        if (thumbImg && thumbImg.naturalWidth > 0 && thumbImg.naturalHeight > 0) {
-            this.dragRenderedHeight = CANVAS_STICKER_PX;
-            this.dragRenderedWidth  = Math.round(CANVAS_STICKER_PX * thumbImg.naturalWidth / thumbImg.naturalHeight);
-        } else {
-            this.dragRenderedWidth  = CANVAS_STICKER_PX;
-            this.dragRenderedHeight = CANVAS_STICKER_PX;
-        }
-
-        const {ghost} = this.createGhost(sticker.imageUrl, event.clientX, event.clientY);
-        this.ghostEl = ghost;
-
-        try { thumbEl.setPointerCapture(event.pointerId); } catch {}
-        window.addEventListener("pointermove",   this.boundMove, {passive: false});
-        window.addEventListener("pointerup",     this.boundUp);
-        window.addEventListener("pointercancel", this.boundUp);
-    }
-
-    private onGlobalMove(event: PointerEvent): void {
-        if (event.pointerId !== this.activePointerId) return;
-        event.preventDefault();
-        if (!this.ghostEl) return;
-        this.ghostEl.style.left = `${event.clientX}px`;
-        this.ghostEl.style.top  = `${event.clientY}px`;
-        const canvasEl = this.canvasEl;
-        if (canvasEl) {
-            const r = canvasEl.getBoundingClientRect();
-            const over = event.clientX >= r.left && event.clientX <= r.right &&
-                         event.clientY >= r.top  && event.clientY <= r.bottom;
-            canvasEl.style.outline = over ? "3px solid #a855f7" : "";
-        }
-    }
-
-    private onGlobalUp(event: PointerEvent): void {
-        if (event.pointerId !== this.activePointerId) return;
-        const canvasEl = this.canvasEl;
-
-        let animate = true;
-
-        // Emit drop event immediately (before animation) so the sticker appears on canvas
-        if (canvasEl && this.dragStickerId) {
-            const r = canvasEl.getBoundingClientRect();
-            if (event.clientX >= r.left && event.clientX <= r.right &&
-                event.clientY >= r.top  && event.clientY <= r.bottom) {
-                this.stickerDropped.emit({
-                    stickerId:      this.dragStickerId,
-                    clientX:        event.clientX,
-                    clientY:        event.clientY,
-                    renderedWidth:  this.dragRenderedWidth,
-                    renderedHeight: this.dragRenderedHeight,
-                });
-                animate = false;
-            }
-        }
-
-        // Tween ghost out, then remove
-        const ghost = this.ghostEl;
-        this.ghostEl = null;
-
-        if (ghost) {
-            if (animate) {
-              gsap.to(ghost, {
-                scale: 0, opacity: 0, duration: 0.15, ease: "power2.in",
-                onComplete: () => ghost.remove(),
-              });
-            } else {
-              ghost.remove();
-            }
-        }
-
-        this.cleanup(canvasEl ?? undefined);
-    }
-
-    private createGhost(imageUrl: string, x: number, y: number): {ghost: HTMLElement} {
-        const ghost = document.createElement("div");
-        ghost.style.cssText = `position:fixed;pointer-events:none;z-index:9999;filter:drop-shadow(0 6px 16px rgba(0,0,0,0.35));`;
-        const img = document.createElement("img");
-        img.src = imageUrl;
-        img.style.cssText = `height:${CANVAS_STICKER_PX}px;width:auto;display:block;pointer-events:none;`;
-        img.draggable = false;
-        ghost.appendChild(img);
-        document.body.appendChild(ghost);
-        ghost.style.left = `${x}px`;
-        ghost.style.top  = `${y}px`;
-        // Use GSAP for all transform properties so they stay coherent
-        gsap.set(ghost, {xPercent: -50, yPercent: -50, scale: 0.3, transformOrigin: "50% 50%"});
-        gsap.to(ghost, {scale: 1, duration: 0.18, ease: "back.out(1.5)"});
-        return {ghost};
-    }
-
-    private cleanup(canvasEl?: HTMLElement): void {
-        // ghostEl is handled by onGlobalUp's GSAP tween — only force-remove if still around
-        if (this.ghostEl) { this.ghostEl.remove(); this.ghostEl = null; }
-        this.dragRenderedWidth   = CANVAS_STICKER_PX;
-        this.dragRenderedHeight  = CANVAS_STICKER_PX;
-        this.dragStickerId       = null;
-        this.activePointerId     = null;
-        this.activeDragId.set(null);
-        if (canvasEl) canvasEl.style.outline = "";
-        window.removeEventListener("pointermove",   this.boundMove);
-        window.removeEventListener("pointerup",     this.boundUp);
-        window.removeEventListener("pointercancel", this.boundUp);
     }
 }
 
