@@ -130,7 +130,7 @@ export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
         const items   = Array.from(el.querySelectorAll<HTMLElement>('[data-thumb]'));
         const targets = items.length ? items : [el];
         gsap.to(targets, {
-            y: -10, opacity: 0, duration: 0.16, ease: 'power2.in',
+            scale: 0, opacity: 0, duration: 0.16, ease: 'power2.in',
             onComplete: () => {
                 this.zone.run(() => {
                     updateFn();
@@ -138,8 +138,8 @@ export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
                         const next = Array.from(el.querySelectorAll<HTMLElement>('[data-thumb]'));
                         gsap.fromTo(
                             next.length ? next : [el],
-                            {y: 12, opacity: 0},
-                            {y: 0, opacity: 1, duration: 0.22, ease: 'power2.out', stagger: 0.025},
+                            {scale: 0, opacity: 0},
+                            {scale: 1, opacity: 1, duration: 0.22, ease: 'power2.out', stagger: 0.025},
                         );
                     }, 0);
                 });

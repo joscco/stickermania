@@ -1,4 +1,4 @@
-<div class="px-2 py-2">
+<div class="px-2 py-2 min-h-0">
   @if (!canAddMore()) {
     <span class="block text-center text-xs text-red-400 font-medium mb-1">Max erreicht</span>
   }
@@ -75,15 +75,12 @@
 
   <!-- Page dots -->
   @if (pageCount() > 1) {
-    <div class="flex justify-center gap-1.5 mt-1.5">
+    <div class="flex justify-center gap-1.5 mt-1.5 h-2">
       @for (i of range(pageCount()); track i) {
         <div
-          class="rounded-full transition-all duration-200"
-          [class.w-3]="currentPage() === i"
-          [class.w-1.5]="currentPage() !== i"
-          [class.h-1.5]="true"
+          class="rounded-full transition-all duration-200 w-1.5 h-1.5"
           [class.bg-purple-400]="currentPage() === i"
-          [class.bg-stone-300]="currentPage() !== i"
+          [class.bg-stone-400]="currentPage() !== i"
         ></div>
       }
     </div>
