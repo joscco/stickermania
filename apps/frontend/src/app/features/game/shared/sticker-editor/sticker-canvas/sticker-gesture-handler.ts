@@ -61,6 +61,7 @@ function pointInRotatedRect(
 export class StickerGestureHandler {
     private pointers: ActivePointer[] = [];
 
+
     // Freehand lasso state
     private lassoActive = false;
     private lassoPath:   {x: number; y: number}[] = [];
@@ -103,6 +104,7 @@ export class StickerGestureHandler {
         this.selectedInstanceId  = selectedInstanceId;
         this.lassoSelection      = lassoSelection;
     }
+
 
     // ── Pointer events ────────────────────────────────────────────────────────
 
@@ -197,9 +199,9 @@ export class StickerGestureHandler {
             );
             this.didMove = true;
             if (this.callbacks.onDragNearEdge && this.hasSelection()) {
-                const outside = clientX < rect.left || clientX > rect.right ||
-                                clientY < rect.top  || clientY > rect.bottom;
-                this.callbacks.onDragNearEdge(outside);
+                this.callbacks.onDragNearEdge(
+                    this.isPointerOrCentroidOutside(clientX, clientY, rect),
+                );
             }
             return;
         }
@@ -217,10 +219,10 @@ export class StickerGestureHandler {
         this.pointers = this.pointers.filter(p => p.id !== id);
 
         if (this.pointers.length === 0) {
+
             if (this.moveActive && this.tapMoved && this.callbacks.onStickerDraggedOff) {
                 const rect    = this.getCanvasRect();
-                const outside = clientX < rect.left || clientX > rect.right ||
-                                clientY < rect.top  || clientY > rect.bottom;
+                const outside = this.isPointerOrCentroidOutside(clientX, clientY, rect);
                 if (outside && this.hasSelection()) {
                     const ids = this.currentSelectionIds();
                     this.selectedInstanceId = null;
@@ -262,6 +264,23 @@ export class StickerGestureHandler {
 
     private hasSelection(): boolean {
         return !!this.selectedInstanceId || this.lassoSelection.size > 0;
+    }
+
+    /**
+     * Returns true if the pointer OR the centroid of the selected stickers
+     * is outside the canvas bounds. This allows stickers to be deleted when
+     * they're dragged to the edge even if the pointer is still barely inside.
+     */
+    private isPointerOrCentroidOutside(clientX: number, clientY: number, rect: DOMRect): boolean {
+        const pointerOutside = clientX < rect.left || clientX > rect.right ||
+                               clientY < rect.top  || clientY > rect.bottom;
+        if (pointerOutside) return true;
+
+        const sel = this.selectedStickers();
+        if (sel.length === 0) return false;
+        const cx = sel.reduce((s, p) => s + p.x, 0) / sel.length;
+        const cy = sel.reduce((s, p) => s + p.y, 0) / sel.length;
+        return cx < 0 || cx > rect.width || cy < 0 || cy > rect.height;
     }
     private isSelected(id: string): boolean {
         return this.selectedInstanceId === id || this.lassoSelection.has(id);

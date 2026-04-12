@@ -9,6 +9,7 @@ import {CANVAS_STICKER_PX} from '../sticker-shared/sticker-types';
 
 export interface StickerDragStartEvent {
     stickerId: string;
+    pointerId: number;
     clientX: number;
     clientY: number;
     renderedWidth: number;
@@ -95,6 +96,7 @@ export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
 
         this.stickerDragStarted.emit({
             stickerId: sticker.id,
+            pointerId: event.pointerId,
             clientX: event.clientX,
             clientY: event.clientY,
             renderedWidth: renderedW,

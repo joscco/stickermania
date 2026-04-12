@@ -244,12 +244,16 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         },
       );
 
-      // Clear selection when the user taps/clicks outside the canvas element
+      // Clear selection when the user taps/clicks outside the canvas element.
+      // Deferred by a microtask so that palette-initiated drags can update
+      // selection state before this handler checks it.
       const onOutside = (ev: PointerEvent) => {
         if (!this.hasSelection()) return;
-        if (!this.canvasArea.nativeElement.contains(ev.target as Node)) {
+        if (this.canvasArea.nativeElement.contains(ev.target as Node)) return;
+        Promise.resolve().then(() => {
+          if (!this.hasSelection()) return;
           this.clearSelection();
-        }
+        });
       };
       document.addEventListener('pointerdown', onOutside, {capture: true});
       this.removeOutsideListener = () =>

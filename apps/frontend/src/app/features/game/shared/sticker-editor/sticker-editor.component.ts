@@ -2,7 +2,6 @@ import {
     Component,
     computed,
     input,
-    NgZone,
     output,
     signal,
     ViewChild,
@@ -51,8 +50,6 @@ export class StickerEditorComponent {
     public readonly placements = signal<StickerPlacement[]>([]);
     public readonly canAddMore = computed(() => this.placements().length < this.maxStickers());
 
-    constructor(private readonly zone: NgZone) {}
-
     // ── Palette drag → instant sticker creation ───────────────────
 
     /** Tracks cleanup for an ongoing palette-initiated drag. */
@@ -67,8 +64,6 @@ export class StickerEditorComponent {
         const rect = canvasEl.getBoundingClientRect();
 
         // Place sticker at the exact pointer position (canvas-local coords).
-        // No clamping — the canvas has overflow:visible + z-10, so the sticker
-        // is visible even when the pointer starts in the palette below.
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
 
@@ -102,9 +97,6 @@ export class StickerEditorComponent {
         this.stickerCanvas.lassoSelection.set(new Set());
 
         // ── Animate the sticker in (same as old ghost: scale 0.3→1) ──
-        // Animate the <img> inside, NOT the wrapper div, because the wrapper
-        // uses transform-origin:0 0 + translate(-50%,-50%) for positioning.
-        // GSAP inline styles on the wrapper would break that pivot permanently.
         requestAnimationFrame(() => {
             const wrapper = canvasEl.querySelector<HTMLElement>(
                 `[data-removal-wrapper-for="${newPlacement.instanceId}"]`,
@@ -121,24 +113,28 @@ export class StickerEditorComponent {
 
         // ── Drive move via window-level pointer events ───────────
         const instanceId = newPlacement.instanceId;
-        // Use the raw pointer position as "anchor" so the delta between
-        // pointer movement and sticker movement stays 1:1 from the start.
-        // baseX/baseY is the clamped position where the sticker was placed.
         let lastClientX = event.clientX;
         let lastClientY = event.clientY;
         let stickerX = newPlacement.x;
         let stickerY = newPlacement.y;
 
-        // Track whether the sticker has been inside the canvas at least once.
-        // The delete zone only appears after the user dragged it in and then out again,
-        // not while they're still pulling it up from the palette.
+        // The delete zone only appears after the sticker entered the canvas once
         let wasInsideCanvas = false;
 
+        const isOutside = (evClientX: number, evClientY: number, r: DOMRect): boolean => {
+            // Pointer outside canvas?
+            const pointerOut = evClientX < r.left || evClientX > r.right ||
+                               evClientY < r.top  || evClientY > r.bottom;
+            if (pointerOut) return true;
+            // Sticker centroid outside canvas?
+            return stickerX < 0 || stickerX > r.width || stickerY < 0 || stickerY > r.height;
+        };
+
         const onMove = (ev: PointerEvent) => {
+            if (ev.pointerId !== event.pointerId) return;
             ev.preventDefault();
             const r = canvasEl.getBoundingClientRect();
 
-            // Incremental delta from last pointer position
             const dx = ev.clientX - lastClientX;
             const dy = ev.clientY - lastClientY;
             lastClientX = ev.clientX;
@@ -146,50 +142,43 @@ export class StickerEditorComponent {
             stickerX += dx;
             stickerY += dy;
 
-            const outside = ev.clientX < r.left || ev.clientX > r.right ||
-                            ev.clientY < r.top  || ev.clientY > r.bottom;
-
+            const outside = isOutside(ev.clientX, ev.clientY, r);
             if (!outside) wasInsideCanvas = true;
 
-            this.zone.run(() => {
-                const updated = this.placements().map(p =>
-                    p.instanceId === instanceId
-                        ? {...p, x: stickerX, y: stickerY}
-                        : p,
-                );
-                this.placements.set(updated);
-                this.placementsChanged.emit(updated);
+            const updated = this.placements().map(p =>
+                p.instanceId === instanceId
+                    ? {...p, x: stickerX, y: stickerY}
+                    : p,
+            );
+            this.placements.set(updated);
+            this.placementsChanged.emit(updated);
 
-                // Show drag-near-edge / delete zone only after sticker was inside canvas once
-                this.stickerCanvas.dragNearEdge.set(wasInsideCanvas && outside);
-                this.stickerCanvas.isMoveActive.set(true);
-            });
+            this.stickerCanvas.dragNearEdge.set(wasInsideCanvas && outside);
+            this.stickerCanvas.isMoveActive.set(true);
         };
 
         const onUp = (ev: PointerEvent) => {
+            if (ev.pointerId !== event.pointerId) return;
             cleanup();
             const r = canvasEl.getBoundingClientRect();
-            const outside = ev.clientX < r.left || ev.clientX > r.right ||
-                            ev.clientY < r.top  || ev.clientY > r.bottom;
+            const outside = isOutside(ev.clientX, ev.clientY, r);
 
-            this.zone.run(() => {
-                this.stickerCanvas.dragNearEdge.set(false);
-                this.stickerCanvas.isMoveActive.set(false);
+            this.stickerCanvas.dragNearEdge.set(false);
+            this.stickerCanvas.isMoveActive.set(false);
 
-                if (outside) {
-                    // Released outside canvas → animate removal
-                    this.stickerCanvas.selectedInstanceId.set(null);
-                    this.stickerCanvas.lassoSelection.set(new Set());
-                    animateStickerRemoval([instanceId], canvasEl, this.removingIds, () => {
-                        const updated = this.placements().filter(p => p.instanceId !== instanceId);
-                        this.placements.set(updated);
-                        this.placementsChanged.emit(updated);
-                    });
-                } else {
-                    // Successfully placed — push to undo stack
-                    this.stickerCanvas.undo.push(this.placements());
-                }
-            });
+            if (outside) {
+                // Released outside canvas → animate removal
+                this.stickerCanvas.selectedInstanceId.set(null);
+                this.stickerCanvas.lassoSelection.set(new Set());
+                animateStickerRemoval([instanceId], canvasEl, this.removingIds, () => {
+                    const updated = this.placements().filter(p => p.instanceId !== instanceId);
+                    this.placements.set(updated);
+                    this.placementsChanged.emit(updated);
+                });
+            } else {
+                // Successfully placed — push to undo stack
+                this.stickerCanvas.undo.push(this.placements());
+            }
         };
 
         const cleanup = () => {
