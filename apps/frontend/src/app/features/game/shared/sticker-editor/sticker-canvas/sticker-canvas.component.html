@@ -31,7 +31,7 @@
   @for (sticker of stickers(); track sticker.instanceId) {
     <div
       class="absolute select-none w-max transition-opacity origin-top-left"
-      [class.opacity-40]="interactive() && dragNearEdge() && isSelected(sticker.instanceId)"
+      [class.opacity-40]="interactive() && isSelected(sticker.instanceId) && (dragNearEdge() || paletteDragOutside())"
       [style.left.px]="sticker.x"
       [style.top.px]="sticker.y"
       [style.transform]="getStickerTransform(sticker)"

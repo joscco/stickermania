@@ -111,63 +111,145 @@ export class StickerEditorComponent {
             }
         });
 
-        // ── Drive move via window-level pointer events ───────────
+        // ── Drive move + pinch via window-level pointer events ─────
         const instanceId = newPlacement.instanceId;
-        let lastClientX = event.clientX;
-        let lastClientY = event.clientY;
         let stickerX = newPlacement.x;
         let stickerY = newPlacement.y;
+        let stickerScale = 1;
+        let stickerRotation = 0;
+
+        // Block canvas input listeners while we drive the drag ourselves
+        this.stickerCanvas.paletteDragActive.set(true);
+        // Sticker starts outside canvas — show as transparent
+        this.stickerCanvas.paletteDragOutside.set(true);
+
+        // Track all active pointers for pinch support
+        const pointers = new Map<number, {x: number; y: number}>();
+        pointers.set(event.pointerId, {x: event.clientX, y: event.clientY});
+
+        // Pinch baseline (set when second finger arrives)
+        let pinchBaseDist = 0;
+        let pinchBaseAngle = 0;
+        let pinchBaseScale = 1;
+        let pinchBaseRotation = 0;
 
         // The delete zone only appears after the sticker entered the canvas once
         let wasInsideCanvas = false;
 
         const isOutside = (evClientX: number, evClientY: number, r: DOMRect): boolean => {
-            // Pointer outside canvas?
             const pointerOut = evClientX < r.left || evClientX > r.right ||
                                evClientY < r.top  || evClientY > r.bottom;
             if (pointerOut) return true;
-            // Sticker centroid outside canvas?
             return stickerX < 0 || stickerX > r.width || stickerY < 0 || stickerY > r.height;
         };
 
-        const onMove = (ev: PointerEvent) => {
-            if (ev.pointerId !== event.pointerId) return;
-            ev.preventDefault();
-            const r = canvasEl.getBoundingClientRect();
-
-            const dx = ev.clientX - lastClientX;
-            const dy = ev.clientY - lastClientY;
-            lastClientX = ev.clientX;
-            lastClientY = ev.clientY;
-            stickerX += dx;
-            stickerY += dy;
-
-            const outside = isOutside(ev.clientX, ev.clientY, r);
-            if (!outside) wasInsideCanvas = true;
-
+        const updatePlacement = () => {
             const updated = this.placements().map(p =>
                 p.instanceId === instanceId
-                    ? {...p, x: stickerX, y: stickerY}
+                    ? {...p, x: stickerX, y: stickerY, scale: stickerScale, rotation: stickerRotation}
                     : p,
             );
             this.placements.set(updated);
             this.placementsChanged.emit(updated);
+        };
 
-            this.stickerCanvas.dragNearEdge.set(wasInsideCanvas && outside);
+        const initPinch = () => {
+            const pts = [...pointers.values()];
+            if (pts.length < 2) return;
+            pinchBaseDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y) || 1;
+            pinchBaseAngle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+            pinchBaseScale = stickerScale;
+            pinchBaseRotation = stickerRotation;
+        };
+
+        const onPointerDown2 = (ev: PointerEvent) => {
+            pointers.set(ev.pointerId, {x: ev.clientX, y: ev.clientY});
+            if (pointers.size === 2) initPinch();
+        };
+
+        const onMove = (ev: PointerEvent) => {
+            if (!pointers.has(ev.pointerId)) return;
+            ev.preventDefault();
+
+            const prev = pointers.get(ev.pointerId)!;
+            pointers.set(ev.pointerId, {x: ev.clientX, y: ev.clientY});
+
+            const r = canvasEl.getBoundingClientRect();
+
+            if (pointers.size >= 2) {
+                // ── Pinch: rotate + scale ──
+                const pts = [...pointers.values()];
+                const newDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y) || 1;
+                const newAngle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+                stickerScale = Math.max(0.2, Math.min(4, pinchBaseScale * (newDist / pinchBaseDist)));
+                const angleDelta = (newAngle - pinchBaseAngle) * (180 / Math.PI);
+                stickerRotation = pinchBaseRotation + angleDelta;
+
+                // Also move: use delta of current pointer halved (rough midpoint move)
+                const dx = ev.clientX - prev.x;
+                const dy = ev.clientY - prev.y;
+                stickerX += dx / 2;
+                stickerY += dy / 2;
+            } else {
+                // ── Single finger: move ──
+                const dx = ev.clientX - prev.x;
+                const dy = ev.clientY - prev.y;
+                stickerX += dx;
+                stickerY += dy;
+            }
+
+            const outside = isOutside(ev.clientX, ev.clientY, r);
+            if (!outside) wasInsideCanvas = true;
+
+            updatePlacement();
+
+            // Sticker is "not holding" if it hasn't been inside the canvas yet,
+            // or if it's currently outside (would be deleted on release)
+            const wouldNotHold = !wasInsideCanvas || outside;
+            this.stickerCanvas.paletteDragOutside.set(wouldNotHold);
+
+            // Only show delete zone during single-finger move, not during pinch
+            if (pointers.size < 2) {
+                this.stickerCanvas.dragNearEdge.set(wasInsideCanvas && outside);
+            }
             this.stickerCanvas.isMoveActive.set(true);
         };
 
         const onUp = (ev: PointerEvent) => {
-            if (ev.pointerId !== event.pointerId) return;
+            // Apply final delta before removing the pointer
+            const prev = pointers.get(ev.pointerId);
+            if (prev && pointers.size === 1) {
+                // Last finger — apply its final move delta
+                stickerX += ev.clientX - prev.x;
+                stickerY += ev.clientY - prev.y;
+                updatePlacement();
+            }
+
+            pointers.delete(ev.pointerId);
+
+            // Second finger lifted → re-anchor for single-finger move
+            if (pointers.size === 1) {
+                // Pinch baselines are stale now; single finger continues as move
+                return;
+            }
+
+            if (pointers.size > 0) return; // still fingers down
+
+            // All fingers up → finalize
             cleanup();
             const r = canvasEl.getBoundingClientRect();
-            const outside = isOutside(ev.clientX, ev.clientY, r);
+
+            // Check both pointer and centroid for delete decision
+            const pointerOut = ev.clientX < r.left || ev.clientX > r.right ||
+                               ev.clientY < r.top  || ev.clientY > r.bottom;
+            const centroidOut = stickerX < 0 || stickerX > r.width ||
+                                stickerY < 0 || stickerY > r.height;
+            const outside = pointerOut || centroidOut;
 
             this.stickerCanvas.dragNearEdge.set(false);
             this.stickerCanvas.isMoveActive.set(false);
 
             if (outside) {
-                // Released outside canvas → animate removal
                 this.stickerCanvas.selectedInstanceId.set(null);
                 this.stickerCanvas.lassoSelection.set(new Set());
                 animateStickerRemoval([instanceId], canvasEl, this.removingIds, () => {
@@ -176,21 +258,24 @@ export class StickerEditorComponent {
                     this.placementsChanged.emit(updated);
                 });
             } else {
-                // Successfully placed — push to undo stack
                 this.stickerCanvas.undo.push(this.placements());
             }
         };
 
         const cleanup = () => {
+            window.removeEventListener('pointerdown', onPointerDown2);
             window.removeEventListener('pointermove', onMove);
             window.removeEventListener('pointerup', onUp);
             window.removeEventListener('pointercancel', onUp);
+            this.stickerCanvas.paletteDragActive.set(false);
+            this.stickerCanvas.paletteDragOutside.set(false);
             this.paletteDragCleanup = null;
         };
 
         // Clean up any previous drag
         this.paletteDragCleanup?.();
 
+        window.addEventListener('pointerdown', onPointerDown2);
         window.addEventListener('pointermove', onMove, {passive: false});
         window.addEventListener('pointerup', onUp);
         window.addEventListener('pointercancel', onUp);

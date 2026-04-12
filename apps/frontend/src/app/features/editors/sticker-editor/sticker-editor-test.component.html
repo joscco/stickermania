@@ -1,6 +1,6 @@
 <div class="h-screen flex flex-col bg-stone-100">
   <!-- Header -->
-  <div class="bg-linear-to-r from-purple-600 to-pink-500 text-white px-4 py-3 flex items-center justify-between shrink-0">
+  <div class="bg-linear-to-r from-purple-600 to-pink-500 text-white px-4 flex flex-row flex-nowrap items-center justify-between shrink-0">
     <div>
       <h1 class="text-lg font-bold">🧪 Sticker Editor Test</h1>
       <p class="text-xs opacity-80">Sticker auf den Canvas ziehen — Ghost folgt dem Finger</p>
@@ -10,12 +10,6 @@
         class="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors"
         (click)="editor.clearPlacements()"
       >Canvas leeren</button>
-      <a routerLink="/hitbox-editor"
-        class="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors"
-      >🎯 Hitbox-Editor</a>
-      <a routerLink="/"
-        class="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors"
-      >← Zurück</a>
     </div>
   </div>
 

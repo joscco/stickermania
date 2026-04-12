@@ -18,6 +18,7 @@ export type GestureCallbacks = {
     onDragNearEdge?:         (outsideCanvas: boolean) => void;
     onPointerUpCommit?:      () => void;
     onMoveActiveChanged?:    (active: boolean) => void;
+    onDoubleTap?:            (ids: string[]) => void;
     /** Returns the current selection's bounding box (canvas-local) + rotation, or null. */
     getSelectionBounds?:     () => {box: {x: number; y: number; w: number; h: number}; rotation: number} | null;
 };
@@ -82,6 +83,11 @@ export class StickerGestureHandler {
     private tapStartX    = 0;
     private tapStartY    = 0;
     private tapMoved     = false;
+
+    // Double-tap detection
+    private lastTapTime  = 0;
+    private lastTapX     = 0;
+    private lastTapY     = 0;
 
     // Snapshot
     private stickers: StickerPlacement[] = [];
@@ -191,16 +197,15 @@ export class StickerGestureHandler {
         if (this.moveActive && this.pointers.length === 1) {
             const dx = localX - this.moveOffsetX;
             const dy = localY - this.moveOffsetY;
-            this.callbacks.onPlacementsChanged(
-                this.stickers.map(p => {
-                    const b = this.moveBaselines.find(b => b.instanceId === p.instanceId);
-                    return b ? {...p, x: b.baseX + dx, y: b.baseY + dy} : p;
-                }),
-            );
+            const updated = this.stickers.map(p => {
+                const b = this.moveBaselines.find(b => b.instanceId === p.instanceId);
+                return b ? {...p, x: b.baseX + dx, y: b.baseY + dy} : p;
+            });
+            this.callbacks.onPlacementsChanged(updated);
             this.didMove = true;
             if (this.callbacks.onDragNearEdge && this.hasSelection()) {
                 this.callbacks.onDragNearEdge(
-                    this.isPointerOrCentroidOutside(clientX, clientY, rect),
+                    this.isPointerOrCentroidOutside(clientX, clientY, rect, updated),
                 );
             }
             return;
@@ -222,7 +227,17 @@ export class StickerGestureHandler {
 
             if (this.moveActive && this.tapMoved && this.callbacks.onStickerDraggedOff) {
                 const rect    = this.getCanvasRect();
-                const outside = this.isPointerOrCentroidOutside(clientX, clientY, rect);
+                // Compute final placements with the current move offsets
+                // (this.stickers may be stale — syncState hasn't run yet)
+                const localX  = clientX - rect.left;
+                const localY  = clientY - rect.top;
+                const dx      = localX - this.moveOffsetX;
+                const dy      = localY - this.moveOffsetY;
+                const finalPlacements = this.stickers.map(p => {
+                    const b = this.moveBaselines.find(b => b.instanceId === p.instanceId);
+                    return b ? {...p, x: b.baseX + dx, y: b.baseY + dy} : p;
+                });
+                const outside = this.isPointerOrCentroidOutside(clientX, clientY, rect, finalPlacements);
                 if (outside && this.hasSelection()) {
                     const ids = this.currentSelectionIds();
                     this.selectedInstanceId = null;
@@ -246,6 +261,20 @@ export class StickerGestureHandler {
             this.didMove        = false;
             this.callbacks.onMoveActiveChanged?.(false);
             this.callbacks.onDragNearEdge?.(false);
+
+            // Double-tap detection
+            if (!this.tapMoved && this.hasSelection()) {
+                const now = Date.now();
+                const dist = Math.hypot(clientX - this.lastTapX, clientY - this.lastTapY);
+                if (now - this.lastTapTime < 350 && dist < 30) {
+                    this.callbacks.onDoubleTap?.(this.currentSelectionIds());
+                    this.lastTapTime = 0; // reset so triple-tap doesn't fire again
+                } else {
+                    this.lastTapTime = now;
+                    this.lastTapX    = clientX;
+                    this.lastTapY    = clientY;
+                }
+            }
         }
 
         // Re-anchor when going 2 → 1 finger
@@ -271,12 +300,13 @@ export class StickerGestureHandler {
      * is outside the canvas bounds. This allows stickers to be deleted when
      * they're dragged to the edge even if the pointer is still barely inside.
      */
-    private isPointerOrCentroidOutside(clientX: number, clientY: number, rect: DOMRect): boolean {
+    private isPointerOrCentroidOutside(clientX: number, clientY: number, rect: DOMRect, placements?: StickerPlacement[]): boolean {
         const pointerOutside = clientX < rect.left || clientX > rect.right ||
                                clientY < rect.top  || clientY > rect.bottom;
         if (pointerOutside) return true;
 
-        const sel = this.selectedStickers();
+        const source = placements ?? this.stickers;
+        const sel = source.filter(p => this.isSelected(p.instanceId));
         if (sel.length === 0) return false;
         const cx = sel.reduce((s, p) => s + p.x, 0) / sel.length;
         const cy = sel.reduce((s, p) => s + p.y, 0) / sel.length;

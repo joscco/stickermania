@@ -47,6 +47,11 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   // ── Selection state ───────────────────────────────────────────────────────
 
+  /** Set by the editor during palette-initiated drags to block canvas input. */
+  readonly paletteDragActive = signal(false);
+  /** Set by the editor: the palette-dragged sticker would not survive if released now. */
+  readonly paletteDragOutside = signal(false);
+
   readonly selectedInstanceId = signal<string | null>(null);
   readonly lassoSelection = signal<Set<string>>(new Set());
   readonly stretchMode = signal<boolean>(false);
@@ -224,6 +229,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         onDragNearEdge: near => this.dragNearEdge.set(near),
         onPointerUpCommit: () => this.undo.push(this.stickers()),
         onMoveActiveChanged: active => this.isMoveActive.set(active),
+        onDoubleTap: ids => this.onDoubleTapFlip(ids),
         getSelectionBounds: () => this.selectionInfo(),
       },
     );
@@ -242,6 +248,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
           this.menuVisible.set(false);
           this.syncGesture();
         },
+        () => this.paletteDragActive(),
       );
 
       // Clear selection when the user taps/clicks outside the canvas element.
@@ -251,6 +258,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         if (!this.hasSelection()) return;
         if (this.canvasArea.nativeElement.contains(ev.target as Node)) return;
         Promise.resolve().then(() => {
+          if (this.paletteDragActive()) return;
           if (!this.hasSelection()) return;
           this.clearSelection();
         });
@@ -296,7 +304,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         this.removeSelected();
         break;
       case 'flipH':
-        this.commitTransform(ids.length === 1 ? ops.mirrorSingle(this.stickers(), ids[0], 'h') : ops.applyGroupTransform(this.stickers(), ids, 0, 1, 'h'));
+        this.flipSelectionH(ids);
         break;
       case 'zForward':
         this.commitTransform(ops.swapZ(this.stickers(), ids, +1));
@@ -418,6 +426,21 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   private commitTransform(updated: StickerPlacement[]): void {
     this.emitPlacements(updated);
     this.undo.push(updated);
+  }
+
+  /** Flip selected stickers horizontally. */
+  private flipSelectionH(ids: string[]): void {
+    if (!ids.length) return;
+    this.commitTransform(
+      ids.length === 1
+        ? ops.mirrorSingle(this.stickers(), ids[0], 'h')
+        : ops.applyGroupTransform(this.stickers(), ids, 0, 1, 'h'),
+    );
+  }
+
+  /** Called by the gesture handler on double-tap. */
+  private onDoubleTapFlip(ids: string[]): void {
+    this.flipSelectionH(ids);
   }
 
   private commitGroup(updated: StickerPlacement[], ids: string[]): void {

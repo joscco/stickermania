@@ -13,6 +13,7 @@ export function installCanvasInputListeners(
     el: HTMLElement,
     gesture: StickerGestureHandler,
     onInteractionStart: () => void,
+    isBlocked: () => boolean = () => false,
 ): () => void {
     el.style.touchAction = 'none';
     (el.style as any).webkitTouchCallout = 'none';
@@ -24,20 +25,20 @@ export function installCanvasInputListeners(
     // ── Touch ─────────────────────────────────────────────────────────────────
 
     const onTouchStart = (ev: TouchEvent) => {
-        if (isOverlay(ev)) return;
+        if (isBlocked() || isOverlay(ev)) return;
         ev.preventDefault();
         onInteractionStart();
         for (const t of Array.from(ev.changedTouches))
             gesture.onPointerDown(t.identifier, t.clientX, t.clientY);
     };
     const onTouchMove = (ev: TouchEvent) => {
-        if (isOverlay(ev)) return;
+        if (isBlocked() || isOverlay(ev)) return;
         ev.preventDefault();
         for (const t of Array.from(ev.changedTouches))
             gesture.onPointerMove(t.identifier, t.clientX, t.clientY);
     };
     const onTouchEnd = (ev: TouchEvent) => {
-        if (isOverlay(ev)) return;
+        if (isBlocked() || isOverlay(ev)) return;
         ev.preventDefault();
         for (const t of Array.from(ev.changedTouches))
             gesture.onPointerUp(t.identifier, t.clientX, t.clientY);
@@ -48,7 +49,7 @@ export function installCanvasInputListeners(
     let cleanupMouse: (() => void) | null = null;
 
     const onMouseDown = (ev: MouseEvent) => {
-        if (ev.button !== 0 || isOverlay(ev)) return;
+        if (isBlocked() || ev.button !== 0 || isOverlay(ev)) return;
         ev.preventDefault();
         onInteractionStart();
         gesture.onPointerDown(-1, ev.clientX, ev.clientY);
