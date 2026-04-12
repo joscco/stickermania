@@ -137,20 +137,27 @@ export function applyCornerScale(
 ): StickerPlacement[] {
     const signX  = (corner === 'ne' || corner === 'se') ? 1 : -1;
     const signY  = (corner === 'se' || corner === 'sw') ? 1 : -1;
+    // Project the mouse delta onto the diagonal direction of the corner.
+    // The corner sits at half-width / half-height from center, so we compute
+    // the ratio so the corner tracks the mouse 1:1.
     const delta  = (dx * signX + dy * signY) / 2;
 
     if (ids.length !== 1) {
         if (!boundingBoxSize || boundingBoxSize.w < 1 || boundingBoxSize.h < 1) return placements;
-        const factor = 1 + delta / Math.max(boundingBoxSize.w / 2, boundingBoxSize.h / 2);
-        return applyGroupTransform(placements, ids, 0, Math.max(0.05, factor), null);
+        // half-diagonal of the bounding box
+        const halfDiag = Math.max(boundingBoxSize.w, boundingBoxSize.h) / 2;
+        const factor = (halfDiag + delta) / halfDiag;
+        return applyGroupTransform(placements, ids, 0, clamp(factor, 0.05, 6), null);
     }
 
     const id = ids[0];
     const p  = placements.find(s => s.instanceId === id);
     if (!p) return placements;
     const {w, h} = getRenderedSize(id);
-    const refSize  = Math.max(w, h) * p.scale;
-    const newScale = clamp(p.scale + (delta / refSize) * p.scale, 0.1, 6);
+    // Current half-size of the rendered sticker
+    const halfSize = Math.max(w, h) * p.scale / 2;
+    if (halfSize < 1) return placements;
+    const newScale = clamp(p.scale * (halfSize + delta) / halfSize, 0.1, 6);
     return placements.map(pl => pl.instanceId === id ? {...pl, scale: newScale} : pl);
 }
 
@@ -177,10 +184,14 @@ export function applyStretchHandle(
     const {w, h} = getRenderedSize(id);
     let newScaleX = pp.scaleX ?? 1;
     let newScaleY = pp.scaleY ?? 1;
-    if (handle === 'e') newScaleX = Math.max(0.1, newScaleX + dx / (w * p.scale));
-    if (handle === 'w') newScaleX = Math.max(0.1, newScaleX - dx / (w * p.scale));
-    if (handle === 's') newScaleY = Math.max(0.1, newScaleY + dy / (h * p.scale));
-    if (handle === 'n') newScaleY = Math.max(0.1, newScaleY - dy / (h * p.scale));
+    // The handle sits at half-width/half-height from center.
+    // To make the handle track the mouse 1:1, use ratio: (halfSize + delta) / halfSize
+    const halfW = w * p.scale * newScaleX / 2;
+    const halfH = h * p.scale * newScaleY / 2;
+    if (handle === 'e' && halfW > 0) newScaleX = Math.max(0.1, newScaleX * (halfW + dx) / halfW);
+    if (handle === 'w' && halfW > 0) newScaleX = Math.max(0.1, newScaleX * (halfW - dx) / halfW);
+    if (handle === 's' && halfH > 0) newScaleY = Math.max(0.1, newScaleY * (halfH + dy) / halfH);
+    if (handle === 'n' && halfH > 0) newScaleY = Math.max(0.1, newScaleY * (halfH - dy) / halfH);
     return placements.map(pl => pl.instanceId === id ? {...pl, scaleX: newScaleX, scaleY: newScaleY} : pl);
 }
 

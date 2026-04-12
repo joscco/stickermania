@@ -1,5 +1,6 @@
-import {Component, input, output, computed, signal, OnDestroy} from '@angular/core';
+import {Component, input, output, computed, signal, OnDestroy, AfterViewInit, ElementRef} from '@angular/core';
 import {CommonModule} from '@angular/common';
+import gsap from 'gsap';
 import {BoundingBox} from '../../sticker-shared/sticker-types';
 
 export interface HandleDragEvent {
@@ -24,7 +25,7 @@ function rotatePt(x: number, y: number, cx: number, cy: number, rad: number): {x
     templateUrl: './sticker-selection-overlay.component.html',
     host: {style: 'position:absolute;inset:0;pointer-events:none;'},
 })
-export class StickerSelectionOverlayComponent implements OnDestroy {
+export class StickerSelectionOverlayComponent implements AfterViewInit, OnDestroy {
     readonly box         = input<BoundingBox | null>(null);
     readonly rotation    = input<number>(0);
     readonly stretchMode = input<boolean>(false);
@@ -35,6 +36,23 @@ export class StickerSelectionOverlayComponent implements OnDestroy {
 
     readonly handleDrag = output<HandleDragEvent>();
     readonly menuToggle = output<void>();
+
+    constructor(private readonly hostRef: ElementRef<HTMLElement>) {}
+
+    ngAfterViewInit(): void {
+        // Fade in all handle circles + SVG on creation.
+        // Only animate opacity — no scale/transform tweens on positioned elements,
+        // because Angular updates their left/top every frame during moves.
+        const el = this.hostRef.nativeElement;
+        const targets = el.querySelectorAll<HTMLElement>('div[style*="pointer-events:auto"], svg');
+        if (targets.length) {
+            gsap.fromTo(targets,
+                {opacity: 0},
+                {opacity: 1, duration: 0.18, ease: 'power2.out', stagger: 0.02,
+                 clearProps: 'opacity'},
+            );
+        }
+    }
 
     // ── Internal drag tracking ────────────────────────────────────────────────
     private internalMode = signal<'idle' | 'rotating' | 'scaling'>('idle');

@@ -9,6 +9,7 @@ import {StickerGestureHandler} from './sticker-gesture-handler';
 import {renderCanvasToDataUrl} from './sticker-canvas-renderer.util';
 import {installCanvasInputListeners} from './sticker-canvas-input';
 import {animateStickerRemoval} from './sticker-removal-animation';
+import gsap from 'gsap';
 import {StickerContextMenuComponent, type ContextMenuAction} from '../sticker-shared/sticker-context-menu.component';
 import {StickerUndoStack} from '../sticker-shared/sticker-undo-stack';
 import type {BoundingBox} from '../sticker-shared/sticker-types';
@@ -37,6 +38,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   @ViewChild('canvasArea') private canvasArea!: ElementRef<HTMLDivElement>;
   @ViewChild('deleteZone') private deleteZone!: ElementRef<HTMLDivElement>;
+  @ViewChild('selectionOverlayWrap') private selectionOverlayWrap?: ElementRef<HTMLDivElement>;
   @ViewChild('contextMenu') private contextMenu?: StickerContextMenuComponent;
 
   get canvasNativeElement(): HTMLDivElement | null {
@@ -117,6 +119,8 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   private readonly removingIds = new Set<string>();
   private readonly renderedSizeCache = new Map<string, { w: number; h: number }>();
 
+  private dragNearEdgePrev = false;
+
   constructor() {
     effect(() => {
       this.catalogMap.clear();
@@ -125,11 +129,58 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     effect(() => {
       this.gesture?.syncState(this.stickers(), this.selectedInstanceId(), this.lassoSelection());
     });
+
+    // ── Animate delete-zone + canvas border on dragNearEdge changes ──
+    effect(() => {
+      const near = this.dragNearEdge();
+      if (near === this.dragNearEdgePrev) return;
+      this.dragNearEdgePrev = near;
+
+      const zoneEl = this.deleteZone?.nativeElement;
+      const canvasEl = this.canvasArea?.nativeElement;
+      if (!zoneEl) return;
+
+      const badge = zoneEl.querySelector<HTMLElement>('[data-delete-badge]');
+
+      if (near) {
+        // Show delete zone
+        gsap.killTweensOf(zoneEl);
+        if (badge) gsap.killTweensOf(badge);
+        gsap.set(zoneEl, {visibility: 'visible'});
+        gsap.to(zoneEl, {opacity: 1, duration: 0.2, ease: 'power2.out'});
+        if (badge) {
+          gsap.fromTo(badge,
+            {scale: 0.7, y: 10},
+            {scale: 1, y: 0, duration: 0.25, ease: 'back.out(1.5)'},
+          );
+        }
+        // Fade out canvas border
+        if (canvasEl) {
+          gsap.to(canvasEl, {boxShadow: 'inset 0 0 0 2px rgba(0,0,0,0)', duration: 0.2});
+        }
+      } else {
+        // Hide delete zone
+        gsap.killTweensOf(zoneEl);
+        if (badge) gsap.killTweensOf(badge);
+        gsap.to(zoneEl, {opacity: 0, duration: 0.15, ease: 'power2.in',
+          onComplete: () => { gsap.set(zoneEl, {visibility: 'hidden'}); },
+        });
+        // Restore canvas border
+        if (canvasEl && this.interactive()) {
+          gsap.to(canvasEl, {boxShadow: 'inset 0 0 0 2px #e9d5ff', duration: 0.2});
+        }
+      }
+    });
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   ngAfterViewInit(): void {
+    // Set initial canvas border for interactive mode (GSAP handles transitions)
+    if (this.interactive()) {
+      this.canvasArea.nativeElement.style.boxShadow = 'inset 0 0 0 2px #e9d5ff';
+    }
+
     this.gesture = new StickerGestureHandler(
       () => this.canvasArea.nativeElement.getBoundingClientRect(),
       (cx, cy) => hitTestOnCanvas(cx, cy, this.canvasArea.nativeElement.getBoundingClientRect(), this.stickers(), id => this.getRenderedSize(id), this.catalogMap),
@@ -150,11 +201,16 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
           }
         },
         onSelectedChanged: id => {
-          this.multiSelectionRotation.set(0);
-          this.selectedInstanceId.set(id);
-          if (id) this.lassoSelection.set(new Set());
           this.stretchMode.set(false);
           this.menuVisible.set(false);
+          if (id) {
+            // Selecting a new sticker — instant switch
+            this.doClearSelection();
+            this.selectedInstanceId.set(id);
+          } else {
+            // Deselecting — animated fade-out
+            this.clearSelection();
+          }
         },
         onStickerDraggedOff: (_id, allIds) => {
           this.dragNearEdge.set(false);
@@ -296,7 +352,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     const group = this.lassoSelection();
     const ids = group.size > 0 ? [...group] : (this.selectedInstanceId() ? [this.selectedInstanceId()!] : []);
     if (!ids.length) return;
-    this.clearSelection();
+    this.clearSelection(false);
     const removedSet = new Set(ids);
     animateStickerRemoval(ids, this.canvasArea.nativeElement, this.removingIds, () => {
       const updated = this.stickers().filter(p => !removedSet.has(p.instanceId));
@@ -309,7 +365,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   undoAction(): void {
     const prev = this.undo.undo();
     if (prev) {
-      this.clearSelection();
+      this.clearSelection(false);
       this.emitPlacements(prev);
     }
   }
@@ -317,7 +373,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   redoAction(): void {
     const next = this.undo.redo();
     if (next) {
-      this.clearSelection();
+      this.clearSelection(false);
       this.emitPlacements(next);
     }
   }
@@ -380,7 +436,24 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  private clearSelection(): void {
+  private clearSelection(animate = true): void {
+    if (animate) {
+      const wrap = this.selectionOverlayWrap?.nativeElement;
+      if (wrap) {
+        const targets = wrap.querySelectorAll<HTMLElement>('div[style*="pointer-events:auto"], svg');
+        if (targets.length) {
+          gsap.to(targets, {
+            opacity: 0, duration: 0.12, ease: 'power2.in',
+            onComplete: () => { this.doClearSelection(); },
+          });
+          return;
+        }
+      }
+    }
+    this.doClearSelection();
+  }
+
+  private doClearSelection(): void {
     this.selectedInstanceId.set(null);
     this.lassoSelection.set(new Set());
     this.multiSelectionRotation.set(0);

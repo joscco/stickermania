@@ -5,9 +5,9 @@ import {
 import {CommonModule} from '@angular/common';
 import gsap from 'gsap';
 import type {StickerDefinition} from '@birthday/shared';
-import {PaletteDragController} from './palette-drag-controller';
+import {CANVAS_STICKER_PX} from '../sticker-shared/sticker-types';
 
-export interface StickerDroppedEvent {
+export interface StickerDragStartEvent {
     stickerId: string;
     clientX: number;
     clientY: number;
@@ -28,13 +28,9 @@ export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
 
     readonly stickers       = input<StickerDefinition[]>([]);
     readonly canAddMore     = input<boolean>(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    readonly dropTarget     = input<any>(null);
-    readonly stickerDropped = output<StickerDroppedEvent>();
+    readonly stickerDragStarted = output<StickerDragStartEvent>();
 
     @ViewChild('rowEl') rowEl!: ElementRef<HTMLDivElement>;
-
-    readonly activeDragId = signal<string | null>(null);
 
     // ── Paging ────────────────────────────────────────────────────────────────
 
@@ -53,24 +49,17 @@ export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
 
     // ── Internals ─────────────────────────────────────────────────────────────
 
-    private dragController!: PaletteDragController;
     private resizeObserver: ResizeObserver | null = null;
 
     constructor(private readonly zone: NgZone) {}
 
     ngAfterViewInit(): void {
-        this.dragController = new PaletteDragController(
-            () => this.resolveDropTarget(),
-            ev  => this.stickerDropped.emit(ev),
-            id  => this.activeDragId.set(id),
-        );
         this.resizeObserver = new ResizeObserver(() => this.recalcPageSize());
         if (this.rowEl?.nativeElement) this.resizeObserver.observe(this.rowEl.nativeElement);
         this.recalcPageSize();
     }
 
     ngOnDestroy(): void {
-        this.dragController?.destroy();
         this.resizeObserver?.disconnect();
     }
 
@@ -92,7 +81,25 @@ export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
 
     onPointerDown(event: PointerEvent, sticker: StickerDefinition, thumbEl: HTMLElement): void {
         if (!this.canAddMore()) return;
-        this.dragController.start(event, sticker.id, sticker.imageUrl, thumbEl);
+        if (event.button !== 0 && event.button !== undefined) return;
+        event.preventDefault();
+
+        // Calculate rendered size from the thumb image's natural aspect ratio
+        const thumbImg = thumbEl.querySelector('img') as HTMLImageElement | null;
+        let renderedW = CANVAS_STICKER_PX;
+        let renderedH = CANVAS_STICKER_PX;
+        if (thumbImg && thumbImg.naturalWidth > 0 && thumbImg.naturalHeight > 0) {
+            renderedH = CANVAS_STICKER_PX;
+            renderedW = Math.round(CANVAS_STICKER_PX * thumbImg.naturalWidth / thumbImg.naturalHeight);
+        }
+
+        this.stickerDragStarted.emit({
+            stickerId: sticker.id,
+            clientX: event.clientX,
+            clientY: event.clientY,
+            renderedWidth: renderedW,
+            renderedHeight: renderedH,
+        });
     }
 
     // ── Template helpers ──────────────────────────────────────────────────────
@@ -103,11 +110,6 @@ export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
 
     // ── Private ───────────────────────────────────────────────────────────────
 
-    private resolveDropTarget(): HTMLElement | null {
-        const t = this.dropTarget();
-        if (!t) return null;
-        return (t as ElementRef<HTMLElement>).nativeElement ?? (t as HTMLElement) ?? null;
-    }
 
     private recalcPageSize(): void {
         const el = this.rowEl?.nativeElement;

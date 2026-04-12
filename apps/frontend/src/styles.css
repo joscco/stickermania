@@ -78,6 +78,30 @@ body {
   overscroll-behavior: none;
 }
 
+/*
+ * Globally kill Safari auto-features:
+ *  - double-tap zoom (touch-action: manipulation)
+ *  - long-press callout / context menu (-webkit-touch-callout)
+ *  - blue tap highlight (-webkit-tap-highlight-color)
+ *  - text selection on interactive elements
+ */
+*,
+*::before,
+*::after {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Re-enable text selection in form fields */
+input,
+textarea,
+[contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 /* Prevent blue text-selection highlight while drawing on canvas */
 canvas,
 .no-select {

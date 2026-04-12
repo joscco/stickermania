@@ -34,8 +34,7 @@
             #thumbEl
             data-thumb
             class="relative shrink-0 w-16 h-16 rounded-xl border-2 flex items-center justify-center bg-white select-none touch-none"
-            [class.border-purple-300]="canAddMore() && activeDragId() !== sticker.id"
-            [class.border-purple-500]="activeDragId() === sticker.id"
+            [class.border-purple-300]="canAddMore()"
             [class.shadow-sm]="canAddMore()"
             [class.border-stone-200]="!canAddMore()"
             [class.opacity-40]="!canAddMore()"
@@ -50,9 +49,6 @@
               draggable="false"
             />
           </div>
-        }
-        @for (empty of range(pageSize() - pageStickers().length); track empty) {
-          <div class="shrink-0 w-16 h-16"></div>
         }
       </div>
     </div>

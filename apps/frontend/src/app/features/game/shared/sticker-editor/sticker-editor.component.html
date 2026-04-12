@@ -1,5 +1,5 @@
-<!-- Canvas area + Global Top-Bar. -->
-<div animOnInit="banner" class="flex-1 min-h-0 relative bg-stone-50 flex flex-col items-center justify-center p-2">
+<!-- Canvas area + Global Top-Bar. z-10 so overflow-visible stickers render above the palette. -->
+<div animOnInit="banner" class="flex-1 min-h-0 relative z-10 bg-stone-50 flex flex-col items-center justify-center p-2">
 
   <!-- Global Top-Bar: only canvas-wide actions -->
   @if (stickerCanvas.interactive()) {
@@ -76,7 +76,6 @@
   <app-sticker-palette
     [stickers]="paletteStickers()"
     [canAddMore]="canAddMore()"
-    [dropTarget]="stickerCanvas.canvasNativeElement"
-    (stickerDropped)="onStickerDropped($event)"
+    (stickerDragStarted)="onStickerDragStarted($event)"
   />
 </div>

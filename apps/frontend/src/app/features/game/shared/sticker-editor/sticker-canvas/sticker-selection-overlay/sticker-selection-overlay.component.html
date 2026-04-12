@@ -77,11 +77,13 @@
   @if (stretchMode()) {
     @for (side of sides(); track side.id) {
       <div
-        class="absolute w-3.5 h-3.5 bg-amber-400 border-2 border-amber-600 rounded-full shadow select-none touch-none"
-        [style.left.px]="side.x - 7" [style.top.px]="side.y - 7"
+        class="absolute w-7 h-7 flex items-center justify-center bg-amber-400 border-2 border-amber-600 rounded-full shadow select-none touch-none"
+        [style.left.px]="side.x - 14" [style.top.px]="side.y - 14"
         [style.cursor]="side.cursor"
         style="z-index:8100; pointer-events:auto;"
         (pointerdown)="onHandleDown($event, side.id)">
+        <span class="material-icons text-amber-800" style="font-size:16px; line-height:1;"
+        >{{ side.id === 'e' || side.id === 'w' ? 'swap_horiz' : 'swap_vert' }}</span>
       </div>
     }
     <div
