@@ -9,6 +9,3 @@ steps:
 
 images:
   - 'europe-west1-docker.pkg.dev/birthday-game-2026/birthday-game/birthday-game:latest'
-
-options:
-  machineType: 'E2_HIGHCPU_8'

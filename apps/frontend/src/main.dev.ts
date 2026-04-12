@@ -1,5 +1,5 @@
 import {bootstrapApplication} from "@angular/platform-browser";
-import {provideRouter, withHashLocation} from "@angular/router";
+import {provideRouter} from "@angular/router";
 import {AppComponent} from "./app/app.component";
 import {devRoutes} from "./app/app.routes.dev";
 import {provideHttpClient} from "@angular/common/http";
@@ -10,7 +10,6 @@ bootstrapApplication(AppComponent, {
         provideBrowserGlobalErrorListeners(),
         provideZonelessChangeDetection(),
         provideHttpClient(),
-        provideRouter(devRoutes, withHashLocation()),
+        provideRouter(devRoutes),
     ],
 }).catch((error) => console.error(error));
-

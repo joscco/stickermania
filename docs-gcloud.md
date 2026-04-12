@@ -81,21 +81,69 @@ gcloud artifacts repositories create birthday-game \
 
 ## Workflow: Deploy → Start → Stop
 
-### `npm run cloud:deploy` — Image bauen & deployen
+Es gibt **zwei separate Docker-Images**:
 
-Führt `scripts/cloud-deploy.mjs` aus, das:
+| Image | Inhalt | Wann |
+|---|---|---|
+| `birthday-game:latest` | Node.js Backend + Angular App | Spielbetrieb |
+| `birthday-game-offline:latest` | nginx + statische Angular Offline-Seite | Wenn das Spiel nicht läuft |
 
-1. `adminPassword` aus der lokalen `game.config.json` liest
-2. Das Image via **Google Cloud Build** baut (`linux/amd64`, kein lokales Docker nötig)
-3. Das Image auf Cloud Run deployt und `ADMIN_PASSWORD` dabei als Env-Var setzt
+---
+
+### `npm run cloud:deploy` — Spiel-Image bauen & deployen
+
+Baut das vollständige Spiel-Image lokal und deployt es. **Nur nach Code-Änderungen nötig.**
 
 ```bash
 npm run cloud:deploy
 ```
 
-> Beim ersten Deploy oder nach Code-Änderungen ausführen. Dauert ~3–5 Minuten.
+---
 
-Das Passwort wird bei **jedem** Deploy aus `game.config.json` übernommen — kein separater `gcloud run services update` Schritt nötig.
+### `npm run cloud:stop` — Spiel stoppen, Offline-Seite zeigen
+
+Baut und deployt das Offline-Image (nginx + statische Angular-Seite). Besucher sehen eine schöne Offline-Seite statt einem Fehler.
+
+```bash
+npm run cloud:stop
+```
+
+> Dauert ~2 Minuten (Angular Build + Docker Push). Das Offline-Image ist klein und startet sofort.
+
+---
+
+### `npm run cloud:start` — Spiel wieder starten
+
+Deployt das zuletzt gebaute Spiel-Image erneut. Entspricht `cloud:deploy`.
+
+```bash
+npm run cloud:start
+```
+
+---
+
+### `npm run cloud:deploy` — Image bauen & deployen
+
+Führt `scripts/cloud-deploy.mjs` aus, das:
+
+1. `adminPassword` aus der lokalen `game.config.json` liest
+2. Das Image **lokal** mit Docker baut (`docker build --platform linux/amd64`) — **kein Cloud Build**
+3. Das Image in die Artifact Registry pushed
+4. Das Image auf Cloud Run deployt und `ADMIN_PASSWORD` dabei als Env-Var setzt
+
+```bash
+npm run cloud:deploy
+```
+
+> **Voraussetzung:** Docker Desktop muss lokal laufen.
+
+> ⚠️ **Nur nach Code-Änderungen ausführen.** Der Build dauert ~3–5 Minuten lokal.
+> `cloud:start` und `cloud:stop` kosten nichts — die verändern nur Env-Vars des bereits deployt Images.
+
+**Warum lokal statt Cloud Build?**
+Cloud Build kostet Geld (E2-Maschinenzeit), auch wenn das Free Tier 120 min/Tag bietet.
+Lokaler Docker-Build ist kostenlos und auf einem modernen Mac sogar schneller.
+Cloud Build wird nur noch gebraucht wenn kein Docker lokal verfügbar ist (z. B. CI/CD).
 
 Weitere Env-Vars (werden **nicht** automatisch gesetzt, können manuell ergänzt werden):
 
@@ -109,13 +157,14 @@ Weitere Env-Vars (werden **nicht** automatisch gesetzt, können manuell ergänzt
 
 ### `npm run cloud:start` — Vor der Demonstration
 
-Setzt Ingress auf `all` und startet mindestens eine Instanz:
+Setzt `OFFLINE_MODE=false` und startet mindestens eine Instanz:
 
 ```bash
 gcloud run services update birthday-game \
   --region europe-west1 \
   --ingress all \
-  --min-instances 1
+  --min-instances 1 \
+  --set-env-vars OFFLINE_MODE=false
 ```
 
 Die App ist danach öffentlich erreichbar. Beim ersten Start kann es ~30 Sekunden dauern (Cold Start).
@@ -124,16 +173,29 @@ Die App ist danach öffentlich erreichbar. Beim ersten Start kann es ~30 Sekunde
 
 ### `npm run cloud:stop` — Nach der Demonstration
 
-Setzt Ingress auf `internal` (kein öffentlicher Zugriff mehr) und skaliert auf 0 Instanzen:
+Setzt `OFFLINE_MODE=true`, behält aber **min-instances 1**:
 
 ```bash
 gcloud run services update birthday-game \
   --region europe-west1 \
-  --ingress internal \
-  --min-instances 0
+  --ingress all \
+  --min-instances 1 \
+  --set-env-vars OFFLINE_MODE=true
 ```
 
-> ⚠️ Durch das Herunterskalieren auf 0 wird der Container gestoppt — alle laufenden Sessions und gespeicherten Assets gehen verloren.
+Statt des hässlichen Google-Fehlers „Page not found" wird die **Offline-Seite** angezeigt — eine vollwertige Angular-Komponente unter `/offline` mit dem echten App-Design (Tailwind, Darumadrop-Font, `animOnInit`-Animation).
+
+**Warum `min-instances 1` statt 0?**
+
+Mit einer dauerhaft laufenden Instanz passiert folgendes bei einem Request-Bombardement:
+- Die eine Instanz antwortet sofort (kein Cold Start)
+- `--max-instances 1` verhindert, dass weitere Instanzen starten
+- Das einfache `offline.html` kann tausende Requests/Sekunde problemlos beantworten
+- Keine neuen Instanzen → keine Kosten-Explosion
+
+Die Kosten für eine dauerhaft laufende Instanz im Leerlauf sind minimal (~$0.50–2/Monat je nach Region) — deutlich günstiger als das Risiko durch ein unkontrolliertes Hochskalieren bei 0 Instanzen.
+
+> ⚠️ Durch den Wechsel in den Offline-Modus sind alle laufenden Sessions verloren (der Container wird neu gestartet).
 
 ---
 

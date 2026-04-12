@@ -39,32 +39,32 @@ const EXTERNAL_URL = process.env.SCREENSHOT_BASE_URL ?? null;
 
 const SCREENS = [
     // ── Player – connection states ─────────────────────────────────────────────
-    {id: 'player-connecting',         screenKey: 'connecting',         vp: PHONE_VP, path: '/#/player?session=MOCK&screen=connecting'},
-    {id: 'player-reconnecting',       screenKey: 'reconnecting',       vp: PHONE_VP, path: '/#/player?session=MOCK&screen=reconnecting'},
-    {id: 'player-disconnected',       screenKey: 'disconnected',       vp: PHONE_VP, path: '/#/player?session=MOCK', waitMs: 600},
+    {id: 'player-connecting',         screenKey: 'connecting',         vp: PHONE_VP, path: '/player?session=MOCK&screen=connecting'},
+    {id: 'player-reconnecting',       screenKey: 'reconnecting',       vp: PHONE_VP, path: '/player?session=MOCK&screen=reconnecting'},
+    {id: 'player-disconnected',       screenKey: 'disconnected',       vp: PHONE_VP, path: '/player?session=MOCK', waitMs: 600},
 
     // ── Player – lobby ─────────────────────────────────────────────────────────
-    {id: 'player-lobby-name',         screenKey: 'lobby-name',         vp: PHONE_VP, path: '/#/player?session=MOCK'},
-    {id: 'player-lobby-avatar',       screenKey: 'lobby-avatar',       vp: PHONE_VP, path: '/#/player?session=MOCK'},
-    {id: 'player-lobby-waiting',      screenKey: 'lobby-waiting',      vp: PHONE_VP, path: '/#/player?session=MOCK'},
+    {id: 'player-lobby-name',         screenKey: 'lobby-name',         vp: PHONE_VP, path: '/player?session=MOCK'},
+    {id: 'player-lobby-avatar',       screenKey: 'lobby-avatar',       vp: PHONE_VP, path: '/player?session=MOCK'},
+    {id: 'player-lobby-waiting',      screenKey: 'lobby-waiting',      vp: PHONE_VP, path: '/player?session=MOCK'},
 
     // ── Player – building ──────────────────────────────────────────────────────
-    {id: 'player-building',           screenKey: 'building',           vp: PHONE_VP, path: '/#/player?session=MOCK'},
-    {id: 'player-building-submitted', screenKey: 'building-submitted', vp: PHONE_VP, path: '/#/player?session=MOCK'},
-    {id: 'player-building-skipped',   screenKey: 'building-skipped',   vp: PHONE_VP, path: '/#/player?session=MOCK'},
+    {id: 'player-building',           screenKey: 'building',           vp: PHONE_VP, path: '/player?session=MOCK'},
+    {id: 'player-building-submitted', screenKey: 'building-submitted', vp: PHONE_VP, path: '/player?session=MOCK'},
+    {id: 'player-building-skipped',   screenKey: 'building-skipped',   vp: PHONE_VP, path: '/player?session=MOCK'},
 
     // ── Player – voting / results ──────────────────────────────────────────────
-    {id: 'player-voting',             screenKey: 'voting',             vp: PHONE_VP, path: '/#/player?session=MOCK'},
-    {id: 'player-voting-done',        screenKey: 'voting-done',        vp: PHONE_VP, path: '/#/player?session=MOCK'},
-    {id: 'player-voting-all-done',    screenKey: 'voting-all-done',    vp: PHONE_VP, path: '/#/player?session=MOCK'},
-    {id: 'player-results',            screenKey: 'results',            vp: PHONE_VP, path: '/#/player?session=MOCK'},
-    {id: 'player-next-round',         screenKey: 'next-round',         vp: PHONE_VP, path: '/#/player?session=MOCK'},
+    {id: 'player-voting',             screenKey: 'voting',             vp: PHONE_VP, path: '/player?session=MOCK'},
+    {id: 'player-voting-done',        screenKey: 'voting-done',        vp: PHONE_VP, path: '/player?session=MOCK'},
+    {id: 'player-voting-all-done',    screenKey: 'voting-all-done',    vp: PHONE_VP, path: '/player?session=MOCK'},
+    {id: 'player-results',            screenKey: 'results',            vp: PHONE_VP, path: '/player?session=MOCK'},
+    {id: 'player-next-round',         screenKey: 'next-round',         vp: PHONE_VP, path: '/player?session=MOCK'},
 
     // ── Board ──────────────────────────────────────────────────────────────────
-    {id: 'board-lobby',               screenKey: 'board-lobby',        vp: BOARD_VP, path: '/#/board/MOCK'},
-    {id: 'board-building',            screenKey: 'board-building',     vp: BOARD_VP, path: '/#/board/MOCK'},
-    {id: 'board-voting',              screenKey: 'board-voting',       vp: BOARD_VP, path: '/#/board/MOCK'},
-    {id: 'board-results',             screenKey: 'board-results',      vp: BOARD_VP, path: '/#/board/MOCK'},
+    {id: 'board-lobby',               screenKey: 'board-lobby',        vp: BOARD_VP, path: '/board/MOCK'},
+    {id: 'board-building',            screenKey: 'board-building',     vp: BOARD_VP, path: '/board/MOCK'},
+    {id: 'board-voting',              screenKey: 'board-voting',       vp: BOARD_VP, path: '/board/MOCK'},
+    {id: 'board-results',             screenKey: 'board-results',      vp: BOARD_VP, path: '/board/MOCK'},
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

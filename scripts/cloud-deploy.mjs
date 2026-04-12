@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 /**
- * Reads adminPassword from game.config.json and runs the full Cloud Build + Cloud Run deploy.
+ * Builds the Docker image locally and deploys to Cloud Run.
+ * No Cloud Build needed — saves money and is faster for iterative deploys.
+ *
+ * Requirements: Docker Desktop running locally.
  * Called via: npm run cloud:deploy
  */
 
@@ -34,16 +37,26 @@ const REGION    = "europe-west1";
 const SERVICE   = "birthday-game";
 const IMAGE     = `${REGION}-docker.pkg.dev/${PROJECT}/${SERVICE}/${SERVICE}:latest`;
 
-// ─── Step 1: Cloud Build ─────────────────────────────────────────────────────
+// ─── Step 1: Authenticate Docker with Artifact Registry ─────────────────────
 
-console.log("\n[cloud-deploy] 🏗  Building image via Cloud Build…\n");
-run(`gcloud builds submit --config cloudbuild.yaml --project ${PROJECT} .`);
+console.log("\n[cloud-deploy] 🔑  Configuring Docker auth for Artifact Registry…\n");
+run(`gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet --project ${PROJECT}`);
 
-// ─── Step 2: Cloud Run deploy ────────────────────────────────────────────────
+// ─── Step 2: Build image locally (linux/amd64 for Cloud Run) ────────────────
+
+console.log("\n[cloud-deploy] 🏗  Building image locally (linux/amd64)…\n");
+run(`docker build --platform linux/amd64 -t ${IMAGE} .`);
+
+// ─── Step 3: Push to Artifact Registry ──────────────────────────────────────
+
+console.log("\n[cloud-deploy] 📤  Pushing image to Artifact Registry…\n");
+run(`docker push ${IMAGE}`);
+
+// ─── Step 4: Deploy to Cloud Run ────────────────────────────────────────────
 
 const envVars = adminPassword
-    ? `ADMIN_PASSWORD=${adminPassword}`
-    : "ADMIN_PASSWORD=";
+    ? `ADMIN_PASSWORD=${adminPassword},OFFLINE_MODE=false`
+    : "ADMIN_PASSWORD=,OFFLINE_MODE=false";
 
 console.log("\n[cloud-deploy] 🚀  Deploying to Cloud Run…\n");
 run(
@@ -72,4 +85,3 @@ function run(cmd) {
     console.log(`$ ${cmd}\n`);
     execSync(cmd, {stdio: "inherit", cwd: root});
 }
-

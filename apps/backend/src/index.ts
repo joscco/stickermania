@@ -19,11 +19,13 @@ import {registerWebSocket} from "./http/wsPlugin.js";
 const backendConfig = loadBackendConfig({argv: process.argv, cwd: process.cwd()});
 const {devMode} = backendConfig;
 
-const app = Fastify({logger: false, bodyLimit: 10 * 1024 * 1024, trustProxy: true}); // 10 MB for collage image uploads
+const app = Fastify({logger: false, bodyLimit: 10 * 1024 * 1024, trustProxy: true});
+
 
 // ─── Plugins ────────────────────────────────────────────────────
 
 await app.register(fastifyCookie);
+
 
 // WebSocket support (must be registered before routes that use it)
 if (!devMode) {
@@ -80,12 +82,10 @@ app.setNotFoundHandler(async (request, reply) => {
     if (request.url.startsWith("/api/")) {
         return reply.status(404).send({message: "Not found"});
     }
-
     const indexPath = path.resolve(frontendDist, "index.html");
     if (fs.existsSync(indexPath)) {
         return reply.type("text/html").send(fs.readFileSync(indexPath));
     }
-
     return reply.status(404).send("Frontend not built");
 });
 
@@ -109,8 +109,8 @@ console.log(`[backend] listening on port ${backendConfig.gameConfig.port}`);
 
 if (devMode) {
     console.log(`\nEditors available at:`);
-    console.log(`  http://localhost:${backendConfig.gameConfig.port}/#/editor`);
-    console.log(`  http://localhost:${backendConfig.gameConfig.port}/#/hitbox-editor`);
+    console.log(`  http://localhost:${backendConfig.gameConfig.port}/editor`);
+    console.log(`  http://localhost:${backendConfig.gameConfig.port}/hitbox-editor`);
 } else {
     console.log(`[backend] sessions stored in: ${backendConfig.sessionsPath}`);
     console.log(`[backend] assets stored in: ${backendConfig.assetsPath}`);

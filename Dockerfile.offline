@@ -1,0 +1,49 @@
+# Offline placeholder — Angular-built static page served via nginx.
+# No backend, no game logic. Full Tailwind + animOnInit styling.
+
+# ── Install dependencies ─────────────────────────────────────────────────────
+FROM node:20-bookworm-slim AS deps
+WORKDIR /app
+COPY package.json package-lock.json tsconfig.base.json ./
+COPY apps/frontend/package.json apps/frontend/package.json
+COPY packages/shared/package.json packages/shared/package.json
+RUN npm ci
+
+# ── Build Angular offline app ────────────────────────────────────────────────
+FROM deps AS build
+WORKDIR /app
+COPY tsconfig.base.json ./
+# shared/src is needed for the @birthday/shared path alias in tsconfig.offline.json
+COPY packages/shared/src/ packages/shared/src/
+COPY apps/frontend/ apps/frontend/
+RUN npm run build:offline -w @birthday/frontend
+
+# ── Serve with nginx on port 8080 ────────────────────────────────────────────
+FROM nginx:alpine
+RUN rm -rf /usr/share/nginx/html/*
+
+COPY --from=build /app/apps/frontend/dist/offline /tmp/dist
+RUN if [ -d /tmp/dist/browser ]; then \
+      cp -r /tmp/dist/browser/. /usr/share/nginx/html/; \
+    else \
+      cp -r /tmp/dist/. /usr/share/nginx/html/; \
+    fi && rm -rf /tmp/dist
+
+RUN echo 'events {}' > /etc/nginx/nginx.conf \
+ && echo 'http {'                                      >> /etc/nginx/nginx.conf \
+ && echo '  include /etc/nginx/mime.types;'            >> /etc/nginx/nginx.conf \
+ && echo '  default_type application/octet-stream;'    >> /etc/nginx/nginx.conf \
+ && echo '  server {'                                  >> /etc/nginx/nginx.conf \
+ && echo '    listen 8080;'                            >> /etc/nginx/nginx.conf \
+ && echo '    root /usr/share/nginx/html;'             >> /etc/nginx/nginx.conf \
+ && echo '    index index.html;'                       >> /etc/nginx/nginx.conf \
+ && echo '    add_header Cache-Control "no-store" always;' >> /etc/nginx/nginx.conf \
+ && echo '    location / {'                            >> /etc/nginx/nginx.conf \
+ && echo '      try_files $uri /index.html;'           >> /etc/nginx/nginx.conf \
+ && echo '    }'                                       >> /etc/nginx/nginx.conf \
+ && echo '  }'                                         >> /etc/nginx/nginx.conf \
+ && echo '}'                                           >> /etc/nginx/nginx.conf \
+ && nginx -t
+
+EXPOSE 8080
+CMD ["nginx", "-g", "daemon off;"]

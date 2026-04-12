@@ -47,6 +47,20 @@
               ],
               "outputHashing": "all"
             },
+            "offline": {
+              "browser": "src/offline/main.ts",
+              "index": "src/offline/index.html",
+              "outputPath": "dist/offline",
+              "outputHashing": "all",
+              "optimization": true,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                }
+              ]
+            },
             "development": {
               "optimization": false,
               "extractLicenses": false,
@@ -95,6 +109,39 @@
         },
         "test": {
           "builder": "@angular/build:unit-test"
+        }
+      }
+    },
+    "offline": {
+      "projectType": "application",
+      "root": "",
+      "sourceRoot": "src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "src/offline/main.ts",
+            "index": "src/offline/index.html",
+            "tsConfig": "tsconfig.offline.json",
+            "outputPath": "dist/offline",
+            "outputHashing": "all",
+            "optimization": true,
+            "styles": [
+              "src/styles.css"
+            ],
+            "assets": [
+              {
+                "glob": "DarumadropOne-Regular.ttf",
+                "input": "public/assets",
+                "output": "assets"
+              }
+            ]
+          },
+          "defaultConfiguration": "production",
+          "configurations": {
+            "production": {}
+          }
         }
       }
     }

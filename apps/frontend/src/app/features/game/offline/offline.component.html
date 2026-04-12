@@ -1,0 +1,45 @@
+<div class="min-h-dvh bg-stone-100 flex flex-col items-center justify-center px-4">
+
+  <div animOnInit="item" class="w-full max-w-md rounded-3xl bg-white border border-black/5 shadow-sm p-8 text-center">
+
+    <!-- Floating emoji row -->
+    <div class="flex justify-center gap-3 mb-6">
+      <span class="text-4xl" style="display:inline-block; animation: float 3s ease-in-out infinite;">🎉</span>
+      <span class="text-4xl" style="display:inline-block; animation: float 3s ease-in-out 0.4s infinite;">✨</span>
+      <span class="text-4xl" style="display:inline-block; animation: float 3s ease-in-out 0.8s infinite;">🎈</span>
+    </div>
+
+    <!-- Status badge -->
+    <div class="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium rounded-full px-3 py-1.5 mb-5">
+      <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+      Gerade offline
+    </div>
+
+    <!-- Title -->
+    <h1 class="text-3xl text-stone-900 mb-2" style="font-family: 'Darumadrop One', sans-serif;">
+      Stickermania
+    </h1>
+
+    <p class="text-sm text-stone-500 leading-relaxed mb-7">
+      Die App ist gerade nicht aktiv.<br/>
+      Bald geht's wieder los!
+    </p>
+
+    <div class="h-px bg-black/5 mb-5"></div>
+
+    <p class="text-xs text-stone-400 leading-relaxed">
+      Der Moderator startet die Session kurz vor dem Spielen.<br/>
+      Dann einfach diese Seite neu laden und lossticken! 🖼️
+    </p>
+
+  </div>
+
+</div>
+
+<style>
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-8px); }
+  }
+</style>
+

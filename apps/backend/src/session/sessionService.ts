@@ -69,8 +69,8 @@ export class SessionService {
         return {
             sessionId,
             sessionCode,
-            playerJoinUrl: `${args.baseUrl}/#/join/${encodeURIComponent(sessionCode)}`,
-            boardUrl: `${args.baseUrl}/#/board/${encodeURIComponent(sessionCode)}`,
+            playerJoinUrl: `${args.baseUrl}/join/${encodeURIComponent(sessionCode)}`,
+            boardUrl: `${args.baseUrl}/board/${encodeURIComponent(sessionCode)}`,
             createdAt: state.createdAt,
             expiresAt: state.expiresAt,
         };

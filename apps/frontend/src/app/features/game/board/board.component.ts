@@ -142,7 +142,7 @@ export class BoardComponent implements OnInit, OnDestroy {
       this.sessionId = resolvedSession.sessionId;
       this.sessionCode.set(resolvedSession.sessionCode);
 
-      const playerPageUrl = `${window.location.origin}/#/player?session=${encodeURIComponent(resolvedSession.sessionCode)}`;
+      const playerPageUrl = `${window.location.origin}/player?session=${encodeURIComponent(resolvedSession.sessionCode)}`;
       this.playerUrl.set(playerPageUrl);
       this.playerQrDataUrl.set(await QRCode.toDataURL(playerPageUrl, {margin: 1, scale: 6}));
 

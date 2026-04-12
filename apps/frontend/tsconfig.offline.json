@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/offline",
+    "types": [],
+    "paths": {
+      "@birthday/shared": ["../../packages/shared/src/index.ts"]
+    }
+  },
+  "include": [
+    "src/offline/**/*.ts"
+  ]
+}
+
