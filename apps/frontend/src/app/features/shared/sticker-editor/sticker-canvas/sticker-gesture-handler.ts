@@ -248,7 +248,9 @@ export class StickerGestureHandler {
         }
       }
 
-      if (this.didMove) this.callbacks.onPointerUpCommit?.();
+      if (this.didMove) {
+        this.callbacks.onPointerUpCommit?.();
+      }
       this.finaliseLasso();
       this.moveActive = false;
       this.moveBaselines = [];

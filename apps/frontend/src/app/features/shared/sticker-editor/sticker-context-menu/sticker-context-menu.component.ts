@@ -58,11 +58,19 @@ export class StickerContextMenuComponent implements AfterViewChecked {
         // Animate in once when panel first appears
         if (!this.hasAnimatedIn) {
             this.hasAnimatedIn = true;
+            this.animateIn();
+        }
+    }
+
+    animateIn(): Promise<void> {
+        const el = this.panelRef?.nativeElement;
+        if (!el) return Promise.resolve();
+        return new Promise(resolve => {
             gsap.fromTo(el,
                 {opacity: 0, scale: 0.85, y: -6},
-                {opacity: 1, scale: 1, y: 0, duration: 0.18, ease: 'back.out(2)', transformOrigin: 'top left'},
+                {opacity: 1, scale: 1, y: 0, duration: 0.18, ease: 'back.out(2)', transformOrigin: 'top left', onComplete: resolve},
             );
-        }
+        });
     }
 
     /** Animate out, then call the callback. Used by the parent before hiding the menu. */

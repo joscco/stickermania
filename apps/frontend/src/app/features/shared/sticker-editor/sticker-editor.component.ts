@@ -56,10 +56,14 @@ export class StickerEditorComponent {
   private readonly removingIds = new Set<string>();
 
   public onStickerDragFromPaletteStarted(event: StickerDragStartEvent): void {
-    if (!this.canAddMore()) return;
+    if (!this.canAddMore()) {
+      return;
+    }
 
     const canvasEl = this.stickerCanvas?.canvasNativeElement;
-    if (!canvasEl) return;
+    if (!canvasEl) {
+      return;
+    }
     const rect = canvasEl.getBoundingClientRect();
 
     // Place sticker at the exact pointer position (canvas-local coords).

@@ -86,7 +86,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   readonly canGroup = computed(() => {
     const ids = this.selectionIds();
-    if (ids.length < 2) return false;
+    if (ids.length < 2) {
+      return false;
+    }
     const all = this.stickers();
     const first = all.find(p => p.instanceId === ids[0]);
     return !first?.groupId || ids.some(id => all.find(p => p.instanceId === id)?.groupId !== first.groupId);
@@ -99,7 +101,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   /** True when all selected stickers share the same groupId (persistent group, not lasso). */
   readonly isGroupSelection = computed(() => {
     const ids = this.selectionIds();
-    if (ids.length < 2) return false;
+    if (ids.length < 2) {
+      return false;
+    }
     const all = this.stickers();
     const firstGid = (all.find(p => p.instanceId === ids[0]) as any)?.groupId as string | undefined;
     return !!firstGid && ids.every(id => (all.find(p => p.instanceId === id) as any)?.groupId === firstGid);
@@ -234,7 +238,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       this.gesture,
       () => {
         this.menuVisible.set(false);
-        this.syncGesture();
+        this.gesture.syncState(this.stickers(), this.selectedInstanceId(), this.lassoSelection());
       },
       () => this.paletteDragInProgress(),
     );
@@ -248,6 +252,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       if (this.paletteDragInProgress()) return;
       this.clearSelection();
     };
+
     document.addEventListener('pointerdown', onOutside, {capture: true});
     this.removeOutsideListener = () =>
       document.removeEventListener('pointerdown', onOutside, {capture: true});
@@ -469,10 +474,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   /** Store the rendered size for a new sticker before its <img> has loaded. */
   cacheRenderedSize(instanceId: string, w: number, h: number): void {
     this.renderedSizeCache.set(instanceId, {width: w, height: h});
-  }
-
-  private syncGesture(): void {
-    this.gesture.syncState(this.stickers(), this.selectedInstanceId(), this.lassoSelection());
   }
 }
 

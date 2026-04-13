@@ -1,13 +1,14 @@
 import type {StickerGestureHandler} from './sticker-gesture-handler';
 
 /**
- * Installs all pointer/touch/mouse event listeners on the canvas element.
+ * Installs Pointer Events listeners on the canvas element.
  * Returns a cleanup function that removes every listener.
  *
  * Rules:
  * - Overlay elements (context menu, handles) are excluded via `[data-canvas-overlay]`
- * - touchmove/touchend on overlay elements are NOT prevented so click synthesis works
- * - Mouse drag is tracked globally (document) so fast moves don't lose the pointer
+ * - `setPointerCapture` keeps move/up events routed here even when the pointer
+ *   leaves the element – no need for global document listeners anymore.
+ * - `touch-action: none` still suppresses native scroll/pinch-zoom.
  */
 export function installCanvasInputListeners(
     el: HTMLElement,
@@ -15,78 +16,49 @@ export function installCanvasInputListeners(
     onInteractionStart: () => void,
     isBlocked: () => boolean = () => false,
 ): () => void {
+    // Prevent default touch behaviors (scroll/pinch-zoom) on the canvas.
     el.style.touchAction = 'none';
     (el.style as any).webkitTouchCallout = 'none';
     (el.style as any).webkitUserSelect   = 'none';
 
+    // Menu or transform overlay
     const isOverlay = (ev: Event) =>
         !!(ev.target as HTMLElement).closest('[data-canvas-overlay]');
 
-    // ── Touch ─────────────────────────────────────────────────────────────────
+    // ── Pointer Events ────────────────────────────────────────────────────────
 
-    const onTouchStart = (ev: TouchEvent) => {
-        if (isBlocked() || isOverlay(ev)) return;
+    const onPointerDown = (ev: PointerEvent) => {
+        if (isBlocked() || (ev.pointerType === 'mouse' && ev.button !== 0) || isOverlay(ev)) return;
         ev.preventDefault();
         onInteractionStart();
-        for (const t of Array.from(ev.changedTouches))
-            gesture.onPointerDown(t.identifier, t.clientX, t.clientY);
+        el.setPointerCapture(ev.pointerId);
+        gesture.onPointerDown(ev.pointerId, ev.clientX, ev.clientY);
     };
-    const onTouchMove = (ev: TouchEvent) => {
+
+    const onPointerMove = (ev: PointerEvent) => {
         if (isBlocked() || isOverlay(ev)) return;
         ev.preventDefault();
-        for (const t of Array.from(ev.changedTouches))
-            gesture.onPointerMove(t.identifier, t.clientX, t.clientY);
+        gesture.onPointerMove(ev.pointerId, ev.clientX, ev.clientY);
     };
-    const onTouchEnd = (ev: TouchEvent) => {
+
+    const onPointerUp = (ev: PointerEvent) => {
         if (isBlocked() || isOverlay(ev)) return;
         ev.preventDefault();
-        for (const t of Array.from(ev.changedTouches))
-            gesture.onPointerUp(t.identifier, t.clientX, t.clientY);
-    };
-
-    // ── Mouse ─────────────────────────────────────────────────────────────────
-
-    let cleanupMouse: (() => void) | null = null;
-
-    const onMouseDown = (ev: MouseEvent) => {
-        if (isBlocked() || ev.button !== 0 || isOverlay(ev)) return;
-        ev.preventDefault();
-        onInteractionStart();
-        gesture.onPointerDown(-1, ev.clientX, ev.clientY);
-
-        const onMove = (e: MouseEvent) => {
-            e.preventDefault();
-            gesture.onPointerMove(-1, e.clientX, e.clientY);
-        };
-        const onUp = (e: MouseEvent) => {
-            gesture.onPointerUp(-1, e.clientX, e.clientY);
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup',   onUp);
-            cleanupMouse = null;
-        };
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup',   onUp);
-        cleanupMouse = () => {
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup',   onUp);
-        };
+        gesture.onPointerUp(ev.pointerId, ev.clientX, ev.clientY);
     };
 
     // ── Register ──────────────────────────────────────────────────────────────
 
-    el.addEventListener('touchstart',  onTouchStart, {passive: false});
-    el.addEventListener('touchmove',   onTouchMove,  {passive: false});
-    el.addEventListener('touchend',    onTouchEnd,   {passive: false});
-    el.addEventListener('touchcancel', onTouchEnd,   {passive: false});
-    el.addEventListener('mousedown',   onMouseDown);
+    el.addEventListener('pointerdown',   onPointerDown,  {passive: false});
+    el.addEventListener('pointermove',   onPointerMove,  {passive: false});
+    el.addEventListener('pointerup',     onPointerUp,    {passive: false});
+    el.addEventListener('pointercancel', onPointerUp,    {passive: false});
 
     return () => {
-        el.removeEventListener('touchstart',  onTouchStart as EventListener);
-        el.removeEventListener('touchmove',   onTouchMove  as EventListener);
-        el.removeEventListener('touchend',    onTouchEnd   as EventListener);
-        el.removeEventListener('touchcancel', onTouchEnd   as EventListener);
-        el.removeEventListener('mousedown',   onMouseDown);
-        cleanupMouse?.();
+        el.removeEventListener('pointerdown',   onPointerDown);
+        el.removeEventListener('pointermove',   onPointerMove);
+        el.removeEventListener('pointerup',     onPointerUp);
+        el.removeEventListener('pointercancel', onPointerUp);
     };
 }
 

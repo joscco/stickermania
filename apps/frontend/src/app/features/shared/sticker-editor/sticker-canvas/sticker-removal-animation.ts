@@ -17,9 +17,13 @@ export function animateStickerRemoval(
     done: () => void,
 ): void {
     const toAnimate = instanceIds.filter(id => !removingIds.has(id));
-    if (!toAnimate.length) return;
+    if (!toAnimate.length) {
+      return;
+    }
 
-    for (const id of toAnimate) removingIds.add(id);
+    for (const id of toAnimate) {
+      removingIds.add(id);
+    }
 
     const wrappers = toAnimate
         .map(id => canvasEl.querySelector<HTMLElement>(`[data-removal-wrapper-for="${id}"]`))
