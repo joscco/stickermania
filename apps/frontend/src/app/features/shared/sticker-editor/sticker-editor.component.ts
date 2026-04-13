@@ -25,8 +25,8 @@ import type {StickerDefinition, StickerPlacement} from "@birthday/shared";
 import gsap from 'gsap';
 import {StickerCanvasComponent} from './sticker-canvas/sticker-canvas.component';
 import {StickerDragStartEvent, StickerPaletteComponent} from './sticker-palette/sticker-palette.component';
-import {AnimOnInitDirective} from '../../../shared/animations/anim-on-init.directive';
 import {animateStickerRemoval} from './sticker-canvas/sticker-removal-animation';
+import {AnimOnInitDirective} from '../animations/anim-on-init.directive';
 
 @Component({
     selector: "app-sticker-editor",

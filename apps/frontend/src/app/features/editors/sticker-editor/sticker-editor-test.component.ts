@@ -3,8 +3,8 @@ import {CommonModule} from "@angular/common";
 import {RouterModule} from "@angular/router";
 import {HttpClient} from "@angular/common/http";
 import type {StickerDefinition} from "@birthday/shared";
-import {StickerEditorComponent} from '../../game/shared/sticker-editor/sticker-editor.component';
 import {firstValueFrom} from "rxjs";
+import {StickerEditorComponent} from '../../shared/sticker-editor/sticker-editor.component';
 
 @Component({
     selector: "app-sticker-editor-test",

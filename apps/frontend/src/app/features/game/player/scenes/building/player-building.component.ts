@@ -1,11 +1,11 @@
 import {Component, computed, inject, ViewChild, OnDestroy} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import {StickerPlayerService} from '../../../services/sticker-player.service';
-import {StickerEditorComponent} from '../../../shared/sticker-editor/sticker-editor.component';
 import {GameSessionStore} from '../../../../../core/challenge.store';
 import {ApiService} from '../../../../../core/api.service';
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import type {StickerDefinition, StickerPlacement} from "@birthday/shared";
+import {StickerEditorComponent} from '../../../../shared/sticker-editor/sticker-editor.component';
 
 @Component({
     selector: "app-player-building",

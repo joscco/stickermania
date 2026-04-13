@@ -15,7 +15,7 @@ import {StickerUndoStack} from '../sticker-shared/sticker-undo-stack';
 import type {BoundingBox} from '../sticker-shared/sticker-types';
 import * as ops from '../sticker-shared/sticker-placement-ops';
 import {HandleDragEvent, StickerSelectionOverlayComponent} from './sticker-selection-overlay/sticker-selection-overlay.component';
-import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
+import {AnimOnInitDirective} from '../../animations/anim-on-init.directive';
 
 @Component({
   selector: 'app-sticker-canvas',
