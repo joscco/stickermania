@@ -22,7 +22,6 @@ import type {StickerDefinition, StickerPlacement} from "@birthday/shared";
  * the sticker is removed with a disappear animation.
  */
 
-import gsap from 'gsap';
 import {StickerCanvasComponent} from './sticker-canvas/sticker-canvas.component';
 import {StickerDragStartEvent, StickerPaletteComponent} from './sticker-palette/sticker-palette.component';
 import {animateStickerRemoval} from './sticker-canvas/sticker-removal-animation';
@@ -111,17 +110,6 @@ export class StickerEditorComponent {
     // ── Drive move + pinch via window-level pointer events ─────
     const instanceId = newPlacement.instanceId;
 
-    // Entry animation — rAF only so the DOM element exists when GSAP queries it
-    requestAnimationFrame(() => {
-      const img = canvasEl.querySelector<HTMLElement>(`[data-removal-wrapper-for="${instanceId}"] img`);
-      if (img) {
-        gsap.fromTo(img,
-          {scale: 0.3, transformOrigin: '50% 50%'},
-          {scale: 1, duration: 0.18, ease: 'back.out(1.5)', overwrite: true,
-           onComplete: () => { gsap.set(img, {clearProps: 'transform,transformOrigin'}); }},
-        );
-      }
-    });
 
     let stickerX = newPlacement.x;
     let stickerY = newPlacement.y;
@@ -212,16 +200,22 @@ export class StickerEditorComponent {
 
       pointers.delete(ev.pointerId);
 
-      if (pointers.size === 1) return; // second finger lifted, single-finger move continues
-      if (pointers.size > 0) return;   // still fingers down
+      if (pointers.size === 1) {
+        // Second finger lifted → re-anchor single-finger move from current position
+        initPinch(); // resets pinch baseline, harmless if only 1 pointer
+        return;
+      }
+      if (pointers.size > 0) return; // still more than 1 finger down
 
       // All fingers up → finalize
-      cleanup();
       const r = canvasEl.getBoundingClientRect();
       const outside = isPointerOutsideRect(ev.clientX, ev.clientY, r) ||
         isPositionOutsideCanvas(stickerX, stickerY, r);
 
+      // Always reset visual state before cleanup so no stale flags remain.
       this.stickerCanvas.isMoveActive.set(false);
+      this.stickerCanvas.stickerWouldBeDeleted.set(false);
+      cleanup();
 
       if (outside) {
         this.stickerCanvas.selectedInstanceId.set(null);
@@ -232,7 +226,6 @@ export class StickerEditorComponent {
           this.placementsChanged.emit(updated);
         });
       } else {
-        this.stickerCanvas.stickerWouldBeDeleted.set(false);
         this.stickerCanvas.selectedInstanceId.set(instanceId);
       }
     };
@@ -242,6 +235,10 @@ export class StickerEditorComponent {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onUp);
+      // Always clear both visual flags – order matters: paletteDragInProgress last
+      // so the canvas doesn't briefly unblock before the other flags are clean.
+      this.stickerCanvas.isMoveActive.set(false);
+      this.stickerCanvas.stickerWouldBeDeleted.set(false);
       this.stickerCanvas.paletteDragInProgress.set(false);
       this.paletteDragCleanup = null;
     };

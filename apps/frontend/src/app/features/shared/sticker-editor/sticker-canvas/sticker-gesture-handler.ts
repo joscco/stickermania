@@ -200,7 +200,7 @@ export class StickerGestureHandler {
       this.didMove = true;
       if (this.callbacks.onDragNearEdge && this.hasSelection()) {
         this.callbacks.onDragNearEdge(
-          this.isPointerOrCentroidOutside(clientX, clientY, rect, updated),
+          this.isPointerOrCentroidNotOnCanvas(clientX, clientY, rect, updated),
         );
       }
       return;
@@ -232,7 +232,7 @@ export class StickerGestureHandler {
           const b = this.moveBaselines.find(b => b.instanceId === p.instanceId);
           return b ? {...p, x: b.baseX + dx, y: b.baseY + dy} : p;
         });
-        const outside = this.isPointerOrCentroidOutside(clientX, clientY, rect, finalPlacements);
+        const outside = this.isPointerOrCentroidNotOnCanvas(clientX, clientY, rect, finalPlacements);
         if (outside && this.hasSelection()) {
           const ids = this.currentSelectionIds();
           this.selectedInstanceId = null;
@@ -297,7 +297,7 @@ export class StickerGestureHandler {
    * is outside the canvas bounds. This allows stickers to be deleted when
    * they're dragged to the edge even if the pointer is still barely inside.
    */
-  private isPointerOrCentroidOutside(clientX: number, clientY: number, rect: DOMRect, placements?: StickerPlacement[]): boolean {
+  private isPointerOrCentroidNotOnCanvas(clientX: number, clientY: number, rect: DOMRect, placements?: StickerPlacement[]): boolean {
     if (isPointerOutsideRect(clientX, clientY, rect)) return true;
 
     const source = placements ?? this.stickers;

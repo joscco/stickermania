@@ -56,25 +56,5 @@ export class PageTransitionService {
       onComplete: action,
     });
   }
-
-  /**
-   * Dasselbe wie `leaveAndNavigate`, aber für interne Screen-Wechsel
-   * (z. B. LOBBY → BUILDING). Animiert nur opacity, kein y-Shift.
-   */
-  public leaveAndSwitch(action: () => void, durationMs = 200): void {
-    const el = this.currentEl;
-    if (!el) {
-      action();
-      return;
-    }
-
-    gsap.to(el, {
-      opacity: 0,
-      duration: durationMs / 1000,
-      ease: "power1.in",
-      overwrite: true,
-      onComplete: action,
-    });
-  }
 }
 

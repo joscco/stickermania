@@ -3,7 +3,6 @@ import {
     ViewChild, AfterViewInit, OnDestroy, NgZone,
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
-import gsap from 'gsap';
 import type {StickerDefinition} from '@birthday/shared';
 import {CANVAS_STICKER_PX} from '../sticker-types';
 
@@ -125,26 +124,8 @@ export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
     }
 
     private animatePage(updateFn: () => void): void {
-        const el = this.rowEl?.nativeElement;
-        if (!el) { updateFn(); return; }
-        const items   = Array.from(el.querySelectorAll<HTMLElement>('[data-thumb]'));
-        const targets = items.length ? items : [el];
-        gsap.to(targets, {
-            scale: 0, opacity: 0, duration: 0.16, ease: 'power2.in',
-            onComplete: () => {
-                this.zone.run(() => {
-                    updateFn();
-                    setTimeout(() => {
-                        const next = Array.from(el.querySelectorAll<HTMLElement>('[data-thumb]'));
-                        gsap.fromTo(
-                            next.length ? next : [el],
-                            {scale: 0, opacity: 0},
-                            {scale: 1, opacity: 1, duration: 0.22, ease: 'power2.out', stagger: 0.025},
-                        );
-                    }, 0);
-                });
-            },
-        });
+        // [ANIMATIONS DISABLED] update immediately without GSAP transition
+        updateFn();
     }
 }
 

@@ -10,14 +10,23 @@
 
   <!-- Delete-zone overlay (animated via GSAP) -->
   <div #deleteZone
+       [animPresence]="stickerWouldBeDeleted()"
+       [animPresenceType]="'opacity'"
        data-delete-zone
        class="absolute inset-0 pointer-events-none flex items-center justify-center"
        style="z-index: 9999; opacity: 0; visibility: hidden;">
-    <div class="absolute inset-0" style="background: repeating-linear-gradient(-45deg, rgba(239,68,68,0.09) 0px, rgba(239,68,68,0.09) 8px, transparent 8px, transparent 16px);"></div>
-    <div data-delete-badge class="relative flex flex-col items-center gap-1.5 text-white rounded-2xl px-5 py-3 shadow-xl" style="background: rgba(239,68,68,0.88); backdrop-filter: blur(4px);">
-      <svg viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M8 6V4h8v2"/>
-        <line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+    <div class="absolute inset-0"
+         style="background: repeating-linear-gradient(-45deg, rgba(239,68,68,0.09) 0px, rgba(239,68,68,0.09) 8px, transparent 8px, transparent 16px);"></div>
+    <div data-delete-badge
+         class="relative flex flex-col items-center gap-1.5 text-white rounded-2xl px-5 py-3 shadow-xl"
+         style="background: rgba(239,68,68,0.88); backdrop-filter: blur(4px);">
+      <svg viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+           stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6l-1 14H6L5 6"/>
+        <path d="M8 6V4h8v2"/>
+        <line x1="10" y1="11" x2="10" y2="17"/>
+        <line x1="14" y1="11" x2="14" y2="17"/>
       </svg>
       <span class="text-xs font-semibold tracking-wide">Loslassen zum Löschen</span>
     </div>
@@ -30,7 +39,7 @@
        all around the same pivot point (p.x, p.y). -->
   @for (sticker of stickers(); track sticker.instanceId) {
     <div
-      class="absolute select-none w-max origin-top-left"
+      class="absolute select-none w-max origin-top-left transition-opacity duration-500"
       [class.opacity-40]="isSelected(sticker.instanceId) && stickerWouldBeDeleted()"
       [style.left.px]="sticker.x"
       [style.top.px]="sticker.y"
@@ -39,10 +48,12 @@
       [attr.data-instance-id]="sticker.instanceId"
       [attr.data-removal-wrapper-for]="sticker.instanceId"
     >
-      <img [src]="getStickerUrl(sticker.stickerId)" [alt]="sticker.stickerId" class="h-16 w-auto block pointer-events-none" draggable="false"/>
+      <img [src]="getStickerUrl(sticker.stickerId)" [alt]="sticker.stickerId"
+           class="h-16 w-auto block pointer-events-none" draggable="false"/>
 
       @if (isSelected(sticker.instanceId) && getHitboxSvgPoints(sticker.stickerId)) {
-        <svg class="absolute pointer-events-none" style="left:-5%;top:-5%;width:110%;height:110%;overflow:visible;" viewBox="-0.05 -0.05 1.1 1.1" preserveAspectRatio="none">
+        <svg class="absolute pointer-events-none" style="left:-5%;top:-5%;width:110%;height:110%;overflow:visible;"
+             viewBox="-0.05 -0.05 1.1 1.1" preserveAspectRatio="none">
           <polygon
             [attr.points]="getHitboxSvgPoints(sticker.stickerId)"
             [attr.stroke]="isLassoSelected(sticker.instanceId) ? '#f59e0b' : '#a855f7'"
@@ -87,32 +98,31 @@
   }
 
   <!-- Context menu -->
-  @if (menuVisible() && !stickerWouldBeDeleted()) {
-    <div data-canvas-overlay style="pointer-events:none;position:absolute;inset:0;z-index:9400;">
-      <app-sticker-context-menu
-        #contextMenu
-        [visible]="menuVisible()"
-        [anchorX]="menuAnchorX()"
-        [anchorY]="menuAnchorY()"
-        [canvasW]="canvasW()"
-        [canvasH]="canvasH()"
-        [isMulti]="isMultiSelection()"
-        [canGroup]="canGroup()"
-        [canUngroup]="canUngroup()"
-        [stretchMode]="stretchMode()"
-        (action)="onContextMenuAction($event)"
-      />
-    </div>
-  }
+  <div [animPresence]="menuVisible() && !stickerWouldBeDeleted()"
+       style="pointer-events:none;position:absolute;inset:0;z-index:9400;">
+    <app-sticker-context-menu
+      #contextMenu
+      [visible]="menuVisible()"
+      [anchorX]="menuAnchorX()"
+      [anchorY]="menuAnchorY()"
+      [canvasW]="canvasW()"
+      [canvasH]="canvasH()"
+      [isMulti]="isMultiSelection()"
+      [canGroup]="canGroup()"
+      [canUngroup]="canUngroup()"
+      [stretchMode]="stretchMode()"
+      (action)="onContextMenuAction($event)"
+    />
+  </div>
 
-  @if (stickers().length === 0) {
-    <div animOnInit="item" class="absolute inset-0 flex items-center justify-center text-stone-300 pointer-events-none">
-      <div class="text-center">
-        <div class="mb-2">
-          <span class="scale-150 material-symbols-rounded">drag_pan</span>
-        </div>
-        <p class="text-sm">Sticker unten festhalten<br/>und auf die Fläche ziehen</p>
+  <div [animPresence]="stickers().length === 0"
+       [animPresenceType]="'opacity'"
+       class="absolute inset-0 flex items-center justify-center text-stone-300 pointer-events-none">
+    <div class="text-center">
+      <div class="mb-2">
+        <span class="scale-150 material-symbols-rounded">drag_pan</span>
       </div>
+      <p class="text-sm">Sticker unten festhalten<br/>und auf die Fläche ziehen</p>
     </div>
-  }
+  </div>
 </div>

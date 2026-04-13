@@ -11,7 +11,7 @@ import {
 } from "@angular/core";
 import gsap from "gsap";
 
-export type AnimType = "banner" | "item" | "strip" | "players" | "medal" | "choice" | "overlay";
+export type AnimType = "opacity" | "banner" | "item" | "strip" | "players" | "medal" | "choice" | "overlay";
 
 interface AnimPreset {
   from: gsap.TweenVars;
@@ -19,6 +19,7 @@ interface AnimPreset {
 }
 
 const PRESETS: Record<AnimType, AnimPreset> = {
+  opacity: {from: {opacity: 0}, to: {opacity: 1, duration: 0.3, ease: "power2.out"}},
   banner: {from: {opacity: 0, y: -24}, to: {opacity: 1, y: 0, duration: 0.45, ease: "power2.out"}},
   item: {from: {opacity: 0, y: 18}, to: {opacity: 1, y: 0, duration: 0.35, ease: "power2.out"}},
   strip: {from: {opacity: 0, x: 60}, to: {opacity: 1, x: 0, duration: 0.55, ease: "power2.out"}},

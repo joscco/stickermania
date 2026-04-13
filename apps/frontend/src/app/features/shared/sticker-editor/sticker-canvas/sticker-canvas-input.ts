@@ -42,7 +42,7 @@ export function installCanvasInputListeners(
     };
 
     const onPointerUp = (ev: PointerEvent) => {
-        if (isBlocked() || isOverlay(ev)) return;
+        if (isBlocked()) return;
         ev.preventDefault();
         gesture.onPointerUp(ev.pointerId, ev.clientX, ev.clientY);
     };
