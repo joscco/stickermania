@@ -122,7 +122,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   private removeOutsideListener: (() => void) | null = null;
   private resizeObserver: ResizeObserver | null = null;
   private readonly removingIds = new Set<string>();
-  private readonly renderedSizeCache = new Map<string, { w: number; h: number }>();
+  private readonly renderedSizeCache = new Map<string, { width: number; height: number }>();
 
   private dragNearEdgePrev = false;
 
@@ -189,7 +189,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     this.gesture = new StickerGestureHandler(
       () => this.canvasArea.nativeElement.getBoundingClientRect(),
       (cx, cy) => hitTestOnCanvas(cx, cy, this.canvasArea.nativeElement.getBoundingClientRect(), this.stickers(), id => this.getRenderedSize(id), this.catalogMap),
-      id => this.getRenderedSize(id),
       {
         onPlacementsChanged: p => this.emitPlacements(p),
         onLassoPathChanged: path => this.lassoPath.set(path),
@@ -354,7 +353,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     }
     // 'se' — uniform scale
     const bb = this.boundingBox();
-    this.emitPlacements(ops.applyCornerScale(this.stickers(), ids, ev.handle as 'nw' | 'ne' | 'se' | 'sw', ev.dx, ev.dy, bb ? {w: bb.w, h: bb.h} : null, id => this.getRenderedSize(id)));
+    this.emitPlacements(ops.applyCornerScale(this.stickers(), ids, ev.handle as 'nw' | 'ne' | 'se' | 'sw', ev.dx, ev.dy, bb ? {width: bb.w, height: bb.h} : null, id => this.getRenderedSize(id)));
     if (ev.done) this.undo.push(this.stickers());
   }
 
@@ -486,20 +485,22 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     this.multiSelectionRotation.set(0);
   }
 
-  private getRenderedSize(instanceId: string): { w: number; h: number } {
+  private getRenderedSize(instanceId: string): { width: number; height: number } {
     const wrapper = this.canvasArea?.nativeElement.querySelector<HTMLElement>(`[data-instance-id="${instanceId}"]`);
     const img     = wrapper?.querySelector('img') as HTMLImageElement | null;
     if (img && img.offsetWidth > 0 && img.offsetHeight > 0) {
-      return {w: img.offsetWidth, h: img.offsetHeight};
+      return {width: img.offsetWidth, height: img.offsetHeight};
     }
     const cached = this.renderedSizeCache.get(instanceId);
-    if (cached) return cached;
-    return {w: 64, h: 64};
+    if (cached){
+      return cached;
+    }
+    return {width: 64, height: 64};
   }
 
   /** Store the rendered size for a new sticker before its <img> has loaded. */
   cacheRenderedSize(instanceId: string, w: number, h: number): void {
-    this.renderedSizeCache.set(instanceId, {w, h});
+    this.renderedSizeCache.set(instanceId, {width: w, height: h});
   }
 
   private syncGesture(): void {

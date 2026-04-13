@@ -132,8 +132,8 @@ export function applyCornerScale(
     corner: 'nw' | 'ne' | 'se' | 'sw',
     dx: number,
     dy: number,
-    boundingBoxSize: {w: number; h: number} | null,
-    getRenderedSize: (id: string) => {w: number; h: number},
+    boundingBoxSize: {width: number; height: number} | null,
+    getRenderedSize: (id: string) => {width: number; height: number},
 ): StickerPlacement[] {
     const signX  = (corner === 'ne' || corner === 'se') ? 1 : -1;
     const signY  = (corner === 'se' || corner === 'sw') ? 1 : -1;
@@ -143,9 +143,9 @@ export function applyCornerScale(
     const delta  = (dx * signX + dy * signY) / 2;
 
     if (ids.length !== 1) {
-        if (!boundingBoxSize || boundingBoxSize.w < 1 || boundingBoxSize.h < 1) return placements;
+        if (!boundingBoxSize || boundingBoxSize.width < 1 || boundingBoxSize.height < 1) return placements;
         // half-diagonal of the bounding box
-        const halfDiag = Math.max(boundingBoxSize.w, boundingBoxSize.h) / 2;
+        const halfDiag = Math.max(boundingBoxSize.width, boundingBoxSize.height) / 2;
         const factor = (halfDiag + delta) / halfDiag;
         return applyGroupTransform(placements, ids, 0, clamp(factor, 0.05, 6), null);
     }
@@ -153,9 +153,9 @@ export function applyCornerScale(
     const id = ids[0];
     const p  = placements.find(s => s.instanceId === id);
     if (!p) return placements;
-    const {w, h} = getRenderedSize(id);
+    const {width, height} = getRenderedSize(id);
     // Current half-size of the rendered sticker
-    const halfSize = Math.max(w, h) * p.scale / 2;
+    const halfSize = Math.max(width, height) * p.scale / 2;
     if (halfSize < 1) return placements;
     const newScale = clamp(p.scale * (halfSize + delta) / halfSize, 0.1, 6);
     return placements.map(pl => pl.instanceId === id ? {...pl, scale: newScale} : pl);
@@ -176,18 +176,18 @@ export function applyStretchHandle(
     handle: 'n' | 's' | 'e' | 'w',
     dx: number,
     dy: number,
-    getRenderedSize: (id: string) => {w: number; h: number},
+    getRenderedSize: (id: string) => {width: number; height: number},
 ): StickerPlacement[] {
     const p = placements.find(s => s.instanceId === id);
     if (!p) return placements;
     const pp = p as any;
-    const {w, h} = getRenderedSize(id);
+    const {width, height} = getRenderedSize(id);
     let newScaleX = pp.scaleX ?? 1;
     let newScaleY = pp.scaleY ?? 1;
     // The handle sits at half-width/half-height from center.
     // To make the handle track the mouse 1:1, use ratio: (halfSize + delta) / halfSize
-    const halfW = w * p.scale * newScaleX / 2;
-    const halfH = h * p.scale * newScaleY / 2;
+    const halfW = width * p.scale * newScaleX / 2;
+    const halfH = height * p.scale * newScaleY / 2;
     if (handle === 'e' && halfW > 0) newScaleX = Math.max(0.1, newScaleX * (halfW + dx) / halfW);
     if (handle === 'w' && halfW > 0) newScaleX = Math.max(0.1, newScaleX * (halfW - dx) / halfW);
     if (handle === 's' && halfH > 0) newScaleY = Math.max(0.1, newScaleY * (halfH + dy) / halfH);
@@ -234,7 +234,7 @@ export function duplicatePlacements(
 export function computeSelectionInfo(
     placements: StickerPlacement[],
     ids: string[],
-    getSize: (instanceId: string) => {w: number; h: number},
+    getSize: (instanceId: string) => {width: number; height: number},
     overrideRotation = 0,
 ): {box: BoundingBox; rotation: number} | null {
     if (!ids.length) return null;
@@ -245,9 +245,9 @@ export function computeSelectionInfo(
     if (ids.length === 1) {
         const p  = selected[0];
         const pp = p as any;
-        const {w, h} = getSize(p.instanceId);
-        const hw = w * p.scale * (pp.scaleX ?? 1) / 2;
-        const hh = h * p.scale * (pp.scaleY ?? 1) / 2;
+        const {width, height} = getSize(p.instanceId);
+        const hw = width * p.scale * (pp.scaleX ?? 1) / 2;
+        const hh = height * p.scale * (pp.scaleY ?? 1) / 2;
         return {box: {x: p.x - hw, y: p.y - hh, w: hw * 2, h: hh * 2}, rotation: p.rotation};
     }
 
@@ -264,9 +264,9 @@ export function computeSelectionInfo(
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         for (const p of selected) {
             const pp = p as any;
-            const {w, h} = getSize(p.instanceId);
-            const hw   = w * p.scale * (pp.scaleX ?? 1) / 2;
-            const hh   = h * p.scale * (pp.scaleY ?? 1) / 2;
+            const {width, height} = getSize(p.instanceId);
+            const hw   = width * p.scale * (pp.scaleX ?? 1) / 2;
+            const hh   = height * p.scale * (pp.scaleY ?? 1) / 2;
             const pRad = p.rotation * Math.PI / 180;
             const pCos = Math.cos(pRad), pSin = Math.sin(pRad);
             for (const [ex, ey] of [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]] as [number, number][]) {
@@ -290,9 +290,9 @@ export function computeSelectionInfo(
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const p of selected) {
         const pp = p as any;
-        const {w, h} = getSize(p.instanceId);
-        const hw   = w * p.scale * (pp.scaleX ?? 1) / 2;
-        const hh   = h * p.scale * (pp.scaleY ?? 1) / 2;
+        const {width, height} = getSize(p.instanceId);
+        const hw   = width * p.scale * (pp.scaleX ?? 1) / 2;
+        const hh   = height * p.scale * (pp.scaleY ?? 1) / 2;
         const pRad = p.rotation * Math.PI / 180;
         const pCos = Math.cos(pRad), pSin = Math.sin(pRad);
         for (const [ex, ey] of [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]] as [number, number][]) {

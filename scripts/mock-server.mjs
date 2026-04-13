@@ -134,7 +134,6 @@ const BASE_COMMON = {
     roundParticipantIds: ['player-1', 'player-2', 'player-3'],
     handSize:          8,
     maxStickersOnCanvas: 12,
-    swapCount:         2,
     votesPerPlayer:    3,
 };
 

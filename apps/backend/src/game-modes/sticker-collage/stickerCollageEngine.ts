@@ -47,7 +47,6 @@ export class StickerCollageEngine implements GameEngine {
             roundParticipantIds: [],
             handSize: this.config.stickerCollage.handSize,
             maxStickersOnCanvas: this.config.stickerCollage.maxStickersOnCanvas,
-            swapCount: this.config.stickerCollage.swapCount,
             votesPerPlayer: this.config.stickerCollage.votesPerPlayer,
             phaseState: {phase: "LOBBY"},
         };

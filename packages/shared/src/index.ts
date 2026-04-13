@@ -6,7 +6,6 @@ export interface StickerCollageGameConfig {
     resultsDurationSec: number;
     handSize: number;
     maxStickersOnCanvas: number;
-    swapCount: number;
     votesPerPlayer: number;
     pointsByPlacement: number[];
     requiredCategories: string[];
@@ -41,7 +40,6 @@ export function parseGameConfig(raw: unknown): GameConfig {
             resultsDurationSec: typeof sc["resultsDurationSec"] === "number" ? sc["resultsDurationSec"] : 60,
             handSize: typeof sc["handSize"] === "number" ? sc["handSize"] : 8,
             maxStickersOnCanvas: typeof sc["maxStickersOnCanvas"] === "number" ? sc["maxStickersOnCanvas"] : 12,
-            swapCount: typeof sc["swapCount"] === "number" ? sc["swapCount"] : 2,
             votesPerPlayer: typeof sc["votesPerPlayer"] === "number" ? sc["votesPerPlayer"] : 3,
             pointsByPlacement: Array.isArray(sc["pointsByPlacement"]) ? sc["pointsByPlacement"] as number[] : [100, 60, 30],
             requiredCategories: Array.isArray(sc["requiredCategories"]) ? sc["requiredCategories"] as string[] : ["eyes"],
@@ -145,7 +143,6 @@ export interface StickerPlacement {
 
 export interface StickerHand {
     stickerIds: string[];
-    swapsRemaining: number;
 }
 
 export interface StickerCollage {
@@ -223,7 +220,6 @@ export interface StickerCollageGameState {
     roundParticipantIds: string[];
     handSize: number;
     maxStickersOnCanvas: number;
-    swapCount: number;
     votesPerPlayer: number;
     phaseState: StickerCollagePhaseState;
 }

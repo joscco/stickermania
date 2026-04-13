@@ -178,6 +178,5 @@ export function dealHand(
 
     return {
         stickerIds: finalHand.map(s => s.id),
-        swapsRemaining: config.swapCount,
     };
 }
