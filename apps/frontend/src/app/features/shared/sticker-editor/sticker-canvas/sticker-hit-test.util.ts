@@ -1,24 +1,5 @@
 import type { StickerPlacement, StickerDefinition } from "@birthday/shared";
-
-/**
- * Point-in-polygon test (ray-casting).
- * Polygon vertices are normalised 0–1 relative to the sticker bounding box.
- */
-export function isPointInPolygon(
-    point: {x: number, y: number},
-    polygon: Array<{ x: number; y: number }>,
-): boolean {
-    let inside = false;
-    const px = point.x, py = point.y;
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-        const xi = polygon[i].x, yi = polygon[i].y;
-        const xj = polygon[j].x, yj = polygon[j].y;
-        if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) {
-          inside = !inside;
-        }
-    }
-    return inside;
-}
+import {pointInPoly, degToRad} from '../geometry-helpers';
 
 /**
  * Hit-test a client-space point against all stickers, topmost first.
@@ -49,7 +30,7 @@ export function hitTestOnCanvas(
         const ox = clientX - (canvasRect.left + stickerPlacement.x);
         const oy = clientY - (canvasRect.top + stickerPlacement.y);
         // Rotate into sticker-local space
-        const negRad = -stickerPlacement.rotation * Math.PI / 180;
+        const negRad = -degToRad(stickerPlacement.rotation);
         const ux = ox * Math.cos(negRad) - oy * Math.sin(negRad);
         const uy = ox * Math.sin(negRad) + oy * Math.cos(negRad);
         const pp = stickerPlacement as any;
@@ -66,8 +47,7 @@ export function hitTestOnCanvas(
         }
         const def = catalogMap.get(stickerPlacement.stickerId);
         if (def?.hitboxPolygon && def.hitboxPolygon.length >= 3) {
-            const point = { x: lx, y: ly };
-            if (isPointInPolygon(point, def.hitboxPolygon)) {
+            if (pointInPoly(lx, ly, def.hitboxPolygon)) {
               return stickerPlacement.instanceId;
             }
             continue;

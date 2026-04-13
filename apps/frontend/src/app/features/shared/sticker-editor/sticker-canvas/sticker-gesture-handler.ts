@@ -1,4 +1,16 @@
 import type {StickerPlacement} from "@birthday/shared";
+import {
+    pointInPoly,
+    pointInRotatedRect,
+    isPointerOutsideRect,
+    isPositionOutsideCanvas,
+    distance,
+    centroid,
+    pinchDistance,
+    pinchAngle,
+    pinchMidpoint,
+    applyPinchToBaseline,
+} from '../geometry-helpers';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,40 +50,6 @@ export type GestureCallbacks = {
   getSelectionBounds?: () => { box: { x: number; y: number; w: number; h: number }; rotation: number } | null;
 };
 
-// ── Geometry helpers ─────────────────────────────────────────────────────────
-
-function pointInPoly(px: number, py: number, poly: { x: number; y: number }[]): boolean {
-  let inside = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const xi = poly[i].x, yi = poly[i].y;
-    const xj = poly[j].x, yj = poly[j].y;
-    if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi)
-      inside = !inside;
-  }
-  return inside;
-}
-
-/**
- * Returns true if the canvas-local point (px, py) is inside a rotated rectangle.
- * The box is axis-aligned before rotation; rotation is around the box center.
- * `padding` expands the box on all sides (useful for small stickers / fat-finger tolerance).
- */
-function pointInRotatedRect(
-  px: number, py: number,
-  box: { x: number; y: number; w: number; h: number },
-  rotationDeg: number,
-  padding = 0,
-): boolean {
-  const cx = box.x + box.w / 2;
-  const cy = box.y + box.h / 2;
-  const rad = -rotationDeg * Math.PI / 180;
-  const cos = Math.cos(rad), sin = Math.sin(rad);
-  const dx = px - cx, dy = py - cy;
-  // Rotate point into box-local frame
-  const lx = dx * cos - dy * sin;
-  const ly = dx * sin + dy * cos;
-  return Math.abs(lx) <= box.w / 2 + padding && Math.abs(ly) <= box.h / 2 + padding;
-}
 
 // ── GestureHandler ───────────────────────────────────────────────────────────
 export class StickerGestureHandler {
@@ -230,7 +208,7 @@ export class StickerGestureHandler {
 
     if (this.lassoActive && this.pointers.length === 1) {
       const last = this.lassoPath[this.lassoPath.length - 1];
-      if (!last || Math.hypot(localX - last.x, localY - last.y) > 2) {
+      if (!last || distance(localX, localY, last.x, last.y) > 2) {
         this.lassoPath.push({x: localX, y: localY});
         this.callbacks.onLassoPathChanged([...this.lassoPath]);
       }
@@ -282,7 +260,7 @@ export class StickerGestureHandler {
       // Double-tap detection
       if (!this.tapMoved && this.hasSelection()) {
         const now = Date.now();
-        const dist = Math.hypot(clientX - this.lastTapX, clientY - this.lastTapY);
+        const dist = distance(clientX, clientY, this.lastTapX, this.lastTapY);
         if (now - this.lastTapTime < 350 && dist < 30) {
           this.callbacks.onDoubleTap?.(this.currentSelectionIds());
           this.lastTapTime = 0; // reset so triple-tap doesn't fire again
@@ -318,16 +296,13 @@ export class StickerGestureHandler {
    * they're dragged to the edge even if the pointer is still barely inside.
    */
   private isPointerOrCentroidOutside(clientX: number, clientY: number, rect: DOMRect, placements?: StickerPlacement[]): boolean {
-    const pointerOutside = clientX < rect.left || clientX > rect.right ||
-      clientY < rect.top || clientY > rect.bottom;
-    if (pointerOutside) return true;
+    if (isPointerOutsideRect(clientX, clientY, rect)) return true;
 
     const source = placements ?? this.stickers;
     const sel = source.filter(p => this.isSelected(p.instanceId));
     if (sel.length === 0) return false;
-    const cx = sel.reduce((s, p) => s + p.x, 0) / sel.length;
-    const cy = sel.reduce((s, p) => s + p.y, 0) / sel.length;
-    return cx < 0 || cx > rect.width || cy < 0 || cy > rect.height;
+    const c = centroid(sel);
+    return isPositionOutsideCanvas(c.x, c.y, rect);
   }
 
   private isSelected(id: string): boolean {
@@ -418,11 +393,11 @@ export class StickerGestureHandler {
   private initPinch(ids: string[]): void {
     if (this.pointers.length < 2) return;
     const [a, b] = this.pointers;
-    this.pinchBaseDistance = Math.hypot(a.x - b.x, a.y - b.y) || 1;
-    this.pinchBaseAngle = Math.atan2(b.y - a.y, b.x - a.x);
+    const pp = {ax: a.x, ay: a.y, bx: b.x, by: b.y};
     const rect = this.getCanvasRect();
-    const cx = ((a.x + b.x) / 2) - rect.left;
-    const cy = ((a.y + b.y) / 2) - rect.top;
+    this.pinchBaseDistance = pinchDistance(pp);
+    this.pinchBaseAngle = pinchAngle(pp);
+    const mid = pinchMidpoint(pp, rect);
     this.pinchBaselines = ids
       .map(iid => this.stickers.find(p => p.instanceId === iid))
       .filter((p): p is StickerPlacement => !!p)
@@ -432,40 +407,23 @@ export class StickerGestureHandler {
         baseY: p.y,
         baseScale: p.scale,
         baseRotation: p.rotation,
-        relCx: p.x - cx,
-        relCy: p.y - cy,
+        relCx: p.x - mid.x,
+        relCy: p.y - mid.y,
       }));
   }
 
   private applyPinch(): void {
     if (this.pointers.length < 2 || !this.pinchBaselines.length) return;
     const [a, b] = this.pointers;
-    const newDist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
-    const newAngle = Math.atan2(b.y - a.y, b.x - a.x);
-    const scale = newDist / this.pinchBaseDistance;
-    const angleDelta = (newAngle - this.pinchBaseAngle) * (180 / Math.PI);
-    const angleRad = newAngle - this.pinchBaseAngle;
-    const rect = this.getCanvasRect();
-    const cx = ((a.x + b.x) / 2) - rect.left;
-    const cy = ((a.y + b.y) / 2) - rect.top;
-    const cos = Math.cos(angleRad), sin = Math.sin(angleRad);
+    const pp = {ax: a.x, ay: a.y, bx: b.x, by: b.y};
+    const mid = pinchMidpoint(pp, this.getCanvasRect());
     this.callbacks.onPlacementsChanged(
       this.stickers.map(p => {
         const base = this.pinchBaselines.find(b => b.instanceId === p.instanceId);
         if (!base) return p;
-        const newScale = Math.max(0.2, Math.min(4, base.baseScale * scale));
-        const newRotation = base.baseRotation + angleDelta;
-        const newRelCx = (base.relCx * cos - base.relCy * sin) * scale;
-        const newRelCy = (base.relCx * sin + base.relCy * cos) * scale;
-        // p.x/p.y = center, so new center = gesture-center + rotated/scaled relative offset
-        return {
-          ...p,
-          scale: newScale, rotation: newRotation,
-          x: cx + newRelCx,
-          y: cy + newRelCy,
-        };
+        const result = applyPinchToBaseline(base, this.pinchBaseDistance, this.pinchBaseAngle, pp, mid);
+        return {...p, ...result};
       }),
     );
   }
 }
-

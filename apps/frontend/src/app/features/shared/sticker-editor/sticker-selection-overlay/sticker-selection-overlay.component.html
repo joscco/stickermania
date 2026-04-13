@@ -58,15 +58,15 @@
   </div>
 
   <!-- SE: Scale handle (highlighted when scaling) -->
-  @let se = rotatePt(b.x + b.w + pad, b.y + b.h + pad, cx, cy, rad);
+  @let scale = rotatePt(b.x + b.w + pad, b.y + b.h + pad, cx, cy, rad);
   <div class="absolute flex items-center justify-center w-7 h-7 rounded-full border-2 shadow select-none touch-none"
        [class.border-purple-500]="mode !== 'scaling'"
        [class.bg-white]="mode !== 'scaling'"
        [class.border-purple-600]="mode === 'scaling'"
        [class.bg-purple-50]="mode === 'scaling'"
-       [style.left.px]="se.x - 14" [style.top.px]="se.y - 14"
+       [style.left.px]="scale.x - 14" [style.top.px]="scale.y - 14"
        style="z-index:8100; cursor:se-resize; pointer-events:auto;"
-       (pointerdown)="onHandleDown($event, 'se')">
+       (pointerdown)="onHandleDown($event, 'scale')">
     <span class="material-icons"
           [class.text-purple-600]="mode === 'scaling'"
           [class.text-purple-500]="mode !== 'scaling'"
@@ -74,7 +74,7 @@
   </div>
 
   <!-- Stretch side handles (stretch mode only) -->
-  @if (stretchMode()) {
+  @if (stretchModeVisible()) {
     @for (side of sides(); track side.id) {
       <div
         class="absolute w-7 h-7 flex items-center justify-center bg-amber-400 border-2 border-amber-600 rounded-full shadow select-none touch-none"

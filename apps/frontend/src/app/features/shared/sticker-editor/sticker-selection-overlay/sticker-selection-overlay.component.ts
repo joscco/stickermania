@@ -1,10 +1,11 @@
 import {Component, input, output, computed, signal, OnDestroy, AfterViewInit, ElementRef} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import gsap from 'gsap';
-import {BoundingBox} from '../../sticker-shared/sticker-types';
+import {BoundingBox} from '../sticker-shared/sticker-types';
+import {degToRad, rotatePt, radToDeg, angleBetween} from '../geometry-helpers';
 
 export interface HandleDragEvent {
-    handle: 'se' | 'rotate' | 'n' | 's' | 'e' | 'w';
+    handle: 'scale' | 'rotate' | 'n' | 's' | 'e' | 'w';
     dx: number;
     dy: number;
     done: boolean;
@@ -12,11 +13,6 @@ export interface HandleDragEvent {
 
 export type OverlayMode = 'idle' | 'moving' | 'rotating' | 'scaling' | 'menu';
 
-function rotatePt(x: number, y: number, cx: number, cy: number, rad: number): {x: number; y: number} {
-    const cos = Math.cos(rad), sin = Math.sin(rad);
-    const dx = x - cx, dy = y - cy;
-    return {x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos};
-}
 
 @Component({
     selector: 'app-sticker-selection-overlay',
@@ -28,7 +24,7 @@ function rotatePt(x: number, y: number, cx: number, cy: number, rad: number): {x
 export class StickerSelectionOverlayComponent implements AfterViewInit, OnDestroy {
     readonly box         = input<BoundingBox | null>(null);
     readonly rotation    = input<number>(0);
-    readonly stretchMode = input<boolean>(false);
+    readonly stretchModeVisible = input<boolean>(false);
     /** Whether the parent is currently handling a move/drag gesture. */
     readonly isDragging  = input<boolean>(false);
     /** Whether the context menu is currently open. */
@@ -80,7 +76,7 @@ export class StickerSelectionOverlayComponent implements AfterViewInit, OnDestro
         if (!b) return [];
         const pad = 10;
         const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
-        const rad = this.rotation() * Math.PI / 180;
+        const rad = degToRad(this.rotation());
         return [
             {id: 'n' as const, lx: b.x + b.w / 2,    ly: b.y - pad,       cursor: 'n-resize'},
             {id: 's' as const, lx: b.x + b.w / 2,    ly: b.y + b.h + pad, cursor: 's-resize'},
@@ -101,15 +97,15 @@ export class StickerSelectionOverlayComponent implements AfterViewInit, OnDestro
 
         if (handle === 'rotate' && canvasRect) {
             const b = this.box()!;
-            this.lastAngle = Math.atan2(ev.clientY - (canvasRect.top + b.y + b.h / 2), ev.clientX - (canvasRect.left + b.x + b.w / 2));
+            this.lastAngle = angleBetween(canvasRect.left + b.x + b.w / 2, canvasRect.top + b.y + b.h / 2, ev.clientX, ev.clientY);
         }
 
         const onMove = (e: PointerEvent) => {
             if (this.internalMode() === 'idle') return;
             if (this.internalMode() === 'rotating' && canvasRect) {
                 const b     = this.box()!;
-                const angle = Math.atan2(e.clientY - (canvasRect.top + b.y + b.h / 2), e.clientX - (canvasRect.left + b.x + b.w / 2));
-                let delta   = (angle - this.lastAngle) * (180 / Math.PI);
+                const angle = angleBetween(canvasRect.left + b.x + b.w / 2, canvasRect.top + b.y + b.h / 2, e.clientX, e.clientY);
+                let delta   = radToDeg(angle - this.lastAngle);
                 if (delta >  180) delta -= 360;
                 if (delta < -180) delta += 360;
                 this.lastAngle = angle;
@@ -120,9 +116,8 @@ export class StickerSelectionOverlayComponent implements AfterViewInit, OnDestro
             const screenDy = e.clientY - this.lastY;
             this.lastX = e.clientX; this.lastY = e.clientY;
             if (Math.abs(screenDx) < 0.5 && Math.abs(screenDy) < 0.5) return;
-            const rad = -this.rotation() * Math.PI / 180;
-            const cos = Math.cos(rad), sin = Math.sin(rad);
-            this.handleDrag.emit({handle, dx: screenDx * cos - screenDy * sin, dy: screenDx * sin + screenDy * cos, done: false});
+            const local = rotatePt(screenDx, screenDy, 0, 0, -degToRad(this.rotation()));
+            this.handleDrag.emit({handle, dx: local.x, dy: local.y, done: false});
         };
         const onUp = () => {
             if (this.internalMode() !== 'idle') this.handleDrag.emit({handle, dx: 0, dy: 0, done: true});

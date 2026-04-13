@@ -72,12 +72,12 @@
   }
 
   <!-- Selection overlay (handles + menu toggle) — hidden in delete zone -->
-  @if (interactive() && hasSelection() && !dragNearEdge() && selectionInfo(); as si) {
+  @if (interactive() && hasSelection() && !dragNearEdge() && !paletteDragInProgress() && selectionInfo(); as si) {
     <div #selectionOverlayWrap data-canvas-overlay style="pointer-events:none;position:absolute;inset:0;">
       <app-sticker-selection-overlay
         [box]="si.box"
         [rotation]="si.rotation"
-        [stretchMode]="stretchMode()"
+        [stretchModeVisible]="stretchMode()"
         [isDragging]="isMoveActive()"
         [isMenuOpen]="menuVisible()"
         (handleDrag)="onHandleDrag($event)"

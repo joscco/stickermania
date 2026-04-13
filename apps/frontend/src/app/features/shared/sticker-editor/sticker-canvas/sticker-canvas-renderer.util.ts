@@ -1,4 +1,5 @@
 import type {StickerPlacement} from "@birthday/shared";
+import {degToRad} from '../geometry-helpers';
 
 /**
  * Renders all sticker placements onto an off-screen Canvas2D and returns a
@@ -46,7 +47,7 @@ export async function renderCanvasToDataUrl(
 
     ctx.save();
     ctx.translate(cx, cy);
-    ctx.rotate((placement.rotation * Math.PI) / 180);
+    ctx.rotate(degToRad(placement.rotation));
     ctx.scale(sx, sy);
     ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
     ctx.restore();
@@ -79,4 +80,3 @@ async function loadImages(
   await Promise.all(pending);
   return cache;
 }
-

@@ -1,5 +1,6 @@
 import type {StickerPlacement} from '@birthday/shared';
 import type {BoundingBox} from './sticker-types';
+import {centroid, clamp, degToRad, rotateVec, rotatedBoundingBox} from '../geometry-helpers';
 
 /**
  * Pure functions for transforming StickerPlacement arrays.
@@ -10,9 +11,6 @@ import type {BoundingBox} from './sticker-types';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function clamp(v: number, min: number, max: number): number {
-    return Math.max(min, Math.min(max, v));
-}
 
 export function generateInstanceId(): string {
     return `inst_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -100,18 +98,15 @@ export function applyGroupTransform(
 ): StickerPlacement[] {
     const selected = placements.filter(p => ids.includes(p.instanceId));
     if (!selected.length) return placements;
-    const cx  = selected.reduce((s, p) => s + p.x, 0) / selected.length;
-    const cy  = selected.reduce((s, p) => s + p.y, 0) / selected.length;
-    const rad = rotateDeg * Math.PI / 180;
-    const cos = Math.cos(rad), sin = Math.sin(rad);
+    const {x: cx, y: cy} = centroid(selected.map(p => ({x: p.x, y: p.y})));
+    const rad = degToRad(rotateDeg);
 
     return placements.map(p => {
         if (!ids.includes(p.instanceId)) return p;
         let rx = p.x - cx, ry = p.y - cy;
         if (mirrorAxis === 'h') rx = -rx;
         if (mirrorAxis === 'v') ry = -ry;
-        const nx = rx * cos - ry * sin;
-        const ny = rx * sin + ry * cos;
+        const {x: nx, y: ny} = rotateVec(rx, ry, rad);
         return {
             ...p,
             x:        cx + nx * scaleFactor,
@@ -257,54 +252,25 @@ export function computeSelectionInfo(
 
     if (isGroup) {
         const rotation = selected.reduce((sum, p) => sum + p.rotation, 0) / selected.length;
-        const rad      = rotation * Math.PI / 180;
-        const cos      = Math.cos(-rad), sin = Math.sin(-rad);
-        const cx       = selected.reduce((s, p) => s + p.x, 0) / selected.length;
-        const cy       = selected.reduce((s, p) => s + p.y, 0) / selected.length;
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        for (const p of selected) {
+        const origin   = centroid(selected.map(p => ({x: p.x, y: p.y})));
+        const items    = selected.map(p => {
             const pp = p as any;
             const {width, height} = getSize(p.instanceId);
-            const hw   = width * p.scale * (pp.scaleX ?? 1) / 2;
-            const hh   = height * p.scale * (pp.scaleY ?? 1) / 2;
-            const pRad = p.rotation * Math.PI / 180;
-            const pCos = Math.cos(pRad), pSin = Math.sin(pRad);
-            for (const [ex, ey] of [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]] as [number, number][]) {
-                const wx = p.x + ex * pCos - ey * pSin;
-                const wy = p.y + ex * pSin + ey * pCos;
-                const dx = wx - cx, dy = wy - cy;
-                const lx = cx + dx * cos - dy * sin;
-                const ly = cy + dx * sin + dy * cos;
-                if (lx < minX) minX = lx; if (lx > maxX) maxX = lx;
-                if (ly < minY) minY = ly; if (ly > maxY) maxY = ly;
-            }
-        }
+            return {cx: p.x, cy: p.y, hw: width * p.scale * (pp.scaleX ?? 1) / 2, hh: height * p.scale * (pp.scaleY ?? 1) / 2, itemRad: degToRad(p.rotation)};
+        });
+        const {minX, minY, maxX, maxY} = rotatedBoundingBox(items, origin, degToRad(rotation));
         return {box: {x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY)}, rotation};
     }
 
     // ── Lasso / ad-hoc multi: envelope in the overrideRotation frame ─────────
-    const rad = overrideRotation * Math.PI / 180;
-    const cos = Math.cos(-rad), sin = Math.sin(-rad);
-    const cx  = selected.reduce((s, p) => s + p.x, 0) / selected.length;
-    const cy  = selected.reduce((s, p) => s + p.y, 0) / selected.length;
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const p of selected) {
+    const origin = centroid(selected.map(p => ({x: p.x, y: p.y})));
+    const items  = selected.map(p => {
         const pp = p as any;
         const {width, height} = getSize(p.instanceId);
-        const hw   = width * p.scale * (pp.scaleX ?? 1) / 2;
-        const hh   = height * p.scale * (pp.scaleY ?? 1) / 2;
-        const pRad = p.rotation * Math.PI / 180;
-        const pCos = Math.cos(pRad), pSin = Math.sin(pRad);
-        for (const [ex, ey] of [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]] as [number, number][]) {
-            const wx = p.x + ex * pCos - ey * pSin;
-            const wy = p.y + ex * pSin + ey * pCos;
-            const dx = wx - cx, dy = wy - cy;
-            const lx = cx + dx * cos - dy * sin;
-            const ly = cy + dx * sin + dy * cos;
-            if (lx < minX) minX = lx; if (lx > maxX) maxX = lx;
-            if (ly < minY) minY = ly; if (ly > maxY) maxY = ly;
-        }
-    }
+        return {cx: p.x, cy: p.y, hw: width * p.scale * (pp.scaleX ?? 1) / 2, hh: height * p.scale * (pp.scaleY ?? 1) / 2, itemRad: degToRad(p.rotation)};
+    });
+    const {minX, minY, maxX, maxY} = rotatedBoundingBox(items, origin, degToRad(overrideRotation));
     return {box: {x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY)}, rotation: overrideRotation};
 }
+
 

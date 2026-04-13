@@ -11,10 +11,9 @@ import {installCanvasInputListeners} from './sticker-canvas-input';
 import {animateStickerRemoval} from './sticker-removal-animation';
 import gsap from 'gsap';
 import {StickerContextMenuComponent, type ContextMenuAction} from '../sticker-shared/sticker-context-menu.component';
-import {StickerUndoStack} from '../sticker-shared/sticker-undo-stack';
 import type {BoundingBox} from '../sticker-shared/sticker-types';
 import * as ops from '../sticker-shared/sticker-placement-ops';
-import {HandleDragEvent, StickerSelectionOverlayComponent} from './sticker-selection-overlay/sticker-selection-overlay.component';
+import {HandleDragEvent, StickerSelectionOverlayComponent} from '../sticker-selection-overlay/sticker-selection-overlay.component';
 import {AnimOnInitDirective} from '../../animations/anim-on-init.directive';
 
 @Component({
@@ -49,6 +48,8 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   /** Set by the editor during palette-initiated drags to block canvas input. */
   readonly paletteDragActive = signal(false);
+  /** Set by the editor while a palette drag is in flight — hides the selection overlay. */
+  readonly paletteDragInProgress = signal(false);
   /** Set by the editor: the palette-dragged sticker would not survive if released now. */
   readonly paletteDragOutside = signal(false);
 
@@ -68,10 +69,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     const id = this.selectedInstanceId();
     return id ? [id] : [];
   });
-
-  // ── Undo ─────────────────────────────────────────────────────────────────
-
-  readonly undo = new StickerUndoStack();
 
   // ── Visual / layout state ─────────────────────────────────────────────────
 
@@ -221,12 +218,10 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
           const removed = new Set(allIds);
           animateStickerRemoval(allIds, this.canvasArea.nativeElement, this.removingIds, () => {
             const updated = this.stickers().filter(p => !removed.has(p.instanceId));
-            this.undo.push(updated);
             this.emitPlacements(updated);
           });
         },
         onDragNearEdge: near => this.dragNearEdge.set(near),
-        onPointerUpCommit: () => this.undo.push(this.stickers()),
         onMoveActiveChanged: active => this.isMoveActive.set(active),
         onDoubleTap: ids => this.onDoubleTapFlip(ids),
         getSelectionBounds: () => this.selectionInfo(),
@@ -256,11 +251,8 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       const onOutside = (ev: PointerEvent) => {
         if (!this.hasSelection()) return;
         if (this.canvasArea.nativeElement.contains(ev.target as Node)) return;
-        Promise.resolve().then(() => {
-          if (this.paletteDragActive()) return;
-          if (!this.hasSelection()) return;
-          this.clearSelection();
-        });
+        if (this.paletteDragInProgress()) return;
+        this.clearSelection();
       };
       document.addEventListener('pointerdown', onOutside, {capture: true});
       this.removeOutsideListener = () =>
@@ -342,19 +334,16 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       if (this.isMultiSelection() && !this.isGroupSelection()) {
         this.multiSelectionRotation.update(r => r + ev.dx);
       }
-      if (ev.done) this.undo.push(this.stickers());
       return;
     }
     if (ev.handle === 'n' || ev.handle === 's' || ev.handle === 'e' || ev.handle === 'w') {
       if (ids.length !== 1) return;
       this.emitPlacements(ops.applyStretchHandle(this.stickers(), ids[0], ev.handle, ev.dx, ev.dy, id => this.getRenderedSize(id)));
-      if (ev.done) this.undo.push(this.stickers());
       return;
     }
     // 'se' — uniform scale
     const bb = this.boundingBox();
     this.emitPlacements(ops.applyCornerScale(this.stickers(), ids, ev.handle as 'nw' | 'ne' | 'se' | 'sw', ev.dx, ev.dy, bb ? {width: bb.w, height: bb.h} : null, id => this.getRenderedSize(id)));
-    if (ev.done) this.undo.push(this.stickers());
   }
 
   // ── Placement mutations ───────────────────────────────────────────────────
@@ -367,26 +356,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     const removedSet = new Set(ids);
     animateStickerRemoval(ids, this.canvasArea.nativeElement, this.removingIds, () => {
       const updated = this.stickers().filter(p => !removedSet.has(p.instanceId));
-      this.undo.push(updated);
       if (group.size > 0) this.emitPlacements(updated);
       else this.stickerRemoved.emit(ids[0]);
     });
-  }
-
-  undoAction(): void {
-    const prev = this.undo.undo();
-    if (prev) {
-      this.clearSelection(false);
-      this.emitPlacements(prev);
-    }
-  }
-
-  redoAction(): void {
-    const next = this.undo.redo();
-    if (next) {
-      this.clearSelection(false);
-      this.emitPlacements(next);
-    }
   }
 
   // ── Template helpers ──────────────────────────────────────────────────────
@@ -424,7 +396,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   private commitTransform(updated: StickerPlacement[]): void {
     this.emitPlacements(updated);
-    this.undo.push(updated);
   }
 
   /** Flip selected stickers horizontally. */
@@ -444,7 +415,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   private commitGroup(updated: StickerPlacement[], ids: string[]): void {
     this.emitPlacements(updated);
-    this.undo.push(updated);
     this.lassoSelection.set(new Set(ids));
     this.selectedInstanceId.set(null);
   }
@@ -452,7 +422,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   private doDuplicate(): void {
     const {updated, newIds} = ops.duplicatePlacements(this.stickers(), this.selectionIds());
     this.emitPlacements(updated);
-    this.undo.push(updated);
     if (newIds.length === 1) {
       this.selectedInstanceId.set(newIds[0]);
       this.lassoSelection.set(new Set());
