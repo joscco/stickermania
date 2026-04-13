@@ -1,6 +1,6 @@
 import type {StickerPlacement} from '@birthday/shared';
 import type {BoundingBox} from './sticker-types';
-import {centroid, clamp, degToRad, rotateVec, rotatedBoundingBox} from '../geometry-helpers';
+import {centroid, clamp, degToRad, rotatedBoundingBox, rotateVec} from './geometry-helpers';
 
 /**
  * Pure functions for transforming StickerPlacement arrays.
@@ -124,14 +124,13 @@ export function applyGroupTransform(
 export function applyCornerScale(
     placements: StickerPlacement[],
     ids: string[],
-    corner: 'nw' | 'ne' | 'se' | 'sw',
     dx: number,
     dy: number,
     boundingBoxSize: {width: number; height: number} | null,
     getRenderedSize: (id: string) => {width: number; height: number},
 ): StickerPlacement[] {
-    const signX  = (corner === 'ne' || corner === 'se') ? 1 : -1;
-    const signY  = (corner === 'se' || corner === 'sw') ? 1 : -1;
+    const signX  = 1;
+    const signY = 1
     // Project the mouse delta onto the diagonal direction of the corner.
     // The corner sits at half-width / half-height from center, so we compute
     // the ratio so the corner tracks the mouse 1:1.

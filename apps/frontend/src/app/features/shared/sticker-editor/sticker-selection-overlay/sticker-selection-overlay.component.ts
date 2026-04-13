@@ -1,7 +1,7 @@
 import {Component, input, output, computed, signal, OnDestroy, AfterViewInit, ElementRef} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import gsap from 'gsap';
-import {BoundingBox} from '../sticker-shared/sticker-types';
+import {BoundingBox} from '../sticker-types';
 import {degToRad, rotatePt, radToDeg, angleBetween} from '../geometry-helpers';
 
 export interface HandleDragEvent {

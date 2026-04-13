@@ -38,9 +38,7 @@ import {isPointerOutsideRect, isPositionOutsideCanvas, clamp, radToDeg, pinchDis
 })
 export class StickerEditorComponent {
   // ── Inputs / Outputs ──────────────────────────────────────────
-  /** Stickers available in the palette (player hand or full catalog). */
   readonly paletteStickers = input<StickerDefinition[]>([]);
-  /** Full catalog for image URL resolution in the canvas. */
   readonly stickerCatalog = input<StickerDefinition[]>([]);
   readonly maxStickers = input<number>(12);
 
@@ -57,7 +55,7 @@ export class StickerEditorComponent {
   private paletteDragCleanup: (() => void) | null = null;
   private readonly removingIds = new Set<string>();
 
-  public onStickerDragStarted(event: StickerDragStartEvent): void {
+  public onStickerDragFromPaletteStarted(event: StickerDragStartEvent): void {
     if (!this.canAddMore()) return;
 
     const canvasEl = this.stickerCanvas?.canvasNativeElement;
@@ -86,6 +84,10 @@ export class StickerEditorComponent {
     this.placements.set(newPlacements);
     this.placementsChanged.emit(newPlacements);
 
+    // Clean up any previous drag BEFORE setting signals for the new one,
+    // so the old cleanup() cannot overwrite paletteDragInProgress / stickerWouldBeDeleted.
+    this.paletteDragCleanup?.();
+
     // Cache the rendered size so the overlay is correct before <img> loads
     this.stickerCanvas.cacheRenderedSize(
       newPlacement.instanceId,
@@ -93,13 +95,12 @@ export class StickerEditorComponent {
       event.renderedHeight,
     );
 
-    // Block canvas input and hide the selection overlay for the entire drag —
-    // both flags are set BEFORE selectedInstanceId so the overlay never flashes.
-    this.stickerCanvas.paletteDragActive.set(true);
+    // Block canvas input and hide the selection overlay for the entire drag.
+    // Both flags set BEFORE selectedInstanceId so nothing flashes.
     this.stickerCanvas.paletteDragInProgress.set(true);
-    this.stickerCanvas.paletteDragOutside.set(true); // sticker starts outside canvas
+    this.stickerCanvas.stickerWouldBeDeleted.set(true); // starts outside canvas
 
-    // Select the freshly created sticker (overlay stays hidden via paletteDragInProgress)
+    // Select the freshly created sticker (overlay hidden via paletteDragInProgress)
     this.stickerCanvas.selectedInstanceId.set(newPlacement.instanceId);
     this.stickerCanvas.lassoSelection.set(new Set());
 
@@ -112,12 +113,8 @@ export class StickerEditorComponent {
       if (img) {
         gsap.fromTo(img,
           {scale: 0.3, transformOrigin: '50% 50%'},
-          {
-            scale: 1, duration: 0.18, ease: 'back.out(1.5)', overwrite: true,
-            onComplete: () => {
-              gsap.set(img, {clearProps: 'transform,transformOrigin'});
-            }
-          },
+          {scale: 1, duration: 0.18, ease: 'back.out(1.5)', overwrite: true,
+           onComplete: () => { gsap.set(img, {clearProps: 'transform,transformOrigin'}); }},
         );
       }
     });
@@ -137,12 +134,13 @@ export class StickerEditorComponent {
     let pinchBaseScale = 1;
     let pinchBaseRotation = 0;
 
-    // The delete zone only appears after the sticker entered the canvas once
+    // wasInsideCanvas becomes true only after the sticker has crossed INTO the
+    // canvas from outside — not if it merely starts there.
     let wasInsideCanvas = false;
+    let wasOutside = true; // starts on the palette, so outside by definition
 
     const isOutside = (evClientX: number, evClientY: number, r: DOMRect): boolean =>
       isPointerOutsideRect(evClientX, evClientY, r) || isPositionOutsideCanvas(stickerX, stickerY, r);
-
 
     const updatePlacement = () => {
       const updated = this.placements().map(p =>
@@ -182,46 +180,27 @@ export class StickerEditorComponent {
         // ── Pinch: rotate + scale ──
         const pts = [...pointers.values()];
         const pp = {ax: pts[0].x, ay: pts[0].y, bx: pts[1].x, by: pts[1].y};
-        const newDist = pinchDistance(pp);
-        const newAngle = pinchAngle(pp);
-        stickerScale = clamp(pinchBaseScale * (newDist / pinchBaseDist), 0.2, 4);
-        stickerRotation = pinchBaseRotation + radToDeg(newAngle - pinchBaseAngle);
-
-        // Also move: use delta of current pointer halved (rough midpoint move)
-        const dx = ev.clientX - prev.x;
-        const dy = ev.clientY - prev.y;
-        stickerX += dx / 2;
-        stickerY += dy / 2;
+        stickerScale = clamp(pinchBaseScale * (pinchDistance(pp) / pinchBaseDist), 0.2, 4);
+        stickerRotation = pinchBaseRotation + radToDeg(pinchAngle(pp) - pinchBaseAngle);
+        stickerX += (ev.clientX - prev.x) / 2;
+        stickerY += (ev.clientY - prev.y) / 2;
       } else {
         // ── Single finger: move ──
-        const dx = ev.clientX - prev.x;
-        const dy = ev.clientY - prev.y;
-        stickerX += dx;
-        stickerY += dy;
+        stickerX += ev.clientX - prev.x;
+        stickerY += ev.clientY - prev.y;
       }
 
       const outside = isOutside(ev.clientX, ev.clientY, r);
-      if (!outside) wasInsideCanvas = true;
-
+      if (wasOutside && !outside) wasInsideCanvas = true;
+      wasOutside = outside;
+      this.stickerCanvas.stickerWouldBeDeleted.set(!wasInsideCanvas || outside);
       updatePlacement();
-
-      // Sticker is "not holding" if it hasn't been inside the canvas yet,
-      // or if it's currently outside (would be deleted on release)
-      const wouldNotHold = !wasInsideCanvas || outside;
-      this.stickerCanvas.paletteDragOutside.set(wouldNotHold);
-
-      // Only show delete zone during single-finger move, not during pinch
-      if (pointers.size < 2) {
-        this.stickerCanvas.dragNearEdge.set(wasInsideCanvas && outside);
-      }
       this.stickerCanvas.isMoveActive.set(true);
     };
 
     const onUp = (ev: PointerEvent) => {
-      // Apply final delta before removing the pointer
       const prev = pointers.get(ev.pointerId);
       if (prev && pointers.size === 1) {
-        // Last finger — apply its final move delta
         stickerX += ev.clientX - prev.x;
         stickerY += ev.clientY - prev.y;
         updatePlacement();
@@ -229,23 +208,15 @@ export class StickerEditorComponent {
 
       pointers.delete(ev.pointerId);
 
-      // Second finger lifted → re-anchor for single-finger move
-      if (pointers.size === 1) {
-        // Pinch baselines are stale now; single finger continues as move
-        return;
-      }
-
-      if (pointers.size > 0) return; // still fingers down
+      if (pointers.size === 1) return; // second finger lifted, single-finger move continues
+      if (pointers.size > 0) return;   // still fingers down
 
       // All fingers up → finalize
       cleanup();
       const r = canvasEl.getBoundingClientRect();
-
-      // Check both pointer and centroid for delete decision
       const outside = isPointerOutsideRect(ev.clientX, ev.clientY, r) ||
         isPositionOutsideCanvas(stickerX, stickerY, r);
 
-      this.stickerCanvas.dragNearEdge.set(false);
       this.stickerCanvas.isMoveActive.set(false);
 
       if (outside) {
@@ -257,6 +228,7 @@ export class StickerEditorComponent {
           this.placementsChanged.emit(updated);
         });
       } else {
+        this.stickerCanvas.stickerWouldBeDeleted.set(false);
         this.stickerCanvas.selectedInstanceId.set(instanceId);
       }
     };
@@ -266,14 +238,9 @@ export class StickerEditorComponent {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onUp);
-      this.stickerCanvas.paletteDragActive.set(false);
       this.stickerCanvas.paletteDragInProgress.set(false);
-      this.stickerCanvas.paletteDragOutside.set(false);
       this.paletteDragCleanup = null;
     };
-
-    // Clean up any previous drag
-    this.paletteDragCleanup?.();
 
     window.addEventListener('pointerdown', onPointerDown2);
     window.addEventListener('pointermove', onMove, {passive: false});

@@ -5,7 +5,7 @@ import {
 import {CommonModule} from '@angular/common';
 import gsap from 'gsap';
 import type {StickerDefinition} from '@birthday/shared';
-import {CANVAS_STICKER_PX} from '../sticker-shared/sticker-types';
+import {CANVAS_STICKER_PX} from '../sticker-types';
 
 export interface StickerDragStartEvent {
     stickerId: string;

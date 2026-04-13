@@ -336,8 +336,9 @@ export class StickerGestureHandler {
       const groupSet = new Set(ids);
       this.lassoSelection = groupSet;
       this.selectedInstanceId = null;
+      // Emit lasso first; do NOT call onSelectedChanged(null) afterwards —
+      // that would trigger clearSelection() in the canvas and wipe the lasso set.
       this.callbacks.onLassoSelectionChanged(groupSet);
-      this.callbacks.onSelectedChanged(null);
     } else {
       this.selectedInstanceId = hitId;
       this.lassoSelection = new Set();

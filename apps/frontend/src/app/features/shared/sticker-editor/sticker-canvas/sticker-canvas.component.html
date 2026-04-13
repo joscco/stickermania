@@ -30,8 +30,8 @@
        all around the same pivot point (p.x, p.y). -->
   @for (sticker of stickers(); track sticker.instanceId) {
     <div
-      class="absolute select-none w-max transition-opacity origin-top-left"
-      [class.opacity-40]="interactive() && isSelected(sticker.instanceId) && (dragNearEdge() || paletteDragOutside())"
+      class="absolute select-none w-max origin-top-left"
+      [class.opacity-40]="isSelected(sticker.instanceId) && stickerWouldBeDeleted()"
       [style.left.px]="sticker.x"
       [style.top.px]="sticker.y"
       [style.transform]="getStickerTransform(sticker)"
@@ -41,7 +41,7 @@
     >
       <img [src]="getStickerUrl(sticker.stickerId)" [alt]="sticker.stickerId" class="h-16 w-auto block pointer-events-none" draggable="false"/>
 
-      @if (interactive() && isSelected(sticker.instanceId) && getHitboxSvgPoints(sticker.stickerId)) {
+      @if (isSelected(sticker.instanceId) && getHitboxSvgPoints(sticker.stickerId)) {
         <svg class="absolute pointer-events-none" style="left:-5%;top:-5%;width:110%;height:110%;overflow:visible;" viewBox="-0.05 -0.05 1.1 1.1" preserveAspectRatio="none">
           <polygon
             [attr.points]="getHitboxSvgPoints(sticker.stickerId)"
@@ -57,7 +57,7 @@
   }
 
   <!-- Freehand lasso -->
-  @if (interactive() && lassoPath() && lassoPath()!.length > 1) {
+  @if (lassoPath() && lassoPath()!.length > 1) {
     <svg class="absolute inset-0 w-full h-full pointer-events-none" style="z-index:8900;overflow:visible;">
       <polyline
         [attr.points]="lassoPoints()"
@@ -72,7 +72,7 @@
   }
 
   <!-- Selection overlay (handles + menu toggle) — hidden in delete zone -->
-  @if (interactive() && hasSelection() && !dragNearEdge() && !paletteDragInProgress() && selectionInfo(); as si) {
+  @if (hasSelection() && !stickerWouldBeDeleted() && !paletteDragInProgress() && selectionInfo(); as si) {
     <div #selectionOverlayWrap data-canvas-overlay style="pointer-events:none;position:absolute;inset:0;">
       <app-sticker-selection-overlay
         [box]="si.box"
@@ -87,7 +87,7 @@
   }
 
   <!-- Context menu -->
-  @if (interactive() && menuVisible() && !dragNearEdge()) {
+  @if (menuVisible() && !stickerWouldBeDeleted()) {
     <div data-canvas-overlay style="pointer-events:none;position:absolute;inset:0;z-index:9400;">
       <app-sticker-context-menu
         #contextMenu
@@ -105,7 +105,7 @@
     </div>
   }
 
-  @if (interactive() && stickers().length === 0) {
+  @if (stickers().length === 0) {
     <div animOnInit="item" class="absolute inset-0 flex items-center justify-center text-stone-300 pointer-events-none">
       <div class="text-center">
         <div class="mb-2">

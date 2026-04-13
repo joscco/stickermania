@@ -10,9 +10,9 @@ import {renderCanvasToDataUrl} from './sticker-canvas-renderer.util';
 import {installCanvasInputListeners} from './sticker-canvas-input';
 import {animateStickerRemoval} from './sticker-removal-animation';
 import gsap from 'gsap';
-import {StickerContextMenuComponent, type ContextMenuAction} from '../sticker-shared/sticker-context-menu.component';
-import type {BoundingBox} from '../sticker-shared/sticker-types';
-import * as ops from '../sticker-shared/sticker-placement-ops';
+import {StickerContextMenuComponent, type ContextMenuAction} from '../sticker-context-menu/sticker-context-menu.component';
+import type {BoundingBox} from '../sticker-types';
+import * as ops from '../sticker-placement-ops';
 import {HandleDragEvent, StickerSelectionOverlayComponent} from '../sticker-selection-overlay/sticker-selection-overlay.component';
 import {AnimOnInitDirective} from '../../animations/anim-on-init.directive';
 
@@ -30,7 +30,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   readonly stickers = input<StickerPlacement[]>([]);
   readonly stickerCatalog = input<StickerDefinition[]>([]);
   readonly maxStickers = input<number>(20);
-  readonly interactive = input<boolean>(false);
 
   readonly placementsChanged = output<StickerPlacement[]>();
   readonly stickerRemoved = output<string>();
@@ -46,12 +45,8 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   // ── Selection state ───────────────────────────────────────────────────────
 
-  /** Set by the editor during palette-initiated drags to block canvas input. */
-  readonly paletteDragActive = signal(false);
-  /** Set by the editor while a palette drag is in flight — hides the selection overlay. */
   readonly paletteDragInProgress = signal(false);
-  /** Set by the editor: the palette-dragged sticker would not survive if released now. */
-  readonly paletteDragOutside = signal(false);
+  readonly stickerWouldBeDeleted = signal(false);
 
   readonly selectedInstanceId = signal<string | null>(null);
   readonly lassoSelection = signal<Set<string>>(new Set());
@@ -74,7 +69,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   readonly lassoPath = signal<{ x: number; y: number }[] | null>(null);
   readonly lassoPoints = computed(() => this.lassoPath()?.map(p => `${p.x},${p.y}`).join(' '));
-  readonly dragNearEdge = signal<boolean>(false);
   readonly canvasW = signal(400);
   readonly canvasH = signal(400);
 
@@ -121,7 +115,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   private readonly removingIds = new Set<string>();
   private readonly renderedSizeCache = new Map<string, { width: number; height: number }>();
 
-  private dragNearEdgePrev = false;
+  private stickerWouldBeDeletedPrev = false;
 
   constructor() {
     effect(() => {
@@ -132,11 +126,11 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       this.gesture?.syncState(this.stickers(), this.selectedInstanceId(), this.lassoSelection());
     });
 
-    // ── Animate delete-zone + canvas border on dragNearEdge changes ──
+    // ── Animate delete-zone + canvas border on stickerWouldBeDeleted changes ──
     effect(() => {
-      const near = this.dragNearEdge();
-      if (near === this.dragNearEdgePrev) return;
-      this.dragNearEdgePrev = near;
+      const near = this.stickerWouldBeDeleted();
+      if (near === this.stickerWouldBeDeletedPrev) return;
+      this.stickerWouldBeDeletedPrev = near;
 
       const zoneEl = this.deleteZone?.nativeElement;
       const canvasEl = this.canvasArea?.nativeElement;
@@ -164,11 +158,14 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         // Hide delete zone
         gsap.killTweensOf(zoneEl);
         if (badge) gsap.killTweensOf(badge);
-        gsap.to(zoneEl, {opacity: 0, duration: 0.15, ease: 'power2.in',
-          onComplete: () => { gsap.set(zoneEl, {visibility: 'hidden'}); },
+        gsap.to(zoneEl, {
+          opacity: 0, duration: 0.15, ease: 'power2.in',
+          onComplete: () => {
+            gsap.set(zoneEl, {visibility: 'hidden'});
+          },
         });
         // Restore canvas border
-        if (canvasEl && this.interactive()) {
+        if (canvasEl) {
           gsap.to(canvasEl, {boxShadow: 'inset 0 0 0 2px #e9d5ff', duration: 0.2});
         }
       }
@@ -179,9 +176,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     // Set initial canvas border for interactive mode (GSAP handles transitions)
-    if (this.interactive()) {
-      this.canvasArea.nativeElement.style.boxShadow = 'inset 0 0 0 2px #e9d5ff';
-    }
+    this.canvasArea.nativeElement.style.boxShadow = 'inset 0 0 0 2px #e9d5ff';
 
     this.gesture = new StickerGestureHandler(
       () => this.canvasArea.nativeElement.getBoundingClientRect(),
@@ -214,14 +209,14 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
           }
         },
         onStickerDraggedOff: (_id, allIds) => {
-          this.dragNearEdge.set(false);
+          this.stickerWouldBeDeleted.set(false);
           const removed = new Set(allIds);
           animateStickerRemoval(allIds, this.canvasArea.nativeElement, this.removingIds, () => {
             const updated = this.stickers().filter(p => !removed.has(p.instanceId));
             this.emitPlacements(updated);
           });
         },
-        onDragNearEdge: near => this.dragNearEdge.set(near),
+        onDragNearEdge: near => this.stickerWouldBeDeleted.set(near),
         onMoveActiveChanged: active => this.isMoveActive.set(active),
         onDoubleTap: ids => this.onDoubleTapFlip(ids),
         getSelectionBounds: () => this.selectionInfo(),
@@ -234,30 +229,28 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     });
     this.resizeObserver.observe(this.canvasArea.nativeElement);
 
-    if (this.interactive()) {
-      this.removeListeners = installCanvasInputListeners(
-        this.canvasArea.nativeElement,
-        this.gesture,
-        () => {
-          this.menuVisible.set(false);
-          this.syncGesture();
-        },
-        () => this.paletteDragActive(),
-      );
+    this.removeListeners = installCanvasInputListeners(
+      this.canvasArea.nativeElement,
+      this.gesture,
+      () => {
+        this.menuVisible.set(false);
+        this.syncGesture();
+      },
+      () => this.paletteDragInProgress(),
+    );
 
-      // Clear selection when the user taps/clicks outside the canvas element.
-      // Deferred by a microtask so that palette-initiated drags can update
-      // selection state before this handler checks it.
-      const onOutside = (ev: PointerEvent) => {
-        if (!this.hasSelection()) return;
-        if (this.canvasArea.nativeElement.contains(ev.target as Node)) return;
-        if (this.paletteDragInProgress()) return;
-        this.clearSelection();
-      };
-      document.addEventListener('pointerdown', onOutside, {capture: true});
-      this.removeOutsideListener = () =>
-        document.removeEventListener('pointerdown', onOutside, {capture: true});
-    }
+    // Clear selection when the user taps/clicks outside the canvas element.
+    // Deferred by a microtask so that palette-initiated drags can update
+    // selection state before this handler checks it.
+    const onOutside = (ev: PointerEvent) => {
+      if (!this.hasSelection()) return;
+      if (this.canvasArea.nativeElement.contains(ev.target as Node)) return;
+      if (this.paletteDragInProgress()) return;
+      this.clearSelection();
+    };
+    document.addEventListener('pointerdown', onOutside, {capture: true});
+    this.removeOutsideListener = () =>
+      document.removeEventListener('pointerdown', onOutside, {capture: true});
   }
 
   ngOnDestroy(): void {
@@ -341,9 +334,12 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       this.emitPlacements(ops.applyStretchHandle(this.stickers(), ids[0], ev.handle, ev.dx, ev.dy, id => this.getRenderedSize(id)));
       return;
     }
-    // 'se' — uniform scale
+    // 'scale' — uniform scale
     const bb = this.boundingBox();
-    this.emitPlacements(ops.applyCornerScale(this.stickers(), ids, ev.handle as 'nw' | 'ne' | 'se' | 'sw', ev.dx, ev.dy, bb ? {width: bb.w, height: bb.h} : null, id => this.getRenderedSize(id)));
+    this.emitPlacements(ops.applyCornerScale(this.stickers(), ids, ev.dx, ev.dy, bb ? {
+      width: bb.w,
+      height: bb.h
+    } : null, id => this.getRenderedSize(id)));
   }
 
   // ── Placement mutations ───────────────────────────────────────────────────
@@ -426,8 +422,8 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       this.selectedInstanceId.set(newIds[0]);
       this.lassoSelection.set(new Set());
     } else {
-      this.lassoSelection.set(new Set(newIds));
       this.selectedInstanceId.set(null);
+      this.lassoSelection.set(new Set(newIds));
     }
   }
 
@@ -439,7 +435,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
         if (targets.length) {
           gsap.to(targets, {
             opacity: 0, duration: 0.12, ease: 'power2.in',
-            onComplete: () => { this.doClearSelection(); },
+            onComplete: () => {
+              this.doClearSelection();
+            },
           });
           return;
         }
@@ -450,18 +448,19 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   private doClearSelection(): void {
     this.selectedInstanceId.set(null);
+    this.stickerWouldBeDeleted.set(false);
     this.lassoSelection.set(new Set());
     this.multiSelectionRotation.set(0);
   }
 
   private getRenderedSize(instanceId: string): { width: number; height: number } {
     const wrapper = this.canvasArea?.nativeElement.querySelector<HTMLElement>(`[data-instance-id="${instanceId}"]`);
-    const img     = wrapper?.querySelector('img') as HTMLImageElement | null;
+    const img = wrapper?.querySelector('img') as HTMLImageElement | null;
     if (img && img.offsetWidth > 0 && img.offsetHeight > 0) {
       return {width: img.offsetWidth, height: img.offsetHeight};
     }
     const cached = this.renderedSizeCache.get(instanceId);
-    if (cached){
+    if (cached) {
       return cached;
     }
     return {width: 64, height: 64};

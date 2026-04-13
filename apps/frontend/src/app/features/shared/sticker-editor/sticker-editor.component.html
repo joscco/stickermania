@@ -2,34 +2,32 @@
 <div animOnInit="banner" class="flex-1 min-h-0 relative z-10 bg-stone-50 flex flex-col items-center justify-center p-2">
 
   <!-- Global Top-Bar: only canvas-wide actions -->
-  @if (stickerCanvas.interactive()) {
-    <div
-      data-canvas-toolbar
-      class="shrink-0 w-full max-w-[min(100%,var(--canvas-w,100%))] flex items-center gap-1 px-2 bg-stone-100 rounded-t-lg border border-b-0 border-black/8"
-      style="height: 2.5rem;"
-    >
-      <div class="flex-1"></div>
+  <div
+    data-canvas-toolbar
+    class="shrink-0 w-full max-w-[min(100%,var(--canvas-w,100%))] flex items-center gap-1 px-2 bg-stone-100 rounded-t-lg border border-b-0 border-black/8"
+    style="height: 2.5rem;"
+  >
+    <div class="flex-1"></div>
 
-      <!-- Sticker count -->
-      <span class="text-xs text-stone-400 select-none">{{ placements().length }}/{{ maxStickers() }}</span>
+    <!-- Sticker count -->
+    <span class="text-xs text-stone-400 select-none">{{ placements().length }}/{{ maxStickers() }}</span>
 
-      <div class="w-px h-5 bg-black/10 mx-0.5 shrink-0"></div>
+    <div class="w-px h-5 bg-black/10 mx-0.5 shrink-0"></div>
 
-      <!-- Clear all -->
-      @if (placements().length > 0) {
-        <button
-          class="toolbar-btn"
-          style="color: rgb(248 113 113);"
-          title="Alle Sticker entfernen"
-          (click)="clearPlacements()"
-        >
-          <svg viewBox="0 0 20 20" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M4 4l12 12M16 4 4 16" stroke-linecap="round"/>
-          </svg>
-        </button>
-      }
-    </div>
-  }
+    <!-- Clear all -->
+    @if (placements().length > 0) {
+      <button
+        class="toolbar-btn"
+        style="color: rgb(248 113 113);"
+        title="Alle Sticker entfernen"
+        (click)="clearPlacements()"
+      >
+        <svg viewBox="0 0 20 20" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M4 4l12 12M16 4 4 16" stroke-linecap="round"/>
+        </svg>
+      </button>
+    }
+  </div>
 
   <!-- Square canvas wrapper -->
   <div class="min-h-0 aspect-square max-w-full" style="height: calc(100% - 2.5rem); overflow: visible;">
@@ -39,7 +37,6 @@
       [stickers]="placements()"
       [stickerCatalog]="stickerCatalog()"
       [maxStickers]="maxStickers()"
-      [interactive]="true"
       (placementsChanged)="onPlacementsChanged($event)"
       (stickerRemoved)="onStickerRemoved($event)"
     />
@@ -51,6 +48,6 @@
   <app-sticker-palette
     [stickers]="paletteStickers()"
     [canAddMore]="canAddMore()"
-    (stickerDragStarted)="onStickerDragStarted($event)"
+    (stickerDragStarted)="onStickerDragFromPaletteStarted($event)"
   />
 </div>
