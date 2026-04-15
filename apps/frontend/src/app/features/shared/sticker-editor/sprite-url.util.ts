@@ -1,9 +1,6 @@
 /**
  * Utilities for resolving sticker imageUrls that reference the SVG sprite.
  *
- * imageUrl format (all stickers):
- *   "sprite:#sticker-eye-round"  →  SVG <use href="assets/sprite.svg#sticker-eye-round">
- *
  * Usage in templates:
  *   <app-sticker-img [imageUrl]="sticker.imageUrl" class="w-10 h-10"/>
  */

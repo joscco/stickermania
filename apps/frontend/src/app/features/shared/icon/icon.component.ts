@@ -19,13 +19,14 @@ import {Component, computed, input} from '@angular/core';
  * This fallback is purely convention — the sprite build script does NOT
  * generate variants automatically; each variant is a separate source SVG.
  */
-export type IconSize = 'sm' | 'md' | 'lg';
+export type IconSize = 'sm' | 'md' | 'lg' | 'xl';
 
 /** Maps design-tier to a fixed pixel dimension. */
 const SIZE_PX: Record<IconSize, number> = {
-    sm: 16,
-    md: 24,
-    lg: 40,
+    sm: 20,
+    md: 40,
+    lg: 70,
+    xl: 120,
 };
 
 const SPRITE = 'assets/sprite.svg';

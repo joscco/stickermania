@@ -1,5 +1,5 @@
 <!-- Canvas area + Global Top-Bar. z-10 so overflow-visible stickers render above the palette. -->
-<div animOnInit="banner"
+<div animOnInit="opacity"
      class="flex-1 min-h-0 relative z-10 bg-stone-50 flex flex-col items-center justify-center p-2 overflow-hidden">
 
   <!-- Global Top-Bar: only canvas-wide actions -->
@@ -46,7 +46,7 @@
 </div>
 
 <!-- Palette strip -->
-<div animOnInit="item" class="shrink-0 border-t border-black/10 bg-white">
+<div animOnInit="opacity" class="shrink-0 border-t border-black/10 bg-white">
   <app-sticker-palette
     [stickers]="paletteStickers()"
     [canAddMore]="canAddMore()"

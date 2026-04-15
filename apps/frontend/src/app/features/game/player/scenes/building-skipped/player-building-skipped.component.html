@@ -1,7 +1,7 @@
-<div animGroup="item" class="h-full flex flex-col items-center justify-center gap-4 p-6 text-center">
-  <app-icon animOnInit="item" name="pause" size="lg" class="text-stone-300"/>
-  <p animOnInit="item" class="text-stone-600 font-medium">Alles klar, du schaust nur zu.</p>
-  <p animOnInit="item" class="text-stone-400 text-sm">Warte auf das Ende der Runde...</p>
+<div animGroup="opacity" class="h-full flex flex-col items-center justify-center gap-4 p-6 text-center">
+  <app-icon animOnInit="opacity" name="pause" size="lg" class="text-stone-300"/>
+  <p animOnInit="opacity" class="text-stone-600 font-medium">Alles klar, du schaust nur zu.</p>
+  <p animOnInit="opacity" class="text-stone-400 text-sm">Warte auf das Ende der Runde...</p>
   @if (stickerService.allPlayersDone()) {
     <button
       class="mt-2 bg-purple-600 text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"

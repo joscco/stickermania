@@ -9,14 +9,14 @@
     </div>
 
     @if (errorText()) {
-      <div animOnInit="item"
+      <div animOnInit="opacity"
            class="mb-4 shrink-0 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 text-center">
         {{ errorText() }}
       </div>
     }
 
     <!-- New session button -->
-    <button animOnInit="item" [animDelay]="0.1"
+    <button animOnInit="opacity" [animDelay]="0.1"
             class="w-full shrink-0 rounded-2xl bg-stone-900 px-5 py-3 text-white font-medium hover:bg-stone-800 disabled:opacity-50 transition-colors"
             [disabled]="isCreating()"
             (click)="createSession()"
@@ -26,27 +26,27 @@
 
     <!-- Existing sessions -->
     <div class="mt-8 flex flex-col min-h-0 flex-1">
-      <div animOnInit="item" [animDelay]="0.2"
+      <div animOnInit="opacity" [animDelay]="0.2"
            class="shrink-0 text-xs font-semibold uppercase tracking-wider text-stone-400 mb-3 px-1">
         Bestehende Sessions
       </div>
 
       @if (isLoadingSessions()) {
-        <div animOnInit="item" [animDelay]="0.25" class="shrink-0 text-sm text-stone-400 text-center py-8">Lade
+        <div animOnInit="opacity" [animDelay]="0.25" class="shrink-0 text-sm text-stone-400 text-center py-8">Lade
           Sessions...
         </div>
       } @else if (sessions().length === 0) {
-        <div animOnInit="item" [animDelay]="0.25"
+        <div animOnInit="opacity" [animDelay]="0.25"
              class="shrink-0 text-sm text-stone-400 text-center py-4 px-4 rounded-2xl border border-dashed border-stone-300 bg-white">
           Keine aktiven Sessions vorhanden.
         </div>
       } @else {
-        <div animGroup="item" [animDelay]="0.25" class="overflow-y-auto scrollbar-none space-y-2 pb-4">
+        <div animGroup="opacity" [animDelay]="0.25" class="overflow-y-auto scrollbar-none space-y-2 pb-4">
           @for (session of sessions(); track session.sessionId) {
             <div
-              animOnInit="item"
+              animOnInit="opacity"
               [animPresence]="!isSessionLeaving(session.sessionId)"
-              animPresenceType="item"
+              animPresenceType="opacity"
               class="rounded-2xl bg-white border border-black/5 px-4 py-3 flex items-center gap-4 hover:bg-stone-50 cursor-pointer transition-colors group"
               [class.pointer-events-none]="isSessionLeaving(session.sessionId)"
               (click)="openSession(session.sessionCode)"

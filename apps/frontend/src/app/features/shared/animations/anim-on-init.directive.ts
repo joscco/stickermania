@@ -11,7 +11,7 @@ import {
 } from "@angular/core";
 import gsap from "gsap";
 
-export type AnimType = "opacity" | "banner" | "item" | "strip" | "players" | "medal" | "choice" | "overlay";
+export type AnimType = "opacity" | "banner" | "strip" | "players" | "medal" | "choice" | "overlay";
 
 interface AnimPreset {
   from: gsap.TweenVars;
@@ -21,7 +21,6 @@ interface AnimPreset {
 const PRESETS: Record<AnimType, AnimPreset> = {
   opacity: {from: {opacity: 0}, to: {opacity: 1, duration: 0.3, ease: "power2.out"}},
   banner: {from: {opacity: 0, y: -24}, to: {opacity: 1, y: 0, duration: 0.45, ease: "power2.out"}},
-  item: {from: {opacity: 0, y: 18}, to: {opacity: 1, y: 0, duration: 0.35, ease: "power2.out"}},
   strip: {from: {opacity: 0, x: 60}, to: {opacity: 1, x: 0, duration: 0.55, ease: "power2.out"}},
   players: {from: {opacity: 0, scale: 0.95}, to: {opacity: 1, scale: 1, duration: 0.4, ease: "power2.out"}},
   medal: {from: {opacity: 0, scale: 0.5}, to: {opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.7)"}},
@@ -34,7 +33,7 @@ const PRESETS: Record<AnimType, AnimPreset> = {
 
 @Directive({selector: "[animGroup]", standalone: true})
 export class AnimGroupDirective implements AfterViewInit {
-  @Input("animGroup") public animType: AnimType = "item";
+  @Input("animGroup") public animType: AnimType = "opacity";
   @Input() public animStagger = 0.08;
   @Input() public animDelay = 0;
 
@@ -53,7 +52,7 @@ export class AnimGroupDirective implements AfterViewInit {
       return;
     }
     const elements = matching.map(c => c.el.nativeElement);
-    const preset = PRESETS[this.animType] ?? PRESETS.item;
+    const preset = PRESETS[this.animType] ?? PRESETS.opacity;
     gsap.fromTo(elements, preset.from, {
       ...preset.to,
       stagger: this.animStagger,
@@ -73,7 +72,7 @@ export class AnimGroupDirective implements AfterViewInit {
   host: {style: "opacity: 0"},
 })
 export class AnimOnInitDirective implements OnInit, AfterViewInit {
-  @Input("animOnInit") public animType: AnimType = "item";
+  @Input("animOnInit") public animType: AnimType = "opacity";
   @Input() public animDelay = 0;
 
   public constructor(
@@ -83,7 +82,7 @@ export class AnimOnInitDirective implements OnInit, AfterViewInit {
   }
 
   public ngOnInit(): void {
-    gsap.set(this.el.nativeElement, PRESETS[this.animType]?.from ?? PRESETS.item.from);
+    gsap.set(this.el.nativeElement, PRESETS[this.animType]?.from ?? PRESETS.opacity.from);
     this.group?.register(this);
   }
 
@@ -93,7 +92,7 @@ export class AnimOnInitDirective implements OnInit, AfterViewInit {
     // dynamically via @if after mount — animate ourselves independently.
     if (this.group?.animType === this.animType && !this.group.isDone) return;
 
-    const preset = PRESETS[this.animType] ?? PRESETS.item;
+    const preset = PRESETS[this.animType] ?? PRESETS.opacity;
     gsap.fromTo(this.el.nativeElement, preset.from, {
       ...preset.to,
       delay: (preset.to["delay"] as number ?? 0) + this.animDelay,
@@ -109,7 +108,7 @@ export class AnimOnInitDirective implements OnInit, AfterViewInit {
 })
 export class AnimPresenceDirective implements OnInit, OnChanges {
   @Input("animPresence") public visible = false;
-  @Input() public animPresenceType: AnimType = "item";
+  @Input() public animPresenceType: AnimType = "opacity";
   @Input() public animPresenceDelay = 0;
 
   public constructor(private readonly el: ElementRef<HTMLElement>) {}
@@ -133,7 +132,7 @@ export class AnimPresenceDirective implements OnInit, OnChanges {
 
   private animateIn(): void {
     const node = this.el.nativeElement;
-    const preset = PRESETS[this.animPresenceType] ?? PRESETS.item;
+    const preset = PRESETS[this.animPresenceType] ?? PRESETS.opacity;
     gsap.killTweensOf(node);
     node.style.display = "";
     node.style.visibility = "visible";
@@ -148,7 +147,7 @@ export class AnimPresenceDirective implements OnInit, OnChanges {
 
   private animateOut(): void {
     const node = this.el.nativeElement;
-    const preset = PRESETS[this.animPresenceType] ?? PRESETS.item;
+    const preset = PRESETS[this.animPresenceType] ?? PRESETS.opacity;
     const duration = Math.max(0.16, Number(preset.to["duration"] ?? 0.2) * 0.85);
     gsap.killTweensOf(node);
 

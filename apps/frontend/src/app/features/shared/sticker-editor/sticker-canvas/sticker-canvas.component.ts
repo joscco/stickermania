@@ -41,9 +41,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   readonly stickerRemoved = output<string>();
 
   @ViewChild('canvasArea') private canvasArea!: ElementRef<HTMLDivElement>;
-  @ViewChild('deleteZone') private deleteZone!: ElementRef<HTMLDivElement>;
-  @ViewChild('selectionOverlayWrap') private selectionOverlayWrap?: ElementRef<HTMLDivElement>;
-  @ViewChild('contextMenu') private contextMenu?: StickerContextMenuComponent;
 
   get canvasNativeElement(): HTMLDivElement | null {
     return this.canvasArea?.nativeElement ?? null;
@@ -341,14 +338,18 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     const def = this.catalogMap.get(stickerId);
     if (def) {
       const vb = getSpriteViewBox(def.imageUrl);
-      if (vb && vb.height > 0) return Math.round(CANVAS_STICKER_PX * vb.width / vb.height);
+      if (vb && vb.height > 0) {
+        return Math.round(CANVAS_STICKER_PX * vb.width / vb.height);
+      }
     }
     return CANVAS_STICKER_PX;
   }
 
   getHitboxSvgPoints(stickerId: string): string {
     const def = this.catalogMap.get(stickerId);
-    if (!def?.hitboxPolygon || def.hitboxPolygon.length < 3) return '';
+    if (!def?.hitboxPolygon || def.hitboxPolygon.length < 3) {
+      return '';
+    }
     return def.hitboxPolygon.map(p => `${p.x},${p.y}`).join(' ');
   }
 

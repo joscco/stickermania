@@ -4,7 +4,7 @@
 </div>
 
 @if (!stickerService.myDoneVoting()) {
-  <div animOnInit="item" [animDelay]="0.15" class="flex-1 overflow-y-auto">
+  <div animOnInit="opacity" [animDelay]="0.15" class="flex-1 overflow-y-auto">
     <app-sticker-voting
       [submissions]="stickerService.currentRoundSubmissions()"
       [stickerCatalog]="stickerService.stickerCatalog()"

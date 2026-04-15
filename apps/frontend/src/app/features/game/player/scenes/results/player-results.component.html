@@ -22,7 +22,7 @@
       }
     </div>
   } @else {
-    <div animOnInit="item" [animDelay]="0.15" class="text-center py-4">
+    <div animOnInit="opacity" [animDelay]="0.15" class="text-center py-4">
       <p class="text-stone-400 text-sm">Du hast diese Runde nicht teilgenommen.</p>
     </div>
   }
@@ -114,11 +114,11 @@
       }
     </div>
   } @else if (stickerService.isWinner() && stickerService.winnerChoicesDone()) {
-    <div animOnInit="item" [animDelay]="0.2" class="text-center py-4">
+    <div animOnInit="opacity" [animDelay]="0.2" class="text-center py-4">
       <p class="text-emerald-600 font-medium text-sm">Auswahl getroffen!</p>
     </div>
   } @else if (stickerService.winnerId()) {
-    <div animOnInit="item" [animDelay]="0.2" class="text-center py-4 px-6">
+    <div animOnInit="opacity" [animDelay]="0.2" class="text-center py-4 px-6">
       <p class="text-stone-500 text-sm">
         {{ worldStore.players()[stickerService.winnerId()!]?.name ?? 'Der Gewinner' }} wählt die nächste Runde...
       </p>

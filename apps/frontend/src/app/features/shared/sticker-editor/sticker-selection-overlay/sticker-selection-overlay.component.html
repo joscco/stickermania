@@ -1,6 +1,6 @@
 @if (box()) {
   @let b = box()!;
-  @let pad = 10;
+  @let pad = padding()!;
   @let cx = b.x + b.w / 2;
   @let cy = b.y + b.h / 2;
   @let rad = rotation() * Math.PI / 180;

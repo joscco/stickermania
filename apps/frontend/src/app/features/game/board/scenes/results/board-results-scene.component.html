@@ -8,7 +8,7 @@
   </div>
 
   <!-- Podium -->
-  <div animOnInit="item" [animDelay]="0.3" class="flex-1 flex items-end justify-center gap-4 pb-8 px-4 mt-4">
+  <div animOnInit="opacity" [animDelay]="0.3" class="flex-1 flex items-end justify-center gap-4 pb-8 px-4 mt-4">
     <!-- 2nd place -->
     @if (topResults().length > 1) {
       <div class="flex flex-col items-center">
@@ -53,7 +53,7 @@
   </div>
 
   <!-- Winner action status -->
-  <div animOnInit="item" [animDelay]="0.7" class="mx-4 mb-4 p-4 bg-stone-50 rounded-2xl border border-stone-200">
+  <div animOnInit="opacity" [animDelay]="0.7" class="mx-4 mb-4 p-4 bg-stone-50 rounded-2xl border border-stone-200">
     @if (winnerId() && !winnerChoicesDone()) {
       <div class="text-center">
         <p class="text-lg font-bold text-stone-800">
@@ -106,7 +106,7 @@
   </div>
 
   <!-- Advance button -->
-  <div animOnInit="item" [animDelay]="0.85" class="text-center pb-6 flex flex-col items-center gap-2">
+  <div animOnInit="opacity" [animDelay]="0.85" class="text-center pb-6 flex flex-col items-center gap-2">
     @if (winnerChoicesDone()) {
       <p class="text-sm text-stone-400">{{ readyToAdvanceCount() }}/{{ gameState()?.roundParticipantIds?.length ?? 0 }} bereit</p>
     }

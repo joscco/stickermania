@@ -9,6 +9,7 @@ import {
   OnDestroy,
 } from "@angular/core";
 import { CanvasPainter } from "./canvas-painter";
+import {IconComponent} from '../icon/icon.component';
 
 /** Size of frame overlay images (px) */
 const FRAME_SIZE = 1100;
@@ -19,6 +20,9 @@ const CANVAS_SIZE = 900;
   selector: "app-drawing-canvas",
   standalone: true,
   templateUrl: "./drawing-canvas.component.html",
+  imports: [
+    IconComponent
+  ]
 })
 export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
   public readonly submitted = output<string>();

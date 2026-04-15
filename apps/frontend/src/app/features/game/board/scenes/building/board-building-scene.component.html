@@ -7,7 +7,7 @@
 
   <!-- Round info: newly unlocked pack + guaranteed pack -->
   @if (lastUnlockedPack() || guaranteedPack()) {
-    <div animOnInit="item" [animDelay]="0.1" class="flex justify-center gap-6 mt-4 px-4">
+    <div animOnInit="opacity" [animDelay]="0.1" class="flex justify-center gap-6 mt-4 px-4">
       @if (lastUnlockedPack(); as pack) {
         <div class="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2 text-center">
           <div class="text-xs text-emerald-600 font-semibold uppercase tracking-wider">Neu freigeschaltet</div>
@@ -34,13 +34,13 @@
       }
     </div>
 
-    <div animOnInit="item" [animDelay]="0.35" class="mt-8 text-center">
+    <div animOnInit="opacity" [animDelay]="0.35" class="mt-8 text-center">
       <p class="text-lg font-medium text-stone-600">{{ submissionCount() }}/{{ roundParticipants().length }} eingereicht</p>
     </div>
   </div>
 
   <!-- End round button -->
-  <div animOnInit="item" [animDelay]="0.45" class="text-center pb-6">
+  <div animOnInit="opacity" [animDelay]="0.45" class="text-center pb-6">
     <button
       class="bg-orange-500 text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-orange-600 active:scale-95 transition-[background-color,box-shadow]"
       (click)="endRoundEarly()"

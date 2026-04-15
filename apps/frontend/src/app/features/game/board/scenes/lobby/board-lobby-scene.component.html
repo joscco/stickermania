@@ -1,11 +1,11 @@
-<div animGroup="item" class="h-full flex flex-col items-center justify-center gap-8">
+<div animGroup="opacity" class="h-full flex flex-col items-center justify-center gap-8">
   <!-- Title -->
-  <div animOnInit="item" class="text-center">
+  <div animOnInit="opacity" class="text-center">
     <h1 class="text-5xl font-black text-stone-800">Stickermania</h1>
   </div>
 
   <!-- Connected players -->
-  <div animOnInit="item" class="flex flex-wrap justify-center gap-3 max-w-2xl">
+  <div animOnInit="opacity" class="flex flex-wrap justify-center gap-3 max-w-2xl">
     @for (player of connectedPlayers(); track player.id) {
       <app-board-player-avatar
         [player]="player"
@@ -14,11 +14,11 @@
     }
   </div>
 
-  <p animOnInit="item" class="text-xl text-stone-500">{{ connectedPlayers().length }} Spieler verbunden</p>
+  <p animOnInit="opacity" class="text-xl text-stone-500">{{ connectedPlayers().length }} Spieler verbunden</p>
 
   <!-- Start button -->
   <button
-    animOnInit="item"
+    animOnInit="opacity"
     class="bg-purple-600 text-white px-10 py-5 rounded-2xl text-2xl font-bold shadow-xl hover:bg-purple-700 active:scale-95 transition-[background-color,box-shadow]"
     (click)="startGame()"
   >

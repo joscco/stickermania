@@ -18,30 +18,24 @@
 </div>
 
 <!-- Tool bar -->
-<div class="flex items-center justify-center gap-3 mt-1">
-  <button class="w-16 h-16 flex items-center justify-center rounded-full transition-all"
+<div class="flex items-center justify-center gap-3 -mt-5">
+  <button class="w-20 h-20 z-30 flex items-center justify-center rounded-full transition-all"
           [class.bg-stone-200]="brushThin() && !eraserMode()"
           [class.scale-110]="brushThin() && !eraserMode()"
           (click)="selectThinBrush()">
-    <svg class="w-12 h-12" aria-hidden="true">
-      <use href="assets/sprite.svg#draw-btn-small"/>
-    </svg>
+    <app-icon name="draw-btn-small" size="lg"/>
   </button>
-  <button class="w-16 h-16 flex items-center justify-center rounded-full transition-all"
+  <button class="w-20 h-20 z-30  flex items-center justify-center rounded-full transition-all"
           [class.bg-stone-200]="!brushThin() && !eraserMode()"
           [class.scale-110]="!brushThin() && !eraserMode()"
           (click)="selectThickBrush()">
-    <svg class="w-12 h-12" aria-hidden="true">
-      <use href="assets/sprite.svg#draw-btn-big"/>
-    </svg>
+    <app-icon name="draw-btn-big" size="lg"/>
   </button>
-  <button class="w-16 h-16 flex items-center justify-center rounded-full transition-all"
+  <button class="w-20 h-20 z-30 flex items-center justify-center rounded-full transition-all"
           [class.bg-stone-200]="eraserMode()"
           [class.scale-110]="eraserMode()"
           (click)="selectEraser()">
-    <svg class="w-12 h-12" aria-hidden="true">
-      <use href="assets/sprite.svg#draw-btn-eraser"/>
-    </svg>
+    <app-icon name="draw-btn-eraser" size="lg"/>
   </button>
 </div>
 

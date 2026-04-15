@@ -111,20 +111,17 @@ for (const file of allTemplateFiles) {
   }
 
   // <app-icon name="star" size="sm"/>  →  expects symbol "icon-star-sm" in sprite
-  // Matches both name="…" size="…" and size="…" name="…" (any attr order).
-  // Also matches [name]="'star'" style bindings.
-  const iconRe = /<app-icon\b[^>]*?\bname=["']([^"']+)["'][^>]*?(?:\bsize=["']([^"']+)["'])?[^>]*?\/?>/g;
-  while ((m = iconRe.exec(content)) !== null) {
-    const name = m[1];
-    const size = m[2] || 'md'; // default size in IconComponent
-    iconCompRefs.push({ id: `icon-${name}-${size}`, file: relFile });
-  }
-  // Also catch size before name
-  const iconRe2 = /<app-icon\b[^>]*?\bsize=["']([^"']+)["'][^>]*?\bname=["']([^"']+)["'][^>]*?\/?>/g;
-  while ((m = iconRe2.exec(content)) !== null) {
-    const size = m[1];
-    const name = m[2];
-    iconCompRefs.push({ id: `icon-${name}-${size}`, file: relFile });
+  // First match the whole <app-icon …> tag, then extract name and size separately.
+  const appIconRe = /<app-icon\b([^>]*?)\/?>/g;
+  while ((m = appIconRe.exec(content)) !== null) {
+    const attrs = m[1];
+    const nameMatch = attrs.match(/\bname=["']([^"']+)["']/);
+    const sizeMatch = attrs.match(/\bsize=["']([^"']+)["']/);
+    if (nameMatch) {
+      const name = nameMatch[1];
+      const size = sizeMatch ? sizeMatch[1] : 'md'; // default in IconComponent
+      iconCompRefs.push({ id: `icon-${name}-${size}`, file: relFile });
+    }
   }
 
   // <img src="assets/png/..."> – legacy static refs

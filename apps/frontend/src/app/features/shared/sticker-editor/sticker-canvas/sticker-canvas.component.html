@@ -1,6 +1,6 @@
 <!-- ── Canvas area ── -->
 <div
-  animOnInit="item"
+  animOnInit="opacity"
   #canvasArea
   class="w-full h-full relative bg-white overflow-visible"
 >
@@ -81,6 +81,7 @@
     <div #selectionOverlayWrap data-canvas-overlay style="pointer-events:none;position:absolute;inset:0;">
       <app-sticker-selection-overlay
         [box]="si.box"
+        [padding]="0"
         [rotation]="si.rotation"
         [stretchModeVisible]="stretchMode()"
         [isDragging]="isMoveActive()"
