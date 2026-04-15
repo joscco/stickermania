@@ -1,5 +1,5 @@
 <div #wrapper class="relative overflow-hidden no-select bg-white"
-     style="width: min(95vw, calc(100dvh - 260px)); aspect-ratio: 1; touch-action: none; user-select: none; -webkit-touch-callout: none; -webkit-user-select: none;"
+     style="width: 100%; aspect-ratio: 1; touch-action: none; user-select: none; -webkit-touch-callout: none; -webkit-user-select: none;"
      (pointerdown)="$event.preventDefault()"
      (pointermove)="$event.preventDefault()">
 
@@ -15,27 +15,5 @@
           (pointerup)="painter.pointerUp($event)"
           (pointercancel)="painter.pointerUp($event)"
   ></canvas>
-</div>
-
-<!-- Tool bar -->
-<div class="flex items-center justify-center gap-3 -mt-5">
-  <button class="w-20 h-20 z-30 flex items-center justify-center rounded-full transition-all"
-          [class.bg-stone-200]="brushThin() && !eraserMode()"
-          [class.scale-110]="brushThin() && !eraserMode()"
-          (click)="selectThinBrush()">
-    <app-icon name="draw-btn-small" size="lg"/>
-  </button>
-  <button class="w-20 h-20 z-30  flex items-center justify-center rounded-full transition-all"
-          [class.bg-stone-200]="!brushThin() && !eraserMode()"
-          [class.scale-110]="!brushThin() && !eraserMode()"
-          (click)="selectThickBrush()">
-    <app-icon name="draw-btn-big" size="lg"/>
-  </button>
-  <button class="w-20 h-20 z-30 flex items-center justify-center rounded-full transition-all"
-          [class.bg-stone-200]="eraserMode()"
-          [class.scale-110]="eraserMode()"
-          (click)="selectEraser()">
-    <app-icon name="draw-btn-eraser" size="lg"/>
-  </button>
 </div>
 

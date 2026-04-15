@@ -1,38 +1,76 @@
-<div animGroup="opacity" class="h-full flex flex-col items-center justify-center p-8">
+<div animGroup="opacity" class="h-full flex flex-col items-center justify-center p-4 pt-6">
   <div animOnInit="opacity" class="text-center mb-3">
     <h2 class="text-lg font-bold">Zeichne deinen Avatar</h2>
     <p class="text-xs text-stone-500">{{ playerName() }}, mal dich selbst!</p>
   </div>
 
-  <app-drawing-canvas
-    animOnInit="opacity"
-    #drawingCanvas
-    [initialImage]="initialAvatarImage()"
-    (submitted)="avatarSubmitted.emit($event)"
-  />
+  <!-- Sizing container: sets the width once, canvas + buttons both inherit it -->
+  <div class="flex flex-col items-stretch"
+       style="width: min(95vw, calc(100dvh - 260px));">
 
-  <!-- html -->
-  <div animOnInit="opacity" class="flex gap-2 mt-3 items-center w-fit">
-    <button
-      class="h-17.5 w-40 relative inline-flex items-center justify-center transition-transform hover:scale-105 active:translate-y-px"
-      (click)="clear()"
-    >
-      <svg class="h-full w-auto" aria-label="Neu">
-        <use href="assets/sprite.svg#draw-btn-new"/>
-      </svg>
-      <span class="absolute left-20 top-1/2 -translate-y-1/2 z-10 text-2xl text-white">Neu</span>
-    </button>
+    <app-drawing-canvas
+      animOnInit="opacity"
+      #drawingCanvas
+      class="w-full"
+      [initialImage]="initialAvatarImage()"
+      [drawMode]="drawMode()"
+      (submitted)="avatarSubmitted.emit($event)"
+    />
 
-    <button
-      class="h-17.5 w-50 relative inline-flex items-center justify-center transition-transform hover:scale-105 active:translate-y-px"
-      (click)="submit()"
-    >
-      <svg class="h-full w-auto" aria-label="Fertig">
-        <use href="assets/sprite.svg#draw-btn-complete"/>
-      </svg>
-      <span class="absolute left-20 top-1/2 -translate-y-1/2 text-2xl z-10">Fertig</span>
-    </button>
+
+    <!-- Tool bar -->
+    <div class="flex items-center justify-center gap-3">
+      <button class="z-30 flex items-center justify-center rounded-full transition-all"
+              style="width: calc(min(95vw, calc(100dvh - 260px)) * 0.18); height: calc(min(95vw, calc(100dvh - 260px)) * 0.18);"
+              [class.bg-stone-200]="this.drawMode() === 'small'"
+              [class.scale-110]="this.drawMode() === 'small'"
+              (click)="selectThinBrush()">
+        <svg style="width:70%;height:70%;display:block;" aria-hidden="true"><use href="assets/sprite.svg#icon-draw-btn-small-lg"/></svg>
+      </button>
+      <button class="z-30 flex items-center justify-center rounded-full transition-all"
+              style="width: calc(min(95vw, calc(100dvh - 260px)) * 0.18); height: calc(min(95vw, calc(100dvh - 260px)) * 0.18);"
+              [class.bg-stone-200]="this.drawMode() === 'big'"
+              [class.scale-110]="this.drawMode() === 'big'"
+              (click)="selectThickBrush()">
+        <svg style="width:70%;height:70%;display:block;" aria-hidden="true"><use href="assets/sprite.svg#icon-draw-btn-big-lg"/></svg>
+      </button>
+      <button class="z-30 flex items-center justify-center rounded-full transition-all"
+              style="width: calc(min(95vw, calc(100dvh - 260px)) * 0.18); height: calc(min(95vw, calc(100dvh - 260px)) * 0.18);"
+              [class.bg-stone-200]="this.drawMode() === 'erase'"
+              [class.scale-110]="this.drawMode() === 'erase'"
+              (click)="selectEraser()">
+        <svg style="width:70%;height:70%;display:block;" aria-hidden="true"><use href="assets/sprite.svg#icon-draw-btn-eraser-lg"/></svg>
+      </button>
+    </div>
+
+    <!--
+      Both SVGs have height 700 in their viewBox.
+      Row height = canvas-width × (700/1600) × 0.5  ≈ 21.875% of canvas width.
+      Expressed relative to the same sizing formula:
+        min(95vw, calc(100dvh - 260px)) × 0.21875
+    -->
+    <div animOnInit="opacity" class="flex gap-2 mt-1 w-full"
+         style="height: calc(min(95vw, calc(100dvh - 260px)) * 0.22);">
+      <button
+        class="flex-1 h-full transition-transform hover:scale-105 active:translate-y-px"
+        (click)="clear()"
+      >
+        <svg style="width:auto;height:100%;display:block;" aria-hidden="true">
+          <use href="assets/sprite.svg#draw-btn-new"/>
+        </svg>
+      </button>
+
+      <button
+        class="flex-1 h-full transition-transform hover:scale-105 active:translate-y-px"
+        (click)="submit()"
+      >
+        <svg style="width:auto;height:100%;display:block;" aria-hidden="true">
+          <use href="assets/sprite.svg#draw-btn-complete"/>
+        </svg>
+      </button>
+    </div>
   </div>
+
   <button animOnInit="opacity" class="mt-2 text-xs text-stone-400 hover:text-stone-600 underline"
           (click)="skipped.emit()">
     ÜBERSPRINGEN

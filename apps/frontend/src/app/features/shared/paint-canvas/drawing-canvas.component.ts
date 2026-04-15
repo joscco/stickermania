@@ -1,15 +1,5 @@
-import {
-  Component,
-  ElementRef,
-  ViewChild,
-  AfterViewInit,
-  input,
-  output,
-  signal,
-  OnDestroy,
-} from "@angular/core";
-import { CanvasPainter } from "./canvas-painter";
-import {IconComponent} from '../icon/icon.component';
+import {AfterViewInit, Component, ElementRef, input, OnDestroy, output, signal, ViewChild,} from "@angular/core";
+import {CanvasPainter} from "./canvas-painter";
 
 /** Size of frame overlay images (px) */
 const FRAME_SIZE = 1100;
@@ -20,9 +10,7 @@ const CANVAS_SIZE = 900;
   selector: "app-drawing-canvas",
   standalone: true,
   templateUrl: "./drawing-canvas.component.html",
-  imports: [
-    IconComponent
-  ]
+  imports: []
 })
 export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
   public readonly submitted = output<string>();
@@ -34,13 +22,10 @@ export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
   @ViewChild("drawCanvas") canvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild("wrapper") wrapperRef!: ElementRef<HTMLElement>;
 
-  public readonly brushThin = signal(true);
-  public readonly eraserMode = signal(false);
-
   public readonly painter = new CanvasPainter(
     () => this.canvasRef?.nativeElement,
-    () => (this.eraserMode() ? "#ffffff" : "#000000"),
-    () => (this.eraserMode() ? 20 : this.brushThin() ? 5 : 10),
+    () => (this.drawMode() == 'erase' ? "#ffffff" : "#000000"),
+    () => (this.drawMode() == 'erase' ? 20 : ((this.drawMode() == "small") ? 5 : 10)),
   );
 
   public readonly canvasSizePercent = `${((CANVAS_SIZE / FRAME_SIZE) * 100).toFixed(3)}%`;
@@ -77,7 +62,7 @@ export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
   private readonly guards: [EventTarget, string, (e: any) => void][] = [];
 
   private guard(target: EventTarget, event: string, handler: (e: any) => void): void {
-    target.addEventListener(event, handler, { passive: false });
+    target.addEventListener(event, handler, {passive: false});
     this.guards.push([target, event, handler]);
   }
 
@@ -119,20 +104,7 @@ export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   // ─── Brush controls ─────────────────────────────────────────
-
-  public selectThickBrush(): void {
-    this.brushThin.set(false);
-    this.eraserMode.set(false);
-  }
-
-  public selectThinBrush(): void {
-    this.brushThin.set(true);
-    this.eraserMode.set(false);
-  }
-
-  public selectEraser(): void {
-    this.eraserMode.set(true);
-  }
+  drawMode = input<"big" | "small" | "erase">("big");
 
   public clear(): void {
     this.painter.clear();

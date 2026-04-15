@@ -1,4 +1,4 @@
-import { Component, input, output, ViewChild } from "@angular/core";
+import {Component, input, output, signal, ViewChild} from "@angular/core";
 import { DrawingCanvasComponent } from '../../../shared/paint-canvas/drawing-canvas.component';
 import {AnimOnInitDirective, AnimGroupDirective} from '../../../shared/animations/anim-on-init.directive';
 
@@ -15,6 +15,8 @@ export class LobbyAvatarComponent {
   public readonly avatarSubmitted = output<string>();
   public readonly skipped = output<void>();
 
+  public drawMode = signal<"big" | "small" | "erase">("big");
+
   @ViewChild("drawingCanvas") drawingCanvas!: DrawingCanvasComponent;
 
   public clear(): void {
@@ -23,5 +25,17 @@ export class LobbyAvatarComponent {
 
   public submit(): void {
     this.drawingCanvas.submit();
+  }
+
+  protected selectThinBrush() {
+    this.drawMode.set("small");
+  }
+
+  protected selectThickBrush() {
+    this.drawMode.set("big");
+  }
+
+  protected selectEraser() {
+    this.drawMode.set("erase");
   }
 }
