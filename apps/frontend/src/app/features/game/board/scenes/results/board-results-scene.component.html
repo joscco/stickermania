@@ -2,7 +2,7 @@
   <!-- Results header -->
   <div animOnInit="medal" class="bg-linear-to-r from-yellow-400 to-amber-500 text-white px-8 py-5 text-center rounded-2xl mx-4 mt-4 shadow-lg">
     <h1 class="text-3xl font-black flex items-center justify-center gap-3">
-      <svg class="w-8 h-8" aria-hidden="true"><use href="assets/sprite.svg#icon-trophy"/></svg>
+      <app-icon name="trophy" size="md"/>
       Ergebnisse
     </h1>
   </div>
@@ -65,9 +65,9 @@
                  [class.bg-emerald-100]="promptChosen()" [class.text-emerald-600]="promptChosen()"
                  [class.bg-purple-100]="!promptChosen()" [class.text-purple-600]="!promptChosen()">
           @if (promptChosen()) {
-              <svg class="w-5 h-5" aria-hidden="true"><use href="assets/sprite.svg#icon-checkmark"/></svg>
+              <app-icon name="checkmark" size="md"/>
             } @else {
-              <svg class="w-5 h-5" aria-hidden="true"><use href="assets/sprite.svg#icon-star"/></svg>
+              <app-icon name="star" size="md"/>
             }
             </div>
             <span class="text-xs text-stone-500">Prompt</span>
@@ -77,9 +77,9 @@
                  [class.bg-emerald-100]="packUnlocked()" [class.text-emerald-600]="packUnlocked()"
                  [class.bg-purple-100]="!packUnlocked()" [class.text-purple-600]="!packUnlocked()">
               @if (packUnlocked()) {
-              <svg class="w-5 h-5" aria-hidden="true"><use href="assets/sprite.svg#icon-checkmark"/></svg>
+              <app-icon name="checkmark" size="md"/>
             } @else {
-              <svg class="w-5 h-5" aria-hidden="true"><use href="assets/sprite.svg#icon-trophy"/></svg>
+              <app-icon name="trophy" size="md"/>
             }
             </div>
             <span class="text-xs text-stone-500">Pack</span>
@@ -89,9 +89,9 @@
                  [class.bg-emerald-100]="guaranteedChosen()" [class.text-emerald-600]="guaranteedChosen()"
                  [class.bg-purple-100]="!guaranteedChosen()" [class.text-purple-600]="!guaranteedChosen()">
               @if (guaranteedChosen()) {
-              <svg class="w-5 h-5" aria-hidden="true"><use href="assets/sprite.svg#icon-checkmark"/></svg>
+              <app-icon name="checkmark" size="md"/>
             } @else {
-              <svg class="w-5 h-5" aria-hidden="true"><use href="assets/sprite.svg#icon-star"/></svg>
+              <app-icon name="star" size="md"/>
             }
             </div>
             <span class="text-xs text-stone-500">Garantiert</span>

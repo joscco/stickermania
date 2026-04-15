@@ -15,7 +15,7 @@
       (click)="prevPage()"
       (pointerdown)="$event.stopPropagation()"
     >
-      <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true"><use href="assets/sprite.svg#icon-palette-prev"/></svg>
+      <app-icon name="palette-prev" size="md"/>
     </button>
 
     <!-- Sticker row — GSAP handles animation, no CSS transitions needed -->
@@ -59,7 +59,7 @@
       (click)="nextPage()"
       (pointerdown)="$event.stopPropagation()"
     >
-      <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true"><use href="assets/sprite.svg#icon-palette-next"/></svg>
+      <app-icon name="palette-next" size="md"/>
     </button>
 
   </div>

@@ -12,6 +12,7 @@ import {BoardVotingSceneComponent} from './scenes/voting/board-voting-scene.comp
 import {BoardResultsSceneComponent} from './scenes/results/board-results-scene.component';
 import {BoardQrPanelComponent} from './qr-panel/board-qr-panel.component';
 import {AnimOnInitDirective} from '../../shared/animations/anim-on-init.directive';
+import {IconComponent} from '../../shared/icon/icon.component';
 import {WebSocketService} from '../../../core/websocket.service';
 import {ApiService} from '../../../core/api.service';
 import {WorldStore} from '../../../core/world.store';
@@ -19,7 +20,7 @@ import {WorldStore} from '../../../core/world.store';
 @Component({
   selector: "app-board",
   standalone: true,
-  imports: [CommonModule, BoardLobbyComponent, BoardSetupDrawerComponent, BoardLobbySceneComponent, BoardBuildingSceneComponent, BoardVotingSceneComponent, BoardResultsSceneComponent, BoardQrPanelComponent, AnimOnInitDirective],
+  imports: [CommonModule, BoardLobbyComponent, BoardSetupDrawerComponent, BoardLobbySceneComponent, BoardBuildingSceneComponent, BoardVotingSceneComponent, BoardResultsSceneComponent, BoardQrPanelComponent, AnimOnInitDirective, IconComponent],
   templateUrl: "./board.component.html",
 })
 export class BoardComponent implements OnInit, OnDestroy {

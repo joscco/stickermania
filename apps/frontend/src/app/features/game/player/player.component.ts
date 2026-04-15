@@ -23,6 +23,7 @@ import {GameSessionStore} from '../../../core/challenge.store';
 import {WorldStore} from '../../../core/world.store';
 import {ReconnectService} from '../../../core/reconnect.service';
 import {PlayerScreen} from './player-screen.enum';
+import {IconComponent} from '../../shared/icon/icon.component';
 
 @Component({
   selector: "app-player",
@@ -41,6 +42,7 @@ import {PlayerScreen} from './player-screen.enum';
     PlayerVotingComponent,
     PlayerResultsComponent,
     PlayerNextRoundComponent,
+    IconComponent,
   ],
   providers: [
     PlayerMessageHandler,

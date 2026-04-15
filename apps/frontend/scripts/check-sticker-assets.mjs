@@ -91,10 +91,15 @@ function walkDir(dir, ext, results = []) {
 }
 
 const htmlFiles = walkDir(SRC, '.html');
+const tsFiles   = walkDir(SRC, '.ts');
 const spriteUseRefs = [];   // { id, file }
+const iconCompRefs  = [];   // { id, file }  – from <app-icon name="…" size="…">
 const legacyImgRefs = [];   // { path, file }
 
-for (const file of htmlFiles) {
+// Scan both HTML and TS (inline templates) for references
+const allTemplateFiles = [...htmlFiles, ...tsFiles];
+
+for (const file of allTemplateFiles) {
   const content = readFileSync(file, 'utf-8');
   const relFile = file.replace(SRC + '/', '');
 
@@ -103,6 +108,23 @@ for (const file of htmlFiles) {
   let m;
   while ((m = useRe.exec(content)) !== null) {
     spriteUseRefs.push({ id: m[1], file: relFile });
+  }
+
+  // <app-icon name="star" size="sm"/>  →  expects symbol "icon-star-sm" in sprite
+  // Matches both name="…" size="…" and size="…" name="…" (any attr order).
+  // Also matches [name]="'star'" style bindings.
+  const iconRe = /<app-icon\b[^>]*?\bname=["']([^"']+)["'][^>]*?(?:\bsize=["']([^"']+)["'])?[^>]*?\/?>/g;
+  while ((m = iconRe.exec(content)) !== null) {
+    const name = m[1];
+    const size = m[2] || 'md'; // default size in IconComponent
+    iconCompRefs.push({ id: `icon-${name}-${size}`, file: relFile });
+  }
+  // Also catch size before name
+  const iconRe2 = /<app-icon\b[^>]*?\bsize=["']([^"']+)["'][^>]*?\bname=["']([^"']+)["'][^>]*?\/?>/g;
+  while ((m = iconRe2.exec(content)) !== null) {
+    const size = m[1];
+    const name = m[2];
+    iconCompRefs.push({ id: `icon-${name}-${size}`, file: relFile });
   }
 
   // <img src="assets/png/..."> – legacy static refs
@@ -152,6 +174,15 @@ const useChecked = spriteUseRefs
     missing: spriteSymbolIds.size > 0 && !spriteSymbolIds.has(id),
   }));
 
+// <app-icon> references (deduplicated by id)
+const iconChecked = iconCompRefs
+  .filter((v, i, a) => a.findIndex(x => x.id === v.id) === i)
+  .map(({ id, file }) => ({
+    ref: `#${id}`,
+    file,
+    missing: spriteSymbolIds.size > 0 && !spriteSymbolIds.has(id),
+  }));
+
 // Legacy img src references (deduplicated)
 const imgChecked = legacyImgRefs
   .filter((v, i, a) => a.findIndex(x => x.path === v.path) === i)
@@ -175,6 +206,9 @@ if (spriteSymbolIds.size > 0) {
 console.log('');
 check('Catalog imageUrls',          catalogChecked);
 check('HTML <use> sprite refs',     useChecked);
+if (iconChecked.length > 0) {
+  check('<app-icon> sprite refs',   iconChecked);
+}
 if (imgChecked.length > 0) {
   check('HTML legacy img/href refs',  imgChecked);
 }

@@ -1,6 +1,7 @@
 import {Component, input, output, computed, signal, OnDestroy, AfterViewInit, ElementRef} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import gsap from 'gsap';
+import {IconComponent} from '../../icon/icon.component';
 import {BoundingBox} from '../sticker-types';
 import {degToRad, rotatePt, radToDeg, angleBetween} from '../geometry-helpers';
 
@@ -17,7 +18,7 @@ export type OverlayMode = 'idle' | 'moving' | 'rotating' | 'scaling' | 'menu';
 @Component({
     selector: 'app-sticker-selection-overlay',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, IconComponent],
     templateUrl: './sticker-selection-overlay.component.html',
     host: {style: 'position:absolute;inset:0;pointer-events:none;'},
 })

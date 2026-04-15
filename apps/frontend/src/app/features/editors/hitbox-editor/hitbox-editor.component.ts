@@ -7,6 +7,7 @@ import {HitboxPersistenceService} from './helper/hitbox-persistence.service';
 import {EditorInteractionHandler} from './helper/editor-interaction.handler';
 import {autoDetectHitbox} from './helper/auto-hitbox.util';
 import {StickerImgComponent} from '../../shared/sticker-editor/sticker-img/sticker-img.component';
+import {IconComponent} from '../../shared/icon/icon.component';
 import {resolveToImgUrl} from '../../shared/sticker-editor/sprite-url.util';
 
 /**
@@ -21,7 +22,7 @@ import {resolveToImgUrl} from '../../shared/sticker-editor/sprite-url.util';
 @Component({
     selector: "app-hitbox-editor",
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, StickerImgComponent],
+    imports: [CommonModule, FormsModule, RouterModule, StickerImgComponent, IconComponent],
     templateUrl: "./hitbox-editor.component.html",
     providers: [PolygonEditService, HitboxPersistenceService, EditorInteractionHandler],
 })

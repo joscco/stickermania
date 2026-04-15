@@ -19,7 +19,7 @@
   <div class="absolute flex items-center justify-center w-7 h-7 select-none pointer-events-none"
        [style.left.px]="cx - 12" [style.top.px]="cy - 12"
        style="z-index:8050;">
-    <svg class="w-6 h-6 text-purple-500" aria-hidden="true"><use href="assets/sprite.svg#icon-overlay-move"/></svg>
+    <app-icon name="overlay-move" size="md" class="text-purple-500"/>
   </div>
 
   <!-- NW: Rotate handle -->
@@ -32,10 +32,9 @@
        [style.left.px]="nw.x - 14" [style.top.px]="nw.y - 14"
        style="z-index:8100; cursor:grab; pointer-events:auto;"
        (pointerdown)="onHandleDown($event, 'rotate')">
-    <svg class="w-4.5 h-4.5"
+    <app-icon name="overlay-rotate" size="md"
          [class.text-purple-600]="mode === 'rotating'"
-         [class.text-purple-500]="mode !== 'rotating'"
-         aria-hidden="true"><use href="assets/sprite.svg#icon-overlay-rotate"/></svg>
+         [class.text-purple-500]="mode !== 'rotating'"/>
   </div>
 
   <!-- NE: Context-menu button -->
@@ -50,10 +49,9 @@
     style="z-index:8200; pointer-events:auto;"
     title="Optionen"
     (pointerdown)="$event.stopPropagation(); menuToggle.emit()">
-    <svg class="w-4.5 h-4.5"
+    <app-icon name="overlay-menu" size="md"
          [class.text-purple-600]="mode === 'menu'"
-         [class.text-purple-500]="mode !== 'menu'"
-         aria-hidden="true"><use href="assets/sprite.svg#icon-overlay-menu"/></svg>
+         [class.text-purple-500]="mode !== 'menu'"/>
   </div>
 
   <!-- SE: Scale handle -->
@@ -66,10 +64,9 @@
        [style.left.px]="scale.x - 14" [style.top.px]="scale.y - 14"
        style="z-index:8100; cursor:se-resize; pointer-events:auto;"
        (pointerdown)="onHandleDown($event, 'scale')">
-    <svg class="w-4.5 h-4.5"
+    <app-icon name="overlay-scale" size="md"
          [class.text-purple-600]="mode === 'scaling'"
-         [class.text-purple-500]="mode !== 'scaling'"
-         aria-hidden="true"><use href="assets/sprite.svg#icon-overlay-scale"/></svg>
+         [class.text-purple-500]="mode !== 'scaling'"/>
   </div>
 
   <!-- Stretch side handles (stretch mode only) -->

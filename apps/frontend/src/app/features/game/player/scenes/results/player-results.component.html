@@ -8,13 +8,13 @@
   @if (stickerService.myPlacement(); as placement) {
     <div animOnInit="medal" [animDelay]="0.15" class="text-center py-4">
       @if (placement === 1) {
-        <svg class="w-16 h-16 mx-auto" aria-hidden="true"><use href="assets/sprite.svg#icon-medal-gold"/></svg>
+        <app-icon name="medal-gold" size="lg" class="mx-auto"/>
         <p class="text-lg font-bold text-amber-600 mt-1">Du hast gewonnen!</p>
       } @else if (placement === 2) {
-        <svg class="w-16 h-16 mx-auto" aria-hidden="true"><use href="assets/sprite.svg#icon-medal-silver"/></svg>
+        <app-icon name="medal-silver" size="lg" class="mx-auto"/>
         <p class="text-lg font-bold text-stone-500 mt-1">Platz 2!</p>
       } @else if (placement === 3) {
-        <svg class="w-16 h-16 mx-auto" aria-hidden="true"><use href="assets/sprite.svg#icon-medal-bronze"/></svg>
+        <app-icon name="medal-bronze" size="lg" class="mx-auto"/>
         <p class="text-lg font-bold text-amber-700 mt-1">Platz 3!</p>
       } @else {
         <div class="text-4xl font-bold text-stone-600">{{ placement }}.</div>
@@ -38,9 +38,9 @@
              [class.bg-purple-100]="!stickerService.hasChosenPrompt()"
              [class.text-purple-600]="!stickerService.hasChosenPrompt()">
           @if (stickerService.hasChosenPrompt()) {
-            <svg class="w-4 h-4" aria-hidden="true"><use href="assets/sprite.svg#icon-checkmark"/></svg>
+            <app-icon name="checkmark" size="sm"/>
           } @else {
-            <svg class="w-4 h-4" aria-hidden="true"><use href="assets/sprite.svg#icon-star"/></svg>
+            <app-icon name="star" size="sm"/>
           }
         </div>
         @if (stickerService.hasLockedPacks()) {
@@ -50,14 +50,14 @@
                [class.bg-purple-100]="!stickerService.hasUnlockedPack()"
                [class.text-purple-600]="!stickerService.hasUnlockedPack()">
             @if (stickerService.hasUnlockedPack()) {
-              <svg class="w-4 h-4" aria-hidden="true"><use href="assets/sprite.svg#icon-checkmark"/></svg>
+              <app-icon name="checkmark" size="sm"/>
             } @else {
-              <svg class="w-4 h-4" aria-hidden="true"><use href="assets/sprite.svg#icon-trophy"/></svg>
+              <app-icon name="trophy" size="sm"/>
             }
           </div>
         }
         <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 grid place-items-center text-sm shadow-sm">
-          <svg class="w-4 h-4" aria-hidden="true"><use href="assets/sprite.svg#icon-star"/></svg>
+          <app-icon name="star" size="sm"/>
         </div>
       </div>
 
@@ -88,7 +88,7 @@
                   class="p-3 rounded-xl border-2 border-stone-200 bg-white text-center active:scale-95 transition-transform hover:border-emerald-300"
                   (click)="stickerService.unlockPack(pack.id)"
                 >
-                  <svg class="w-8 h-8 mx-auto mb-1 text-emerald-500" aria-hidden="true"><use href="assets/sprite.svg#icon-star"/></svg>
+                  <app-icon name="star" size="md" class="mx-auto mb-1 text-emerald-500"/>
                   <div class="text-xs font-medium mt-1">{{ pack.name }}</div>
                 </button>
               }

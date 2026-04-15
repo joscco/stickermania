@@ -40,9 +40,9 @@ const MOCK_CATALOG = STICKER_IDS.map(id => ({
 const MOCK_HAND = { stickerIds: STICKER_IDS.slice(0, 8), swapsRemaining: 2 };
 
 const MOCK_PLAYERS = {
-    'player-1': { id: 'player-1', name: 'Anna',  avatarUrl: 'assets/png/art_bench.png', avatarAssetPath: null, score: 120, joinedAt: 0, connected: true,  isHost: true,  teamId: null },
-    'player-2': { id: 'player-2', name: 'Bruno', avatarUrl: 'assets/png/art_bench.png', avatarAssetPath: null, score:  80, joinedAt: 0, connected: true,  isHost: false, teamId: null },
-    'player-3': { id: 'player-3', name: 'Clara', avatarUrl: 'assets/png/art_bench.png', avatarAssetPath: null, score:  60, joinedAt: 0, connected: true,  isHost: false, teamId: null },
+    'player-1': { id: 'player-1', name: 'Anna',  avatarUrl: 'assets/png/example_player_1.png', avatarAssetPath: null, score: 120, joinedAt: 0, connected: true,  isHost: true,  teamId: null },
+    'player-2': { id: 'player-2', name: 'Bruno', avatarUrl: 'assets/png/example_player_2.png', avatarAssetPath: null, score:  80, joinedAt: 0, connected: true,  isHost: false, teamId: null },
+    'player-3': { id: 'player-3', name: 'Clara', avatarUrl: 'assets/png/example_player_3.png', avatarAssetPath: null, score:  60, joinedAt: 0, connected: true,  isHost: false, teamId: null },
 };
 
 const MOCK_SUBMISSIONS = [

@@ -1,11 +1,12 @@
 import { CommonModule } from "@angular/common";
 import {Component, input, output, signal} from "@angular/core";
 import {AnimPresenceDirective} from '../../../shared/animations/anim-on-init.directive';
+import {IconComponent} from '../../../shared/icon/icon.component';
 
 @Component({
   selector: "app-board-setup-drawer",
   standalone: true,
-  imports: [CommonModule, AnimPresenceDirective],
+  imports: [CommonModule, AnimPresenceDirective, IconComponent],
   templateUrl: "./board-setup-drawer.component.html"
 })
 export class BoardSetupDrawerComponent {

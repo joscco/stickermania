@@ -4,6 +4,7 @@ import type {StickerCollageClientAction, StickerCollageGameState, StickerCollage
 import {WorldStore} from '../../../../../core/world.store';
 import {WebSocketService} from '../../../../../core/websocket.service';
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
+import {IconComponent} from '../../../../shared/icon/icon.component';
 
 const CARD_WIDTH = 256;   // w-64
 const CARD_GAP   = 24;    // gap-6
@@ -12,7 +13,7 @@ const STRIP_PAD  = 32;    // px-4 on each side
 @Component({
     selector: "app-board-voting-scene",
     standalone: true,
-    imports: [CommonModule, AnimOnInitDirective],
+    imports: [CommonModule, AnimOnInitDirective, IconComponent],
     templateUrl: "./board-voting-scene.component.html",
     styleUrl: "./board-voting-scene.component.css",
 })

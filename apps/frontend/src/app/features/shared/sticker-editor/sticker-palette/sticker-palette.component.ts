@@ -5,6 +5,7 @@ import {
 import {CommonModule} from '@angular/common';
 import type {StickerDefinition} from '@birthday/shared';
 import {StickerImgComponent} from '../sticker-img/sticker-img.component';
+import {IconComponent} from '../../icon/icon.component';
 
 export interface StickerDragStartEvent {
     stickerId: string;
@@ -16,7 +17,7 @@ export interface StickerDragStartEvent {
 @Component({
     selector: 'app-sticker-palette',
     standalone: true,
-    imports: [CommonModule, StickerImgComponent],
+    imports: [CommonModule, StickerImgComponent, IconComponent],
     templateUrl: './sticker-palette.component.html',
     host: {'class': 'flex flex-col'},
 })

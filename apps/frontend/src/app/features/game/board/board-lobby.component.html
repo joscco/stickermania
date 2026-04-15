@@ -71,7 +71,7 @@
                   @case ('loading') { <span class="text-xs">⏳</span> }
                   @case ('done')    { <span class="text-xs">✅</span> }
                   @case ('error')   { <span class="text-xs">❌</span> }
-                  @default          { <svg class="w-4 h-4" aria-hidden="true"><use href="assets/sprite.svg#icon-download"/></svg> }
+                  @default          { <app-icon name="download" size="sm"/> }
                 }
               </button>
               <button
@@ -79,7 +79,7 @@
                 title="Session löschen"
                 (click)="deleteSession(session.sessionId, $event)"
               >
-                <svg class="w-4 h-4" aria-hidden="true"><use href="assets/sprite.svg#icon-trash"/></svg>
+                <app-icon name="trash" size="sm"/>
               </button>
             </div>
           }

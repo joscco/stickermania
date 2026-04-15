@@ -8,7 +8,7 @@
     (pointerdown)="$event.stopPropagation()"
   >
     <button [class]="BTN_DELETE" (click)="emit('delete')">
-      <svg class="w-3.5 h-3.5 shrink-0" aria-hidden="true"><use href="assets/sprite.svg#icon-ctx-delete"/></svg>
+      <app-icon name="ctx-delete" size="sm" class="shrink-0"/>
       Löschen
     </button>
 
@@ -17,18 +17,18 @@
     <button [class]="canDuplicate() ? BTN : BTN_DISABLED"
             [disabled]="!canDuplicate()"
             (click)="canDuplicate() && emit('duplicate')">
-      <svg class="w-3.5 h-3.5 shrink-0" aria-hidden="true"><use href="assets/sprite.svg#icon-ctx-duplicate"/></svg>
+      <app-icon name="ctx-duplicate" size="sm" class="shrink-0"/>
       Duplizieren
     </button>
 
     <button [class]="BTN" (click)="emit('flipH')">
-      <svg class="w-3.5 h-3.5 shrink-0" aria-hidden="true"><use href="assets/sprite.svg#icon-ctx-flip-h"/></svg>
+      <app-icon name="ctx-flip-h" size="sm" class="shrink-0"/>
       Spiegeln
     </button>
 
     @if (!isMulti()) {
       <button [class]="stretchMode() ? BTN_ACTIVE : BTN" (click)="emit('toggleStretch')">
-        <svg class="w-3.5 h-3.5 shrink-0" aria-hidden="true"><use href="assets/sprite.svg#icon-ctx-stretch"/></svg>
+        <app-icon name="ctx-stretch" size="sm" class="shrink-0"/>
         {{ stretchMode() ? 'Verformen beenden' : 'Verformen' }}
       </button>
     }
@@ -36,19 +36,19 @@
     <div class="h-px bg-black/6 my-0.5"></div>
 
     <button [class]="BTN" (click)="emit('zFront')">
-      <svg class="w-3.5 h-3.5 shrink-0" aria-hidden="true"><use href="assets/sprite.svg#icon-ctx-z-front"/></svg>
+      <app-icon name="ctx-z-front" size="sm" class="shrink-0"/>
       Ganz nach vorne
     </button>
     <button [class]="BTN" (click)="emit('zForward')">
-      <svg class="w-3.5 h-3.5 shrink-0" aria-hidden="true"><use href="assets/sprite.svg#icon-ctx-z-forward"/></svg>
+      <app-icon name="ctx-z-forward" size="sm" class="shrink-0"/>
       Eine Ebene nach vorne
     </button>
     <button [class]="BTN" (click)="emit('zBackward')">
-      <svg class="w-3.5 h-3.5 shrink-0" aria-hidden="true"><use href="assets/sprite.svg#icon-ctx-z-backward"/></svg>
+      <app-icon name="ctx-z-backward" size="sm" class="shrink-0"/>
       Eine Ebene nach hinten
     </button>
     <button [class]="BTN" (click)="emit('zBack')">
-      <svg class="w-3.5 h-3.5 shrink-0" aria-hidden="true"><use href="assets/sprite.svg#icon-ctx-z-back"/></svg>
+      <app-icon name="ctx-z-back" size="sm" class="shrink-0"/>
       Ganz nach hinten
     </button>
 
@@ -56,13 +56,13 @@
       <div class="h-px bg-black/6 my-0.5"></div>
       @if (canGroup()) {
         <button [class]="BTN" (click)="emit('group')">
-          <svg class="w-3.5 h-3.5 shrink-0" aria-hidden="true"><use href="assets/sprite.svg#icon-ctx-group"/></svg>
+          <app-icon name="ctx-group" size="sm" class="shrink-0"/>
           Gruppieren
         </button>
       }
       @if (canUngroup()) {
         <button [class]="BTN" (click)="emit('ungroup')">
-          <svg class="w-3.5 h-3.5 shrink-0" aria-hidden="true"><use href="assets/sprite.svg#icon-ctx-ungroup"/></svg>
+          <app-icon name="ctx-ungroup" size="sm" class="shrink-0"/>
           Gruppierung aufheben
         </button>
       }

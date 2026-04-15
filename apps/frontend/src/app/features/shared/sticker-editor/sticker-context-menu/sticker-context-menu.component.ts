@@ -2,6 +2,7 @@ import {
     Component, input, output, ElementRef, AfterViewChecked, ViewChild, signal,
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
+import {IconComponent} from '../../icon/icon.component';
 
 export type ContextMenuAction =
     | 'delete' | 'flipH'
@@ -16,7 +17,7 @@ const BTN_DISABLED = 'flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg te
 @Component({
     selector: 'app-sticker-context-menu',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, IconComponent],
     templateUrl: './sticker-context-menu.component.html',
     host: {'style': 'pointer-events: none;', '[attr.data-canvas-overlay]': '""'},
 })

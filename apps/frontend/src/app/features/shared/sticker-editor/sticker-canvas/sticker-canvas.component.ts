@@ -16,12 +16,13 @@ import * as ops from '../sticker-placement-ops';
 import {HandleDragEvent, StickerSelectionOverlayComponent} from '../sticker-selection-overlay/sticker-selection-overlay.component';
 import {AnimOnInitDirective, AnimPresenceDirective} from '../../animations/anim-on-init.directive';
 import {StickerImgComponent} from '../sticker-img/sticker-img.component';
+import {IconComponent} from '../../icon/icon.component';
 import {getSpriteViewBox, preloadSprite} from '../sprite-url.util';
 
 @Component({
   selector: 'app-sticker-canvas',
   standalone: true,
-  imports: [CommonModule, StickerSelectionOverlayComponent, StickerContextMenuComponent, StickerSelectionOverlayComponent, AnimOnInitDirective, AnimPresenceDirective, StickerImgComponent],
+  imports: [CommonModule, StickerSelectionOverlayComponent, StickerContextMenuComponent, StickerSelectionOverlayComponent, AnimOnInitDirective, AnimPresenceDirective, StickerImgComponent, IconComponent],
   templateUrl: './sticker-canvas.component.html',
   host: {style: 'display: block; width: 100%; height: 100%;'},
 })

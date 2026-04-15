@@ -26,12 +26,13 @@ import {StickerCanvasComponent} from './sticker-canvas/sticker-canvas.component'
 import {StickerDragStartEvent, StickerPaletteComponent} from './sticker-palette/sticker-palette.component';
 import {animateStickerRemoval} from './sticker-canvas/sticker-removal-animation';
 import {AnimOnInitDirective} from '../animations/anim-on-init.directive';
+import {IconComponent} from '../icon/icon.component';
 import {isPointerOutsideRect, isPositionOutsideCanvas, clamp, radToDeg, pinchDistance, pinchAngle} from './geometry-helpers';
 
 @Component({
   selector: "app-sticker-editor",
   standalone: true,
-  imports: [CommonModule, StickerCanvasComponent, StickerPaletteComponent, StickerCanvasComponent, AnimOnInitDirective],
+  imports: [CommonModule, StickerCanvasComponent, StickerPaletteComponent, StickerCanvasComponent, AnimOnInitDirective, IconComponent],
   templateUrl: "./sticker-editor.component.html",
   host: {"class": "flex flex-col"},
 })
