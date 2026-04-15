@@ -1,23 +1,23 @@
 <div class="flex-1 flex flex-col overflow-y-auto">
   <!-- Results header -->
   <div animOnInit="banner" class="bg-linear-to-r from-yellow-400 to-amber-500 text-white px-4 py-3 text-center">
-    <h2 class="text-lg font-bold">🏆 Ergebnisse</h2>
+    <h2 class="text-lg font-bold">Ergebnisse</h2>
   </div>
 
   <!-- My placement -->
   @if (stickerService.myPlacement(); as placement) {
     <div animOnInit="medal" [animDelay]="0.15" class="text-center py-4">
       @if (placement === 1) {
-        <div class="text-5xl">🥇</div>
+        <svg class="w-16 h-16 mx-auto" aria-hidden="true"><use href="assets/sprite.svg#icon-medal-gold"/></svg>
         <p class="text-lg font-bold text-amber-600 mt-1">Du hast gewonnen!</p>
       } @else if (placement === 2) {
-        <div class="text-5xl">🥈</div>
+        <svg class="w-16 h-16 mx-auto" aria-hidden="true"><use href="assets/sprite.svg#icon-medal-silver"/></svg>
         <p class="text-lg font-bold text-stone-500 mt-1">Platz 2!</p>
       } @else if (placement === 3) {
-        <div class="text-5xl">🥉</div>
+        <svg class="w-16 h-16 mx-auto" aria-hidden="true"><use href="assets/sprite.svg#icon-medal-bronze"/></svg>
         <p class="text-lg font-bold text-amber-700 mt-1">Platz 3!</p>
       } @else {
-        <div class="text-4xl">{{ placement }}.</div>
+        <div class="text-4xl font-bold text-stone-600">{{ placement }}.</div>
         <p class="text-sm text-stone-500 mt-1">Platz {{ placement }}</p>
       }
     </div>
@@ -37,7 +37,11 @@
              [class.text-emerald-600]="stickerService.hasChosenPrompt()"
              [class.bg-purple-100]="!stickerService.hasChosenPrompt()"
              [class.text-purple-600]="!stickerService.hasChosenPrompt()">
-          @if (stickerService.hasChosenPrompt()) { ✓ } @else { 🎯 }
+          @if (stickerService.hasChosenPrompt()) {
+            <svg class="w-4 h-4" aria-hidden="true"><use href="assets/sprite.svg#icon-checkmark"/></svg>
+          } @else {
+            <svg class="w-4 h-4" aria-hidden="true"><use href="assets/sprite.svg#icon-star"/></svg>
+          }
         </div>
         @if (stickerService.hasLockedPacks()) {
           <div class="w-8 h-8 rounded-full grid place-items-center text-sm shadow-sm transition-colors duration-200"
@@ -45,17 +49,23 @@
                [class.text-emerald-600]="stickerService.hasUnlockedPack()"
                [class.bg-purple-100]="!stickerService.hasUnlockedPack()"
                [class.text-purple-600]="!stickerService.hasUnlockedPack()">
-            @if (stickerService.hasUnlockedPack()) { ✓ } @else { 🔓 }
+            @if (stickerService.hasUnlockedPack()) {
+              <svg class="w-4 h-4" aria-hidden="true"><use href="assets/sprite.svg#icon-checkmark"/></svg>
+            } @else {
+              <svg class="w-4 h-4" aria-hidden="true"><use href="assets/sprite.svg#icon-trophy"/></svg>
+            }
           </div>
         }
-        <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 grid place-items-center text-sm shadow-sm">⭐</div>
+        <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 grid place-items-center text-sm shadow-sm">
+          <svg class="w-4 h-4" aria-hidden="true"><use href="assets/sprite.svg#icon-star"/></svg>
+        </div>
       </div>
 
       @switch (currentWinnerStep()) {
         @case ('prompt') {
           <!-- Step 1: Pick prompt -->
           <div animOnInit="choice" [animDelay]="0.25">
-            <h3 class="text-sm font-semibold text-stone-700 mb-2">🎯 Wähle den nächsten Prompt:</h3>
+            <h3 class="text-sm font-semibold text-stone-700 mb-2">Wähle den nächsten Prompt:</h3>
             <div class="space-y-2">
               @for (prompt of stickerService.promptChoices(); track prompt) {
                 <button
@@ -71,14 +81,14 @@
         @case ('unlock') {
           <!-- Step 2: Unlock pack -->
           <div animOnInit="choice" [animDelay]="0.25">
-            <h3 class="text-sm font-semibold text-stone-700 mb-2">🔓 Schalte ein Sticker-Pack frei:</h3>
+            <h3 class="text-sm font-semibold text-stone-700 mb-2">Schalte ein Sticker-Pack frei:</h3>
             <div class="grid grid-cols-2 gap-2">
               @for (pack of stickerService.packUnlockChoices(); track pack.id) {
                 <button
                   class="p-3 rounded-xl border-2 border-stone-200 bg-white text-center active:scale-95 transition-transform hover:border-emerald-300"
                   (click)="stickerService.unlockPack(pack.id)"
                 >
-                  <div class="text-2xl">🎁</div>
+                  <svg class="w-8 h-8 mx-auto mb-1 text-emerald-500" aria-hidden="true"><use href="assets/sprite.svg#icon-star"/></svg>
                   <div class="text-xs font-medium mt-1">{{ pack.name }}</div>
                 </button>
               }
@@ -88,7 +98,7 @@
         @case ('guaranteed') {
           <!-- Step 3: Guaranteed pack -->
           <div animOnInit="choice" [animDelay]="0.25">
-            <h3 class="text-sm font-semibold text-stone-700 mb-2">⭐ "Auf jeden Fall dabei"-Pack:</h3>
+            <h3 class="text-sm font-semibold text-stone-700 mb-2">"Auf jeden Fall dabei"-Pack:</h3>
             <div class="grid grid-cols-2 gap-2">
               @for (pack of stickerService.guaranteedPackChoices(); track pack.id) {
                 <button
@@ -105,24 +115,24 @@
     </div>
   } @else if (stickerService.isWinner() && stickerService.winnerChoicesDone()) {
     <div animOnInit="item" [animDelay]="0.2" class="text-center py-4">
-      <p class="text-emerald-600 font-medium text-sm">✅ Auswahl getroffen!</p>
+      <p class="text-emerald-600 font-medium text-sm">Auswahl getroffen!</p>
     </div>
   } @else if (stickerService.winnerId()) {
     <div animOnInit="item" [animDelay]="0.2" class="text-center py-4 px-6">
       <p class="text-stone-500 text-sm">
         {{ worldStore.players()[stickerService.winnerId()!]?.name ?? 'Der Gewinner' }} wählt die nächste Runde...
       </p>
-      <div class="animate-pulse text-2xl mt-2">⏳</div>
+      <div class="w-6 h-6 border-2 border-stone-200 border-t-stone-400 rounded-full animate-spin mx-auto mt-2"></div>
     </div>
   }
 </div>
 
-<!-- Footer: ready-to-advance (only once winner is done choosing) -->
+<!-- Footer -->
 @if (stickerService.canReadyToAdvance()) {
   <div class="shrink-0 border-t border-black/10 bg-white px-4 py-3">
     <button
       class="w-full bg-purple-600 text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
       (click)="stickerService.readyToAdvance()"
-    >Nächste Runde starten ⏭️</button>
+    >Nächste Runde starten</button>
   </div>
 }

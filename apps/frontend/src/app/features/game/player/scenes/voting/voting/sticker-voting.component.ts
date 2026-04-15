@@ -1,14 +1,12 @@
 import {Component, EventEmitter, Input, Output} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {StickerCollage, StickerDefinition, SessionPlayer} from "@birthday/shared";
+import {StickerImgComponent} from "../../../../../shared/sticker-editor/sticker-img/sticker-img.component";
 
-/**
- * Displays previous round's submissions for voting.
- */
 @Component({
     selector: "app-sticker-voting",
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, StickerImgComponent],
     templateUrl: 'sticker-voting.component.html',
 })
 export class StickerVotingComponent {

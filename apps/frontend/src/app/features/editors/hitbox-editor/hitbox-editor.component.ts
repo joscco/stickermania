@@ -6,6 +6,8 @@ import {PolygonEditService} from './helper/polygon-edit.service';
 import {HitboxPersistenceService} from './helper/hitbox-persistence.service';
 import {EditorInteractionHandler} from './helper/editor-interaction.handler';
 import {autoDetectHitbox} from './helper/auto-hitbox.util';
+import {StickerImgComponent} from '../../shared/sticker-editor/sticker-img/sticker-img.component';
+import {resolveToImgUrl} from '../../shared/sticker-editor/sprite-url.util';
 
 /**
  * Visual hitbox polygon editor for stickers.
@@ -19,7 +21,7 @@ import {autoDetectHitbox} from './helper/auto-hitbox.util';
 @Component({
     selector: "app-hitbox-editor",
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule],
+    imports: [CommonModule, FormsModule, RouterModule, StickerImgComponent],
     templateUrl: "./hitbox-editor.component.html",
     providers: [PolygonEditService, HitboxPersistenceService, EditorInteractionHandler],
 })
@@ -30,7 +32,7 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
      * How far beyond the image edge (as a fraction of the image size)
      * points can be placed. 0.05 = 5 % overflow on each side.
      */
-    public readonly overflowFraction = 0.05;
+    public readonly overflowFraction = 0;
 
     /** Auto-detect UI state */
     public readonly autoDetecting = signal(false);
@@ -89,6 +91,13 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
         return this.poly.polygon().map(p => `${p.x * w + px},${p.y * h + py}`).join(" ");
     });
 
+    /**
+     * Resolved URL for the editor canvas <img> — needed for naturalWidth/Height.
+     * For sprite: URLs this is a blob: URL; for plain paths returned as-is.
+     */
+    public readonly resolvedDisplayUrl = signal<string>('');
+    private _currentDisplayBlob: string | null = null;
+
     private resizeObserver: ResizeObserver | null = null;
 
     constructor(
@@ -122,9 +131,33 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // ── Template callbacks ───────────────────────────────────
 
+    public async selectSticker(sticker: import('@birthday/shared').StickerDefinition): Promise<void> {
+        this.persistence.selectSticker(sticker);
+        // Reset dimensions while loading
+        this.imgNatWidth.set(1);
+        this.imgNatHeight.set(1);
+        // Revoke previous blob if any
+        if (this._currentDisplayBlob) {
+            URL.revokeObjectURL(this._currentDisplayBlob);
+            this._currentDisplayBlob = null;
+        }
+        // Resolve to a loadable URL. For sprite: URLs we also get the viewBox
+        // dimensions directly — no need to wait for onImageLoaded.
+        const { url, intrinsicWidth, intrinsicHeight } = await resolveToImgUrl(sticker.imageUrl, 512);
+        this._currentDisplayBlob = url;
+        if (intrinsicWidth && intrinsicHeight) {
+            this.imgNatWidth.set(intrinsicWidth);
+            this.imgNatHeight.set(intrinsicHeight);
+        }
+        this.resolvedDisplayUrl.set(url);
+    }
+
     public onImageLoaded(event: Event): void {
         const img = event.target as HTMLImageElement;
-        if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+        // Only trust naturalWidth/Height for non-SVG images (PNG/JPEG).
+        // For SVG blob URLs the values are unreliable across browsers;
+        // we already set the dimensions from the viewBox in selectSticker().
+        if (img.naturalWidth > 0 && img.naturalHeight > 0 && !this._currentDisplayBlob) {
             this.imgNatWidth.set(img.naturalWidth);
             this.imgNatHeight.set(img.naturalHeight);
         }

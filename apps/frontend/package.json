@@ -2,8 +2,10 @@
   "name": "@birthday/frontend",
   "version": "0.0.0",
   "scripts": {
+    "sprite": "node scripts/build-sprite.mjs",
+    "sprite:watch": "node scripts/build-sprite.mjs --watch",
     "check-stickers": "node scripts/check-sticker-assets.mjs",
-    "prebuild": "node scripts/check-sticker-assets.mjs",
+    "prebuild": "node scripts/build-sprite.mjs && node scripts/check-sticker-assets.mjs",
     "dev": "ng serve --project frontend --configuration development",
     "dev:tools": "ng serve --project frontend --configuration dev-tools",
     "build": "ng build --project frontend --configuration production",
@@ -38,6 +40,7 @@
     "jsdom": "^28.0.0",
     "postcss": "^8.5.6",
     "prettier": "^3.8.1",
+    "svgo": "^4.0.1",
     "tailwindcss": "^4.2.1",
     "typescript": "~5.9.2",
     "vitest": "^4.0.8"

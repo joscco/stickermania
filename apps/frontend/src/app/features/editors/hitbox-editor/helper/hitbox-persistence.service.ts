@@ -7,13 +7,7 @@ import type {Point} from "./auto-hitbox.util";
 import {PolygonEditService} from "./polygon-edit.service";
 
 /** Fallback catalog when backend is unavailable */
-const FALLBACK_CATALOG: StickerDefinition[] = [
-    {id: "eyes_round",  imageUrl: "assets/png/sticker_eye_round.png",  categories: ["eyes"]},
-    {id: "eyes_cute",   imageUrl: "assets/png/sticker_eye_cute.png",   categories: ["eyes"]},
-    {id: "eyes_sleepy", imageUrl: "assets/png/sticker_eye_sleepy.png", categories: ["eyes"]},
-    {id: "eyes_star",   imageUrl: "assets/png/sticker_eye_star.png",   categories: ["eyes"]},
-    {id: "eyes_heart",  imageUrl: "assets/png/sticker_eye_heart.png",  categories: ["eyes"]},
-];
+const FALLBACK_CATALOG: StickerDefinition[] = [];
 
 /**
  * Handles loading the sticker catalog, persisting hitbox data,

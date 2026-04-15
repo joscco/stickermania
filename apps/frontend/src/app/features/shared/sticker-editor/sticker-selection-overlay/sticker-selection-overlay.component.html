@@ -15,15 +15,14 @@
     <polygon [attr.points]="svgRect(tl,tr,br,bl)" fill="none" stroke="#a855f7" stroke-width="2" stroke-dasharray="6 3"/>
   </svg>
 
-  <!-- Center: move icon (highlighted when moving) -->
+  <!-- Center: move icon -->
   <div class="absolute flex items-center justify-center w-7 h-7 select-none pointer-events-none"
        [style.left.px]="cx - 12" [style.top.px]="cy - 12"
        style="z-index:8050;">
-    <span class="material-icons text-purple-500"
-          style="font-size:24px; line-height:1;">open_with</span>
+    <svg class="w-6 h-6 text-purple-500" aria-hidden="true"><use href="assets/sprite.svg#icon-overlay-move"/></svg>
   </div>
 
-  <!-- NW: Rotate handle (highlighted when rotating) -->
+  <!-- NW: Rotate handle -->
   @let nw = rotatePt(b.x - pad, b.y - pad, cx, cy, rad);
   <div class="absolute flex items-center justify-center w-7 h-7 rounded-full border-2 shadow select-none touch-none"
        [class.border-purple-500]="mode !== 'rotating'"
@@ -33,13 +32,13 @@
        [style.left.px]="nw.x - 14" [style.top.px]="nw.y - 14"
        style="z-index:8100; cursor:grab; pointer-events:auto;"
        (pointerdown)="onHandleDown($event, 'rotate')">
-    <span class="material-icons"
-          [class.text-purple-600]="mode === 'rotating'"
-          [class.text-purple-500]="mode !== 'rotating'"
-          style="font-size:18px; line-height:1;">sync</span>
+    <svg class="w-4.5 h-4.5"
+         [class.text-purple-600]="mode === 'rotating'"
+         [class.text-purple-500]="mode !== 'rotating'"
+         aria-hidden="true"><use href="assets/sprite.svg#icon-overlay-rotate"/></svg>
   </div>
 
-  <!-- NE: Context-menu button (highlighted when menu open) -->
+  <!-- NE: Context-menu button -->
   @let ne = rotatePt(b.x + b.w + pad, b.y - pad, cx, cy, rad);
   <div
     class="absolute flex items-center justify-center w-7 h-7 rounded-full border-2 shadow select-none touch-none cursor-pointer"
@@ -51,13 +50,13 @@
     style="z-index:8200; pointer-events:auto;"
     title="Optionen"
     (pointerdown)="$event.stopPropagation(); menuToggle.emit()">
-    <span class="material-icons"
-          [class.text-purple-600]="mode === 'menu'"
-          [class.text-purple-500]="mode !== 'menu'"
-          style="font-size:18px; line-height:1;">more_vert</span>
+    <svg class="w-4.5 h-4.5"
+         [class.text-purple-600]="mode === 'menu'"
+         [class.text-purple-500]="mode !== 'menu'"
+         aria-hidden="true"><use href="assets/sprite.svg#icon-overlay-menu"/></svg>
   </div>
 
-  <!-- SE: Scale handle (highlighted when scaling) -->
+  <!-- SE: Scale handle -->
   @let scale = rotatePt(b.x + b.w + pad, b.y + b.h + pad, cx, cy, rad);
   <div class="absolute flex items-center justify-center w-7 h-7 rounded-full border-2 shadow select-none touch-none"
        [class.border-purple-500]="mode !== 'scaling'"
@@ -67,10 +66,10 @@
        [style.left.px]="scale.x - 14" [style.top.px]="scale.y - 14"
        style="z-index:8100; cursor:se-resize; pointer-events:auto;"
        (pointerdown)="onHandleDown($event, 'scale')">
-    <span class="material-icons"
-          [class.text-purple-600]="mode === 'scaling'"
-          [class.text-purple-500]="mode !== 'scaling'"
-          style="font-size:18px; line-height:1;">open_in_full</span>
+    <svg class="w-4.5 h-4.5"
+         [class.text-purple-600]="mode === 'scaling'"
+         [class.text-purple-500]="mode !== 'scaling'"
+         aria-hidden="true"><use href="assets/sprite.svg#icon-overlay-scale"/></svg>
   </div>
 
   <!-- Stretch side handles (stretch mode only) -->
@@ -82,8 +81,9 @@
         [style.cursor]="side.cursor"
         style="z-index:8100; pointer-events:auto;"
         (pointerdown)="onHandleDown($event, side.id)">
-        <span class="material-icons text-amber-800" style="font-size:16px; line-height:1;"
-        >{{ side.id === 'e' || side.id === 'w' ? 'swap_horiz' : 'swap_vert' }}</span>
+        <svg class="w-4 h-4 text-amber-800" aria-hidden="true">
+          <use [attr.href]="'assets/sprite.svg#' + (side.id === 'e' || side.id === 'w' ? 'icon-overlay-stretch-h' : 'icon-overlay-stretch-v')"/>
+        </svg>
       </div>
     }
     <div

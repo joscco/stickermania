@@ -14,11 +14,12 @@ import type {BoundingBox} from '../sticker-types';
 import * as ops from '../sticker-placement-ops';
 import {HandleDragEvent, StickerSelectionOverlayComponent} from '../sticker-selection-overlay/sticker-selection-overlay.component';
 import {AnimOnInitDirective, AnimPresenceDirective} from '../../animations/anim-on-init.directive';
+import {StickerImgComponent} from '../sticker-img/sticker-img.component';
 
 @Component({
   selector: 'app-sticker-canvas',
   standalone: true,
-  imports: [CommonModule, StickerSelectionOverlayComponent, StickerContextMenuComponent, StickerSelectionOverlayComponent, AnimOnInitDirective, AnimPresenceDirective],
+  imports: [CommonModule, StickerSelectionOverlayComponent, StickerContextMenuComponent, StickerSelectionOverlayComponent, AnimOnInitDirective, AnimPresenceDirective, StickerImgComponent],
   templateUrl: './sticker-canvas.component.html',
   host: {style: 'display: block; width: 100%; height: 100%;'},
 })

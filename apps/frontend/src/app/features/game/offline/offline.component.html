@@ -2,11 +2,11 @@
 
   <div animOnInit="item" class="w-full max-w-md rounded-3xl bg-white border border-black/5 shadow-sm p-8 text-center">
 
-    <!-- Floating emoji row -->
-    <div class="flex justify-center gap-3 mb-6">
-      <span class="text-4xl" style="display:inline-block; animation: float 3s ease-in-out infinite;">🎉</span>
-      <span class="text-4xl" style="display:inline-block; animation: float 3s ease-in-out 0.4s infinite;">✨</span>
-      <span class="text-4xl" style="display:inline-block; animation: float 3s ease-in-out 0.8s infinite;">🎈</span>
+    <!-- Floating icon row (sprite icons replacing emoji) -->
+    <div class="flex justify-center gap-4 mb-6">
+      <svg class="w-10 h-10 text-amber-400" style="display:inline-block; animation: float 3s ease-in-out infinite;" aria-hidden="true"><use href="assets/sprite.svg#icon-star"/></svg>
+      <svg class="w-10 h-10 text-purple-400" style="display:inline-block; animation: float 3s ease-in-out 0.4s infinite;" aria-hidden="true"><use href="assets/sprite.svg#icon-trophy"/></svg>
+      <svg class="w-10 h-10 text-pink-400" style="display:inline-block; animation: float 3s ease-in-out 0.8s infinite;" aria-hidden="true"><use href="assets/sprite.svg#icon-paintbrush"/></svg>
     </div>
 
     <!-- Status badge -->
@@ -29,7 +29,7 @@
 
     <p class="text-xs text-stone-400 leading-relaxed">
       Der Moderator startet die Session kurz vor dem Spielen.<br/>
-      Dann einfach diese Seite neu laden und lossticken! 🖼️
+      Dann einfach diese Seite neu laden und lossticken!
     </p>
 
   </div>
@@ -42,4 +42,3 @@
     50%       { transform: translateY(-8px); }
   }
 </style>
-

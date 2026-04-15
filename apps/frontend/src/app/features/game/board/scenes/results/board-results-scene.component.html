@@ -1,7 +1,10 @@
 <div class="h-full flex flex-col">
   <!-- Results header -->
   <div animOnInit="medal" class="bg-linear-to-r from-yellow-400 to-amber-500 text-white px-8 py-5 text-center rounded-2xl mx-4 mt-4 shadow-lg">
-    <h1 class="text-3xl font-black">🏆 Ergebnisse</h1>
+    <h1 class="text-3xl font-black flex items-center justify-center gap-3">
+      <svg class="w-8 h-8" aria-hidden="true"><use href="assets/sprite.svg#icon-trophy"/></svg>
+      Ergebnisse
+    </h1>
   </div>
 
   <!-- Podium -->
@@ -12,7 +15,6 @@
         <app-board-player-avatar
           [player]="getPlayer(topResults()[1].playerId)!"
           status="podium-2"
-          medal="🥈"
         />
         <span class="text-xs text-stone-500 mt-1">{{ topResults()[1].voteCount }} Stimmen · +{{ topResults()[1].pointsAwarded }}</span>
         <div class="w-32 h-28 bg-stone-200 rounded-t-xl mt-2 flex items-center justify-center">
@@ -27,7 +29,6 @@
         <app-board-player-avatar
           [player]="getPlayer(topResults()[0].playerId)!"
           status="podium-1"
-          medal="🥇"
         />
         <span class="text-xs text-stone-500 mt-1">{{ topResults()[0].voteCount }} Stimmen · +{{ topResults()[0].pointsAwarded }}</span>
         <div class="w-36 h-40 bg-amber-300 rounded-t-xl mt-2 flex items-center justify-center">
@@ -42,7 +43,6 @@
         <app-board-player-avatar
           [player]="getPlayer(topResults()[2].playerId)!"
           status="podium-3"
-          medal="🥉"
         />
         <span class="text-xs text-stone-500 mt-1">{{ topResults()[2].voteCount }} Stimmen · +{{ topResults()[2].pointsAwarded }}</span>
         <div class="w-32 h-20 bg-orange-200 rounded-t-xl mt-2 flex items-center justify-center">
@@ -64,7 +64,11 @@
             <div class="w-10 h-10 rounded-full grid place-items-center text-lg shadow-sm"
                  [class.bg-emerald-100]="promptChosen()" [class.text-emerald-600]="promptChosen()"
                  [class.bg-purple-100]="!promptChosen()" [class.text-purple-600]="!promptChosen()">
-              @if (promptChosen()) { ✓ } @else { 🎯 }
+          @if (promptChosen()) {
+              <svg class="w-5 h-5" aria-hidden="true"><use href="assets/sprite.svg#icon-checkmark"/></svg>
+            } @else {
+              <svg class="w-5 h-5" aria-hidden="true"><use href="assets/sprite.svg#icon-star"/></svg>
+            }
             </div>
             <span class="text-xs text-stone-500">Prompt</span>
           </div>
@@ -72,7 +76,11 @@
             <div class="w-10 h-10 rounded-full grid place-items-center text-lg shadow-sm"
                  [class.bg-emerald-100]="packUnlocked()" [class.text-emerald-600]="packUnlocked()"
                  [class.bg-purple-100]="!packUnlocked()" [class.text-purple-600]="!packUnlocked()">
-              @if (packUnlocked()) { ✓ } @else { 🔓 }
+              @if (packUnlocked()) {
+              <svg class="w-5 h-5" aria-hidden="true"><use href="assets/sprite.svg#icon-checkmark"/></svg>
+            } @else {
+              <svg class="w-5 h-5" aria-hidden="true"><use href="assets/sprite.svg#icon-trophy"/></svg>
+            }
             </div>
             <span class="text-xs text-stone-500">Pack</span>
           </div>
@@ -80,7 +88,11 @@
             <div class="w-10 h-10 rounded-full grid place-items-center text-lg shadow-sm"
                  [class.bg-emerald-100]="guaranteedChosen()" [class.text-emerald-600]="guaranteedChosen()"
                  [class.bg-purple-100]="!guaranteedChosen()" [class.text-purple-600]="!guaranteedChosen()">
-              @if (guaranteedChosen()) { ✓ } @else { ⭐ }
+              @if (guaranteedChosen()) {
+              <svg class="w-5 h-5" aria-hidden="true"><use href="assets/sprite.svg#icon-checkmark"/></svg>
+            } @else {
+              <svg class="w-5 h-5" aria-hidden="true"><use href="assets/sprite.svg#icon-star"/></svg>
+            }
             </div>
             <span class="text-xs text-stone-500">Garantiert</span>
           </div>
@@ -88,7 +100,7 @@
       </div>
     } @else if (winnerChoicesDone()) {
       <div class="text-center">
-        <p class="text-lg font-bold text-emerald-700">✅ Auswahl getroffen!</p>
+        <p class="text-lg font-bold text-emerald-700">Auswahl getroffen!</p>
       </div>
     }
   </div>
@@ -102,7 +114,7 @@
       class="bg-purple-600 text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-purple-700 active:scale-95 transition-all"
       (click)="advanceFromResults()"
     >
-      Nächste Runde ⏩
+      Nächste Runde
     </button>
   </div>
 </div>

@@ -2,11 +2,11 @@
   <!-- Header -->
   <div class="bg-linear-to-r from-violet-600 to-fuchsia-500 text-white px-4 py-2.5 flex items-center justify-between shrink-0">
     <div>
-      <h1 class="text-base font-bold">🎯 Hitbox-Editor</h1>
+      <h1 class="text-base font-bold">Hitbox-Editor</h1>
     </div>
     <div class="flex items-center gap-2">
       <a routerLink="/editor" class="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">
-        🧪 Canvas-Test
+        Canvas-Test
       </a>
       <a routerLink="/" class="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full transition-colors">
         ← Zurück
@@ -28,13 +28,12 @@
               [class.bg-violet-50]="persistence.selectedSticker()?.id === sticker.id"
               [class.ring-1]="persistence.selectedSticker()?.id === sticker.id"
               [class.ring-violet-300]="persistence.selectedSticker()?.id === sticker.id"
-              (click)="persistence.selectSticker(sticker)"
+              (click)="selectSticker(sticker)"
             >
-              <img
-                [src]="sticker.imageUrl"
+              <app-sticker-img
+                [imageUrl]="sticker.imageUrl"
                 [alt]="sticker.id"
-                class="w-8 h-8 object-contain shrink-0"
-                draggable="false"
+                class="w-8 h-8 shrink-0"
               />
               <div class="flex-1 min-w-0">
                 <div class="font-medium text-stone-700 truncate">{{ sticker.id }}</div>
@@ -63,14 +62,14 @@
             [disabled]="autoDetecting()"
             (click)="runAutoDetect()"
           >
-            @if (autoDetecting()) { ⏳ ... } @else { 🪄 Auto-Detect }
+            @if (autoDetecting()) { Lädt... } @else { Auto-Detect }
           </button>
 
           <button
             class="px-3 py-1.5 bg-stone-100 text-stone-600 rounded-lg font-medium text-xs hover:bg-stone-200 active:scale-95 transition-all disabled:opacity-30"
             [disabled]="poly.polygon().length === 0"
             (click)="poly.clear()"
-          >🗑️ Löschen</button>
+          >Löschen</button>
 
           <div class="h-5 w-px bg-black/10 mx-1"></div>
 
@@ -89,19 +88,18 @@
           <div class="flex-1"></div>
 
           @if (persistence.saving()) {
-            <span class="text-xs text-stone-400">⏳ Speichert...</span>
+            <span class="text-xs text-stone-400">Speichert...</span>
           }
           @if (persistence.saveStatus()) {
             <span class="text-xs">{{ persistence.saveStatus() }}</span>
           }
         </div>
 
-        <!-- Editor area: outer container that we measure for available space -->
+        <!-- Editor area -->
         <div
           #editorArea
           class="flex-1 min-h-0 relative bg-stone-50 overflow-hidden flex items-center justify-center"
         >
-          <!-- Interactive wrapper: image + padding around it for edge points -->
           <div
             class="relative cursor-crosshair"
             [style.width.px]="wrapperWidth()"
@@ -111,9 +109,9 @@
             (mouseup)="interaction.onMouseUp()"
             (mouseleave)="interaction.onMouseUp()"
           >
-            <!-- Sticker image — centered inside wrapper with padding offset -->
+            <!-- Sticker image — uses resolved URL (blob for sprite:, path for png) -->
             <img
-              [src]="persistence.selectedSticker()!.imageUrl"
+              [src]="resolvedDisplayUrl()"
               [alt]="persistence.selectedSticker()!.id"
               class="absolute block"
               [style.left.px]="edgePaddingX()"
@@ -125,13 +123,11 @@
               (load)="onImageLoaded($event)"
             />
 
-            <!-- SVG overlay — covers full wrapper including padding area -->
+            <!-- SVG overlay -->
             <svg
               class="absolute inset-0 w-full h-full pointer-events-none"
               [attr.viewBox]="'0 0 ' + wrapperWidth() + ' ' + wrapperHeight()"
-              preserveAspectRatio="none"
             >
-              <!-- Polygon fill -->
               @if (poly.polygon().length >= 3) {
                 <polygon
                   [attr.points]="svgPixelPoints()"
@@ -142,7 +138,6 @@
                 />
               }
 
-              <!-- Edge lines (for 1-2 points) -->
               @if (poly.polygon().length === 2) {
                 <line
                   [attr.x1]="poly.polygon()[0].x * fittedWidth() + edgePaddingX()"
@@ -153,7 +148,6 @@
                 />
               }
 
-              <!-- Edge midpoint indicators -->
               @if (poly.polygon().length >= 2) {
                 @for (pt of poly.polygon(); track $index) {
                   <circle
@@ -165,7 +159,6 @@
                 }
               }
 
-              <!-- Vertices -->
               @for (pt of poly.polygon(); track $index) {
                 <circle
                   [attr.cx]="pt.x * fittedWidth() + edgePaddingX()"
@@ -187,7 +180,7 @@
       } @else {
         <div class="flex-1 flex items-center justify-center">
           <div class="text-center text-stone-400">
-            <div class="text-6xl mb-4">🎯</div>
+            <svg class="w-12 h-12 mx-auto mb-4 opacity-40" aria-hidden="true"><use href="assets/sprite.svg#icon-search"/></svg>
             <p class="text-sm">Wähle links einen Sticker aus,<br/>um die Hitbox zu bearbeiten.</p>
           </div>
         </div>
@@ -198,11 +191,11 @@
   <!-- Footer -->
   <div class="bg-white border-t border-black/10 px-4 py-1.5 shrink-0">
     <div class="flex items-center justify-center gap-6 text-xs text-stone-400">
-      <span>🖱️ Klick = Punkt setzen</span>
-      <span>✋ Ziehen = Punkt verschieben</span>
-      <span>📍 Linie klicken = Punkt einfügen</span>
-      <span>⌫ Entf/Backspace = Punkt löschen</span>
-      <span>🪄 Auto-Detect = Kontur aus Alpha</span>
+      <span>Klick = Punkt setzen</span>
+      <span>Ziehen = Punkt verschieben</span>
+      <span>Linie klicken = Punkt einfügen</span>
+      <span>Entf/Backspace = Punkt löschen</span>
+      <span>Auto-Detect = Kontur aus Alpha</span>
     </div>
   </div>
 </div>

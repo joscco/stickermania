@@ -18,9 +18,7 @@
       (click)="prevPage()"
       (pointerdown)="$event.stopPropagation()"
     >
-      <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="15 18 9 12 15 6"/>
-      </svg>
+      <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true"><use href="assets/sprite.svg#icon-palette-prev"/></svg>
     </button>
 
     <!-- Sticker row — GSAP handles animation, no CSS transitions needed -->
@@ -42,11 +40,10 @@
             [class.cursor-not-allowed]="!canAddMore()"
             (pointerdown)="onPointerDown($event, sticker, thumbEl)"
           >
-            <img
-              [src]="getStickerUrl(sticker.id)"
+            <app-sticker-img
+              [imageUrl]="getStickerUrl(sticker.id)"
               [alt]="sticker.id"
-              class="w-10 h-10 object-contain pointer-events-none select-none"
-              draggable="false"
+              class="w-10 h-10 pointer-events-none select-none"
             />
           </div>
         }
@@ -66,9 +63,7 @@
       (click)="nextPage()"
       (pointerdown)="$event.stopPropagation()"
     >
-      <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="9 18 15 12 9 6"/>
-      </svg>
+      <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true"><use href="assets/sprite.svg#icon-palette-next"/></svg>
     </button>
 
   </div>

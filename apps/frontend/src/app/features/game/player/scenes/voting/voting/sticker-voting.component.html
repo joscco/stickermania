@@ -2,7 +2,7 @@
   @if (votesRemaining > 0) {
     <p class="text-xs text-stone-500 mb-2">Tippe auf eine Collage zum Abstimmen ({{ votesRemaining }} Stimmen übrig)</p>
   } @else {
-    <p class="text-xs text-emerald-600 mb-2 font-medium">✅ Alle Stimmen abgegeben!</p>
+    <p class="text-xs text-emerald-600 mb-2 font-medium">Alle Stimmen abgegeben!</p>
   }
 
   @if (ownSubmission(); as mine) {
@@ -15,14 +15,13 @@
           } @else {
             <div class="relative w-full h-full bg-stone-50">
               @for (placement of mine.placements; track placement.instanceId) {
-                <img
-                  [src]="getStickerUrl(placement.stickerId)"
+                <app-sticker-img
+                  [imageUrl]="getStickerUrl(placement.stickerId)"
                   [alt]="placement.stickerId"
-                  class="absolute w-6 h-6 object-contain"
+                  class="absolute w-6 h-6"
                   [style.left.px]="placement.x * 0.24"
                   [style.top.px]="placement.y * 0.24"
                   [style.transform]="'rotate(' + placement.rotation + 'deg) scale(' + (placement.scale * 0.24) + ')'"
-                  draggable="false"
                 />
               }
             </div>
@@ -59,14 +58,13 @@
             />
           } @else {
             @for (placement of submission.placements; track placement.instanceId) {
-              <img
-                [src]="getStickerUrl(placement.stickerId)"
+              <app-sticker-img
+                [imageUrl]="getStickerUrl(placement.stickerId)"
                 [alt]="placement.stickerId"
-                class="absolute w-8 h-8 object-contain"
+                class="absolute w-8 h-8"
                 [style.left.px]="placement.x * 0.4"
                 [style.top.px]="placement.y * 0.4"
                 [style.transform]="'rotate(' + placement.rotation + 'deg) scale(' + (placement.scale * 0.4) + ')'"
-                draggable="false"
               />
             }
           }

@@ -7,14 +7,8 @@
     "handSize": 8,
     "maxStickersOnCanvas": 12,
     "votesPerPlayer": 3,
-    "pointsByPlacement": [
-      100,
-      60,
-      30
-    ],
-    "requiredCategories": [
-      "eyes"
-    ],
+    "pointsByPlacement": [100, 60, 30],
+    "requiredCategories": ["eyes"],
     "prompts": [
       "Biblisch akkurate Darstellung eines Engels",
       "Gab es im Angebot bei Tchibo",
@@ -45,6 +39,21 @@
       "Eigentlich blau",
       "Kommt im Doppelpack",
       "Fliegt im Weltall"
-    ]
+    ],
+    "catalog": {
+      "stickers": [
+        { "id": "circle",     "categories": ["shape"],        "packId": "pack_shapes" },
+        { "id": "rectangle",     "categories": ["shape"],        "packId": "pack_shapes" },
+        { "id": "triangle",   "categories": ["shape"],        "packId": "pack_shapes" },
+        { "id": "wobble",   "categories": ["shape"],        "packId": "pack_shapes" },
+        { "id": "keyhole",       "categories": ["shape"],        "packId": "pack_shapes" },
+        { "id": "circle-filled",      "categories": ["shape"],        "packId": "pack_shapes" },
+        { "id": "rectangle-filled",      "categories": ["shape"],        "packId": "pack_shapes" },
+        { "id": "triangle-filled",  "categories": ["shape"],        "packId": "pack_shapes" }
+      ],
+      "packs": [
+        { "id": "pack_shapes",        "name": "Shapes",       "iconId": "pack-icon-shape",        "unlockedAtStart": true  }
+      ]
+    }
   }
 }

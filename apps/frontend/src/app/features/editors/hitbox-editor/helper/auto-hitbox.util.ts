@@ -1,10 +1,10 @@
 /**
- * Automatically generates a polygon hitbox from a PNG image by tracing
- * the alpha-channel contour. Uses marching squares for contour extraction
- * and Douglas–Peucker for simplification.
- *
- * All coordinates are normalised 0–1 relative to image width/height.
+ * Automatically generates a polygon hitbox from a sticker image by tracing
+ * the alpha-channel contour. Supports both PNG paths and sprite: URLs.
+ * Uses marching squares for contour extraction and Douglas–Peucker for simplification.
  */
+
+import {resolveToImgUrl} from '../../../shared/sticker-editor/sprite-url.util';
 
 export interface Point {
     x: number;
@@ -50,12 +50,19 @@ export async function autoDetectHitbox(
 
 // ── Image loading ───────────────────────────────────────────
 
-function loadImage(url: string): Promise<HTMLImageElement> {
+async function loadImage(imageUrl: string): Promise<HTMLImageElement> {
+    const { url } = await resolveToImgUrl(imageUrl, 512);
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = "anonymous";
-        img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(img);
+        };
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error(`Failed to load image: ${imageUrl}`));
+        };
         img.src = url;
     });
 }

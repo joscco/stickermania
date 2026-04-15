@@ -36,11 +36,11 @@
           @if (timer.timeLeft()) {
             <span
               class="text-xs font-mono font-bold text-stone-600 bg-stone-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1">
-              <img src="assets/icons/timer.svg" class="w-3 h-3 inline" alt=""/> {{ timer.timeLeft() }}
+              <svg class="w-3 h-3 inline" aria-hidden="true"><use href="assets/sprite.svg#icon-timer"/></svg> {{ timer.timeLeft() }}
             </span>
           }
           <span class="text-xs font-medium text-amber-600 inline-flex items-center gap-0.5">
-            <img src="assets/icons/star.svg" class="w-3 h-3 inline" alt=""/> {{ myScore() }}
+            <svg class="w-3 h-3 inline" aria-hidden="true"><use href="assets/sprite.svg#icon-star"/></svg> {{ myScore() }}
           </span>
         </div>
       </div>

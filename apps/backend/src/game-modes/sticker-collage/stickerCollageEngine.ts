@@ -2,14 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import type {GameConfig, SessionState, StickerCollageGameState, StickerCollageServerEvent, StickerDefinition,} from "@birthday/shared";
 import type {GameActionResult, GameEngine} from "../gameModeEngine.js";
-import {DEFAULT_STICKER_CATALOG, DEFAULT_STICKER_PACKS} from "./stickerCatalog.js";
+import {buildCatalog, buildPacks} from "./stickerCatalog.js";
 import {transitionToNextRound, transitionToResults, transitionToVoting} from "./roundManager.js";
 import {advanceToNextRound, boardAdvancesToNextRound, castVote, dealHandToPlayer, endBuildingPhaseEarly, endVotingPhaseEarly, markPlayerDoneVoting, skipRound, startGame, submitCollage, winnerPicksGuaranteedPack, winnerPicksPrompt, winnerUnlocksPack,} from "./actionHandlers.js";
 
 /**
- * Merge hitbox polygon data from hitbox-data.json into the sticker catalog.
+ * Merge hitbox polygon data from hitbox-data.json into the sticker catalog built from config.
  */
-function buildCatalogWithHitboxes(): StickerDefinition[] {
+function buildCatalogWithHitboxes(config: GameConfig): StickerDefinition[] {
     let hitboxData: Record<string, Array<{x: number; y: number}>> = {};
     try {
         const hitboxPath = path.resolve(process.cwd(), "hitbox-data.json");
@@ -18,7 +18,7 @@ function buildCatalogWithHitboxes(): StickerDefinition[] {
         // File doesn't exist or is invalid — use catalog as-is
     }
 
-    return DEFAULT_STICKER_CATALOG.map(sticker => {
+    return buildCatalog(config.stickerCollage.catalog).map(sticker => {
         const polygon = hitboxData[sticker.id];
         if (polygon && Array.isArray(polygon) && polygon.length >= 3) {
             return {...sticker, hitboxPolygon: polygon};
@@ -31,14 +31,14 @@ export class StickerCollageEngine implements GameEngine {
     public constructor(private readonly config: GameConfig) {}
 
     public createInitialState(): StickerCollageGameState {
-        const packs = DEFAULT_STICKER_PACKS;
+        const packs = buildPacks(this.config.stickerCollage.catalog);
         const unlockedPackIds = packs.filter(pack => pack.unlockedAtStart).map(pack => pack.id);
 
         return {
             currentRoundIndex: 0,
             currentPrompt: "",
             roundStartedAt: null,
-            stickerCatalog: buildCatalogWithHitboxes(),
+            stickerCatalog: buildCatalogWithHitboxes(this.config),
             stickerPacks: packs,
             unlockedPackIds,
             guaranteedPackId: null,

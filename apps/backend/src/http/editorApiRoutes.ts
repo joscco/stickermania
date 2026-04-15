@@ -3,7 +3,7 @@ import path from "node:path";
 import type {FastifyInstance} from "fastify";
 import type {StickerDefinition} from "@birthday/shared";
 import type {BackendConfig} from "../config.js";
-import {DEFAULT_STICKER_CATALOG} from "../game-modes/sticker-collage/stickerCatalog.js";
+import {buildCatalog} from "../game-modes/sticker-collage/stickerCatalog.js";
 
 /**
  * Editor-only API routes.
@@ -69,7 +69,8 @@ export async function registerEditorApiRoutes(
 
     app.get("/api/sticker-catalog", async () => {
         const hitboxData = loadHitboxData();
-        return DEFAULT_STICKER_CATALOG.map((sticker): StickerDefinition => {
+        const catalog = buildCatalog(backendConfig.gameConfig.stickerCollage.catalog);
+        return catalog.map((sticker): StickerDefinition => {
             const polygon = hitboxData[sticker.id];
             if (polygon && Array.isArray(polygon) && polygon.length >= 3) {
                 return {...sticker, hitboxPolygon: polygon};

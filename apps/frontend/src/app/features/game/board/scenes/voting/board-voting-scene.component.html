@@ -34,7 +34,7 @@
         class="bg-orange-500 text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-orange-600 active:scale-95 transition-[background-color,box-shadow]"
       (click)="endVotingEarly()"
     >
-      Abstimmung beenden ⏩
+      Abstimmung beenden
     </button>
   </div>
 </div>
@@ -47,7 +47,9 @@
         <img [src]="sub.snapshotUrl" alt="Collage"
              class="w-full h-full object-contain" draggable="false" />
       } @else {
-        <div class="w-full h-full grid place-items-center text-4xl text-stone-300">🖼️</div>
+        <div class="w-full h-full grid place-items-center text-stone-200">
+          <svg class="w-12 h-12" aria-hidden="true"><use href="assets/sprite.svg#icon-camera"/></svg>
+        </div>
       }
     </div>
     <!-- Player info -->

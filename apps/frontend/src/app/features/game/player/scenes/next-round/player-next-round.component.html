@@ -1,10 +1,9 @@
 <div animGroup="item" class="flex-1 flex flex-col items-center justify-center gap-4 p-6 text-center">
-  <div animOnInit="item" class="text-5xl">🚀</div>
+  <svg animOnInit="item" class="w-16 h-16 text-purple-400" aria-hidden="true"><use href="assets/sprite.svg#icon-paintbrush"/></svg>
   <h2 animOnInit="item" class="text-lg font-bold text-stone-800">Nächste Runde startet...</h2>
   @if (stickerService.lastUnlockedPackId(); as packId) {
     <p animOnInit="item" class="text-sm text-emerald-600 font-medium">
-      🔓 Neues Pack freigeschaltet!
+      Neues Pack freigeschaltet!
     </p>
   }
 </div>
-

@@ -3,8 +3,9 @@
      (pointerdown)="$event.preventDefault()"
      (pointermove)="$event.preventDefault()">
 
-  <img src="assets/png/draw_frame.png" class="absolute inset-0 w-full h-full pointer-events-none z-20" alt=""
-       draggable="false"/>
+  <svg class="absolute inset-0 w-full h-full pointer-events-none z-20" aria-hidden="true">
+    <use href="assets/sprite.svg#draw-frame"/>
+  </svg>
   <canvas #drawCanvas style="touch-action: none;"
           [class]="'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'"
           [style.width]="canvasSizePercent"
@@ -22,19 +23,25 @@
           [class.bg-stone-200]="brushThin() && !eraserMode()"
           [class.scale-110]="brushThin() && !eraserMode()"
           (click)="selectThinBrush()">
-    <img src="assets/png/draw_button_small.png" class="w-12 h-12 object-contain" alt="Dünn"/>
+    <svg class="w-12 h-12" aria-hidden="true">
+      <use href="assets/sprite.svg#draw-btn-small"/>
+    </svg>
   </button>
   <button class="w-16 h-16 flex items-center justify-center rounded-full transition-all"
           [class.bg-stone-200]="!brushThin() && !eraserMode()"
           [class.scale-110]="!brushThin() && !eraserMode()"
           (click)="selectThickBrush()">
-    <img src="assets/png/draw_button_big.png" class="w-12 h-12 object-contain" alt="Dick"/>
+    <svg class="w-12 h-12" aria-hidden="true">
+      <use href="assets/sprite.svg#draw-btn-big"/>
+    </svg>
   </button>
   <button class="w-16 h-16 flex items-center justify-center rounded-full transition-all"
           [class.bg-stone-200]="eraserMode()"
           [class.scale-110]="eraserMode()"
           (click)="selectEraser()">
-    <img src="assets/png/draw_button_eraser.png" class="w-12 h-12 object-contain" alt="Radierer"/>
+    <svg class="w-12 h-12" aria-hidden="true">
+      <use href="assets/sprite.svg#draw-btn-eraser"/>
+    </svg>
   </button>
 </div>
 

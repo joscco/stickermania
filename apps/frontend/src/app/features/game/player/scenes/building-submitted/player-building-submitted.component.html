@@ -1,12 +1,11 @@
 <div animGroup="item" class="h-full flex flex-col items-center justify-center gap-4 p-6 text-center">
-  <div animOnInit="item" class="text-5xl">✅</div>
-  <p animOnInit="item" class="text-stone-600 font-medium">Eingereicht! 🎉</p>
+  <svg animOnInit="item" class="w-16 h-16 text-emerald-500" aria-hidden="true"><use href="assets/sprite.svg#icon-checkmark"/></svg>
+  <p animOnInit="item" class="text-stone-600 font-medium">Eingereicht!</p>
   <p animOnInit="item" class="text-stone-400 text-sm">Warte auf das Ende der Runde...</p>
   @if (stickerService.allPlayersDone()) {
     <button
       class="mt-2 bg-purple-600 text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
       (click)="stickerService.endRoundEarly()"
-    >Runde schließen ⏭️</button>
+    >Runde schließen</button>
   }
 </div>
-

@@ -33,8 +33,6 @@ export type PlayerAvatarStatus =
 export class BoardPlayerAvatarComponent {
     public readonly player = input.required<SessionPlayer>();
     public readonly status = input<PlayerAvatarStatus>("idle");
-    /** Optional emoji/text overlaid in the top-right corner (e.g. podium medals) */
-    public readonly medal = input<string | null>(null);
 
     public readonly sizeClasses = "w-24 h-24 rounded-2xl border-4 text-4xl";
 
@@ -56,14 +54,24 @@ export class BoardPlayerAvatarComponent {
         this.status() === "idle" || this.status() === "skipped" || this.status() === "offline"
     );
 
-    /** Badge config: { emoji, bgClass, animate } or null */
-    public readonly badge = computed<{emoji: string; bg: string; animate?: boolean} | null>(() => {
+    /** Badge config: { spriteId, bgClass, animate } or null */
+    public readonly badge = computed<{spriteId: string; bg: string; animate?: boolean} | null>(() => {
         switch (this.status()) {
-            case "submitted": return {emoji: "✓",  bg: "bg-emerald-500"};
-            case "drawing":   return {emoji: "🎨", bg: "bg-purple-500", animate: true};
-            case "skipped":   return {emoji: "⏭",  bg: "bg-stone-400"};
-            case "offline":   return {emoji: "📴", bg: "bg-stone-400"};
+            case "submitted": return {spriteId: "icon-checkmark", bg: "bg-emerald-500"};
+            case "drawing":   return {spriteId: "icon-paintbrush", bg: "bg-purple-500", animate: true};
+            case "skipped":   return {spriteId: "icon-pause",      bg: "bg-stone-400"};
+            case "offline":   return {spriteId: "icon-hourglass",  bg: "bg-stone-400"};
             default:          return null;
+        }
+    });
+
+    /** Medal sprite ID for podium positions */
+    public readonly medalSpriteId = computed<string | null>(() => {
+        switch (this.status()) {
+            case "podium-1": return "icon-medal-gold";
+            case "podium-2": return "icon-medal-silver";
+            case "podium-3": return "icon-medal-bronze";
+            default:         return null;
         }
     });
 }
