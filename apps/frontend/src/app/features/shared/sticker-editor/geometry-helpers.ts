@@ -143,25 +143,6 @@ export function pinchMidpoint(p: PinchPoints, rect: DOMRect): { x: number; y: nu
     return {x: mid.x - rect.left, y: mid.y - rect.top};
 }
 
-/**
- * Compute the new scale and rotation for a pinch gesture.
- */
-export function applyPinchDelta(
-    baseDist: number,
-    baseAngleDeg: number,
-    baseScale: number,
-    baseRotation: number,
-    currentPoints: PinchPoints,
-): { scale: number; rotation: number; angleDelta: number } {
-    const newDist  = pinchDistance(currentPoints);
-    const newAngle = pinchAngle(currentPoints);
-    const scale    = clamp(baseScale * (newDist / baseDist), 0.2, 4);
-    const baseAngleRad = degToRad(baseAngleDeg);
-    const angleDelta   = radToDeg(newAngle - baseAngleRad);
-    const rotation     = baseRotation + angleDelta;
-    return {scale, rotation, angleDelta};
-}
-
 export interface PinchBaseline {
     relCx: number;
     relCy: number;
@@ -185,14 +166,26 @@ export function applyPinchToBaseline(
 ): { x: number; y: number; scale: number; rotation: number } {
     const newDist  = pinchDistance(currentPoints);
     const newAngle = pinchAngle(currentPoints);
-    const scaleFactor = newDist / baseDist;
+    const rawScaleFactor = newDist / baseDist;
     const angleRad    = newAngle - baseAngleRad;
     const angleDelta  = radToDeg(angleRad);
+
+    // Clamp the individual sticker scale
+    const rawScale = baseline.baseScale * rawScaleFactor;
+    const clampedScale = clamp(rawScale, 0.2, 4);
+
+    // Derive the effective scale factor *after* clamping so position stays
+    // consistent with scale — prevents stickers drifting apart when one
+    // member of a group hits the limit.
+    const effectiveFactor = baseline.baseScale > 0
+        ? clampedScale / baseline.baseScale
+        : rawScaleFactor;
+
     const cos = Math.cos(angleRad), sin = Math.sin(angleRad);
     return {
-        x:        mid.x + (baseline.relCx * cos - baseline.relCy * sin) * scaleFactor,
-        y:        mid.y + (baseline.relCx * sin + baseline.relCy * cos) * scaleFactor,
-        scale:    clamp(baseline.baseScale * scaleFactor, 0.2, 4),
+        x:        mid.x + (baseline.relCx * cos - baseline.relCy * sin) * effectiveFactor,
+        y:        mid.y + (baseline.relCx * sin + baseline.relCy * cos) * effectiveFactor,
+        scale:    clampedScale,
         rotation: baseline.baseRotation + angleDelta,
     };
 }

@@ -11,10 +11,12 @@ import {installCanvasInputListeners} from './sticker-canvas-input';
 import {animateStickerRemoval} from './sticker-removal-animation';
 import {StickerContextMenuComponent, type ContextMenuAction} from '../sticker-context-menu/sticker-context-menu.component';
 import type {BoundingBox} from '../sticker-types';
+import {CANVAS_STICKER_PX} from '../sticker-types';
 import * as ops from '../sticker-placement-ops';
 import {HandleDragEvent, StickerSelectionOverlayComponent} from '../sticker-selection-overlay/sticker-selection-overlay.component';
 import {AnimOnInitDirective, AnimPresenceDirective} from '../../animations/anim-on-init.directive';
 import {StickerImgComponent} from '../sticker-img/sticker-img.component';
+import {getSpriteViewBox, preloadSprite} from '../sprite-url.util';
 
 @Component({
   selector: 'app-sticker-canvas',
@@ -26,6 +28,9 @@ import {StickerImgComponent} from '../sticker-img/sticker-img.component';
 export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   // ── Inputs / Outputs ──────────────────────────────────────────────────────
+
+  /** Central sticker height in px — used in the template via [style.height.px]. */
+  readonly stickerSizePx = CANVAS_STICKER_PX;
 
   readonly stickers = input<StickerPlacement[]>([]);
   readonly stickerCatalog = input<StickerDefinition[]>([]);
@@ -117,7 +122,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   private removeOutsideListener: (() => void) | null = null;
   private resizeObserver: ResizeObserver | null = null;
   private readonly removingIds = new Set<string>();
-  private readonly renderedSizeCache = new Map<string, { width: number; height: number }>();
 
 
   constructor() {
@@ -133,6 +137,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   ngAfterViewInit(): void {
+    // Ensure sprite is loaded so getSpriteViewBox works synchronously
+    preloadSprite();
+
     // Set initial canvas border for interactive mode (GSAP handles transitions)
     this.canvasArea.nativeElement.style.boxShadow = 'inset 0 0 0 2px #e9d5ff';
 
@@ -324,6 +331,16 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     return this.catalogMap.get(stickerId)?.imageUrl ?? '';
   }
 
+  /** Returns the rendered width for a sticker based on viewBox and CANVAS_STICKER_PX height. */
+  getStickerWidth(stickerId: string): number {
+    const def = this.catalogMap.get(stickerId);
+    if (def) {
+      const vb = getSpriteViewBox(def.imageUrl);
+      if (vb && vb.height > 0) return Math.round(CANVAS_STICKER_PX * vb.width / vb.height);
+    }
+    return CANVAS_STICKER_PX;
+  }
+
   getHitboxSvgPoints(stickerId: string): string {
     const def = this.catalogMap.get(stickerId);
     if (!def?.hitboxPolygon || def.hitboxPolygon.length < 3) return '';
@@ -397,21 +414,21 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   private getRenderedSize(instanceId: string): { width: number; height: number } {
-    const wrapper = this.canvasArea?.nativeElement.querySelector<HTMLElement>(`[data-instance-id="${instanceId}"]`);
-    const img = wrapper?.querySelector('img') as HTMLImageElement | null;
-    if (img && img.offsetWidth > 0 && img.offsetHeight > 0) {
-      return {width: img.offsetWidth, height: img.offsetHeight};
-    }
-    const cached = this.renderedSizeCache.get(instanceId);
-    if (cached) {
-      return cached;
-    }
-    return {width: 64, height: 64};
-  }
 
-  /** Store the rendered size for a new sticker before its <img> has loaded. */
-  cacheRenderedSize(instanceId: string, w: number, h: number): void {
-    this.renderedSizeCache.set(instanceId, {width: w, height: h});
+    // Derive from viewBox aspect ratio: height = CANVAS_STICKER_PX, width proportional
+    const placement = this.stickers().find(p => p.instanceId === instanceId);
+    if (placement) {
+      const def = this.catalogMap.get(placement.stickerId);
+      if (def) {
+        const vb = getSpriteViewBox(def.imageUrl);
+        if (vb) {
+          const h = CANVAS_STICKER_PX;
+          const w = Math.round(h * vb.width / vb.height);
+          return {width: w, height: h};
+        }
+      }
+    }
+    return {width: CANVAS_STICKER_PX, height: CANVAS_STICKER_PX};
   }
 }
 

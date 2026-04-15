@@ -107,11 +107,15 @@ export function applyGroupTransform(
         if (mirrorAxis === 'h') rx = -rx;
         if (mirrorAxis === 'v') ry = -ry;
         const {x: nx, y: ny} = rotateVec(rx, ry, rad);
+        const clampedScale = clamp(p.scale * scaleFactor, 0.2, 4);
+        // Use the effective factor after clamping so position stays consistent
+        // with the clamped scale — prevents drift when a sticker hits the limit.
+        const effectiveFactor = p.scale > 0 ? clampedScale / p.scale : scaleFactor;
         return {
             ...p,
-            x:        cx + nx * scaleFactor,
-            y:        cy + ny * scaleFactor,
-            scale:    clamp(p.scale * scaleFactor, 0.2, 4),
+            x:        cx + nx * effectiveFactor,
+            y:        cy + ny * effectiveFactor,
+            scale:    clampedScale,
             rotation: p.rotation + rotateDeg,
             ...(mirrorAxis === 'h' ? {flipX: !p.flipX} : {}),
             ...(mirrorAxis === 'v' ? {flipY: !p.flipY} : {}),

@@ -4,7 +4,6 @@ import {
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
 import type {StickerDefinition} from '@birthday/shared';
-import {CANVAS_STICKER_PX} from '../sticker-types';
 import {StickerImgComponent} from '../sticker-img/sticker-img.component';
 
 export interface StickerDragStartEvent {
@@ -12,8 +11,6 @@ export interface StickerDragStartEvent {
     pointerId: number;
     clientX: number;
     clientY: number;
-    renderedWidth: number;
-    renderedHeight: number;
 }
 
 @Component({
@@ -80,27 +77,16 @@ export class StickerPaletteComponent implements AfterViewInit, OnDestroy {
 
     // ── Drag ─────────────────────────────────────────────────────────────────
 
-    onPointerDown(event: PointerEvent, sticker: StickerDefinition, thumbEl: HTMLElement): void {
+    onPointerDown(event: PointerEvent, sticker: StickerDefinition): void {
         if (!this.canAddMore()) return;
         if (event.button !== 0 && event.button !== undefined) return;
         event.preventDefault();
-
-        // Calculate rendered size from the thumb image's natural aspect ratio
-        const thumbImg = thumbEl.querySelector('img') as HTMLImageElement | null;
-        let renderedW = CANVAS_STICKER_PX;
-        let renderedH = CANVAS_STICKER_PX;
-        if (thumbImg && thumbImg.naturalWidth > 0 && thumbImg.naturalHeight > 0) {
-            renderedH = CANVAS_STICKER_PX;
-            renderedW = Math.round(CANVAS_STICKER_PX * thumbImg.naturalWidth / thumbImg.naturalHeight);
-        }
 
         this.stickerDragStarted.emit({
             stickerId: sticker.id,
             pointerId: event.pointerId,
             clientX: event.clientX,
             clientY: event.clientY,
-            renderedWidth: renderedW,
-            renderedHeight: renderedH,
         });
     }
 

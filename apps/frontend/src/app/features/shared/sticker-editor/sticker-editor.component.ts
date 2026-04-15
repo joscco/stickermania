@@ -91,14 +91,7 @@ export class StickerEditorComponent {
     // so the old cleanup() cannot overwrite paletteDragInProgress / stickerWouldBeDeleted.
     this.paletteDragCleanup?.();
 
-    // Cache the rendered size so the overlay is correct before <img> loads
-    this.stickerCanvas.cacheRenderedSize(
-      newPlacement.instanceId,
-      event.renderedWidth,
-      event.renderedHeight,
-    );
-
-    // Block canvas input and hide the selection overlay for the entire drag.
+    // Clean up any previous drag BEFORE setting signals for the new one,
     // Both flags set BEFORE selectedInstanceId so nothing flashes.
     this.stickerCanvas.paletteDragInProgress.set(true);
     this.stickerCanvas.stickerWouldBeDeleted.set(true); // starts outside canvas

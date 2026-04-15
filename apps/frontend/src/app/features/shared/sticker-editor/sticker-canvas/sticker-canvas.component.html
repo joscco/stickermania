@@ -42,7 +42,9 @@
       [attr.data-removal-wrapper-for]="sticker.instanceId"
     >
       <app-sticker-img [imageUrl]="getStickerUrl(sticker.stickerId)" [alt]="sticker.stickerId"
-           class="h-16 w-auto block pointer-events-none"/>
+           class="block pointer-events-none"
+           [style.width.px]="getStickerWidth(sticker.stickerId)"
+           [style.height.px]="stickerSizePx"/>
 
       @if (isSelected(sticker.instanceId) && getHitboxSvgPoints(sticker.stickerId)) {
         <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1 1">

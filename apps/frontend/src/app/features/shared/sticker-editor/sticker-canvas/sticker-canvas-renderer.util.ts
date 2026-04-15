@@ -1,6 +1,7 @@
 import type {StickerPlacement} from "@birthday/shared";
 import {degToRad} from '../geometry-helpers';
-import {resolveToImgUrl} from '../sprite-url.util';
+import {resolveToImgUrl, getSpriteViewBox} from '../sprite-url.util';
+import {CANVAS_STICKER_PX} from '../sticker-types';
 
 /**
  * Renders all sticker placements onto an off-screen Canvas2D and returns a
@@ -30,11 +31,10 @@ export async function renderCanvasToDataUrl(
     const img = imageCache.get(imageUrl);
     if (!img) continue;
 
-    // Read actual rendered size from the DOM element (img or svg)
-    const domEl = canvasEl.querySelector(`[data-instance-id="${placement.instanceId}"]`) as HTMLElement | null;
-    const domChild = domEl?.firstElementChild as HTMLElement | null;
-    const drawW = domChild?.offsetWidth ?? 64;
-    const drawH = domChild?.offsetHeight ?? 64;
+    // Derive rendered size from viewBox aspect ratio (same as getRenderedSize)
+    const vb = getSpriteViewBox(imageUrl);
+    const drawH = CANVAS_STICKER_PX;
+    const drawW = vb && vb.height > 0 ? Math.round(drawH * vb.width / vb.height) : CANVAS_STICKER_PX;
 
     const cx = placement.x;
     const cy = placement.y;
@@ -63,7 +63,7 @@ async function loadImages(
   const uniqueUrls = [...new Set(stickers.map(p => getUrl(p.stickerId)).filter(Boolean))];
 
   await Promise.all(uniqueUrls.map(async url => {
-    const {url: resolved} = await resolveToImgUrl(url, 128);
+    const {url: resolved} = await resolveToImgUrl(url, CANVAS_STICKER_PX * 3);
     await new Promise<void>(resolve => {
       const img = new Image();
       img.crossOrigin = "anonymous";

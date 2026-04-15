@@ -14,16 +14,16 @@ import {getSpriteHref} from '../sprite-url.util';
     standalone: true,
     template: `
         <svg
-            class="w-full h-full"
             [attr.aria-label]="alt()"
             aria-hidden="true"
             focusable="false"
+            style="display:block;width:100%;height:100%;"
         >
             <use [attr.href]="getSpriteHref(imageUrl())"/>
         </svg>
     `,
     host: {
-        class: 'block',
+        style: 'display:block;line-height:0;',
     },
 })
 export class StickerImgComponent {

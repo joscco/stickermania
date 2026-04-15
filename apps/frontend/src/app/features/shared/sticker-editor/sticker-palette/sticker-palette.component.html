@@ -29,7 +29,6 @@
       >
         @for (sticker of pageStickers(); track sticker.id) {
           <div
-            #thumbEl
             data-thumb
             class="relative shrink-0 w-16 h-16 rounded-xl border-2 flex items-center justify-center bg-white select-none touch-none"
             [class.border-purple-300]="canAddMore()"
@@ -38,7 +37,7 @@
             [class.opacity-40]="!canAddMore()"
             [class.cursor-grab]="canAddMore()"
             [class.cursor-not-allowed]="!canAddMore()"
-            (pointerdown)="onPointerDown($event, sticker, thumbEl)"
+            (pointerdown)="onPointerDown($event, sticker)"
           >
             <app-sticker-img
               [imageUrl]="getStickerUrl(sticker.id)"

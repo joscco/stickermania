@@ -6,6 +6,6 @@ export interface BoundingBox {
     h: number;
 }
 
-/** Rendered height of a sticker on the canvas — matches the `h-16` (64 px) CSS class. */
-export const CANVAS_STICKER_PX = 64;
+/** Rendered height of a sticker on the canvas — matches the CSS class on the sticker element. */
+export const CANVAS_STICKER_PX = 96;
 

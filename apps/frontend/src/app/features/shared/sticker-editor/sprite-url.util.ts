@@ -30,12 +30,45 @@ export function getSpriteHref(imageUrl: string): string {
 // ── Sprite → loadable URL ────────────────────────────────────────────────────
 
 let _cachedSpriteText: string | null = null;
+let _cachedSpriteDoc: Document | null = null;
 
 async function fetchSpriteSvgText(): Promise<string> {
     if (_cachedSpriteText) return _cachedSpriteText;
     const res = await fetch(SPRITE_PATH);
     _cachedSpriteText = await res.text();
     return _cachedSpriteText;
+}
+
+function getCachedSpriteDoc(): Document | null {
+    if (_cachedSpriteDoc) return _cachedSpriteDoc;
+    if (!_cachedSpriteText) return null;
+    _cachedSpriteDoc = new DOMParser().parseFromString(_cachedSpriteText, 'image/svg+xml');
+    return _cachedSpriteDoc;
+}
+
+/**
+ * Kick off sprite loading so the cached doc is ready for synchronous lookups.
+ * Call once at app init or component init.
+ */
+export async function preloadSprite(): Promise<void> {
+    await fetchSpriteSvgText();
+    getCachedSpriteDoc();
+}
+
+/**
+ * Synchronously returns the intrinsic {width, height} for a sprite symbol
+ * based on its viewBox. Returns null if the sprite hasn't been loaded yet.
+ */
+export function getSpriteViewBox(imageUrl: string): { width: number; height: number } | null {
+    const doc = getCachedSpriteDoc();
+    if (!doc) return null;
+    const id = getSpriteId(imageUrl);
+    const symbol = doc.getElementById(id);
+    const vb = symbol?.getAttribute('viewBox');
+    if (!vb) return null;
+    const parts = vb.trim().split(/[\s,]+/).map(Number);
+    if (parts.length < 4 || parts[2] <= 0 || parts[3] <= 0) return null;
+    return { width: parts[2], height: parts[3] };
 }
 
 /**
@@ -50,9 +83,8 @@ export async function resolveToImgUrl(
     size = 128,
 ): Promise<{ url: string; intrinsicWidth: number | null; intrinsicHeight: number | null }> {
     const id = getSpriteId(imageUrl);
-    const svgText = await fetchSpriteSvgText();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(svgText, 'image/svg+xml');
+    await fetchSpriteSvgText();
+    const doc = getCachedSpriteDoc()!;
     const symbol = doc.getElementById(id) as SVGSymbolElement | null;
 
     const viewBox = symbol?.getAttribute('viewBox') ?? `0 0 ${size} ${size}`;
