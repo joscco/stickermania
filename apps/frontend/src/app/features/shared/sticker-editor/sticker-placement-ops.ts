@@ -1,6 +1,6 @@
 import type {StickerPlacement} from '@birthday/shared';
 import type {BoundingBox} from './sticker-types';
-import {centroid, clamp, degToRad, rotatedBoundingBox, rotateVec} from './geometry-helpers';
+import {centroid, clamp, degToRad, rotatedBoundingBox, rotateVec, clampGroupScaleFactor, MIN_SCALE, MAX_SCALE} from './geometry-helpers';
 
 /**
  * Pure functions for transforming StickerPlacement arrays.
@@ -73,7 +73,7 @@ export function rotateSingle(placements: StickerPlacement[], id: string, degrees
 
 export function scaleSingle(placements: StickerPlacement[], id: string, factor: number): StickerPlacement[] {
     return placements.map(p => p.instanceId === id
-        ? {...p, scale: clamp(p.scale * factor, 0.2, 4)}
+        ? {...p, scale: clamp(p.scale * factor, MIN_SCALE, MAX_SCALE)}
         : p,
     );
 }
@@ -101,21 +101,20 @@ export function applyGroupTransform(
     const {x: cx, y: cy} = centroid(selected.map(p => ({x: p.x, y: p.y})));
     const rad = degToRad(rotateDeg);
 
+    // Clamp scaleFactor at group level so ALL stickers stay within limits
+    const clampedFactor = clampGroupScaleFactor(scaleFactor, selected.map(p => p.scale));
+
     return placements.map(p => {
         if (!ids.includes(p.instanceId)) return p;
         let rx = p.x - cx, ry = p.y - cy;
         if (mirrorAxis === 'h') rx = -rx;
         if (mirrorAxis === 'v') ry = -ry;
         const {x: nx, y: ny} = rotateVec(rx, ry, rad);
-        const clampedScale = clamp(p.scale * scaleFactor, 0.2, 4);
-        // Use the effective factor after clamping so position stays consistent
-        // with the clamped scale — prevents drift when a sticker hits the limit.
-        const effectiveFactor = p.scale > 0 ? clampedScale / p.scale : scaleFactor;
         return {
             ...p,
-            x:        cx + nx * effectiveFactor,
-            y:        cy + ny * effectiveFactor,
-            scale:    clampedScale,
+            x:        cx + nx * clampedFactor,
+            y:        cy + ny * clampedFactor,
+            scale:    p.scale * clampedFactor,
             rotation: p.rotation + rotateDeg,
             ...(mirrorAxis === 'h' ? {flipX: !p.flipX} : {}),
             ...(mirrorAxis === 'v' ? {flipY: !p.flipY} : {}),
@@ -155,7 +154,7 @@ export function applyCornerScale(
     // Current half-size of the rendered sticker
     const halfSize = Math.max(width, height) * p.scale / 2;
     if (halfSize < 1) return placements;
-    const newScale = clamp(p.scale * (halfSize + delta) / halfSize, 0.1, 6);
+    const newScale = clamp(p.scale * (halfSize + delta) / halfSize, MIN_SCALE, MAX_SCALE);
     return placements.map(pl => pl.instanceId === id ? {...pl, scale: newScale} : pl);
 }
 
@@ -207,15 +206,57 @@ export function ungroupPlacements(placements: StickerPlacement[], ids: string[])
 
 // ── Duplicate ────────────────────────────────────────────────────────────────
 
+/**
+ * Duplicate the selected stickers.
+ *
+ * - Preserves relative z-order among the duplicated stickers.
+ * - If the originals share a groupId, the copies get a **new** shared groupId
+ *   so they form their own group.
+ * - Respects `maxStickers`: if duplicating all would exceed the limit, only as
+ *   many as fit are copied (in z-order). Pass `Infinity` to skip the check.
+ */
 export function duplicatePlacements(
     placements: StickerPlacement[],
     ids: string[],
+    maxStickers = Infinity,
 ): {updated: StickerPlacement[]; newIds: string[]} {
-    const maxZ   = placements.length > 0 ? Math.max(...placements.map(p => p.zIndex)) : 0;
-    const copies = ids.flatMap((id, i) => {
-        const orig = placements.find(p => p.instanceId === id);
-        return orig ? [{...orig, instanceId: generateInstanceId(), x: orig.x + 16, y: orig.y + 16, zIndex: maxZ + i + 1, groupId: undefined}] : [];
+    const available = maxStickers - placements.length;
+    if (available <= 0) return {updated: placements, newIds: []};
+
+    // Sort originals by zIndex so copies keep relative order
+    const originals = ids
+        .map(id => placements.find(p => p.instanceId === id))
+        .filter((p): p is StickerPlacement => !!p)
+        .sort((a, b) => a.zIndex - b.zIndex);
+
+    // Limit to available slots
+    const toCopy = originals.slice(0, available);
+    if (!toCopy.length) return {updated: placements, newIds: []};
+
+    // Build a mapping from old groupId → new groupId so grouped stickers
+    // stay grouped in the copy.
+    const groupIdMap = new Map<string, string>();
+    for (const orig of toCopy) {
+        const gid = orig.groupId;
+        if (gid && !groupIdMap.has(gid)) {
+            groupIdMap.set(gid, generateGroupId());
+        }
+    }
+
+    const maxZ = placements.length > 0 ? Math.max(...placements.map(p => p.zIndex)) : 0;
+
+    const copies = toCopy.map((orig, i) => {
+        const newGroup = orig.groupId ? groupIdMap.get(orig.groupId) : undefined;
+        return {
+            ...orig,
+            instanceId: generateInstanceId(),
+            x: orig.x + 16,
+            y: orig.y + 16,
+            zIndex: maxZ + i + 1,
+            groupId: newGroup,
+        };
     });
+
     return {updated: [...placements, ...copies], newIds: copies.map(c => c.instanceId)};
 }
 

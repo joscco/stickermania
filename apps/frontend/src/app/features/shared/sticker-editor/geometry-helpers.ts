@@ -156,38 +156,54 @@ export interface PinchBaseline {
  * the gesture has moved to `currentPoints`.
  *
  * `mid` is the canvas-local gesture midpoint (from `pinchMidpoint`).
+ *
+ * The `scaleFactor` should already be clamped at the group level by the caller
+ * so that no sticker in the group exceeds [MIN_SCALE, MAX_SCALE].
  */
 export function applyPinchToBaseline(
     baseline: PinchBaseline,
-    baseDist: number,
     baseAngleRad: number,
+    scaleFactor: number,
     currentPoints: PinchPoints,
     mid: { x: number; y: number },
 ): { x: number; y: number; scale: number; rotation: number } {
-    const newDist  = pinchDistance(currentPoints);
     const newAngle = pinchAngle(currentPoints);
-    const rawScaleFactor = newDist / baseDist;
     const angleRad    = newAngle - baseAngleRad;
     const angleDelta  = radToDeg(angleRad);
 
-    // Clamp the individual sticker scale
-    const rawScale = baseline.baseScale * rawScaleFactor;
-    const clampedScale = clamp(rawScale, 0.2, 4);
-
-    // Derive the effective scale factor *after* clamping so position stays
-    // consistent with scale — prevents stickers drifting apart when one
-    // member of a group hits the limit.
-    const effectiveFactor = baseline.baseScale > 0
-        ? clampedScale / baseline.baseScale
-        : rawScaleFactor;
-
     const cos = Math.cos(angleRad), sin = Math.sin(angleRad);
     return {
-        x:        mid.x + (baseline.relCx * cos - baseline.relCy * sin) * effectiveFactor,
-        y:        mid.y + (baseline.relCx * sin + baseline.relCy * cos) * effectiveFactor,
-        scale:    clampedScale,
+        x:        mid.x + (baseline.relCx * cos - baseline.relCy * sin) * scaleFactor,
+        y:        mid.y + (baseline.relCx * sin + baseline.relCy * cos) * scaleFactor,
+        scale:    baseline.baseScale * scaleFactor,
         rotation: baseline.baseRotation + angleDelta,
     };
+}
+
+/** Scale limits for individual stickers. */
+export const MIN_SCALE = 0.2;
+export const MAX_SCALE = 4;
+
+/**
+ * Clamp a scaleFactor so that every sticker's resulting scale stays within
+ * [MIN_SCALE, MAX_SCALE]. This keeps groups consistent — all members scale
+ * by the same factor, so relative positions are preserved.
+ */
+export function clampGroupScaleFactor(
+    factor: number,
+    baseScales: number[],
+): number {
+    if (!baseScales.length) return factor;
+    let lo = 0;   // highest lower bound (factor must be >= this)
+    let hi = Infinity; // lowest upper bound (factor must be <= this)
+    for (const bs of baseScales) {
+        if (bs <= 0) continue;
+        lo = Math.max(lo, MIN_SCALE / bs);
+        hi = Math.min(hi, MAX_SCALE / bs);
+    }
+    // If lo > hi the group can't satisfy all constraints — pick the closer bound
+    if (lo > hi) return factor < (lo + hi) / 2 ? lo : hi;
+    return clamp(factor, lo, hi);
 }
 
 // ── Vector / bounding-box helpers ─────────────────────────────────────────────

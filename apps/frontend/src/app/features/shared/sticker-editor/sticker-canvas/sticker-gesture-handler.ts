@@ -10,6 +10,7 @@ import {
     pinchAngle,
     pinchMidpoint,
     applyPinchToBaseline,
+    clampGroupScaleFactor,
 } from '../geometry-helpers';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -420,11 +421,13 @@ export class StickerGestureHandler {
     const [a, b] = this.pointers;
     const pp = {ax: a.x, ay: a.y, bx: b.x, by: b.y};
     const mid = pinchMidpoint(pp, this.getCanvasRect());
+    const rawFactor = pinchDistance(pp) / this.pinchBaseDistance;
+    const factor = clampGroupScaleFactor(rawFactor, this.pinchBaselines.map(bl => bl.baseScale));
     this.callbacks.onPlacementsChanged(
       this.stickers.map(p => {
         const base = this.pinchBaselines.find(b => b.instanceId === p.instanceId);
         if (!base) return p;
-        const result = applyPinchToBaseline(base, this.pinchBaseDistance, this.pinchBaseAngle, pp, mid);
+        const result = applyPinchToBaseline(base, this.pinchBaseAngle, factor, pp, mid);
         return {...p, ...result};
       }),
     );

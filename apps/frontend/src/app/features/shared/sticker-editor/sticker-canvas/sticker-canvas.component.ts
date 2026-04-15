@@ -103,6 +103,10 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     this.stickers().some(p => this.selectionIds().includes(p.instanceId) && !!p.groupId),
   );
 
+  readonly canDuplicate = computed(() =>
+    this.selectionIds().length > 0 && (this.stickers().length + this.selectionIds().length) <= this.maxStickers(),
+  );
+
   /** True when all selected stickers share the same groupId (persistent group, not lasso). */
   readonly isGroupSelection = computed(() => {
     const ids = this.selectionIds();
@@ -394,7 +398,10 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   private doDuplicate(): void {
-    const {updated, newIds} = ops.duplicatePlacements(this.stickers(), this.selectionIds());
+    if (!this.canDuplicate()) {
+      return;
+    } // disabled when duplicating selection would exceed max
+    const {updated, newIds} = ops.duplicatePlacements(this.stickers(), this.selectionIds(), this.maxStickers());
     this.emitPlacements(updated);
     if (newIds.length === 1) {
       this.selectedInstanceId.set(newIds[0]);
@@ -431,5 +438,4 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     return {width: CANVAS_STICKER_PX, height: CANVAS_STICKER_PX};
   }
 }
-
 

@@ -14,7 +14,9 @@
 
     <div class="h-px bg-black/6 my-0.5"></div>
 
-    <button [class]="BTN" (click)="emit('duplicate')">
+    <button [class]="canDuplicate() ? BTN : BTN_DISABLED"
+            [disabled]="!canDuplicate()"
+            (click)="canDuplicate() && emit('duplicate')">
       <svg class="w-3.5 h-3.5 shrink-0" aria-hidden="true"><use href="assets/sprite.svg#icon-ctx-duplicate"/></svg>
       Duplizieren
     </button>

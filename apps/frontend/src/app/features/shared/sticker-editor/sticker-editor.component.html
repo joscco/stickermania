@@ -11,7 +11,10 @@
     <div class="flex-1"></div>
 
     <!-- Sticker count -->
-    <span class="text-xs text-stone-400 select-none">{{ placements().length }}/{{ maxStickers() }}</span>
+    <span class="text-xs select-none transition-colors"
+          [class.text-red-400]="!canAddMore()"
+          [class.text-stone-400]="canAddMore()"
+    >{{ placements().length }}/{{ maxStickers() }}</span>
 
     <div class="w-px h-5 bg-black/10 mx-0.5 shrink-0"></div>
 
