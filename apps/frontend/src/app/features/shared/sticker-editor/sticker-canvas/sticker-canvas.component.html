@@ -96,7 +96,6 @@
   <div [animPresence]="menuVisible() && !stickerWouldBeDeleted()"
        style="pointer-events:none;position:absolute;inset:0;z-index:9400;">
     <app-sticker-context-menu
-      #contextMenu
       [visible]="menuVisible()"
       [anchorX]="menuAnchorX()"
       [anchorY]="menuAnchorY()"
@@ -116,7 +115,7 @@
        class="absolute inset-0 flex items-center justify-center text-stone-300 pointer-events-none">
     <div class="text-center">
       <div class="mb-2">
-        <app-icon name="drag-pan" size="md" class="text-stone-300"/>
+        <app-icon name="drag-pan" size="md" outlineColor="#ccc"/>
       </div>
       <p class="text-sm">Sticker unten festhalten<br/>und auf die Fläche ziehen</p>
     </div>

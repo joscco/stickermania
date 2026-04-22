@@ -13,6 +13,7 @@ import {StickerContextMenuComponent, type ContextMenuAction} from '../sticker-co
 import type {BoundingBox} from '../sticker-types';
 import {CANVAS_STICKER_PX} from '../sticker-types';
 import * as ops from '../sticker-placement-ops';
+import type {SelectionInfo} from '../selection-info';
 import {HandleDragEvent, StickerSelectionOverlayComponent} from '../sticker-selection-overlay/sticker-selection-overlay.component';
 import {AnimOnInitDirective, AnimPresenceDirective} from '../../animations/anim-on-init.directive';
 import {StickerImgComponent} from '../sticker-img/sticker-img.component';
@@ -77,13 +78,13 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   // ── Selection geometry ────────────────────────────────────────────────────
 
-  readonly selectionInfo = computed<{ box: BoundingBox; rotation: number } | null>(() =>
+  readonly selectionInfo = computed<SelectionInfo | null>(() =>
     ops.computeSelectionInfo(this.stickers(), this.selectionIds(), id => this.getRenderedSize(id), this.multiSelectionRotation()),
   );
 
   readonly boundingBox = computed<BoundingBox | null>(() => this.selectionInfo()?.box ?? null);
-  readonly menuAnchorX = computed(() => (this.selectionInfo()?.box.x ?? 0) + (this.selectionInfo()?.box.w ?? 0) + 14);
-  readonly menuAnchorY = computed(() => (this.boundingBox()?.y ?? 0) + (this.boundingBox()?.h ?? 0) + 6);
+  readonly menuAnchorX = computed(() => (this.selectionInfo()?.corners.tr.x ?? 0) + 14);
+  readonly menuAnchorY = computed(() => (this.selectionInfo()?.corners.tr.y ?? 0) - 8);
 
   // ── Group helpers (for context menu) ─────────────────────────────────────
 

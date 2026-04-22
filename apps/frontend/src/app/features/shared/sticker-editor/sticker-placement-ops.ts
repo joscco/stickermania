@@ -1,6 +1,7 @@
 import type {StickerPlacement} from '@birthday/shared';
 import type {BoundingBox} from './sticker-types';
 import {centroid, clamp, degToRad, rotatedBoundingBox, rotateVec, clampGroupScaleFactor, MIN_SCALE, MAX_SCALE} from './geometry-helpers';
+import {SelectionInfo} from './selection-info';
 
 /**
  * Pure functions for transforming StickerPlacement arrays.
@@ -275,7 +276,7 @@ export function computeSelectionInfo(
     ids: string[],
     getSize: (instanceId: string) => {width: number; height: number},
     overrideRotation = 0,
-): {box: BoundingBox; rotation: number} | null {
+): SelectionInfo | null {
     if (!ids.length) return null;
     const selected = placements.filter(p => ids.includes(p.instanceId));
     if (!selected.length) return null;
@@ -287,7 +288,7 @@ export function computeSelectionInfo(
         const {width, height} = getSize(p.instanceId);
         const hw = width * p.scale * (pp.scaleX ?? 1) / 2;
         const hh = height * p.scale * (pp.scaleY ?? 1) / 2;
-        return {box: {x: p.x - hw, y: p.y - hh, w: hw * 2, h: hh * 2}, rotation: p.rotation};
+        return new SelectionInfo({x: p.x - hw, y: p.y - hh, w: hw * 2, h: hh * 2}, p.rotation);
     }
 
     // ── Check for persistent group (all share the same non-null groupId) ─────
@@ -303,7 +304,7 @@ export function computeSelectionInfo(
             return {cx: p.x, cy: p.y, hw: width * p.scale * (pp.scaleX ?? 1) / 2, hh: height * p.scale * (pp.scaleY ?? 1) / 2, itemRad: degToRad(p.rotation)};
         });
         const {minX, minY, maxX, maxY} = rotatedBoundingBox(items, origin, degToRad(rotation));
-        return {box: {x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY)}, rotation};
+        return new SelectionInfo({x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY)}, rotation);
     }
 
     // ── Lasso / ad-hoc multi: envelope in the overrideRotation frame ─────────
@@ -314,7 +315,7 @@ export function computeSelectionInfo(
         return {cx: p.x, cy: p.y, hw: width * p.scale * (pp.scaleX ?? 1) / 2, hh: height * p.scale * (pp.scaleY ?? 1) / 2, itemRad: degToRad(p.rotation)};
     });
     const {minX, minY, maxX, maxY} = rotatedBoundingBox(items, origin, degToRad(overrideRotation));
-    return {box: {x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY)}, rotation: overrideRotation};
+    return new SelectionInfo({x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY)}, overrideRotation);
 }
 
 

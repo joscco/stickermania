@@ -49,7 +49,8 @@ const SPRITE = 'assets/sprite.svg';
     template: `
         <svg [attr.width]="px()" [attr.height]="px()"
              aria-hidden="true" focusable="false"
-             style="display:block;fill:currentColor;">
+             style="display:block;overflow:hidden;"
+             [style.color]="outlineColor()">
             <use [attr.href]="href()"/>
         </svg>
     `,
@@ -65,6 +66,9 @@ export class IconComponent {
 
     /** Design tier — controls which sprite symbol variant is loaded **and** the rendered size. */
     readonly size = input<IconSize>('md');
+
+    /** Stroke/outline color. Overrides Tailwind text-* classes when set. */
+    readonly outlineColor = input<string | undefined>(undefined);
 
     /** Resolved pixel size. */
     readonly px = computed(() => SIZE_PX[this.size()]);

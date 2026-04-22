@@ -90,7 +90,13 @@ function svgFileToSymbol(filePath) {
     console.warn(`  ⚠  No viewBox found in ${basename(filePath)} – using "0 0 24 24"`);
   }
 
-  const inner = stripOuterSvgTag(optimised);
+  let inner = stripOuterSvgTag(optimised);
+
+  // Normalize hardcoded colors so icons respond to CSS `color` / Tailwind text-* utilities.
+  // stroke:#000 / stroke:#000000 / stroke:black  →  stroke:currentColor
+  inner = inner
+    .replace(/stroke\s*:\s*(#000000|#000|black)\b/gi, 'stroke:currentColor');
+
   return `  <symbol id="${id}" viewBox="${viewBox}">\n    ${inner.replace(/\n/g, '\n    ')}\n  </symbol>`;
 }
 

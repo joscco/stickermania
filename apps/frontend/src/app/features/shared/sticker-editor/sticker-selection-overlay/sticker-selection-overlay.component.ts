@@ -14,6 +14,11 @@ export interface HandleDragEvent {
 
 export type OverlayMode = 'idle' | 'moving' | 'rotating' | 'scaling' | 'menu';
 
+export const DARK_PURPLE = 'oklch(55.8% 0.288 302.321)'
+export const LIGHT_PURPLE = 'oklch(62.7% 0.265 303.9)'
+export const LIGHT_PURPLE_SEMI = 'oklch(62.7% 0.265 303.9 / .5)'
+
+
 
 @Component({
   selector: 'app-sticker-selection-overlay',
@@ -150,4 +155,8 @@ export class StickerSelectionOverlayComponent implements AfterViewInit, OnDestro
   ngOnDestroy(): void {
     this.cleanupPtr?.();
   }
+
+  protected readonly DARK_PURPLE = DARK_PURPLE;
+  protected readonly LIGHT_PURPLE = LIGHT_PURPLE;
+  protected readonly LIGHT_PURPLE_SEMI = LIGHT_PURPLE_SEMI;
 }

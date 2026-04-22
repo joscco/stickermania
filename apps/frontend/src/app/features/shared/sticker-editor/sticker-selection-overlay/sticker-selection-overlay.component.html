@@ -1,91 +1,75 @@
 @if (box()) {
-  @let b = box()!;
+  @let boundingBox = box()!;
   @let pad = padding()!;
-  @let cx = b.x + b.w / 2;
-  @let cy = b.y + b.h / 2;
+  @let centerX = boundingBox.x + boundingBox.w / 2;
+  @let centerY = boundingBox.y + boundingBox.h / 2;
   @let rad = rotation() * Math.PI / 180;
   @let mode = activeMode();
 
   <!-- Selection rectangle -->
-  @let tl = rotatePt(b.x - pad, b.y - pad, cx, cy, rad);
-  @let tr = rotatePt(b.x + b.w + pad, b.y - pad, cx, cy, rad);
-  @let br = rotatePt(b.x + b.w + pad, b.y + b.h + pad, cx, cy, rad);
-  @let bl = rotatePt(b.x - pad, b.y + b.h + pad, cx, cy, rad);
+  @let tl = rotatePt(boundingBox.x - pad, boundingBox.y - pad, centerX, centerY, rad);
+  @let tr = rotatePt(boundingBox.x + boundingBox.w + pad, boundingBox.y - pad, centerX, centerY, rad);
+  @let br = rotatePt(boundingBox.x + boundingBox.w + pad, boundingBox.y + boundingBox.h + pad, centerX, centerY, rad);
+  @let bl = rotatePt(boundingBox.x - pad, boundingBox.y + boundingBox.h + pad, centerX, centerY, rad);
   <svg class="absolute inset-0 w-full h-full pointer-events-none overflow-visible" style="z-index:8000;">
     <polygon [attr.points]="svgRect(tl,tr,br,bl)" fill="none" stroke="#a855f7" stroke-width="2" stroke-dasharray="6 3"/>
   </svg>
 
   <!-- Center: move icon -->
-  <div class="absolute flex items-center justify-center w-7 h-7 select-none pointer-events-none"
-       [style.left.px]="cx - 12" [style.top.px]="cy - 12"
+  <div class="absolute flex items-center justify-center w-11 h-11 select-none pointer-events-none -translate-1/2"
+       [style.left.px]="centerX" [style.top.px]="centerY"
        style="z-index:8050;">
-    <app-icon name="overlay-move" size="md" class="text-purple-500"/>
+    <app-icon name="overlay-move" size="md" [outlineColor]="LIGHT_PURPLE_SEMI"/>
   </div>
 
   <!-- NW: Rotate handle -->
-  @let nw = rotatePt(b.x - pad, b.y - pad, cx, cy, rad);
-  <div class="absolute flex items-center justify-center w-7 h-7 rounded-full border-2 shadow select-none touch-none"
-       [class.border-purple-500]="mode !== 'rotating'"
-       [class.bg-white]="mode !== 'rotating'"
-       [class.border-purple-600]="mode === 'rotating'"
-       [class.bg-purple-50]="mode === 'rotating'"
-       [style.left.px]="nw.x - 14" [style.top.px]="nw.y - 14"
-       style="z-index:8100; cursor:grab; pointer-events:auto;"
-       (pointerdown)="onHandleDown($event, 'rotate')">
-    <app-icon name="overlay-rotate" size="md"
-         [class.text-purple-600]="mode === 'rotating'"
-         [class.text-purple-500]="mode !== 'rotating'"/>
+  @let nw = rotatePt(boundingBox.x - pad, boundingBox.y - pad, centerX, centerY, rad);
+  <div
+    class="absolute flex items-center justify-center w-11 h-11 rounded-full border-2 shadow select-none touch-none -translate-1/2 bg-white border-purple-500"
+    [style.left.px]="nw.x" [style.top.px]="nw.y"
+    style="z-index:8100; cursor:grab; pointer-events:auto;"
+    (pointerdown)="onHandleDown($event, 'rotate')">
+    <app-icon name="overlay-rotate" size="md" [outlineColor]="mode === 'rotating' ? DARK_PURPLE :  LIGHT_PURPLE"/>
   </div>
 
   <!-- NE: Context-menu button -->
-  @let ne = rotatePt(b.x + b.w + pad, b.y - pad, cx, cy, rad);
+  @let ne = rotatePt(boundingBox.x + boundingBox.w + pad, boundingBox.y - pad, centerX, centerY, rad);
   <div
-    class="absolute flex items-center justify-center w-7 h-7 rounded-full border-2 shadow select-none touch-none cursor-pointer"
-    [class.border-purple-500]="mode !== 'menu'"
-    [class.bg-white]="mode !== 'menu'"
-    [class.border-purple-600]="mode === 'menu'"
-    [class.bg-purple-50]="mode === 'menu'"
-    [style.left.px]="ne.x - 14" [style.top.px]="ne.y - 14"
+    class="absolute flex items-center justify-center w-11 h-11 rounded-full border-2 shadow select-none touch-none cursor-pointer -translate-1/2 bg-white border-purple-500"
+    [style.left.px]="ne.x" [style.top.px]="ne.y"
     style="z-index:8200; pointer-events:auto;"
     title="Optionen"
     (pointerdown)="$event.stopPropagation(); menuToggle.emit()">
-    <app-icon name="overlay-menu" size="md"
-         [class.text-purple-600]="mode === 'menu'"
-         [class.text-purple-500]="mode !== 'menu'"/>
+    <app-icon name="overlay-menu" size="md" [outlineColor]="mode === 'menu' ? DARK_PURPLE : LIGHT_PURPLE"/>
   </div>
 
   <!-- SE: Scale handle -->
-  @let scale = rotatePt(b.x + b.w + pad, b.y + b.h + pad, cx, cy, rad);
-  <div class="absolute flex items-center justify-center w-7 h-7 rounded-full border-2 shadow select-none touch-none"
-       [class.border-purple-500]="mode !== 'scaling'"
-       [class.bg-white]="mode !== 'scaling'"
-       [class.border-purple-600]="mode === 'scaling'"
-       [class.bg-purple-50]="mode === 'scaling'"
-       [style.left.px]="scale.x - 14" [style.top.px]="scale.y - 14"
-       style="z-index:8100; cursor:se-resize; pointer-events:auto;"
-       (pointerdown)="onHandleDown($event, 'scale')">
+  @let scale = rotatePt(boundingBox.x + boundingBox.w + pad, boundingBox.y + boundingBox.h + pad, centerX, centerY, rad);
+  <div
+    class="absolute flex items-center justify-center w-11 h-11 rounded-full border-2 shadow select-none touch-none -translate-1/2 bg-white border-purple-500"
+    [style.left.px]="scale.x" [style.top.px]="scale.y"
+    style="z-index:8100; cursor:se-resize; pointer-events:auto;"
+    (pointerdown)="onHandleDown($event, 'scale')">
     <app-icon name="overlay-scale" size="md"
-         [class.text-purple-600]="mode === 'scaling'"
-         [class.text-purple-500]="mode !== 'scaling'"/>
+              [class.text-purple-600]="mode === 'scaling'"
+              [class.text-purple-500]="mode !== 'scaling'"/>
   </div>
 
   <!-- Stretch side handles (stretch mode only) -->
   @if (stretchModeVisible()) {
     @for (side of sides(); track side.id) {
       <div
-        class="absolute w-7 h-7 flex items-center justify-center bg-amber-400 border-2 border-amber-600 rounded-full shadow select-none touch-none"
-        [style.left.px]="side.x - 14" [style.top.px]="side.y - 14"
+        class="absolute w-11 h-11 flex items-center justify-center bg-amber-400 border-2 border-amber-600 rounded-full shadow select-none touch-none -translate-1/2"
+        [style.left.px]="side.x" [style.top.px]="side.y"
         [style.cursor]="side.cursor"
         style="z-index:8100; pointer-events:auto;"
         (pointerdown)="onHandleDown($event, side.id)">
-        <svg class="w-4 h-4 text-amber-800" aria-hidden="true">
-          <use [attr.href]="'assets/sprite.svg#' + (side.id === 'e' || side.id === 'w' ? 'icon-overlay-stretch-h' : 'icon-overlay-stretch-v')"/>
-        </svg>
+        <app-icon name="ctx-stretch" size="sm"/>
       </div>
     }
     <div
       class="absolute pointer-events-none text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5"
-      [style.left.px]="b.x" [style.top.px]="b.y - pad - 44"
+      [style.left.px]="boundingBox.x" [style.top.px]="boundingBox.y - pad - 44"
       style="z-index:8200;">Verformen
     </div>
   }
