@@ -66,14 +66,14 @@ const mergedStickerCollage = {
 };
 const catalogCfg = mergedStickerCollage?.catalog;
 
-if (catalogCfg?.stickers) {
-  for (const sticker of catalogCfg.stickers) {
-    // imageUrl is auto-derived as "sprite:#sticker-<id>" if not explicitly set
-    const url = sticker.imageUrl ?? `sprite:#sticker-${sticker.id}`;
-    catalogImageUrls.push({ url });
+if (catalogCfg?.packs) {
+  for (const pack of catalogCfg.packs) {
+    for (const stickerId of pack.stickers ?? []) {
+      catalogImageUrls.push({ url: `sprite:#sticker-${stickerId}` });
+    }
   }
 } else {
-  console.warn(`⚠  No catalog.stickers found in game.config.public.json\n`);
+  console.warn(`⚠  No catalog.packs found in game.config.public.json\n`);
 }
 
 // ── 3. Scan HTML templates for <use href="assets/sprite.svg#…"> ──────────────

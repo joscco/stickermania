@@ -1,32 +1,17 @@
 // ─── Config types ────────────────────────────────────────────────
 
-/**
- * Minimal sticker entry as written in game.config.public.json.
- * Only the parts that need to be configured explicitly are required;
- * the rest (imageUrl, hitboxPolygon) is derived or optional.
- */
-export interface StickerConfigEntry {
-    /** Unique sticker id, also used as sprite symbol suffix: sprite:#sticker-<id> */
-    id: string;
-    categories: string[];
-    packId?: string;
-    /** Optional custom hitbox polygon (normalised 0–1). Falls back to hitbox-data.json. */
-    hitboxPolygon?: Array<{ x: number; y: number }>;
-    /** Override the auto-derived sprite URL (rarely needed). */
-    imageUrl?: string;
-}
-
 export interface StickerPackConfig {
     id: string;
     /** Display name shown in the UI */
     name: string;
-    /** Sprite symbol id for the pack icon, e.g. "pack-icon-eyes" */
+    /** Sprite symbol id for the pack icon, e.g. "pack-icon-shape" */
     iconId?: string;
     unlockedAtStart: boolean;
+    /** Sticker IDs belonging to this pack */
+    stickers: string[];
 }
 
 export interface StickerCatalogConfig {
-    stickers: StickerConfigEntry[];
     packs: StickerPackConfig[];
 }
 
@@ -38,7 +23,6 @@ export interface StickerCollageGameConfig {
     maxStickersOnCanvas: number;
     votesPerPlayer: number;
     pointsByPlacement: number[];
-    requiredCategories: string[];
     prompts: string[];
     promptChoiceCount: number;
     packUnlockChoiceCount: number;
@@ -60,20 +44,12 @@ function parseSubObject(raw: Record<string, unknown>, key: string): Record<strin
 // ── Default catalog (fallback when nothing is specified in config) ──────────
 
 const DEFAULT_CATALOG_CONFIG: StickerCatalogConfig = {
-    stickers: [],
     packs: []
 };
 
 function parseCatalogConfig(raw: unknown): StickerCatalogConfig {
     if (typeof raw !== "object" || raw === null) return DEFAULT_CATALOG_CONFIG;
     const r = raw as Record<string, unknown>;
-
-    const stickers = Array.isArray(r["stickers"])
-        ? (r["stickers"] as unknown[]).filter(
-              (s): s is StickerConfigEntry =>
-                  typeof s === "object" && s !== null && typeof (s as any).id === "string",
-          )
-        : DEFAULT_CATALOG_CONFIG.stickers;
 
     const packs = Array.isArray(r["packs"])
         ? (r["packs"] as unknown[]).filter(
@@ -82,7 +58,7 @@ function parseCatalogConfig(raw: unknown): StickerCatalogConfig {
           )
         : DEFAULT_CATALOG_CONFIG.packs;
 
-    return {stickers, packs};
+    return {packs};
 }
 
 export function parseGameConfig(raw: unknown): GameConfig {
@@ -101,7 +77,6 @@ export function parseGameConfig(raw: unknown): GameConfig {
             maxStickersOnCanvas: typeof sc["maxStickersOnCanvas"] === "number" ? sc["maxStickersOnCanvas"] : 12,
             votesPerPlayer: typeof sc["votesPerPlayer"] === "number" ? sc["votesPerPlayer"] : 3,
             pointsByPlacement: Array.isArray(sc["pointsByPlacement"]) ? sc["pointsByPlacement"] as number[] : [100, 60, 30],
-            requiredCategories: Array.isArray(sc["requiredCategories"]) ? sc["requiredCategories"] as string[] : ["eyes"],
             prompts: Array.isArray(sc["prompts"]) ? sc["prompts"] as string[] : ["Bau ein Monster", "Mach eine Geburtstagstorte"],
             promptChoiceCount: typeof sc["promptChoiceCount"] === "number" ? sc["promptChoiceCount"] : 3,
             packUnlockChoiceCount: typeof sc["packUnlockChoiceCount"] === "number" ? sc["packUnlockChoiceCount"] : 3,
@@ -173,7 +148,6 @@ export interface StickerPack {
 export interface StickerDefinition {
     id: string;
     imageUrl: string;
-    categories: string[];
     packId?: string;
     /**
      * Optional polygon hitbox, defined as an array of {x, y} points

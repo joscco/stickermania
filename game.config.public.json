@@ -12,9 +12,6 @@
       60,
       30
     ],
-    "requiredCategories": [
-      "eyes"
-    ],
     "prompts": [
       "Biblisch akkurate Darstellung eines Engels",
       "Gab es im Angebot bei Tchibo",
@@ -78,70 +75,65 @@
       "Sah besoffen besser aus"
     ],
     "catalog": {
-      "stickers": [
-        {
-          "id": "circle",
-          "categories": [
-            "shape"
-          ],
-          "packId": "pack_shapes"
-        },
-        {
-          "id": "rectangle",
-          "categories": [
-            "shape"
-          ],
-          "packId": "pack_shapes"
-        },
-        {
-          "id": "triangle",
-          "categories": [
-            "shape"
-          ],
-          "packId": "pack_shapes"
-        },
-        {
-          "id": "wobble",
-          "categories": [
-            "shape"
-          ],
-          "packId": "pack_shapes"
-        },
-        {
-          "id": "keyhole",
-          "categories": [
-            "shape"
-          ],
-          "packId": "pack_shapes"
-        },
-        {
-          "id": "circle-filled",
-          "categories": [
-            "shape"
-          ],
-          "packId": "pack_shapes"
-        },
-        {
-          "id": "rectangle-filled",
-          "categories": [
-            "shape"
-          ],
-          "packId": "pack_shapes"
-        },
-        {
-          "id": "triangle-filled",
-          "categories": [
-            "shape"
-          ],
-          "packId": "pack_shapes"
-        }
-      ],
       "packs": [
         {
           "id": "pack_shapes",
           "name": "Shapes",
           "iconId": "pack-icon-shape",
-          "unlockedAtStart": true
+          "unlockedAtStart": true,
+          "stickers": [
+            "triangle",
+            "rectangle",
+            "diamond",
+            "star",
+            "flower",
+            "wobble",
+            "heart",
+            "egg",
+            "teardrop",
+            "cloud",
+            "moon",
+            "hexagon",
+            "triangle-filled",
+            "rectangle-filled"
+          ]
+        },
+        {
+          "id": "pack_circles",
+          "name": "Circles",
+          "iconId": "pack-icon-circles",
+          "unlockedAtStart": true,
+          "stickers": [
+            "circle",
+            "circle-filled",
+            "half-circle",
+            "quarter-circle"
+          ]
+        },
+        {
+          "id": "pack_home",
+          "name": "Home",
+          "iconId": "pack-icon-home",
+          "unlockedAtStart": false,
+          "stickers": [
+            "keyhole",
+            "grid",
+            "key",
+            "lightbulb"
+          ]
+        },
+        {
+          "id": "pack_lines",
+          "name": "Lines",
+          "iconId": "pack-icon-lines",
+          "unlockedAtStart": false,
+          "stickers": [
+            "line",
+            "fat-line",
+            "curved-line",
+            "ring",
+            "corner"
+          ]
         }
       ]
     }

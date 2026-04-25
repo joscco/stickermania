@@ -2,30 +2,34 @@ import type {StickerDefinition, StickerPack, StickerHand, StickerCollageGameConf
 
 /**
  * Builds the runtime StickerDefinition array from the catalog config.
- *
- * imageUrl is auto-derived as "sprite:#sticker-<id>" unless explicitly
- * overridden via the optional `imageUrl` field in the config entry.
  */
 export function buildCatalog(config: StickerCatalogConfig): StickerDefinition[] {
-    return config.stickers.map(entry => ({
-        id:             entry.id,
-        imageUrl:       entry.imageUrl ?? `sprite:#sticker-${entry.id}`,
-        categories:     entry.categories,
-        packId:         entry.packId,
-        hitboxPolygon:  entry.hitboxPolygon,
-    }));
+    const definitions: StickerDefinition[] = [];
+    const seen = new Set<string>();
+    for (const pack of config.packs) {
+        for (const stickerId of pack.stickers ?? []) {
+            if (!seen.has(stickerId)) {
+                seen.add(stickerId);
+                definitions.push({
+                    id:       stickerId,
+                    imageUrl: `sprite:#sticker-${stickerId}`,
+                    packId:   pack.id,
+                });
+            }
+        }
+    }
+    return definitions;
 }
 
 /**
  * Builds the runtime StickerPack array from the catalog config.
- * The pack's stickerIds are derived from the sticker list — no duplication needed.
  */
 export function buildPacks(config: StickerCatalogConfig): StickerPack[] {
     return config.packs.map(packCfg => ({
-        id:             packCfg.id,
-        name:           packCfg.name,
-        iconId:         packCfg.iconId,
-        stickerIds:     config.stickers.filter(s => s.packId === packCfg.id).map(s => s.id),
+        id:              packCfg.id,
+        name:            packCfg.name,
+        iconId:          packCfg.iconId,
+        stickerIds:      packCfg.stickers ?? [],
         unlockedAtStart: packCfg.unlockedAtStart,
     }));
 }
@@ -53,7 +57,6 @@ export function dealHand(
     allPacks?: StickerPack[],
 ): StickerHand {
     const handSize = config.handSize;
-    const requiredCategories = config.requiredCategories;
 
     let availableCatalog = catalog;
     if (unlockedPackIds && allPacks) {
@@ -78,17 +81,7 @@ export function dealHand(
         }
     }
 
-    // 2. Required categories
-    for (const cat of requiredCategories) {
-        const candidates = availableCatalog.filter(s => s.categories.includes(cat) && !usedIds.has(s.id));
-        if (candidates.length > 0) {
-            const pick = candidates[Math.floor(Math.random() * candidates.length)];
-            selected.push(pick);
-            usedIds.add(pick.id);
-        }
-    }
-
-    // 3. Fill rest randomly
+    // 2. Fill rest randomly
     const shuffled = availableCatalog.filter(s => !usedIds.has(s.id)).sort(() => Math.random() - 0.5);
     for (const sticker of shuffled) {
         if (selected.length >= handSize) break;
