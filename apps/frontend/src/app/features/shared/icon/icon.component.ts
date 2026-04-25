@@ -68,7 +68,7 @@ export class IconComponent {
     readonly size = input<IconSize>('md');
 
     /** Stroke/outline color. Overrides Tailwind text-* classes when set. */
-    readonly outlineColor = input<string | undefined>(undefined);
+    readonly outlineColor = input<string>("#000000");
 
     /** Resolved pixel size. */
     readonly px = computed(() => SIZE_PX[this.size()]);
