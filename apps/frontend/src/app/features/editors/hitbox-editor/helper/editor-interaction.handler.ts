@@ -10,12 +10,6 @@ import {PolygonEditService} from "./polygon-edit.service";
 export class EditorInteractionHandler {
     private draggingVertex = -1;
 
-    /**
-     * How far beyond the image (as fraction) points can be placed.
-     * Must match the component's overflowFraction.
-     */
-    public overflowFraction = 0.05;
-
     constructor(private readonly polygonEdit: PolygonEditService) {}
 
     // ── Mouse events ────────────────────────────────────────
@@ -102,10 +96,9 @@ export class EditorInteractionHandler {
      */
     private getImagePixelSize(event: MouseEvent): {imgW: number; imgH: number} {
         const target = event.currentTarget as HTMLElement;
-        const divisor = 1 + this.overflowFraction * 2;
         return {
-            imgW: target.clientWidth / divisor,
-            imgH: target.clientHeight / divisor,
+            imgW: target.clientWidth,
+            imgH: target.clientHeight,
         };
     }
 
@@ -117,15 +110,11 @@ export class EditorInteractionHandler {
     private getNormCoords(event: MouseEvent): {x: number; y: number} {
         const target = event.currentTarget as HTMLElement;
         const rect = target.getBoundingClientRect();
-        const of = this.overflowFraction;
-        const divisor = 1 + of * 2;
-        const imgW = rect.width / divisor;
-        const imgH = rect.height / divisor;
-        const padX = imgW * of;
-        const padY = imgH * of;
+        const imgW = rect.width;
+        const imgH = rect.height;
         return {
-            x: Math.max(-of, Math.min(1 + of, (event.clientX - rect.left - padX) / imgW)),
-            y: Math.max(-of, Math.min(1 + of, (event.clientY - rect.top - padY) / imgH)),
+            x: Math.max(0, Math.min(1, (event.clientX - rect.left) / imgW)),
+            y: Math.max(0, Math.min(1, (event.clientY - rect.top) / imgH)),
         };
     }
 }

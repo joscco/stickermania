@@ -42,10 +42,21 @@ export async function autoDetectHitbox(
     const simplified = douglasPeucker(normalised, tolerance);
 
     // Round to 2 decimal places
-    return simplified.map(p => ({
+    const result = simplified.map(p => ({
         x: Math.round(p.x * 100) / 100,
         y: Math.round(p.y * 100) / 100,
     }));
+
+    // Remove duplicate closing point (tracing a closed contour may leave first === last)
+    if (result.length > 1) {
+        const first = result[0];
+        const last = result[result.length - 1];
+        if (first.x === last.x && first.y === last.y) {
+            result.pop();
+        }
+    }
+
+    return result;
 }
 
 // ── Image loading ───────────────────────────────────────────
