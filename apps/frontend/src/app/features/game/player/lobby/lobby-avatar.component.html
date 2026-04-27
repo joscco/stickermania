@@ -19,31 +19,25 @@
       <!-- Single button row — all buttons same height, widths from SVG viewBox -->
       <div animOnInit="opacity" class="flex items-center justify-center gap-2 w-full" style="height: var(--btn-h);">
 
-        <button class="h-full flex-none rounded-full transition-all"
+        <button class="flex-none rounded-full transition-all"
                 [class.bg-stone-200]="drawMode() === 'small'"
                 [class.scale-110]="drawMode() === 'small'"
                 (click)="selectThinBrush()">
-          <svg viewBox="0 0 700 700" style="height:100%;width:auto;display:block;" aria-hidden="true">
-            <use href="assets/sprite.svg#icon-draw-btn-small-lg"/>
-          </svg>
+          <app-icon name="draw-btn-small" size="lg"/>
         </button>
 
-        <button class="h-full flex-none rounded-full transition-all"
+        <button class="flex-none rounded-full transition-all"
                 [class.bg-stone-200]="drawMode() === 'big'"
                 [class.scale-110]="drawMode() === 'big'"
                 (click)="selectThickBrush()">
-          <svg viewBox="0 0 700 700" style="height:100%;width:auto;display:block;" aria-hidden="true">
-            <use href="assets/sprite.svg#icon-draw-btn-big-lg"/>
-          </svg>
+          <app-icon name="draw-btn-big" size="lg"/>
         </button>
 
-        <button class="h-full flex-none rounded-full transition-all"
+        <button class="flex-none rounded-full transition-all"
                 [class.bg-stone-200]="drawMode() === 'erase'"
                 [class.scale-110]="drawMode() === 'erase'"
                 (click)="selectEraser()">
-          <svg viewBox="0 0 700 700" style="height:100%;width:auto;display:block;" aria-hidden="true">
-            <use href="assets/sprite.svg#icon-draw-btn-eraser-lg"/>
-          </svg>
+          <app-icon name="draw-btn-eraser" size="lg"/>
         </button>
       </div>
 
@@ -65,7 +59,7 @@
       </div>
       <button animOnInit="opacity" class="mb-2 text-xs text-stone-400 hover:text-stone-600 underline"
               (click)="skipped.emit()">
-        ÜBERSPRINGEN
+        Überspringen
       </button>
     </div>
   </div>

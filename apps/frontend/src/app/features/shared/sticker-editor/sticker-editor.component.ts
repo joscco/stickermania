@@ -24,7 +24,6 @@ import type {StickerDefinition, StickerPlacement} from "@birthday/shared";
 
 import {StickerCanvasComponent} from './sticker-canvas/sticker-canvas.component';
 import {StickerDragStartEvent, StickerPaletteComponent} from './sticker-palette/sticker-palette.component';
-import {animateStickerRemoval} from './sticker-canvas/sticker-removal-animation';
 import {AnimOnInitDirective} from '../animations/anim-on-init.directive';
 import {IconComponent} from '../icon/icon.component';
 import {isPointerOutsideRect, isPositionOutsideCanvas, clamp, radToDeg, pinchDistance, pinchAngle} from './geometry-helpers';
@@ -34,7 +33,7 @@ import {isPointerOutsideRect, isPositionOutsideCanvas, clamp, radToDeg, pinchDis
   standalone: true,
   imports: [CommonModule, StickerCanvasComponent, StickerPaletteComponent, StickerCanvasComponent, AnimOnInitDirective, IconComponent],
   templateUrl: "./sticker-editor.component.html",
-  host: {"class": "flex flex-col"},
+  host: {"class": "flex flex-col overflow-hidden"},
 })
 export class StickerEditorComponent {
   // ── Inputs / Outputs ──────────────────────────────────────────
@@ -53,7 +52,6 @@ export class StickerEditorComponent {
 
   /** Tracks cleanup for an ongoing palette-initiated drag. */
   private paletteDragCleanup: (() => void) | null = null;
-  private readonly removingIds = new Set<string>();
 
   public onStickerDragFromPaletteStarted(event: StickerDragStartEvent): void {
     if (!this.canAddMore()) {
@@ -71,7 +69,6 @@ export class StickerEditorComponent {
     const y = event.clientY - rect.top;
 
     const current = this.placements();
-    const maxZ = current.length > 0 ? Math.max(...current.map(p => p.zIndex)) : 0;
 
     const newPlacement: StickerPlacement = {
       instanceId: this.stickerCanvas?.generateInstanceId()
@@ -81,18 +78,22 @@ export class StickerEditorComponent {
       y,
       rotation: 0,
       scale: 1,
-      zIndex: maxZ + 1,
+      // Use a very high z-index during the drag so it renders above the palette strip (z-20).
+      // Once dropped on canvas the gesture handler or user reordering will normalize it.
+      zIndex: 9500,
     };
 
     const newPlacements = [...current, newPlacement];
+    // Set 'entering' state BEFORE placements.set so Angular renders with opacity:0 on first paint.
+    this.stickerCanvas.setAnimState(newPlacement.instanceId, 'entering');
     this.placements.set(newPlacements);
     this.placementsChanged.emit(newPlacements);
+
 
     // Clean up any previous drag BEFORE setting signals for the new one,
     // so the old cleanup() cannot overwrite paletteDragInProgress / stickerWouldBeDeleted.
     this.paletteDragCleanup?.();
 
-    // Clean up any previous drag BEFORE setting signals for the new one,
     // Both flags set BEFORE selectedInstanceId so nothing flashes.
     this.stickerCanvas.paletteDragInProgress.set(true);
     this.stickerCanvas.stickerWouldBeDeleted.set(true); // starts outside canvas
@@ -214,13 +215,23 @@ export class StickerEditorComponent {
       if (outside) {
         this.stickerCanvas.selectedInstanceId.set(null);
         this.stickerCanvas.lassoSelection.set(new Set());
-        animateStickerRemoval([instanceId], canvasEl, this.removingIds, () => {
+        this.stickerCanvas.scheduleRemoval([instanceId], () => {
           const updated = this.placements().filter(p => p.instanceId !== instanceId);
           this.placements.set(updated);
           this.placementsChanged.emit(updated);
         });
       } else {
+        // Normalize the temporarily inflated z-index to sit just above the rest.
+        const others = this.placements().filter(p => p.instanceId !== instanceId);
+        const normalZ = others.length > 0 ? Math.max(...others.map(p => p.zIndex)) + 1 : 1;
+        const normalized = this.placements().map(p =>
+          p.instanceId === instanceId ? {...p, zIndex: normalZ} : p,
+        );
+        this.placements.set(normalized);
+        this.placementsChanged.emit(normalized);
         this.stickerCanvas.selectedInstanceId.set(instanceId);
+        // Spring-bounce to confirm landing — state auto-clears to idle after animation.
+        this.stickerCanvas.setAnimState(instanceId, 'settling');
       }
     };
 

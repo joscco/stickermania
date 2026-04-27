@@ -110,3 +110,15 @@ canvas,
 .ui-shake {
   animation: ui-shake 420ms ease;
 }
+
+/* Banderole/Ribbon shape for player prompt banners (full-width, pointed bottom center) */
+.banner-ribbon-player {
+  clip-path: polygon(0 0, 100% 0, 100% 72%, 50% 100%, 0 72%);
+  padding-bottom: 2rem;
+}
+
+/* Banderole/Ribbon shape for board prompt banners (side notches, classic ribbon) */
+.banner-ribbon-board {
+  clip-path: polygon(3% 0, 97% 0, 100% 50%, 97% 100%, 3% 100%, 0% 50%);
+}
+

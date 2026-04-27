@@ -1,6 +1,6 @@
-<!-- Canvas area + Global Top-Bar. z-10 so overflow-visible stickers render above the palette. -->
+<!-- Canvas area + Global Top-Bar. No z-index → no stacking context → dragged sticker's z-9500 beats palette's z-20. -->
 <div animOnInit="opacity"
-     class="flex-1 min-h-0 relative z-10 bg-stone-50 flex flex-col items-center justify-center p-2 overflow-hidden">
+     class="flex-1 min-h-0 relative bg-stone-50 flex flex-col items-center justify-center p-2 overflow-visible">
 
   <!-- Global Top-Bar: only canvas-wide actions -->
   <div
@@ -43,8 +43,8 @@
   </div>
 </div>
 
-<!-- Palette strip -->
-<div animOnInit="opacity" class="shrink-0 border-t border-black/10 bg-white">
+<!-- Palette strip — z-20 so it visually covers canvas overflow upwards (stickers go behind palette once released) -->
+<div animOnInit="opacity" class="relative z-20 shrink-0 border-t border-black/10 bg-white">
   <app-sticker-palette
     [stickers]="paletteStickers()"
     [canAddMore]="canAddMore()"

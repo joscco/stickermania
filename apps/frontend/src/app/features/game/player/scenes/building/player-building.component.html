@@ -1,11 +1,11 @@
-<!-- Prompt banner -->
-<div animOnInit="banner" class="bg-stone-600 text-white px-4 py-2 text-center shrink-0 relative">
-  <span class="text-xs font-medium opacity-80">Runde {{ stickerService.currentRoundIndex() }}</span>
+<!-- Prompt banner (Banderole) -->
+<div animOnInit="banner" class="banner-ribbon-player bg-black text-white px-8 py-2 pt-3 text-center shrink-0">
+  <span class="text-xs font-medium opacity-60 uppercase tracking-wider">Runde {{ stickerService.currentRoundIndex() }}</span>
   <h2 class="text-base font-bold">{{ stickerService.currentPrompt() }}</h2>
   <button
-    class="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-stone-400 border border-stone-500 rounded-full px-2 py-0.5 hover:text-stone-200 hover:border-stone-400 transition-colors"
+    class="mt-1 text-[11px] text-stone-300 border border-stone-500 rounded-full px-2 py-0.5 hover:text-stone-100 hover:border-stone-400 transition-colors"
     (click)="stickerService.skipRound()"
-  >überspringen</button>
+  >Überspringen</button>
 </div>
 
 <!-- Shared editor (canvas + palette) -->
@@ -27,7 +27,7 @@
 <!-- Footer: submit -->
 <div animOnInit="opacity" class="shrink-0 border-t border-black/10 bg-white px-4 py-3 flex items-center gap-3">
   <button
-    class="flex-1 bg-purple-600 text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
+    class="flex-1 bg-black text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
     [disabled]="placements.length === 0"
     (click)="submitCollage()"
   >Einreichen

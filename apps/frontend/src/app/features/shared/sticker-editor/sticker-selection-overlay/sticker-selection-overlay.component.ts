@@ -14,9 +14,9 @@ export interface HandleDragEvent {
 
 export type OverlayMode = 'idle' | 'moving' | 'rotating' | 'scaling' | 'menu';
 
-export const DARK_PURPLE = 'oklch(55.8% 0.288 302.321)'
-export const LIGHT_PURPLE = 'oklch(62.7% 0.265 303.9)'
-export const LIGHT_PURPLE_SEMI = 'oklch(62.7% 0.265 303.9 / .5)'
+export const DARK_PURPLE = '#111827'
+export const LIGHT_PURPLE = '#374151'
+export const LIGHT_PURPLE_SEMI = 'rgba(55,65,81,0.45)'
 
 
 

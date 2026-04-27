@@ -1,6 +1,6 @@
 <div class="flex-1 flex flex-col overflow-y-auto">
   <!-- Results header -->
-  <div animOnInit="banner" class="bg-linear-to-r from-yellow-400 to-amber-500 text-white px-4 py-3 text-center">
+  <div animOnInit="banner" class="banner-ribbon-player bg-black text-white px-8 py-2 pt-3 text-center shrink-0">
     <h2 class="text-lg font-bold">Ergebnisse</h2>
   </div>
 
@@ -8,14 +8,14 @@
   @if (stickerService.myPlacement(); as placement) {
     <div animOnInit="medal" [animDelay]="0.15" class="text-center py-4">
       @if (placement === 1) {
-        <app-icon name="medal-gold" size="lg" class="mx-auto"/>
-        <p class="text-lg font-bold text-amber-600 mt-1">Du hast gewonnen!</p>
+        <app-icon name="medal-gold" size="lg" class="mx-auto text-black"/>
+        <p class="text-lg font-bold text-stone-900 mt-1">Du hast gewonnen!</p>
       } @else if (placement === 2) {
-        <app-icon name="medal-silver" size="lg" class="mx-auto"/>
-        <p class="text-lg font-bold text-stone-500 mt-1">Platz 2!</p>
+        <app-icon name="medal-silver" size="lg" class="mx-auto text-stone-600"/>
+        <p class="text-lg font-bold text-stone-700 mt-1">Platz 2!</p>
       } @else if (placement === 3) {
-        <app-icon name="medal-bronze" size="lg" class="mx-auto"/>
-        <p class="text-lg font-bold text-amber-700 mt-1">Platz 3!</p>
+        <app-icon name="medal-bronze" size="lg" class="mx-auto text-stone-500"/>
+        <p class="text-lg font-bold text-stone-600 mt-1">Platz 3!</p>
       } @else {
         <div class="text-4xl font-bold text-stone-600">{{ placement }}.</div>
         <p class="text-sm text-stone-500 mt-1">Platz {{ placement }}</p>
@@ -33,10 +33,10 @@
       <!-- Progress dots -->
       <div animOnInit="choice" [animDelay]="0.2" class="flex justify-center gap-3 py-2">
         <div class="w-8 h-8 rounded-full grid place-items-center text-sm shadow-sm transition-colors duration-200"
-             [class.bg-emerald-100]="stickerService.hasChosenPrompt()"
-             [class.text-emerald-600]="stickerService.hasChosenPrompt()"
-             [class.bg-purple-100]="!stickerService.hasChosenPrompt()"
-             [class.text-purple-600]="!stickerService.hasChosenPrompt()">
+             [class.bg-black]="stickerService.hasChosenPrompt()"
+             [class.text-white]="stickerService.hasChosenPrompt()"
+             [class.bg-stone-200]="!stickerService.hasChosenPrompt()"
+             [class.text-stone-600]="!stickerService.hasChosenPrompt()">
           @if (stickerService.hasChosenPrompt()) {
             <app-icon name="checkmark" size="sm"/>
           } @else {
@@ -45,10 +45,10 @@
         </div>
         @if (stickerService.hasLockedPacks()) {
           <div class="w-8 h-8 rounded-full grid place-items-center text-sm shadow-sm transition-colors duration-200"
-               [class.bg-emerald-100]="stickerService.hasUnlockedPack()"
-               [class.text-emerald-600]="stickerService.hasUnlockedPack()"
-               [class.bg-purple-100]="!stickerService.hasUnlockedPack()"
-               [class.text-purple-600]="!stickerService.hasUnlockedPack()">
+               [class.bg-black]="stickerService.hasUnlockedPack()"
+               [class.text-white]="stickerService.hasUnlockedPack()"
+               [class.bg-stone-200]="!stickerService.hasUnlockedPack()"
+               [class.text-stone-600]="!stickerService.hasUnlockedPack()">
             @if (stickerService.hasUnlockedPack()) {
               <app-icon name="checkmark" size="sm"/>
             } @else {
@@ -56,7 +56,7 @@
             }
           </div>
         }
-        <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 grid place-items-center text-sm shadow-sm">
+        <div class="w-8 h-8 rounded-full bg-stone-200 text-stone-600 grid place-items-center text-sm shadow-sm">
           <app-icon name="star" size="sm"/>
         </div>
       </div>
@@ -69,7 +69,7 @@
             <div class="space-y-2">
               @for (prompt of stickerService.promptChoices(); track prompt) {
                 <button
-                  class="w-full text-left p-3 rounded-xl border-2 border-stone-200 bg-white text-sm font-medium active:scale-[0.98] transition-transform hover:border-purple-300"
+                  class="w-full text-left p-3 rounded-xl border-2 border-stone-200 bg-white text-sm font-medium active:scale-[0.98] transition-transform hover:border-stone-400"
                   (click)="stickerService.pickPrompt(prompt)"
                 >
                   {{ prompt }}
@@ -85,10 +85,10 @@
             <div class="grid grid-cols-2 gap-2">
               @for (pack of stickerService.packUnlockChoices(); track pack.id) {
                 <button
-                  class="p-3 rounded-xl border-2 border-stone-200 bg-white text-center active:scale-95 transition-transform hover:border-emerald-300"
+                  class="p-3 rounded-xl border-2 border-stone-200 bg-white text-center active:scale-95 transition-transform hover:border-stone-400"
                   (click)="stickerService.unlockPack(pack.id)"
                 >
-                  <app-icon name="star" size="md" class="mx-auto mb-1 text-emerald-500"/>
+                  <app-icon name="star" size="md" class="mx-auto mb-1 text-stone-800"/>
                   <div class="text-xs font-medium mt-1">{{ pack.name }}</div>
                 </button>
               }
@@ -102,7 +102,7 @@
             <div class="grid grid-cols-2 gap-2">
               @for (pack of stickerService.guaranteedPackChoices(); track pack.id) {
                 <button
-                  class="p-3 rounded-xl border-2 border-stone-200 bg-white text-center active:scale-95 transition-transform hover:border-amber-300"
+                  class="p-3 rounded-xl border-2 border-stone-200 bg-white text-center active:scale-95 transition-transform hover:border-stone-400"
                   (click)="stickerService.pickGuaranteedPack(pack.id)"
                 >
                   <div class="text-lg">{{ pack.name }}</div>
@@ -115,7 +115,7 @@
     </div>
   } @else if (stickerService.isWinner() && stickerService.winnerChoicesDone()) {
     <div animOnInit="opacity" [animDelay]="0.2" class="text-center py-4">
-      <p class="text-emerald-600 font-medium text-sm">Auswahl getroffen!</p>
+      <p class="text-stone-700 font-medium text-sm">Auswahl getroffen!</p>
     </div>
   } @else if (stickerService.winnerId()) {
     <div animOnInit="opacity" [animDelay]="0.2" class="text-center py-4 px-6">
@@ -131,7 +131,7 @@
 @if (stickerService.canReadyToAdvance()) {
   <div class="shrink-0 border-t border-black/10 bg-white px-4 py-3">
     <button
-      class="w-full bg-purple-600 text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
+      class="w-full bg-black text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
       (click)="stickerService.readyToAdvance()"
     >Nächste Runde starten</button>
   </div>

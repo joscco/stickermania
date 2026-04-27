@@ -1,7 +1,7 @@
 <div class="h-full flex flex-col">
-  <!-- Prompt banner -->
-  <div animOnInit="banner" class="bg-linear-to-r from-purple-600 to-pink-500 text-white px-8 py-6 text-center rounded-2xl mx-4 mt-4 shadow-lg">
-    <span class="text-sm font-medium opacity-70 uppercase tracking-wider">Runde {{ gameState()?.currentRoundIndex ?? 0 }}</span>
+  <!-- Prompt banner (Banderole) -->
+  <div animOnInit="banner" class="banner-ribbon-board bg-black text-white px-16 py-6 text-center mt-4">
+    <span class="text-sm font-medium opacity-60 uppercase tracking-wider">Runde {{ gameState()?.currentRoundIndex ?? 0 }}</span>
     <h1 class="text-3xl font-black mt-1">{{ gameState()?.currentPrompt ?? '' }}</h1>
   </div>
 
@@ -9,15 +9,15 @@
   @if (lastUnlockedPack() || guaranteedPack()) {
     <div animOnInit="opacity" [animDelay]="0.1" class="flex justify-center gap-6 mt-4 px-4">
       @if (lastUnlockedPack(); as pack) {
-        <div class="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2 text-center">
-          <div class="text-xs text-emerald-600 font-semibold uppercase tracking-wider">Neu freigeschaltet</div>
-          <div class="text-lg font-bold text-emerald-800">{{ pack.name }}</div>
+        <div class="bg-stone-100 border border-stone-300 rounded-xl px-4 py-2 text-center">
+          <div class="text-xs text-stone-500 font-semibold uppercase tracking-wider">Neu freigeschaltet</div>
+          <div class="text-lg font-bold text-stone-800">{{ pack.name }}</div>
         </div>
       }
       @if (guaranteedPack(); as pack) {
-        <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-center">
-          <div class="text-xs text-amber-600 font-semibold uppercase tracking-wider">Auf jeden Fall dabei</div>
-          <div class="text-lg font-bold text-amber-800">{{ pack.name }}</div>
+        <div class="bg-stone-100 border border-stone-300 rounded-xl px-4 py-2 text-center">
+          <div class="text-xs text-stone-500 font-semibold uppercase tracking-wider">Auf jeden Fall dabei</div>
+          <div class="text-lg font-bold text-stone-800">{{ pack.name }}</div>
         </div>
       }
     </div>
@@ -42,7 +42,7 @@
   <!-- End round button -->
   <div animOnInit="opacity" [animDelay]="0.45" class="text-center pb-6">
     <button
-      class="bg-orange-500 text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-orange-600 active:scale-95 transition-[background-color,box-shadow]"
+      class="bg-black text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-stone-800 active:scale-95 transition-[background-color,box-shadow]"
       (click)="endRoundEarly()"
     >
       Runde beenden

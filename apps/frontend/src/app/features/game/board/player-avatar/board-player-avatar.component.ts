@@ -38,14 +38,14 @@ export class BoardPlayerAvatarComponent {
 
     public readonly borderClass = computed(() => {
         switch (this.status()) {
-            case "submitted":  return "border-emerald-400";
-            case "drawing":    return "border-purple-400";
+            case "submitted":  return "border-stone-700";
+            case "drawing":    return "border-stone-500";
             case "skipped":    return "border-stone-300";
             case "offline":    return "border-stone-300";
-            case "connected":  return "border-emerald-400";
-            case "podium-1":   return "border-amber-400";
-            case "podium-2":   return "border-stone-300";
-            case "podium-3":   return "border-orange-300";
+            case "connected":  return "border-stone-700";
+            case "podium-1":   return "border-black";
+            case "podium-2":   return "border-stone-500";
+            case "podium-3":   return "border-stone-400";
             default:           return "border-stone-200";
         }
     });
@@ -57,8 +57,8 @@ export class BoardPlayerAvatarComponent {
     /** Badge config: { spriteId, bgClass, animate } or null */
     public readonly badge = computed<{spriteId: string; bg: string; animate?: boolean} | null>(() => {
         switch (this.status()) {
-            case "submitted": return {spriteId: "icon-checkmark", bg: "bg-emerald-500"};
-            case "drawing":   return {spriteId: "icon-paintbrush", bg: "bg-purple-500", animate: true};
+            case "submitted": return {spriteId: "icon-checkmark", bg: "bg-stone-800"};
+            case "drawing":   return {spriteId: "icon-paintbrush", bg: "bg-stone-600", animate: true};
             case "skipped":   return {spriteId: "icon-pause",      bg: "bg-stone-400"};
             case "offline":   return {spriteId: "icon-hourglass",  bg: "bg-stone-400"};
             default:          return null;

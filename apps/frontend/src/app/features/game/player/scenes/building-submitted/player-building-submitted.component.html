@@ -1,10 +1,10 @@
 <div animGroup="opacity" class="h-full flex flex-col items-center justify-center gap-4 p-6 text-center">
-  <app-icon animOnInit="opacity" name="checkmark" size="lg" class="text-emerald-500"/>
+  <app-icon animOnInit="opacity" name="checkmark" size="lg" class="text-stone-900"/>
   <p animOnInit="opacity" class="text-stone-600 font-medium">Eingereicht!</p>
   <p animOnInit="opacity" class="text-stone-400 text-sm">Warte auf das Ende der Runde...</p>
   @if (stickerService.allPlayersDone()) {
     <button
-      class="mt-2 bg-purple-600 text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
+      class="mt-2 bg-black text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
       (click)="stickerService.endRoundEarly()"
     >Runde schließen</button>
   }

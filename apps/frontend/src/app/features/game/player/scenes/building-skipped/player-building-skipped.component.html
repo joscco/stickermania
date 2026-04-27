@@ -4,7 +4,7 @@
   <p animOnInit="opacity" class="text-stone-400 text-sm">Warte auf das Ende der Runde...</p>
   @if (stickerService.allPlayersDone()) {
     <button
-      class="mt-2 bg-purple-600 text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
+      class="mt-2 bg-black text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
       (click)="stickerService.endRoundEarly()"
     >Runde schließen</button>
   }

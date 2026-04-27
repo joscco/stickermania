@@ -1,15 +1,15 @@
 <div class="p-3">
-  @if (votesRemaining > 0) {
-    <p class="text-xs text-stone-500 mb-2">Tippe auf eine Collage zum Abstimmen ({{ votesRemaining }} Stimmen übrig)</p>
+  @if (getMyVote() === null) {
+    <p class="text-xs text-stone-500 mb-2">Tippe auf eine Collage, um deinen Stern zu vergeben</p>
   } @else {
-    <p class="text-xs text-emerald-600 mb-2 font-medium">Alle Stimmen abgegeben!</p>
+    <p class="text-xs text-stone-600 mb-2 font-medium">Stern vergeben — tippe nochmal zum Zurücknehmen, oder auf ein anderes Bild zum Verlegen</p>
   }
 
   @if (ownSubmission(); as mine) {
-    <div class="mb-3 rounded-xl border border-purple-200 bg-purple-50/40 p-2">
-      <div class="mb-1 text-[11px] font-semibold text-purple-700">Dein Bild</div>
+    <div class="mb-3 rounded-xl border border-stone-200 bg-stone-50 p-2">
+      <div class="mb-1 text-[11px] font-semibold text-stone-500">Dein Bild</div>
       <div class="flex items-center gap-2">
-        <div class="h-20 w-20 shrink-0 rounded-lg bg-white overflow-hidden border border-purple-100">
+        <div class="h-20 w-20 shrink-0 rounded-lg bg-white overflow-hidden border border-stone-100">
           @if (mine.snapshotUrl) {
             <img [src]="mine.snapshotUrl" alt="Eigene Collage" class="w-full h-full object-contain" draggable="false"/>
           } @else {
@@ -37,18 +37,15 @@
 
   <div class="grid grid-cols-2 gap-3">
     @for (submission of votableSubmissions(); track submission.id) {
+      @let voted = getMyVote() === submission.id;
       <button
-        class="relative w-full max-w-[220px] justify-self-center rounded-xl border-2 p-1 bg-white transition-colors"
-        [class.border-amber-400]="myVotes.includes(submission.id)"
-        [class.shadow-amber-200]="myVotes.includes(submission.id)"
-        [class.shadow-md]="myVotes.includes(submission.id)"
-        [class.border-stone-200]="!myVotes.includes(submission.id)"
-        [class.active:scale-95]="votesRemaining > 0 || myVotes.includes(submission.id)"
-        [disabled]="votesRemaining <= 0 && !myVotes.includes(submission.id)"
-        [class.opacity-50]="votesRemaining <= 0 && !myVotes.includes(submission.id)"
+        class="relative w-full max-w-55 justify-self-center rounded-xl border-2 p-1 bg-white transition-all active:scale-95"
+        [class.border-black]="voted"
+        [class.shadow-md]="voted"
+        [class.border-stone-200]="!voted"
         (click)="onVote(submission.id)"
       >
-        <div class="relative w-full aspect-square max-h-[220px] bg-stone-50 rounded-lg overflow-hidden">
+          <div class="relative w-full aspect-square max-h-55 bg-stone-50 rounded-lg overflow-hidden">
           @if (submission.snapshotUrl) {
             <img
               [src]="submission.snapshotUrl"
@@ -72,9 +69,10 @@
         <div class="mt-1 text-xs text-stone-600 font-medium truncate px-1">
           {{ getPlayerName(submission.playerId) }}
         </div>
-        @if (myVotes.includes(submission.id)) {
-          <div class="absolute top-1 right-1 bg-amber-400 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold">
-            ⭐
+        <!-- Star badge: shown when this collage has the vote -->
+        @if (voted) {
+          <div class="absolute top-1 right-1 w-6 h-6 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold shadow">
+            ★
           </div>
         }
       </button>

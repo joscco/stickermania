@@ -8,7 +8,6 @@ import {hitTestOnCanvas} from './sticker-hit-test.util';
 import {StickerGestureHandler} from './sticker-gesture-handler';
 import {renderCanvasToDataUrl} from './sticker-canvas-renderer.util';
 import {installCanvasInputListeners} from './sticker-canvas-input';
-import {animateStickerRemoval} from './sticker-removal-animation';
 import {StickerContextMenuComponent, type ContextMenuAction} from '../sticker-context-menu/sticker-context-menu.component';
 import type {BoundingBox} from '../sticker-types';
 import {CANVAS_STICKER_PX} from '../sticker-types';
@@ -16,14 +15,14 @@ import * as ops from '../sticker-placement-ops';
 import type {SelectionInfo} from '../selection-info';
 import {HandleDragEvent, StickerSelectionOverlayComponent} from '../sticker-selection-overlay/sticker-selection-overlay.component';
 import {AnimOnInitDirective, AnimPresenceDirective} from '../../animations/anim-on-init.directive';
-import {StickerImgComponent} from '../sticker-img/sticker-img.component';
 import {IconComponent} from '../../icon/icon.component';
 import {getSpriteViewBox, preloadSprite} from '../sprite-url.util';
+import {StickerItemComponent, type StickerAnimState} from './sticker-item/sticker-item.component';
 
 @Component({
   selector: 'app-sticker-canvas',
   standalone: true,
-  imports: [CommonModule, StickerSelectionOverlayComponent, StickerContextMenuComponent, StickerSelectionOverlayComponent, AnimOnInitDirective, AnimPresenceDirective, StickerImgComponent, IconComponent],
+  imports: [CommonModule, StickerSelectionOverlayComponent, StickerContextMenuComponent, StickerSelectionOverlayComponent, AnimOnInitDirective, AnimPresenceDirective, StickerItemComponent, IconComponent],
   templateUrl: './sticker-canvas.component.html',
   host: {style: 'display: block; width: 100%; height: 100%;'},
 })
@@ -124,7 +123,45 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   private removeListeners: (() => void) | null = null;
   private removeOutsideListener: (() => void) | null = null;
   private resizeObserver: ResizeObserver | null = null;
-  private readonly removingIds = new Set<string>();
+
+  /**
+   * Per-sticker animation states. Drives the [animState] input of each StickerItemComponent.
+   * Only IDs with a non-idle state need an entry here.
+   */
+  private readonly animStates = signal<Map<string, StickerAnimState>>(new Map());
+
+  getStickerAnimState(instanceId: string): StickerAnimState {
+    return this.animStates().get(instanceId) ?? 'idle';
+  }
+
+  setAnimState(instanceId: string, state: StickerAnimState): void {
+    this.animStates.update(m => new Map(m).set(instanceId, state));
+  }
+
+  clearAnimState(instanceId: string): void {
+    this.animStates.update(m => { const n = new Map(m); n.delete(instanceId); return n; });
+  }
+
+  /** Schedule a removal: set state to 'removing'; StickerItemComponent emits `removed` when done. */
+  scheduleRemoval(instanceIds: string[], done: () => void): void {
+    if (!instanceIds.length) { done(); return; }
+    let pending = instanceIds.length;
+    const onOne = () => { if (--pending === 0) done(); };
+    instanceIds.forEach(id => {
+      this._pendingRemovals.set(id, onOne);
+      this.setAnimState(id, 'removing');
+    });
+  }
+
+  /** Called by StickerItemComponent (removed output) when its animation finishes. */
+  onStickerAnimRemoved(instanceId: string): void {
+    const cb = this._pendingRemovals.get(instanceId);
+    this._pendingRemovals.delete(instanceId);
+    this.clearAnimState(instanceId);
+    cb?.();
+  }
+
+  private readonly _pendingRemovals = new Map<string, () => void>();
 
 
   constructor() {
@@ -144,7 +181,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     preloadSprite();
 
     // Set initial canvas border for interactive mode (GSAP handles transitions)
-    this.canvasArea.nativeElement.style.boxShadow = 'inset 0 0 0 2px #e9d5ff';
+    this.canvasArea.nativeElement.style.boxShadow = 'inset 0 0 0 2px #e2e8f0';
 
     this.gesture = new StickerGestureHandler(
       () => this.canvasArea.nativeElement.getBoundingClientRect(),
@@ -165,22 +202,21 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
           }
         },
         onSelectedChanged: id => {
-          console.log("Selected changed")
           this.stretchMode.set(false);
           this.menuVisible.set(false);
           if (id) {
-            // Selecting a new sticker — instant switch
-            this.clearSelection()
+            // Switching to another sticker — no settle, instant switch
+            this.clearSelection();
             this.selectedInstanceId.set(id);
           } else {
-            // Deselecting — animated fade-out
-            this.clearSelection();
+            // Fully deselecting — play settle animation for the previously selected stickers
+            this.clearSelection(true);
           }
         },
         onStickerDraggedOff: (_id, allIds) => {
           this.stickerWouldBeDeleted.set(false);
           const removed = new Set(allIds);
-          animateStickerRemoval(allIds, this.canvasArea.nativeElement, this.removingIds, () => {
+          this.scheduleRemoval(allIds, () => {
             const updated = this.stickers().filter(p => !removed.has(p.instanceId));
             this.emitPlacements(updated);
           });
@@ -215,7 +251,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       if (!this.hasSelection()) return;
       if (this.canvasArea.nativeElement.contains(ev.target as Node)) return;
       if (this.paletteDragInProgress()) return;
-      this.clearSelection();
+      this.clearSelection(true);
     };
 
     document.addEventListener('pointerdown', onOutside, {capture: true});
@@ -291,24 +327,27 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   onHandleDrag(ev: HandleDragEvent): void {
     const ids = this.selectionIds();
     if (!ids.length) return;
+
     if (ev.handle === 'rotate') {
       this.emitPlacements(ops.applyRotationDelta(this.stickers(), ids, ev.dx));
       if (this.isMultiSelection() && !this.isGroupSelection()) {
         this.multiSelectionRotation.update(r => r + ev.dx);
       }
-      return;
-    }
-    if (ev.handle === 'n' || ev.handle === 's' || ev.handle === 'e' || ev.handle === 'w') {
+    } else if (ev.handle === 'n' || ev.handle === 's' || ev.handle === 'e' || ev.handle === 'w') {
       if (ids.length !== 1) return;
       this.emitPlacements(ops.applyStretchHandle(this.stickers(), ids[0], ev.handle, ev.dx, ev.dy, id => this.getRenderedSize(id)));
-      return;
+    } else {
+      // 'scale' — uniform scale
+      const bb = this.boundingBox();
+      this.emitPlacements(ops.applyCornerScale(this.stickers(), ids, ev.dx, ev.dy, bb ? {
+        width: bb.w,
+        height: bb.h,
+      } : null, id => this.getRenderedSize(id)));
     }
-    // 'scale' — uniform scale
-    const bb = this.boundingBox();
-    this.emitPlacements(ops.applyCornerScale(this.stickers(), ids, ev.dx, ev.dy, bb ? {
-      width: bb.w,
-      height: bb.h
-    } : null, id => this.getRenderedSize(id)));
+
+    if (ev.done) {
+      // settling is deferred until the selection is cleared
+    }
   }
 
   // ── Placement mutations ───────────────────────────────────────────────────
@@ -319,7 +358,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     if (!ids.length) return;
     this.clearSelection();
     const removedSet = new Set(ids);
-    animateStickerRemoval(ids, this.canvasArea.nativeElement, this.removingIds, () => {
+    this.scheduleRemoval(ids, () => {
       const updated = this.stickers().filter(p => !removedSet.has(p.instanceId));
       if (group.size > 0) {
         this.emitPlacements(updated);
@@ -362,6 +401,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     return this.lassoSelection().has(instanceId);
   }
 
+
   getStickerTransform(p: StickerPlacement): string {
     const pp = p as any;
     const sx = (p.flipX ? -1 : 1) * p.scale * (pp.scaleX ?? 1);
@@ -401,10 +441,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   private doDuplicate(): void {
-    if (!this.canDuplicate()) {
-      return;
-    } // disabled when duplicating selection would exceed max
+    if (!this.canDuplicate()) { return; }
     const {updated, newIds} = ops.duplicatePlacements(this.stickers(), this.selectionIds(), this.maxStickers());
+    newIds.forEach(id => this.setAnimState(id, 'settling'));
     this.emitPlacements(updated);
     if (newIds.length === 1) {
       this.selectedInstanceId.set(newIds[0]);
@@ -415,7 +454,11 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  private clearSelection(): void {
+  private clearSelection(settle = false): void {
+    if (settle) {
+      const ids = this.selectionIds();
+      if (ids.length) ids.forEach(id => this.setAnimState(id, 'settling'));
+    }
     this.selectedInstanceId.set(null);
     this.stickerWouldBeDeleted.set(false);
     this.lassoSelection.set(new Set());

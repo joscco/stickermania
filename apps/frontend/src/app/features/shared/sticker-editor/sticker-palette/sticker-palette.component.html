@@ -4,12 +4,9 @@
 
     <!-- Prev button -->
     <button
-      class="shrink-0 w-12 self-stretch flex items-center justify-center rounded-xl transition-all duration-150"
-      [class.text-stone-500]="canPrev()"
+      #prevBtn
+      class="shrink-0 w-12 self-stretch flex items-center justify-center rounded-xl text-stone-600"
       [class.bg-stone-100]="canPrev()"
-      [class.active:bg-stone-200]="canPrev()"
-      [class.active:scale-95]="canPrev()"
-      [class.text-stone-200]="!canPrev()"
       [class.cursor-default]="!canPrev()"
       [disabled]="!canPrev()"
       (click)="prevPage()"
@@ -28,7 +25,7 @@
           <div
             data-thumb
             class="relative shrink-0 w-16 h-16 rounded-xl border-2 flex items-center justify-center bg-white select-none touch-none"
-            [class.border-purple-300]="canAddMore()"
+            [class.border-stone-400]="canAddMore()"
             [class.shadow-sm]="canAddMore()"
             [class.border-stone-200]="!canAddMore()"
             [class.opacity-40]="!canAddMore()"
@@ -48,12 +45,9 @@
 
     <!-- Next button -->
     <button
-      class="shrink-0 w-12 self-stretch flex items-center justify-center rounded-xl transition-all duration-150"
-      [class.text-stone-500]="canNext()"
+      #nextBtn
+      class="shrink-0 w-12 self-stretch flex items-center justify-center rounded-xl text-stone-600"
       [class.bg-stone-100]="canNext()"
-      [class.active:bg-stone-200]="canNext()"
-      [class.active:scale-95]="canNext()"
-      [class.text-stone-200]="!canNext()"
       [class.cursor-default]="!canNext()"
       [disabled]="!canNext()"
       (click)="nextPage()"
@@ -70,8 +64,9 @@
       @for (i of range(pageCount()); track i) {
         <div
           class="rounded-full transition-all duration-200 w-1.5 h-1.5"
-          [class.bg-purple-400]="currentPage() === i"
-          [class.bg-stone-400]="currentPage() !== i"
+          [class.bg-stone-700]="currentPage() === i"
+          [class.scale-125]="currentPage() === i"
+          [class.bg-stone-300]="currentPage() !== i"
         ></div>
       }
     </div>

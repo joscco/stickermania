@@ -1,11 +1,12 @@
 import {Component, input, output, signal, ViewChild} from "@angular/core";
 import { DrawingCanvasComponent } from '../../../shared/paint-canvas/drawing-canvas.component';
 import {AnimOnInitDirective, AnimGroupDirective} from '../../../shared/animations/anim-on-init.directive';
+import {IconComponent} from '../../../shared/icon/icon.component';
 
 @Component({
   selector: "app-lobby-avatar",
   standalone: true,
-  imports: [DrawingCanvasComponent, AnimOnInitDirective, AnimGroupDirective],
+  imports: [DrawingCanvasComponent, AnimOnInitDirective, AnimGroupDirective, IconComponent],
   templateUrl: './lobby-avatar.component.html',
   host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })

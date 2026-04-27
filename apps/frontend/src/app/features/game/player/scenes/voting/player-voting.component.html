@@ -1,5 +1,5 @@
-<div animOnInit="banner" class="bg-linear-to-r from-amber-500 to-orange-500 text-white px-4 py-2 text-center">
-  <span class="text-xs font-medium opacity-80">Abstimmung</span>
+<div animOnInit="banner" class="banner-ribbon-player bg-black text-white px-8 py-2 pt-3 text-center shrink-0">
+  <span class="text-xs font-medium opacity-60 uppercase tracking-wider">Abstimmung</span>
   <h2 class="text-base font-bold">{{ stickerService.currentPrompt() }}</h2>
 </div>
 
@@ -18,7 +18,7 @@
 
   <div class="shrink-0 border-t border-black/10 bg-white px-4 py-3 flex flex-col gap-2">
     <button
-      class="w-full bg-amber-500 text-white py-2.5 rounded-xl font-semibold shadow active:scale-95 transition-transform"
+      class="w-full bg-black text-white py-2.5 rounded-xl font-semibold shadow active:scale-95 transition-transform"
       (click)="stickerService.doneVoting()"
     >Ich bin fertig</button>
   </div>
