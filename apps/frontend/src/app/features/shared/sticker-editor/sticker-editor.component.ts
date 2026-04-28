@@ -141,7 +141,9 @@ export class StickerEditorComponent {
 
     const initPinch = () => {
       const pts = [...pointers.values()];
-      if (pts.length < 2) return;
+      if (pts.length < 2) {
+        return;
+      }
       const pp = {ax: pts[0].x, ay: pts[0].y, bx: pts[1].x, by: pts[1].y};
       pinchBaseDist = pinchDistance(pp);
       pinchBaseAngle = pinchAngle(pp);
@@ -151,7 +153,9 @@ export class StickerEditorComponent {
 
     const onPointerDown2 = (ev: PointerEvent) => {
       pointers.set(ev.pointerId, {x: ev.clientX, y: ev.clientY});
-      if (pointers.size === 2) initPinch();
+      if (pointers.size === 2) {
+        initPinch();
+      }
     };
 
     const onMove = (ev: PointerEvent) => {

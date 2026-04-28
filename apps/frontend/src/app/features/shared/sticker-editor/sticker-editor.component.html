@@ -1,22 +1,19 @@
 <!-- Canvas area + Global Top-Bar. No z-index → no stacking context → dragged sticker's z-9500 beats palette's z-20. -->
 <div animOnInit="opacity"
-     class="flex-1 min-h-0 relative bg-stone-50 flex flex-col items-center justify-center p-2 overflow-visible">
+     class="flex-1 min-h-0 relative bg-stone-50 flex flex-col items-center justify-center gap-1 p-2 overflow-visible">
 
   <!-- Global Top-Bar: only canvas-wide actions -->
   <div
     data-canvas-toolbar
-    class="shrink-0 w-full max-w-[min(100%,var(--canvas-w,100%))] flex items-center gap-1 px-2 bg-stone-100 rounded-t-lg border border-b-0 border-black/8"
-    style="height: 2.5rem;"
+    class="shrink-0 w-full h-9 max-w-[min(100%,var(--canvas-w,100%))] flex items-center gap-1 px-2 bg-stone-100 rounded-md"
   >
-    <div class="flex-1"></div>
-
     <!-- Sticker count -->
     <span class="text-xs select-none transition-colors"
           [class.text-red-400]="!canAddMore()"
           [class.text-stone-400]="canAddMore()"
     >{{ placements().length }}/{{ maxStickers() }}</span>
 
-    <div class="w-px h-5 bg-black/10 mx-0.5 shrink-0"></div>
+    <div class="flex-1"></div>
 
     <!-- Clear all -->
       <button

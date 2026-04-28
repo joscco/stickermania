@@ -23,29 +23,7 @@ export type StickerAnimState = 'entering' | 'settling' | 'idle' | 'removing';
   selector: 'app-sticker-item',
   standalone: true,
   imports: [StickerImgComponent],
-  template: `
-    <div #animTarget class="sticker-anim-wrap relative inline-block">
-      <app-sticker-img
-        [imageUrl]="imageUrl()"
-        [alt]="instanceId()"
-        class="block pointer-events-none"
-        [style.width.px]="width()"
-        [style.height.px]="height()"
-      />
-      @if (hitboxPoints()) {
-        <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1 1">
-          <polygon
-            [attr.points]="hitboxPoints()"
-            stroke="#374151"
-            fill="none"
-            vector-effect="non-scaling-stroke"
-            stroke-width="2"
-            stroke-linejoin="round"
-          />
-        </svg>
-      }
-    </div>
-  `,
+  templateUrl: './sticker-item.component.html',
   host: {style: 'display: contents;'},
 })
 export class StickerItemComponent implements OnInit {

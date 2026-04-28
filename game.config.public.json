@@ -128,11 +128,36 @@
           "iconId": "pack-icon-lines",
           "unlockedAtStart": false,
           "stickers": [
-            "line",
-            "fat-line",
-            "curved-line",
-            "ring",
-            "corner"
+            "line-thin",
+            "line-fat",
+            "line-curve",
+            "line-ring",
+            "line-corner"
+          ]
+        },
+        {
+          "id": "pack_eyes",
+          "name": "Eyes",
+          "iconId": "pack-icon-eyes",
+          "unlockedAtStart": false,
+          "stickers": [
+            "eye-unnerved",
+            "eye-open",
+            "eye-mii",
+            "eye-dot-lashes"
+          ]
+        },
+        {
+          "id": "pack_mouths",
+          "name": "Mouths",
+          "iconId": "pack-icon-mouths",
+          "unlockedAtStart": false,
+          "stickers": [
+            "mouth-lips",
+            "mouth-teeth",
+            "mouth-smiling",
+            "mouth-open",
+            "mouth-showing-tongue"
           ]
         }
       ]

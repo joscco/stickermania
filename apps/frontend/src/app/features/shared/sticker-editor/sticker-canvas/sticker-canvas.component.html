@@ -16,10 +16,10 @@
        class="absolute inset-0 pointer-events-none flex items-center justify-center"
        style="z-index: 9999; opacity: 0; visibility: hidden;">
     <div class="absolute inset-0"
-         style="background: repeating-linear-gradient(-45deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 8px, transparent 8px, transparent 16px);"></div>
+         style="background: repeating-linear-gradient(-45deg, oklch(85.2% 0.199 91.936 / 0.2) 0px, oklch(85.2% 0.199 91.936 / 0.2) 8px, transparent 8px, transparent 16px);"></div>
     <div data-delete-badge
          class="relative flex flex-col items-center gap-1.5 text-white rounded-2xl px-5 py-3 shadow-xl"
-         style="background: rgba(0,0,0,0.82); backdrop-filter: blur(4px);">
+         style="background: oklch(85.2% 0.199 91.936); backdrop-filter: blur(4px);">
       <app-icon name="trash" size="md"/>
       <span class="text-xs font-semibold tracking-wide">Loslassen zum Löschen</span>
     </div>
@@ -61,7 +61,7 @@
       <polyline
         [attr.points]="lassoPoints()"
         fill="none"
-        stroke="#374151"
+        stroke="oklch(85.2% 0.199 91.936)"
         stroke-width="2.5"
         stroke-dasharray="5"
         stroke-linejoin="round"
@@ -88,7 +88,7 @@
 
   <!-- Context menu -->
   <div [animPresence]="menuVisible() && !stickerWouldBeDeleted()"
-       style="pointer-events:none;position:absolute;inset:0;z-index:9400;">
+       class="pointer-events-none absolute inset-0 z-9400" >
     <app-sticker-context-menu
       [visible]="menuVisible()"
       [anchorX]="menuAnchorX()"
