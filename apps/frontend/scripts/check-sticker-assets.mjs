@@ -66,10 +66,16 @@ const mergedStickerCollage = {
 };
 const catalogCfg = mergedStickerCollage?.catalog;
 
+// Explicit catalog of pack iconIds (declared here so the check is declarative)
+const catalogPackIconIds = [];
+
 if (catalogCfg?.packs) {
   for (const pack of catalogCfg.packs) {
     for (const stickerId of pack.stickers ?? []) {
       catalogImageUrls.push({ url: `sprite:#sticker-${stickerId}` });
+    }
+    if (pack.iconId) {
+      catalogPackIconIds.push({ id: pack.iconId, packId: pack.id });
     }
   }
 } else {
@@ -152,6 +158,13 @@ function check(label, items) {
   }
 }
 
+// Pack iconId references (from catalog, checked against sprite)
+const packIconChecked = catalogPackIconIds.map(({ id, packId }) => ({
+  ref: `#${id}`,
+  file: `game.config (pack: ${packId})`,
+  missing: spriteSymbolIds.size > 0 && !spriteSymbolIds.has(id),
+}));
+
 // Catalog entries
 const catalogChecked = catalogImageUrls.map(({ url }) => {
   if (url.startsWith('sprite:#')) {
@@ -201,7 +214,8 @@ if (spriteSymbolIds.size > 0) {
 }
 
 console.log('');
-check('Catalog imageUrls',          catalogChecked);
+check('Catalog sticker imageUrls',   catalogChecked);
+check('Catalog pack iconIds',        packIconChecked);
 check('HTML <use> sprite refs',     useChecked);
 if (iconChecked.length > 0) {
   check('<app-icon> sprite refs',   iconChecked);

@@ -2,9 +2,9 @@ import {AfterViewInit, Component, ElementRef, input, OnDestroy, output, signal, 
 import {CanvasPainter} from "./canvas-painter";
 
 /** Size of frame overlay images (px) */
-const FRAME_SIZE = 1100;
+const FRAME_SIZE = 4123;
 /** Size of the actual drawing area within the frame (px) */
-const CANVAS_SIZE = 900;
+const CANVAS_SIZE = 3416;
 
 @Component({
   selector: "app-drawing-canvas",
