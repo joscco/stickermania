@@ -1,31 +1,31 @@
 <div animOnInit="banner" class="text-black px-8 py-2 pt-3 text-center shrink-0"
      style="background-image: url('assets/svg/prompt-background.svg'); background-size: 100% 100%;">
   <span class="text-xs font-medium opacity-60 uppercase tracking-wider">Abstimmung</span>
-  <h2 class="text-base font-bold">{{ stickerService.currentPrompt() }}</h2>
+  <h2 class="text-base font-bold">{{ prompt() }}</h2>
 </div>
 
-@if (!stickerService.myDoneVoting()) {
+@if (!myDoneVoting()) {
   <div animOnInit="opacity" [animDelay]="0.15" class="flex-1 overflow-y-auto">
     <app-sticker-voting
-      [submissions]="stickerService.currentRoundSubmissions()"
-      [stickerCatalog]="stickerService.stickerCatalog()"
-      [myVotes]="stickerService.myVotes()"
-      [votesRemaining]="stickerService.votesPerPlayer() - stickerService.myVotes().length"
-      [players]="worldStore.players()"
-      [myPlayerId]="sessionStore.playerId() ?? ''"
-      (voteClicked)="stickerService.castVote($event)"
+      [submissions]="submissions()"
+      [stickerCatalog]="stickerCatalog()"
+      [myVotes]="myVotes()"
+      [votesRemaining]="votesRemaining()"
+      [players]="players()"
+      [myPlayerId]="myPlayerId()"
+      (voteClicked)="castVote.emit($event)"
     />
   </div>
 
   <div class="shrink-0 border-t border-black/10 bg-white px-4 py-3 flex flex-col gap-2">
     <button
       class="w-full bg-black text-white py-2.5 rounded-xl font-semibold shadow active:scale-95 transition-transform"
-      (click)="stickerService.doneVoting()"
+      (click)="doneVoting.emit()"
     >Ich bin fertig</button>
   </div>
 } @else {
   <app-player-voting-done
-    [allVotingDone]="stickerService.allVotingDone()"
-    (endVotingEarly)="stickerService.endVotingEarly()"
+    [allVotingDone]="allVotingDone()"
+    (endVotingEarly)="endVotingEarly.emit()"
   />
 }

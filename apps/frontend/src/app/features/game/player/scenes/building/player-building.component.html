@@ -2,19 +2,19 @@
 <div animOnInit="banner" class="text-black px-8 -pb-2 pt-2 text-center shrink-0"
      style="background-image: url('assets/svg/prompt-background.svg'); background-size: 100% 100%;">
   <span
-    class="text-xs font-medium opacity-60 uppercase tracking-wider">Runde {{ stickerService.currentRoundIndex() }}</span>
-  <h2 class="text-base font-bold">{{ stickerService.currentPrompt() }}</h2>
+    class="text-xs font-medium opacity-60 uppercase tracking-wider">Runde {{ roundIndex() }}</span>
+  <h2 class="text-base font-bold">{{ prompt() }}</h2>
 </div>
 
 <!-- Shared editor (canvas + palette) -->
-@if (stickerService.myHand()) {
+@if (myHand()) {
   <app-sticker-editor
     #editor
     class="flex-1 min-h-0"
     [paletteStickers]="handStickers()"
-    [stickerCatalog]="stickerService.stickerCatalog()"
-    [stickerPacks]="stickerService.stickerPacks()"
-    [maxStickers]="stickerService.maxStickersOnCanvas()"
+    [stickerCatalog]="stickerCatalog()"
+    [stickerPacks]="stickerPacks()"
+    [maxStickers]="maxStickersOnCanvas()"
   />
 } @else {
   <div class="flex-1 flex items-center justify-center gap-2 text-stone-400 text-xs">
@@ -27,14 +27,14 @@
 <div animOnInit="opacity" class="shrink-0 border-t border-black/10 bg-white px-4 py-3 flex items-center gap-3">
   <button
     class="flex-1 bg-yellow-400 text-black py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
-    (click)="stickerService.skipRound()"
+    (click)="skipRound.emit()"
   >
     Überspringen
   </button>
   <button
     class="flex-2 bg-black text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
     [disabled]="placements.length === 0"
-    (click)="submitCollage()"
+    (click)="onSubmit()"
   >
     Einreichen
   </button>

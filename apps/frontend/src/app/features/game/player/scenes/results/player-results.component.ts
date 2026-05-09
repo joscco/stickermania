@@ -1,7 +1,6 @@
-import {Component, computed, inject} from "@angular/core";
+import {Component, computed, input, output} from "@angular/core";
 import {CommonModule} from "@angular/common";
-import {StickerPlayerService} from '../../../services/sticker-player.service';
-import {WorldStore} from '../../../../../core/world.store';
+import type {StickerPack} from "@birthday/shared";
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {SvgComponent} from '../../../../shared/svg/svg.component';
 
@@ -13,30 +12,44 @@ import {SvgComponent} from '../../../../shared/svg/svg.component';
     host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })
 export class PlayerResultsComponent {
-    public readonly stickerService = inject(StickerPlayerService);
-    public readonly worldStore = inject(WorldStore);
+    public readonly myPlacement = input<number | null>(null);
+    public readonly isWinner = input<boolean>(false);
+    public readonly winnerChoicesDone = input<boolean>(false);
+    public readonly hasChosenPrompt = input<boolean>(false);
+    public readonly hasLockedPacks = input<boolean>(false);
+    public readonly hasUnlockedPack = input<boolean>(false);
+    public readonly promptChoices = input<string[]>([]);
+    public readonly packUnlockChoices = input<StickerPack[]>([]);
+    public readonly guaranteedPackChoices = input<StickerPack[]>([]);
+    public readonly winnerId = input<string | null>(null);
+    public readonly winnerName = input<string>('');
+    public readonly canReadyToAdvance = input<boolean>(false);
+
+    public readonly pickPrompt = output<string>();
+    public readonly unlockPack = output<string>();
+    public readonly pickGuaranteedPack = output<string>();
+    public readonly readyToAdvance = output<void>();
 
     public readonly currentWinnerStep = computed<"prompt" | "unlock" | "guaranteed" | null>(() => {
-      const isWinner = this.stickerService.isWinner() && !this.stickerService.winnerChoicesDone();
-      if (!isWinner) return null;
+        if (!this.isWinner() || this.winnerChoicesDone()) return null;
 
-      if (!this.stickerService.hasChosenPrompt() && this.stickerService.promptChoices().length > 0) {
-        return "prompt";
-      }
-      if (
-        this.stickerService.hasChosenPrompt()
-        && !this.stickerService.hasUnlockedPack()
-        && this.stickerService.packUnlockChoices().length > 0
-      ) {
-        return "unlock";
-      }
-      if (
-        this.stickerService.hasChosenPrompt()
-        && (this.stickerService.hasUnlockedPack() || !this.stickerService.hasLockedPacks())
-        && this.stickerService.guaranteedPackChoices().length > 0
-      ) {
-        return "guaranteed";
-      }
-      return null;
+        if (!this.hasChosenPrompt() && this.promptChoices().length > 0) {
+            return "prompt";
+        }
+        if (
+            this.hasChosenPrompt()
+            && !this.hasUnlockedPack()
+            && this.packUnlockChoices().length > 0
+        ) {
+            return "unlock";
+        }
+        if (
+            this.hasChosenPrompt()
+            && (this.hasUnlockedPack() || !this.hasLockedPacks())
+            && this.guaranteedPackChoices().length > 0
+        ) {
+            return "guaranteed";
+        }
+        return null;
     });
 }

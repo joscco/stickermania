@@ -7,7 +7,7 @@ import {PlayerConnectingComponent} from './scenes/connecting/player-connecting.c
 import {PlayerReconnectingComponent} from './scenes/reconnecting/player-reconnecting.component';
 import {PlayerDisconnectedComponent} from './scenes/disconnected/player-disconnected.component';
 import {PlayerLobbyWaitingComponent} from './scenes/lobby-waiting/player-lobby-waiting.component';
-import {PlayerBuildingComponent} from './scenes/building/player-building.component';
+import {PlayerBuildingComponent, SubmitCollageEvent} from './scenes/building/player-building.component';
 import {PlayerBuildingSubmittedComponent} from './scenes/building-submitted/player-building-submitted.component';
 import {PlayerBuildingSkippedComponent} from './scenes/building-skipped/player-building-skipped.component';
 import {PlayerVotingComponent} from './scenes/voting/player-voting.component';
@@ -24,6 +24,7 @@ import {WorldStore} from '../../../core/world.store';
 import {ReconnectService} from '../../../core/reconnect.service';
 import {PlayerScreen} from './player-screen.enum';
 import {SvgComponent} from '../../shared/svg/svg.component';
+
 
 @Component({
   selector: "app-player",
@@ -123,25 +124,12 @@ export class PlayerComponent implements OnInit, OnDestroy {
     const sessionCode = this.reconnectService.resolveSessionCode(this.route);
 
     if (!sessionCode) {
-      // No session code in URL → back to landing, no auto-redirect
       await this.router.navigate(["/"]);
       return;
     }
 
     this.messageHandler.sessionCode = sessionCode;
 
-    // ⚠️ Safari iOS: WebSocket-Verbindung MUSS vor dem ersten `await` gestartet werden.
-    //
-    // Safari blockiert `new WebSocket()` wenn es innerhalb einer Promise-Continuation
-    // aufgerufen wird (= nach einem `await`). Der Handshake hängt dann endlos im
-    // CONNECTING-State, ohne dass onopen, onerror oder onclose jemals feuern.
-    //
-    // Deshalb: Listener registrieren und connect() synchron hier aufrufen,
-    // BEVOR wir auf den HTTP-Call (resolveSessionByCode) warten.
-    // Das `join`-Paket wird erst nach dem HTTP-Response gesendet — falls der
-    // WebSocket dann schon offen ist, geht es sofort raus. Falls nicht, speichert
-    // send() es als `pendingJoinMsg` und der WebSocketService sendet es
-    // automatisch bei onopen.
     this.unsubscribeWs = this.wsService.onMessage((msg) => this.messageHandler.handle(msg));
     this.wsService.connect();
 
@@ -150,7 +138,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
       this.sessionStore.setSession(resolved.sessionId);
       this.messageHandler.sessionCode = resolved.sessionCode ?? sessionCode;
 
-      // Reuse the stored playerId only when the stored sessionId matches this session
       const isSameSession = reconnect?.sessionId === resolved.sessionId;
       const playerId = isSameSession ? (reconnect?.playerId ?? null) : null;
       if (!isSameSession) {
@@ -234,5 +221,30 @@ export class PlayerComponent implements OnInit, OnDestroy {
   public onAvatarSkipped(): void {
     this.sessionStore.clearTask();
     this.isEditingAvatar.set(false);
+  }
+
+  public onSubmitCollage(event: SubmitCollageEvent): void {
+    this.stickerService.submitCollage(event.placements);
+    if (event.imageDataUrl) {
+      this.uploadSnapshot(event.imageDataUrl);
+    }
+  }
+
+  private async uploadSnapshot(imageDataUrl: string): Promise<void> {
+    const sessionId = this.sessionStore.sessionId();
+    const playerId  = this.sessionStore.playerId();
+    if (!sessionId || !playerId) return;
+
+    let collageId: string | null = null;
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const ms = this.stickerService.gameState();
+      if (ms) {
+        const mine = (ms.submissions[ms.currentRoundIndex] ?? []).find(s => s.playerId === playerId);
+        if (mine) { collageId = mine.id; break; }
+      }
+      await new Promise(r => setTimeout(r, 200));
+    }
+    if (!collageId) return;
+    try { await this.apiService.uploadCollageImage(sessionId, playerId, collageId, imageDataUrl); } catch {}
   }
 }

@@ -52,19 +52,22 @@
         <div class="h-full relative">
           @switch (phase()) {
             @case ("LOBBY") {
-              <app-board-lobby-scene/>
+              <app-board-lobby-scene
+                [connectedPlayers]="connectedPlayers()"
+                (startGame)="startGame()"
+              />
             }
             @case ("BUILDING") {
-              <app-board-building-scene [gameState]="gameState()"/>
+              <app-board-building-scene [gameState]="gameState()" [players]="worldStore.players()" (endRoundEarly)="endRoundEarly()"/>
             }
             @case ("VOTING") {
-              <app-board-voting-scene [gameState]="gameState()"/>
+              <app-board-voting-scene [gameState]="gameState()" [players]="worldStore.players()" (endVotingEarly)="endVotingEarly()"/>
             }
             @case ("RESULTS") {
-              <app-board-results-scene [gameState]="gameState()"/>
+              <app-board-results-scene [gameState]="gameState()" [players]="worldStore.players()" (advanceFromResults)="advanceFromResults()"/>
             }
             @case ("NEXT_ROUND_SETUP") {
-              <app-board-building-scene [gameState]="gameState()"/>
+              <app-board-building-scene [gameState]="gameState()" [players]="worldStore.players()" (endRoundEarly)="endRoundEarly()"/>
             }
           }
           <div animOnInit="opacity" class="absolute bottom-3 right-3 z-10">

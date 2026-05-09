@@ -1,0 +1,168 @@
+<div class="shrink-0 bg-white border-b border-stone-200 px-4 py-3 flex items-center gap-4 flex-wrap">
+  <h1 class="text-lg font-bold text-stone-800">Component Catalog</h1>
+
+  <label class="flex items-center gap-2 text-sm text-stone-600">
+    View:
+    <select
+      [value]="currentScreen()"
+      (change)="onScreenChange($event)"
+      class="border border-stone-300 rounded-lg px-3 py-1.5 text-sm bg-white"
+    >
+      @for (s of screens; track s.key) {
+        <option [value]="s.key">{{ s.label }}</option>
+      }
+    </select>
+  </label>
+
+  @if (currentMode() === 'board') {
+    <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Board (1920x1080)</span>
+  } @else {
+    <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Player (responsive)</span>
+  }
+</div>
+
+<div class="flex-1 overflow-hidden">
+  @if (currentMode() === 'player') {
+    <!-- Player view: renders full-size, responsive like the real player -->
+    <div class="h-full overflow-y-auto">
+      <div class="mx-auto w-full max-w-lg min-h-full bg-white flex flex-col"
+           style="padding-bottom: env(safe-area-inset-bottom);">
+        @switch (currentScreen()) {
+          @case ('connecting') {
+            <app-player-connecting/>
+          }
+          @case ('disconnected') {
+            <app-player-disconnected/>
+          }
+          @case ('reconnecting') {
+            <app-player-reconnecting/>
+          }
+          @case ('lobby-waiting') {
+            <app-player-lobby-waiting (startGame)="noop()"/>
+          }
+          @case ('building') {
+            <app-player-building
+              [roundIndex]="(gameState()?.currentRoundIndex ?? 0)"
+              [prompt]="(gameState()?.currentPrompt ?? '')"
+              [myHand]="(mockStickerService.myHand() ?? null)"
+              [stickerCatalog]="(gameState()?.stickerCatalog ?? [])"
+              [stickerPacks]="(gameState()?.stickerPacks ?? [])"
+              [maxStickersOnCanvas]="(gameState()?.maxStickersOnCanvas ?? 12)"
+              (skipRound)="noop()"
+              (submitCollage)="noop()"
+            />
+          }
+          @case ('building-submitted') {
+            <app-player-building-submitted
+              [allPlayersDone]="mockStickerService.allPlayersDone()"
+              (endRoundEarly)="noop()"
+            />
+          }
+          @case ('building-skipped') {
+            <app-player-building-skipped
+              [allPlayersDone]="mockStickerService.allPlayersDone()"
+              (endRoundEarly)="noop()"
+            />
+          }
+          @case ('voting') {
+            <app-player-voting
+              [prompt]="(gameState()?.currentPrompt ?? '')"
+              [submissions]="mockStickerService.currentRoundSubmissions()"
+              [stickerCatalog]="(gameState()?.stickerCatalog ?? [])"
+              [myVotes]="mockStickerService.myVotes()"
+              [votesRemaining]="(gameState()?.votesPerPlayer ?? 3) - mockStickerService.myVotes().length"
+              [players]="mockWorldStore.players()"
+              [myPlayerId]="mockSessionStore.playerId()"
+              [myDoneVoting]="mockStickerService.myDoneVoting()"
+              [allVotingDone]="mockStickerService.allVotingDone()"
+              (castVote)="noopStr($event)"
+              (doneVoting)="noop()"
+              (endVotingEarly)="noop()"
+            />
+          }
+          @case ('voting-done') {
+            <app-player-voting
+              [prompt]="(gameState()?.currentPrompt ?? '')"
+              [submissions]="mockStickerService.currentRoundSubmissions()"
+              [stickerCatalog]="(gameState()?.stickerCatalog ?? [])"
+              [myVotes]="mockStickerService.myVotes()"
+              [votesRemaining]="(gameState()?.votesPerPlayer ?? 3) - mockStickerService.myVotes().length"
+              [players]="mockWorldStore.players()"
+              [myPlayerId]="mockSessionStore.playerId()"
+              [myDoneVoting]="mockStickerService.myDoneVoting()"
+              [allVotingDone]="mockStickerService.allVotingDone()"
+              (castVote)="noopStr($event)"
+              (doneVoting)="noop()"
+              (endVotingEarly)="noop()"
+            />
+          }
+          @case ('voting-all-done') {
+            <app-player-voting
+              [prompt]="(gameState()?.currentPrompt ?? '')"
+              [submissions]="mockStickerService.currentRoundSubmissions()"
+              [stickerCatalog]="(gameState()?.stickerCatalog ?? [])"
+              [myVotes]="mockStickerService.myVotes()"
+              [votesRemaining]="(gameState()?.votesPerPlayer ?? 3) - mockStickerService.myVotes().length"
+              [players]="mockWorldStore.players()"
+              [myPlayerId]="mockSessionStore.playerId()"
+              [myDoneVoting]="mockStickerService.myDoneVoting()"
+              [allVotingDone]="mockStickerService.allVotingDone()"
+              (castVote)="noopStr($event)"
+              (doneVoting)="noop()"
+              (endVotingEarly)="noop()"
+            />
+          }
+          @case ('results') {
+            <app-player-results
+              [myPlacement]="mockStickerService.myPlacement()"
+              [isWinner]="mockStickerService.isWinner()"
+              [winnerChoicesDone]="mockStickerService.winnerChoicesDone()"
+              [hasChosenPrompt]="mockStickerService.hasChosenPrompt()"
+              [hasLockedPacks]="mockStickerService.hasLockedPacks()"
+              [hasUnlockedPack]="mockStickerService.hasUnlockedPack()"
+              [promptChoices]="mockStickerService.promptChoices()"
+              [packUnlockChoices]="mockStickerService.packUnlockChoices()"
+              [guaranteedPackChoices]="mockStickerService.guaranteedPackChoices()"
+              [winnerId]="mockStickerService.winnerId()"
+              [winnerName]="(mockStickerService.winnerId() ? (mockWorldStore.players()[mockStickerService.winnerId()!]?.name ?? 'Der Gewinner') : '')"
+              [canReadyToAdvance]="mockStickerService.canReadyToAdvance()"
+              (pickPrompt)="noopStr($event)"
+              (unlockPack)="noopStr($event)"
+              (pickGuaranteedPack)="noopStr($event)"
+              (readyToAdvance)="noop()"
+            />
+          }
+          @case ('next-round') {
+            <app-player-next-round [hasNewPack]="!!mockStickerService.lastUnlockedPackId()"/>
+          }
+        }
+      </div>
+    </div>
+  } @else {
+    <!-- Board view: 16:9 aspect ratio, responsive -->
+    <div class="h-full flex items-center justify-center p-4">
+      <div class="w-full h-full max-w-[1920px] max-h-[1080px] bg-white border border-stone-200 shadow-lg overflow-hidden flex flex-col">
+        <!-- Game scene -->
+        <div class="flex-1 relative overflow-hidden">
+          @switch (currentScreen()) {
+            @case ('board-lobby') {
+              <app-board-lobby-scene
+                [connectedPlayers]="connectedPlayers()"
+                (startGame)="noop()"
+              />
+            }
+            @case ('board-building') {
+              <app-board-building-scene [gameState]="gameState()" [players]="mockWorldStore.players()" (endRoundEarly)="noop()"/>
+            }
+            @case ('board-voting') {
+              <app-board-voting-scene [gameState]="gameState()" [players]="mockWorldStore.players()" (endVotingEarly)="noop()"/>
+            }
+            @case ('board-results') {
+              <app-board-results-scene [gameState]="gameState()" [players]="mockWorldStore.players()" (advanceFromResults)="noop()"/>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>

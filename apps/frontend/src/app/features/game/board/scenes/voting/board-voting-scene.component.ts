@@ -1,14 +1,12 @@
-import {Component, computed, inject, input, signal, ElementRef, AfterViewInit, OnDestroy, ViewChild} from "@angular/core";
+import {Component, computed, input, output, signal, ElementRef, AfterViewInit, OnDestroy, ViewChild} from "@angular/core";
 import {CommonModule} from "@angular/common";
-import type {StickerCollageClientAction, StickerCollageGameState, StickerCollage, SessionPlayer} from "@birthday/shared";
-import {WorldStore} from '../../../../../core/world.store';
-import {WebSocketService} from '../../../../../core/websocket.service';
+import type {StickerCollageGameState, StickerCollage, SessionPlayer} from "@birthday/shared";
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {SvgComponent} from '../../../../shared/svg/svg.component';
 
-const CARD_WIDTH = 256;   // w-64
-const CARD_GAP   = 24;    // gap-6
-const STRIP_PAD  = 32;    // px-4 on each side
+const CARD_WIDTH = 256;
+const CARD_GAP   = 24;
+const STRIP_PAD  = 32;
 
 @Component({
     selector: "app-board-voting-scene",
@@ -18,10 +16,9 @@ const STRIP_PAD  = 32;    // px-4 on each side
     styleUrl: "./board-voting-scene.component.css",
 })
 export class BoardVotingSceneComponent implements AfterViewInit, OnDestroy {
-    private readonly worldStore = inject(WorldStore);
-    private readonly wsService = inject(WebSocketService);
-
     public readonly gameState = input<StickerCollageGameState | null>(null);
+    public readonly players = input<Record<string, SessionPlayer>>({});
+    public readonly endVotingEarly = output<void>();
 
     @ViewChild("strip") stripEl!: ElementRef<HTMLDivElement>;
 
@@ -34,17 +31,14 @@ export class BoardVotingSceneComponent implements AfterViewInit, OnDestroy {
         return ms.submissions[ms.currentRoundIndex] ?? [];
     });
 
-    /** true when the cards don't all fit side-by-side in the strip */
     public readonly needsScroll = computed(() => {
         const count = this.submissions().length;
         if (count === 0) return false;
         const totalWidth = count * CARD_WIDTH + (count - 1) * CARD_GAP + STRIP_PAD * 2;
         const available = this.stripWidth();
-        // Fall back to scroll if width not measured yet and many cards
         return available > 0 ? totalWidth > available : count > 4;
     });
 
-    /** Double the submissions for seamless infinite scroll */
     public readonly doubledSubmissions = computed(() => {
         const subs = this.submissions();
         if (subs.length === 0) return [];
@@ -55,6 +49,16 @@ export class BoardVotingSceneComponent implements AfterViewInit, OnDestroy {
         const count = this.submissions().length;
         return `${Math.max(8, count * 4)}s`;
     });
+
+    public readonly doneVotingCount = computed(() => {
+        const ps = this.gameState()?.phaseState;
+        return ps?.phase === "VOTING" ? ps.doneVotingIds.length : 0;
+    });
+    public readonly roundParticipantCount = computed(() => this.gameState()?.roundParticipantIds.length ?? 0);
+
+    public getPlayer(playerId: string): SessionPlayer | undefined {
+        return this.players()[playerId];
+    }
 
     ngAfterViewInit(): void {
         const el = this.stripEl?.nativeElement;
@@ -70,20 +74,5 @@ export class BoardVotingSceneComponent implements AfterViewInit, OnDestroy {
 
     ngOnDestroy(): void {
         this.resizeObserver?.disconnect();
-    }
-
-    public readonly doneVotingCount = computed(() => {
-        const ps = this.gameState()?.phaseState;
-        return ps?.phase === "VOTING" ? ps.doneVotingIds.length : 0;
-    });
-    public readonly roundParticipantCount = computed(() => this.gameState()?.roundParticipantIds.length ?? 0);
-
-    public getPlayer(playerId: string): SessionPlayer | undefined {
-        return this.worldStore.players()[playerId];
-    }
-
-    public endVotingEarly(): void {
-        const action: StickerCollageClientAction = {type: "end-voting-early"};
-        this.wsService.send({type: "game-action", action});
     }
 }

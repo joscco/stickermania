@@ -6,7 +6,7 @@
   </div>
 
   <!-- My placement -->
-  @if (stickerService.myPlacement(); as placement) {
+  @if (myPlacement(); as placement) {
     <div animOnInit="medal" [animDelay]="0.15" class="text-center py-4">
       @if (placement === 1) {
         <app-svg name="icon-medal-gold-lg" [w]="70" class="mx-auto text-black"/>
@@ -29,28 +29,28 @@
   }
 
   <!-- Winner choices (only if I'm the winner) -->
-  @if (stickerService.isWinner() && !stickerService.winnerChoicesDone()) {
+  @if (isWinner() && !winnerChoicesDone()) {
     <div class="px-4 pb-4 space-y-4">
       <!-- Progress dots -->
       <div animOnInit="choice" [animDelay]="0.2" class="flex justify-center gap-3 py-2">
         <div class="w-8 h-8 rounded-full grid place-items-center text-sm shadow-sm transition-colors duration-200"
-             [class.bg-black]="stickerService.hasChosenPrompt()"
-             [class.text-white]="stickerService.hasChosenPrompt()"
-             [class.bg-stone-200]="!stickerService.hasChosenPrompt()"
-             [class.text-stone-600]="!stickerService.hasChosenPrompt()">
-          @if (stickerService.hasChosenPrompt()) {
+             [class.bg-black]="hasChosenPrompt()"
+             [class.text-white]="hasChosenPrompt()"
+             [class.bg-stone-200]="!hasChosenPrompt()"
+             [class.text-stone-600]="!hasChosenPrompt()">
+          @if (hasChosenPrompt()) {
             <app-svg name="icon-checkmark-sm" [w]="20"/>
           } @else {
             <app-svg name="icon-star-sm" [w]="20"/>
           }
         </div>
-        @if (stickerService.hasLockedPacks()) {
+        @if (hasLockedPacks()) {
           <div class="w-8 h-8 rounded-full grid place-items-center text-sm shadow-sm transition-colors duration-200"
-               [class.bg-black]="stickerService.hasUnlockedPack()"
-               [class.text-white]="stickerService.hasUnlockedPack()"
-               [class.bg-stone-200]="!stickerService.hasUnlockedPack()"
-               [class.text-stone-600]="!stickerService.hasUnlockedPack()">
-            @if (stickerService.hasUnlockedPack()) {
+               [class.bg-black]="hasUnlockedPack()"
+               [class.text-white]="hasUnlockedPack()"
+               [class.bg-stone-200]="!hasUnlockedPack()"
+               [class.text-stone-600]="!hasUnlockedPack()">
+            @if (hasUnlockedPack()) {
               <app-svg name="icon-checkmark-sm" [w]="20"/>
             } @else {
               <app-svg name="icon-trophy-sm" [w]="20"/>
@@ -68,10 +68,10 @@
           <div animOnInit="choice" [animDelay]="0.25">
             <h3 class="text-sm font-semibold text-stone-700 mb-2">Wähle den nächsten Prompt:</h3>
             <div class="space-y-2">
-              @for (prompt of stickerService.promptChoices(); track prompt) {
+              @for (prompt of promptChoices(); track prompt) {
                 <button
                   class="w-full text-left p-3 rounded-xl border-2 border-stone-200 bg-white text-sm font-medium active:scale-[0.98] transition-transform hover:border-stone-400"
-                  (click)="stickerService.pickPrompt(prompt)"
+                  (click)="pickPrompt.emit(prompt)"
                 >
                   {{ prompt }}
                 </button>
@@ -84,10 +84,10 @@
           <div animOnInit="choice" [animDelay]="0.25">
             <h3 class="text-sm font-semibold text-stone-700 mb-2">Schalte ein Sticker-Pack frei:</h3>
             <div class="grid grid-cols-2 gap-2">
-              @for (pack of stickerService.packUnlockChoices(); track pack.id) {
+              @for (pack of packUnlockChoices(); track pack.id) {
                 <button
                   class="p-3 rounded-xl border-2 border-stone-200 bg-white text-center active:scale-95 transition-transform hover:border-stone-400"
-                  (click)="stickerService.unlockPack(pack.id)"
+                  (click)="unlockPack.emit(pack.id)"
                 >
                   @if (pack.iconId) {
                     <app-svg [name]="pack.iconId" [w]="28" class="mx-auto mb-1"/>
@@ -103,10 +103,10 @@
           <div animOnInit="choice" [animDelay]="0.25">
             <h3 class="text-sm font-semibold text-stone-700 mb-2">"Auf jeden Fall dabei"-Pack:</h3>
             <div class="grid grid-cols-2 gap-2">
-              @for (pack of stickerService.guaranteedPackChoices(); track pack.id) {
+              @for (pack of guaranteedPackChoices(); track pack.id) {
                 <button
                   class="p-3 rounded-xl border-2 border-stone-200 bg-white text-center active:scale-95 transition-transform hover:border-stone-400"
-                  (click)="stickerService.pickGuaranteedPack(pack.id)"
+                  (click)="pickGuaranteedPack.emit(pack.id)"
                 >
                   @if (pack.iconId) {
                     <app-svg [name]="pack.iconId" [w]="28" class="mx-auto mb-1"/>
@@ -119,14 +119,14 @@
         }
       }
     </div>
-  } @else if (stickerService.isWinner() && stickerService.winnerChoicesDone()) {
+  } @else if (isWinner() && winnerChoicesDone()) {
     <div animOnInit="opacity" [animDelay]="0.2" class="text-center py-4">
       <p class="text-stone-700 font-medium text-sm">Auswahl getroffen!</p>
     </div>
-  } @else if (stickerService.winnerId()) {
+  } @else if (winnerId()) {
     <div animOnInit="opacity" [animDelay]="0.2" class="text-center py-4 px-6">
       <p class="text-stone-500 text-sm">
-        {{ worldStore.players()[stickerService.winnerId()!]?.name ?? 'Der Gewinner' }} wählt die nächste Runde...
+        {{ winnerName() }} wählt die nächste Runde...
       </p>
       <div class="w-6 h-6 border-2 border-stone-200 border-t-stone-400 rounded-full animate-spin mx-auto mt-2"></div>
     </div>
@@ -134,11 +134,11 @@
 </div>
 
 <!-- Footer -->
-@if (stickerService.canReadyToAdvance()) {
+@if (canReadyToAdvance()) {
   <div class="shrink-0 border-t border-black/10 bg-white px-4 py-3">
     <button
       class="w-full bg-black text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
-      (click)="stickerService.readyToAdvance()"
+      (click)="readyToAdvance.emit()"
     >Nächste Runde starten</button>
   </div>
 }

@@ -1,6 +1,5 @@
-import {Component, inject} from "@angular/core";
+import {Component, input} from "@angular/core";
 import {CommonModule} from "@angular/common";
-import {StickerPlayerService} from '../../../services/sticker-player.service';
 import {AnimOnInitDirective, AnimGroupDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {SvgComponent} from '../../../../shared/svg/svg.component';
 
@@ -12,6 +11,5 @@ import {SvgComponent} from '../../../../shared/svg/svg.component';
     host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })
 export class PlayerNextRoundComponent {
-    public readonly stickerService = inject(StickerPlayerService);
+    public readonly hasNewPack = input<boolean>(false);
 }
-

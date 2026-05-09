@@ -1,14 +1,11 @@
-import {Component, computed, inject, input} from "@angular/core";
+import {Component, computed, input, output} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {
-    StickerCollageClientAction,
     StickerCollageGameState,
     StickerCollageVoteResult,
     StickerCollageResultsState,
     SessionPlayer,
 } from "@birthday/shared";
-import {WorldStore} from '../../../../../core/world.store';
-import {WebSocketService} from '../../../../../core/websocket.service';
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {BoardPlayerAvatarComponent} from '../../player-avatar/board-player-avatar.component';
 import {SvgComponent} from '../../../../shared/svg/svg.component';
@@ -20,10 +17,9 @@ import {SvgComponent} from '../../../../shared/svg/svg.component';
     templateUrl: "./board-results-scene.component.html",
 })
 export class BoardResultsSceneComponent {
-    private readonly worldStore = inject(WorldStore);
-    private readonly wsService = inject(WebSocketService);
-
     public readonly gameState = input<StickerCollageGameState | null>(null);
+    public readonly players = input<Record<string, SessionPlayer>>({});
+    public readonly advanceFromResults = output<void>();
 
     private get resultsPs(): StickerCollageResultsState | null {
         const ps = this.gameState()?.phaseState;
@@ -50,11 +46,6 @@ export class BoardResultsSceneComponent {
     public readonly readyToAdvanceCount = computed(() => this.resultsPs?.readyToAdvanceIds.length ?? 0);
 
     public getPlayer(playerId: string): SessionPlayer | undefined {
-        return this.worldStore.players()[playerId];
-    }
-
-    public advanceFromResults(): void {
-        const action: StickerCollageClientAction = {type: "advance-from-results"};
-        this.wsService.send({type: "game-action", action});
+        return this.players()[playerId];
     }
 }

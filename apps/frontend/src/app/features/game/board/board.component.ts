@@ -1,7 +1,7 @@
 import {CommonModule} from "@angular/common";
 import {Component, computed, OnDestroy, OnInit, signal} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
-import type {ServerToClientMessage} from "@birthday/shared";
+import type {StickerCollageClientAction, ServerToClientMessage, SessionPlayer} from "@birthday/shared";
 import * as QRCode from "qrcode";
 import {Subscription} from "rxjs";
 import {BoardLobbyComponent} from './board-lobby.component';
@@ -51,6 +51,9 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   public readonly gameState = computed(() => this.worldStore.stickerCollageGameState());
   public readonly phase = computed(() => this.gameState()?.phaseState.phase ?? 'LOBBY');
+  public readonly connectedPlayers = computed<SessionPlayer[]>(() =>
+    Object.values(this.worldStore.players()).filter(p => p.connected)
+  );
 
   public constructor(
     private readonly wsService: WebSocketService,
@@ -112,6 +115,26 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   public resetSession(): void {
     this.wsService.send({type: "reset-session"});
+  }
+
+  public startGame(): void {
+    const action: StickerCollageClientAction = {type: "start-game"};
+    this.wsService.send({type: "game-action", action});
+  }
+
+  public endRoundEarly(): void {
+    const action: StickerCollageClientAction = {type: "end-round-early"};
+    this.wsService.send({type: "game-action", action});
+  }
+
+  public endVotingEarly(): void {
+    const action: StickerCollageClientAction = {type: "end-voting-early"};
+    this.wsService.send({type: "game-action", action});
+  }
+
+  public advanceFromResults(): void {
+    const action: StickerCollageClientAction = {type: "advance-from-results"};
+    this.wsService.send({type: "game-action", action});
   }
 
   public async deleteSession(): Promise<void> {

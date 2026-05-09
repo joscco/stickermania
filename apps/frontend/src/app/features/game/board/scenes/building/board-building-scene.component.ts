@@ -1,8 +1,6 @@
-import {Component, computed, inject, input} from "@angular/core";
+import {Component, computed, input, output} from "@angular/core";
 import {CommonModule} from "@angular/common";
-import type {StickerCollageClientAction, StickerCollageGameState, SessionPlayer, StickerPack, StickerCollageBuildingState} from "@birthday/shared";
-import {WorldStore} from '../../../../../core/world.store';
-import {WebSocketService} from '../../../../../core/websocket.service';
+import type {StickerCollageGameState, SessionPlayer, StickerPack, StickerCollageBuildingState} from "@birthday/shared";
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {BoardPlayerAvatarComponent, type PlayerAvatarStatus} from '../../player-avatar/board-player-avatar.component';
 
@@ -13,20 +11,18 @@ import {BoardPlayerAvatarComponent, type PlayerAvatarStatus} from '../../player-
     templateUrl: "./board-building-scene.component.html",
 })
 export class BoardBuildingSceneComponent {
-    private readonly worldStore = inject(WorldStore);
-    private readonly wsService = inject(WebSocketService);
-
     public readonly gameState = input<StickerCollageGameState | null>(null);
+    public readonly players = input<Record<string, SessionPlayer>>({});
+    public readonly endRoundEarly = output<void>();
 
     private get buildingPs(): StickerCollageBuildingState | null {
         const ps = this.gameState()?.phaseState;
         return ps?.phase === "BUILDING" ? ps : null;
     }
 
-    /** All players participating in this round (persists across disconnects) */
     public readonly roundParticipants = computed<SessionPlayer[]>(() => {
         const ms = this.gameState();
-        const players = this.worldStore.players();
+        const players = this.players();
         if (!ms || ms.phaseState.phase === "LOBBY") {
             return Object.values(players).filter(p => p.connected);
         }
@@ -63,7 +59,7 @@ export class BoardBuildingSceneComponent {
     }
 
     private isOffline(playerId: string): boolean {
-        return !(this.worldStore.players()[playerId]?.connected ?? false);
+        return !(this.players()[playerId]?.connected ?? false);
     }
 
     private isDrawing(playerId: string): boolean {
@@ -76,10 +72,5 @@ export class BoardBuildingSceneComponent {
         const ms = this.gameState();
         if (!ms) return false;
         return (ms.submissions[ms.currentRoundIndex] ?? []).some(s => s.playerId === playerId);
-    }
-
-    public endRoundEarly(): void {
-        const action: StickerCollageClientAction = {type: "end-round-early"};
-        this.wsService.send({type: "game-action", action});
     }
 }

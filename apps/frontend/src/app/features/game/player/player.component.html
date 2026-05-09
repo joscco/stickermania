@@ -71,25 +71,70 @@
         />
       }
       @case (PlayerScreen.LOBBY_WAITING) {
-        <app-player-lobby-waiting/>
+        <app-player-lobby-waiting (startGame)="stickerService.startGame()"/>
       }
       @case (PlayerScreen.BUILDING) {
-        <app-player-building/>
+        <app-player-building
+          [roundIndex]="stickerService.currentRoundIndex()"
+          [prompt]="stickerService.currentPrompt()"
+          [myHand]="stickerService.myHand() ?? null"
+          [stickerCatalog]="stickerService.stickerCatalog()"
+          [stickerPacks]="stickerService.stickerPacks()"
+          [maxStickersOnCanvas]="stickerService.maxStickersOnCanvas()"
+          (skipRound)="stickerService.skipRound()"
+          (submitCollage)="onSubmitCollage($event)"
+        />
       }
       @case (PlayerScreen.BUILDING_SUBMITTED) {
-        <app-player-building-submitted/>
+        <app-player-building-submitted
+          [allPlayersDone]="stickerService.allPlayersDone()"
+          (endRoundEarly)="stickerService.endRoundEarly()"
+        />
       }
       @case (PlayerScreen.BUILDING_SKIPPED) {
-        <app-player-building-skipped/>
+        <app-player-building-skipped
+          [allPlayersDone]="stickerService.allPlayersDone()"
+          (endRoundEarly)="stickerService.endRoundEarly()"
+        />
       }
       @case (PlayerScreen.VOTING) {
-        <app-player-voting/>
+        <app-player-voting
+          [prompt]="stickerService.currentPrompt()"
+          [submissions]="stickerService.currentRoundSubmissions()"
+          [stickerCatalog]="stickerService.stickerCatalog()"
+          [myVotes]="stickerService.myVotes()"
+          [votesRemaining]="stickerService.votesPerPlayer() - stickerService.myVotes().length"
+          [players]="worldStore.players()"
+          [myPlayerId]="sessionStore.playerId() ?? ''"
+          [myDoneVoting]="stickerService.myDoneVoting()"
+          [allVotingDone]="stickerService.allVotingDone()"
+          (castVote)="stickerService.castVote($event)"
+          (doneVoting)="stickerService.doneVoting()"
+          (endVotingEarly)="stickerService.endVotingEarly()"
+        />
       }
       @case (PlayerScreen.RESULTS) {
-        <app-player-results/>
+        <app-player-results
+          [myPlacement]="stickerService.myPlacement()"
+          [isWinner]="stickerService.isWinner()"
+          [winnerChoicesDone]="stickerService.winnerChoicesDone()"
+          [hasChosenPrompt]="stickerService.hasChosenPrompt()"
+          [hasLockedPacks]="stickerService.hasLockedPacks()"
+          [hasUnlockedPack]="stickerService.hasUnlockedPack()"
+          [promptChoices]="stickerService.promptChoices()"
+          [packUnlockChoices]="stickerService.packUnlockChoices()"
+          [guaranteedPackChoices]="stickerService.guaranteedPackChoices()"
+          [winnerId]="stickerService.winnerId()"
+          [winnerName]="stickerService.winnerId() ? (worldStore.players()[stickerService.winnerId()!]?.name ?? 'Der Gewinner') : ''"
+          [canReadyToAdvance]="stickerService.canReadyToAdvance()"
+          (pickPrompt)="stickerService.pickPrompt($event)"
+          (unlockPack)="stickerService.unlockPack($event)"
+          (pickGuaranteedPack)="stickerService.pickGuaranteedPack($event)"
+          (readyToAdvance)="stickerService.readyToAdvance()"
+        />
       }
       @case (PlayerScreen.NEXT_ROUND) {
-        <app-player-next-round/>
+        <app-player-next-round [hasNewPack]="!!stickerService.lastUnlockedPackId()"/>
       }
       @default {
         <app-player-connecting/>
