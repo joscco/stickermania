@@ -23,7 +23,7 @@ import {GameSessionStore} from '../../../core/challenge.store';
 import {WorldStore} from '../../../core/world.store';
 import {ReconnectService} from '../../../core/reconnect.service';
 import {PlayerScreen} from './player-screen.enum';
-import {IconComponent} from '../../shared/icon/icon.component';
+import {SvgComponent} from '../../shared/svg/svg.component';
 
 @Component({
   selector: "app-player",
@@ -42,7 +42,7 @@ import {IconComponent} from '../../shared/icon/icon.component';
     PlayerVotingComponent,
     PlayerResultsComponent,
     PlayerNextRoundComponent,
-    IconComponent,
+    SvgComponent,
   ],
   providers: [
     PlayerMessageHandler,

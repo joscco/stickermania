@@ -3,12 +3,12 @@ import {CommonModule} from "@angular/common";
 import {StickerPlayerService} from '../../../services/sticker-player.service';
 import {WorldStore} from '../../../../../core/world.store';
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
-import {IconComponent} from '../../../../shared/icon/icon.component';
+import {SvgComponent} from '../../../../shared/svg/svg.component';
 
 @Component({
     selector: "app-player-results",
     standalone: true,
-    imports: [CommonModule, AnimOnInitDirective, IconComponent],
+    imports: [CommonModule, AnimOnInitDirective, SvgComponent],
     templateUrl: "./player-results.component.html",
     host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })

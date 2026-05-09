@@ -2,7 +2,7 @@ import {Component, signal, ViewChild, OnInit} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import {RouterModule} from "@angular/router";
 import {HttpClient} from "@angular/common/http";
-import type {StickerDefinition} from "@birthday/shared";
+import type {StickerDefinition, StickerPack} from "@birthday/shared";
 import {firstValueFrom} from "rxjs";
 import {StickerEditorComponent} from '../../shared/sticker-editor/sticker-editor.component';
 
@@ -17,17 +17,18 @@ export class StickerEditorTestComponent implements OnInit {
 
     public readonly maxStickers = 20;
     public readonly testCatalog = signal<StickerDefinition[]>([]);
+    public readonly testPacks = signal<StickerPack[]>([]);
 
     constructor(private readonly http: HttpClient) {}
 
     async ngOnInit(): Promise<void> {
         try {
-            const catalog = await firstValueFrom(
-                this.http.get<StickerDefinition[]>("/api/sticker-catalog")
-            );
-            if (catalog?.length) {
-              this.testCatalog.set(catalog);
-            }
+            const [catalog, packs] = await Promise.all([
+                firstValueFrom(this.http.get<StickerDefinition[]>("/api/sticker-catalog")),
+                firstValueFrom(this.http.get<StickerPack[]>("/api/sticker-packs")),
+            ]);
+            if (catalog?.length) this.testCatalog.set(catalog);
+            if (packs?.length) this.testPacks.set(packs);
         } catch {}
     }
 }

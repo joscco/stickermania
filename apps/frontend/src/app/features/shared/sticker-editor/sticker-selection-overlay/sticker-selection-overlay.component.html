@@ -19,7 +19,7 @@
   <div class="absolute flex items-center justify-center w-11 h-11 select-none pointer-events-none -translate-1/2"
        [style.left.px]="centerX" [style.top.px]="centerY"
        style="z-index:8050;">
-    <app-icon name="overlay-move" size="md" [outlineColor]="LIGHT_PURPLE_SEMI"/>
+    <app-svg name="icon-overlay-move-md" w="40" [color]="LIGHT_PURPLE_SEMI"/>
   </div>
 
   <!-- NW: Rotate handle -->
@@ -29,7 +29,7 @@
     [style.left.px]="nw.x" [style.top.px]="nw.y"
     style="z-index:8100; cursor:grab; pointer-events:auto;"
     (pointerdown)="onHandleDown($event, 'rotate')">
-    <app-icon name="overlay-rotate" size="md" [outlineColor]="mode === 'rotating' ? DARK_PURPLE :  LIGHT_PURPLE"/>
+    <app-svg name="icon-overlay-rotate-md" w="40" [color]="mode === 'rotating' ? DARK_PURPLE :  LIGHT_PURPLE"/>
   </div>
 
   <!-- NE: Context-menu button -->
@@ -40,7 +40,7 @@
     style="z-index:8200; pointer-events:auto;"
     title="Optionen"
     (pointerdown)="$event.stopPropagation(); menuToggle.emit()">
-    <app-icon name="overlay-menu" size="md" [outlineColor]="mode === 'menu' ? DARK_PURPLE : LIGHT_PURPLE"/>
+    <app-svg name="icon-overlay-menu-md" w="40" [color]="mode === 'menu' ? DARK_PURPLE : LIGHT_PURPLE"/>
   </div>
 
   <!-- SE: Scale handle -->
@@ -50,7 +50,7 @@
     [style.left.px]="scale.x" [style.top.px]="scale.y"
     style="z-index:8100; cursor:se-resize; pointer-events:auto;"
     (pointerdown)="onHandleDown($event, 'scale')">
-    <app-icon name="overlay-scale" size="md" [outlineColor]="mode === 'scaling' ? DARK_PURPLE : LIGHT_PURPLE"/>
+    <app-svg name="icon-overlay-scale-md" w="40" [color]="mode === 'scaling' ? DARK_PURPLE : LIGHT_PURPLE"/>
   </div>
 
   <!-- Stretch side handles (stretch mode only) -->
@@ -62,7 +62,7 @@
         [style.cursor]="side.cursor"
         style="z-index:8100; pointer-events:auto;"
         (pointerdown)="onHandleDown($event, side.id)">
-        <app-icon name="ctx-stretch" size="sm"/>
+        <app-svg name="icon-ctx-stretch-sm" w="20"/>
       </div>
     }
     <div

@@ -12,11 +12,11 @@
       (click)="prevPage()"
       (pointerdown)="$event.stopPropagation()"
     >
-      <app-icon name="palette-prev" size="md"/>
+      <app-svg name="icon-palette-prev-md" w="40"/>
     </button>
 
     <!-- Sticker row — GSAP handles animation, no CSS transitions needed -->
-    <div class="flex-1 overflow-hidden">
+    <div class="flex-1">
       <div
         #rowEl
         class="flex items-center justify-center gap-2"
@@ -24,7 +24,7 @@
         @for (sticker of pageStickers(); track sticker.id) {
           <div
             data-thumb
-            class="relative shrink-0 w-16 h-16 rounded-xl border-2 flex items-center justify-center bg-white select-none touch-none"
+            class="relative shrink-0 w-16 h-16 rounded-xl border-2 flex items-center justify-center select-none touch-none checkerboard-sm"
             [class.border-yellow-300]="canAddMore()"
             [class.shadow-sm]="canAddMore()"
             [class.border-stone-200]="!canAddMore()"
@@ -33,11 +33,17 @@
             [class.cursor-not-allowed]="!canAddMore()"
             (pointerdown)="onPointerDown($event, sticker)"
           >
+            @if (sticker.packId && packIconLookup().get(sticker.packId); as iconId) {
+              <span class="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-yellow-400 grid place-items-center pointer-events-none">
+                <app-svg [name]="iconId" w="15"/>
+              </span>
+            }
             <app-sticker-img
               [imageUrl]="getStickerUrl(sticker.id)"
               [alt]="sticker.id"
               class="w-full h-full pointer-events-none select-none"
             />
+
           </div>
         }
       </div>
@@ -53,7 +59,7 @@
       (click)="nextPage()"
       (pointerdown)="$event.stopPropagation()"
     >
-      <app-icon name="palette-next" size="md"/>
+      <app-svg name="icon-palette-next-md" w="40"/>
     </button>
 
   </div>

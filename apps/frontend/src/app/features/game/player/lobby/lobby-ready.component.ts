@@ -1,11 +1,11 @@
 import { Component, input } from "@angular/core";
 import {AnimOnInitDirective, AnimGroupDirective} from '../../../shared/animations/anim-on-init.directive';
-import {IconComponent} from '../../../shared/icon/icon.component';
+import {SvgComponent} from '../../../shared/svg/svg.component';
 
 @Component({
   selector: "app-lobby-ready",
   standalone: true,
-  imports: [AnimOnInitDirective, AnimGroupDirective, IconComponent],
+  imports: [AnimOnInitDirective, AnimGroupDirective, SvgComponent],
   templateUrl: './lobby-ready.component.html',
 })
 export class LobbyReadyComponent {

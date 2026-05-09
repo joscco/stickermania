@@ -1,7 +1,7 @@
 import {Component, input, output, computed, signal, OnDestroy, AfterViewInit, ElementRef} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import gsap from 'gsap';
-import {IconComponent} from '../../icon/icon.component';
+import {SvgComponent} from '../../svg/svg.component';
 import {BoundingBox} from '../sticker-types';
 import {degToRad, rotatePt, radToDeg, angleBetween} from '../geometry-helpers';
 
@@ -23,7 +23,7 @@ export const LIGHT_PURPLE_SEMI = 'rgba(55,65,81,0.45)'
 @Component({
   selector: 'app-sticker-selection-overlay',
   standalone: true,
-  imports: [CommonModule, IconComponent],
+  imports: [CommonModule, SvgComponent],
   templateUrl: './sticker-selection-overlay.component.html',
   host: {style: 'position:absolute;inset:0;pointer-events:none;'},
 })

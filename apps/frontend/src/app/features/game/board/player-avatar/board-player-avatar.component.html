@@ -17,14 +17,14 @@
     <!-- Medal overlay (podium — derived from status) -->
     @if (medalSpriteId(); as spriteId) {
       <div class="absolute -top-4 -right-4">
-        <svg class="w-8 h-8" aria-hidden="true"><use [attr.href]="'assets/sprite.svg#' + spriteId"/></svg>
+        <app-svg [name]="spriteId" w="32"/>
       </div>
     } @else if (badge(); as b) {
       <div class="absolute -top-1 -right-1 w-5 h-5 rounded-full grid place-items-center text-white shadow"
            [ngClass]="b.bg"
            [class.animate-pulse]="b.animate">
 
-        <svg class="w-3 h-3" aria-hidden="true"><use [attr.href]="'assets/sprite.svg#' + b.spriteId"/></svg>
+        <app-svg [name]="b.spriteId" w="12"/>
       </div>
     }
   </div>

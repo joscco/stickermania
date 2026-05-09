@@ -7,7 +7,7 @@ import {
   ViewChild,
 } from "@angular/core";
 import {CommonModule} from "@angular/common";
-import type {StickerDefinition, StickerPlacement} from "@birthday/shared";
+import type {StickerDefinition, StickerPlacement, StickerPack} from "@birthday/shared";
 
 /**
  * Shared Sticker-Editor.
@@ -25,13 +25,13 @@ import type {StickerDefinition, StickerPlacement} from "@birthday/shared";
 import {StickerCanvasComponent} from './sticker-canvas/sticker-canvas.component';
 import {StickerDragStartEvent, StickerPaletteComponent} from './sticker-palette/sticker-palette.component';
 import {AnimOnInitDirective} from '../animations/anim-on-init.directive';
-import {IconComponent} from '../icon/icon.component';
+import {SvgComponent} from '../svg/svg.component';
 import {isPointerOutsideRect, isPositionOutsideCanvas, clamp, radToDeg, pinchDistance, pinchAngle} from './geometry-helpers';
 
 @Component({
   selector: "app-sticker-editor",
   standalone: true,
-  imports: [CommonModule, StickerCanvasComponent, StickerPaletteComponent, StickerCanvasComponent, AnimOnInitDirective, IconComponent],
+  imports: [CommonModule, StickerCanvasComponent, StickerPaletteComponent, StickerCanvasComponent, AnimOnInitDirective, SvgComponent],
   templateUrl: "./sticker-editor.component.html",
   host: {"class": "flex flex-col overflow-hidden"},
 })
@@ -39,6 +39,7 @@ export class StickerEditorComponent {
   // ── Inputs / Outputs ──────────────────────────────────────────
   readonly paletteStickers = input<StickerDefinition[]>([]);
   readonly stickerCatalog = input<StickerDefinition[]>([]);
+  readonly stickerPacks = input<StickerPack[]>([]);
   readonly maxStickers = input<number>(12);
 
   readonly placementsChanged = output<StickerPlacement[]>();

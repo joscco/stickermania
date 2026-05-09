@@ -23,21 +23,21 @@
                 [class.bg-stone-200]="drawMode() === 'small'"
                 [class.scale-110]="drawMode() === 'small'"
                 (click)="selectThinBrush()">
-          <app-icon name="draw-btn-small" size="lg"/>
+          <app-svg name="icon-draw-btn-small-lg" w="70"/>
         </button>
 
         <button class="flex-none rounded-full transition-all"
                 [class.bg-stone-200]="drawMode() === 'big'"
                 [class.scale-110]="drawMode() === 'big'"
                 (click)="selectThickBrush()">
-          <app-icon name="draw-btn-big" size="lg"/>
+          <app-svg name="icon-draw-btn-big-lg" w="70"/>
         </button>
 
         <button class="flex-none rounded-full transition-all"
                 [class.bg-stone-200]="drawMode() === 'erase'"
                 [class.scale-110]="drawMode() === 'erase'"
                 (click)="selectEraser()">
-          <app-icon name="draw-btn-eraser" size="lg"/>
+          <app-svg name="icon-draw-btn-eraser-lg" w="70"/>
         </button>
       </div>
 

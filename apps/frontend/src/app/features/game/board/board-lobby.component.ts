@@ -5,12 +5,12 @@ import { ApiService, type SessionSummary } from '../../../core/api.service';
 import {AnimOnInitDirective, AnimGroupDirective, AnimPresenceDirective} from '../../shared/animations/anim-on-init.directive';
 import {PageRootDirective} from '../../shared/animations/page-root.directive';
 import {PageTransitionService} from '../../shared/animations/page-transition.service';
-import {IconComponent} from '../../shared/icon/icon.component';
+import {SvgComponent} from '../../shared/svg/svg.component';
 
 @Component({
   selector: "app-board-lobby",
   standalone: true,
-  imports: [CommonModule, AnimOnInitDirective, AnimGroupDirective, PageRootDirective, AnimPresenceDirective, IconComponent],
+  imports: [CommonModule, AnimOnInitDirective, AnimGroupDirective, PageRootDirective, AnimPresenceDirective, SvgComponent],
   templateUrl: "./board-lobby.component.html",
 })
 export class BoardLobbyComponent implements OnInit {

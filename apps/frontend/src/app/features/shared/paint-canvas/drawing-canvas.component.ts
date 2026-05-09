@@ -1,5 +1,6 @@
 import {AfterViewInit, Component, ElementRef, input, OnDestroy, output, signal, ViewChild,} from "@angular/core";
 import {CanvasPainter} from "./canvas-painter";
+import {SvgComponent} from "../svg/svg.component";
 
 /** Size of frame overlay images (px) */
 const FRAME_SIZE = 4123;
@@ -10,7 +11,7 @@ const CANVAS_SIZE = 3416;
   selector: "app-drawing-canvas",
   standalone: true,
   templateUrl: "./drawing-canvas.component.html",
-  imports: []
+  imports: [SvgComponent]
 })
 export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
   public readonly submitted = output<string>();

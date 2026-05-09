@@ -3,9 +3,7 @@
      (pointerdown)="$event.preventDefault()"
      (pointermove)="$event.preventDefault()">
 
-  <svg class="absolute inset-0 w-full h-full pointer-events-none z-20" aria-hidden="true">
-    <use href="assets/sprite.svg#draw-frame"/>
-  </svg>
+  <app-svg name="draw-frame" class="absolute inset-0 w-full h-full pointer-events-none z-20"/>
   <canvas #drawCanvas style="touch-action: none;"
           [class]="'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'"
           [style.width]="canvasSizePercent"

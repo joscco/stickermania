@@ -4,7 +4,7 @@
     <!-- Header – flex-1 oben damit er sich vertikal zentriert -->
     <div class="flex-1 flex items-center justify-center shrink-0">
       <div animOnInit="banner" class="text-center">
-        <div class="text-5xl font-black tracking-tight">STICKERMANIA</div>
+        <img src="assets/svg/logo.svg" alt="Stickermania" class="w-full max-w-md"/>
       </div>
     </div>
 
@@ -71,7 +71,7 @@
                   @case ('loading') { <span class="text-xs">⏳</span> }
                   @case ('done')    { <span class="text-xs">✅</span> }
                   @case ('error')   { <span class="text-xs">❌</span> }
-                  @default          { <app-icon name="download" size="sm"/> }
+                  @default          { <app-svg name="icon-download-sm" w="20"/> }
                 }
               </button>
               <button
@@ -79,7 +79,7 @@
                 title="Session löschen"
                 (click)="deleteSession(session.sessionId, $event)"
               >
-                <app-icon name="trash" size="sm"/>
+                <app-svg name="icon-trash-sm" w="20"/>
               </button>
             </div>
           }

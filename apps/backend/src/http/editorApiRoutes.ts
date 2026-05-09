@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import type {FastifyInstance} from "fastify";
-import type {StickerDefinition} from "@birthday/shared";
+import type {StickerDefinition, StickerPack} from "@birthday/shared";
 import type {BackendConfig} from "../config.js";
-import {buildCatalog} from "../game-modes/sticker-collage/stickerCatalog.js";
+import {buildCatalog, buildPacks} from "../game-modes/sticker-collage/stickerCatalog.js";
 
 /**
  * Editor-only API routes.
@@ -77,6 +77,10 @@ export async function registerEditorApiRoutes(
             }
             return sticker;
         });
+    });
+
+    app.get("/api/sticker-packs", async () => {
+        return buildPacks(backendConfig.gameConfig.stickerCollage.catalog);
     });
 }
 

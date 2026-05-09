@@ -2,11 +2,10 @@
 <div
   animOnInit="opacity"
   #canvasArea
-  class="w-full h-full relative bg-white overflow-visible"
+  class="w-full h-full relative overflow-visible"
 >
-  <!-- Dot-grid background -->
-  <div class="absolute inset-0 opacity-5 pointer-events-none"
-       style="background-image: radial-gradient(circle, #6b7280 1px, transparent 1px); background-size: 20px 20px;"></div>
+  <!-- Editor frame background (faint) -->
+  <div class="absolute inset-0 pointer-events-none" style="background-image: url('assets/svg/editor-frame.svg'); background-size: 100% 100%; opacity: 0.2;"></div>
 
   <!-- Delete-zone overlay (animated via GSAP) -->
   <div #deleteZone
@@ -20,7 +19,7 @@
     <div data-delete-badge
          class="relative flex flex-col items-center gap-1.5 text-white rounded-2xl px-5 py-3 shadow-xl"
          style="background: oklch(85.2% 0.199 91.936); backdrop-filter: blur(4px);">
-      <app-icon name="trash" size="md"/>
+      <app-svg name="icon-trash-md" w="40" color="black"/>
       <span class="text-xs font-semibold tracking-wide">Loslassen zum Löschen</span>
     </div>
   </div>
@@ -109,7 +108,7 @@
        class="absolute inset-0 flex items-center justify-center text-stone-300 pointer-events-none">
     <div class="text-center">
       <div class="mb-2">
-        <app-icon name="drag-pan" size="md" outlineColor="#ccc"/>
+        <app-svg name="icon-drag-pan-md" w="40" color="#ccc"/>
       </div>
       <p class="text-sm">Sticker unten festhalten<br/>und auf die Fläche ziehen</p>
     </div>

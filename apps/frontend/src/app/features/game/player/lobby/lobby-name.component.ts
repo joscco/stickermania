@@ -1,12 +1,12 @@
 import { Component, inject, output, signal } from "@angular/core";
 import {GameSessionStore} from '../../../../core/challenge.store';
 import {AnimOnInitDirective, AnimGroupDirective} from '../../../shared/animations/anim-on-init.directive';
-import {IconComponent} from '../../../shared/icon/icon.component';
+import {SvgComponent} from '../../../shared/svg/svg.component';
 
 @Component({
   selector: "app-lobby-name",
   standalone: true,
-  imports: [AnimOnInitDirective, AnimGroupDirective, IconComponent],
+  imports: [AnimOnInitDirective, AnimGroupDirective, SvgComponent],
   templateUrl: './lobby-name.component.html',
   host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })

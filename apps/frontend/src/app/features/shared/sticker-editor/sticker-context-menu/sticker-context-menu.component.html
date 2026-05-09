@@ -8,7 +8,7 @@
     (pointerdown)="$event.stopPropagation()"
   >
     <button [class]="BTN_DELETE" (click)="emit('delete')">
-      <app-icon name="ctx-delete" size="sm" class="shrink-0"/>
+      <app-svg name="icon-ctx-delete-sm" w="20" class="shrink-0"/>
       Löschen
     </button>
 
@@ -17,18 +17,18 @@
     <button [class]="canDuplicate() ? BTN : BTN_DISABLED"
             [disabled]="!canDuplicate()"
             (click)="canDuplicate() && emit('duplicate')">
-      <app-icon name="ctx-duplicate" size="sm" class="shrink-0"/>
+      <app-svg name="icon-ctx-duplicate-sm" w="20" class="shrink-0"/>
       Duplizieren
     </button>
 
     <button [class]="BTN" (click)="emit('flipH')">
-      <app-icon name="ctx-flip-h" size="sm" class="shrink-0"/>
+      <app-svg name="icon-ctx-flip-h-sm" w="20" class="shrink-0"/>
       Spiegeln
     </button>
 
     @if (!isMulti()) {
       <button [class]="stretchMode() ? BTN_ACTIVE : BTN" (click)="emit('toggleStretch')">
-        <app-icon name="ctx-stretch" size="sm" class="shrink-0"/>
+        <app-svg name="icon-ctx-stretch-sm" w="20" class="shrink-0"/>
         {{ stretchMode() ? 'Verformen beenden' : 'Verformen' }}
       </button>
     }
@@ -36,19 +36,19 @@
     <div class="h-px bg-black/6 my-0.5"></div>
 
     <button [class]="BTN" (click)="emit('zFront')">
-      <app-icon name="ctx-z-front" size="sm" class="shrink-0"/>
+      <app-svg name="icon-ctx-z-front-sm" w="20" class="shrink-0"/>
       Ganz nach vorne
     </button>
     <button [class]="BTN" (click)="emit('zForward')">
-      <app-icon name="ctx-z-forward" size="sm" class="shrink-0"/>
+      <app-svg name="icon-ctx-z-forward-sm" w="20" class="shrink-0"/>
       Eine Ebene nach vorne
     </button>
     <button [class]="BTN" (click)="emit('zBackward')">
-      <app-icon name="ctx-z-backward" size="sm" class="shrink-0"/>
+      <app-svg name="icon-ctx-z-backward-sm" w="20" class="shrink-0"/>
       Eine Ebene nach hinten
     </button>
     <button [class]="BTN" (click)="emit('zBack')">
-      <app-icon name="ctx-z-back" size="sm" class="shrink-0"/>
+      <app-svg name="icon-ctx-z-back-sm" w="20" class="shrink-0"/>
       Ganz nach hinten
     </button>
 
@@ -56,13 +56,13 @@
       <div class="h-px bg-black/6 my-0.5"></div>
       @if (canGroup()) {
         <button [class]="BTN" (click)="emit('group')">
-          <app-icon name="ctx-group" size="sm" class="shrink-0"/>
+          <app-svg name="icon-ctx-group-sm" w="20" class="shrink-0"/>
           Gruppieren
         </button>
       }
       @if (canUngroup()) {
         <button [class]="BTN" (click)="emit('ungroup')">
-          <app-icon name="ctx-ungroup" size="sm" class="shrink-0"/>
+          <app-svg name="icon-ctx-ungroup-sm" w="20" class="shrink-0"/>
           Gruppierung aufheben
         </button>
       }

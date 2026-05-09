@@ -1,6 +1,7 @@
 <div class="h-full flex flex-col">
   <!-- Voting banner (Banderole) -->
-  <div animOnInit="banner" class="bg-black text-white px-16 py-5 text-center mt-4">
+  <div animOnInit="banner" class="text-black px-16 py-5 text-center mt-4"
+     style="background-image: url('assets/svg/prompt-background.svg'); background-size: 100% 100%;">
     <span class="text-sm font-medium opacity-60 uppercase tracking-wider">Abstimmung</span>
     <h1 class="text-3xl font-black mt-1">{{ gameState()?.currentPrompt ?? '' }}</h1>
   </div>
@@ -48,7 +49,7 @@
              class="w-full h-full object-contain" draggable="false" />
       } @else {
         <div class="w-full h-full grid place-items-center text-stone-200">
-          <app-icon name="camera" size="lg"/>
+          <app-svg name="icon-camera-lg" w="70"/>
         </div>
       }
     </div>

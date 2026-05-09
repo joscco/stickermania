@@ -15,14 +15,14 @@ import * as ops from '../sticker-placement-ops';
 import type {SelectionInfo} from '../selection-info';
 import {HandleDragEvent, StickerSelectionOverlayComponent} from '../sticker-selection-overlay/sticker-selection-overlay.component';
 import {AnimOnInitDirective, AnimPresenceDirective} from '../../animations/anim-on-init.directive';
-import {IconComponent} from '../../icon/icon.component';
+import {SvgComponent} from '../../svg/svg.component';
 import {getSpriteViewBox, preloadSprite} from '../sprite-url.util';
 import {StickerItemComponent, type StickerAnimState} from './sticker-item/sticker-item.component';
 
 @Component({
   selector: 'app-sticker-canvas',
   standalone: true,
-  imports: [CommonModule, StickerSelectionOverlayComponent, StickerContextMenuComponent, StickerSelectionOverlayComponent, AnimOnInitDirective, AnimPresenceDirective, StickerItemComponent, IconComponent],
+  imports: [CommonModule, StickerSelectionOverlayComponent, StickerContextMenuComponent, StickerSelectionOverlayComponent, AnimOnInitDirective, AnimPresenceDirective, StickerItemComponent, SvgComponent],
   templateUrl: './sticker-canvas.component.html',
   host: {style: 'display: block; width: 100%; height: 100%;'},
 })
@@ -180,8 +180,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     // Ensure sprite is loaded so getSpriteViewBox works synchronously
     preloadSprite();
 
-    // Set initial canvas border for interactive mode (GSAP handles transitions)
-    this.canvasArea.nativeElement.style.boxShadow = 'inset 0 0 0 2px #e2e8f0';
+    
 
     this.gesture = new StickerGestureHandler(
       () => this.canvasArea.nativeElement.getBoundingClientRect(),
@@ -400,6 +399,8 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   isLassoSelected(instanceId: string): boolean {
     return this.lassoSelection().has(instanceId);
   }
+
+  
 
 
   getStickerTransform(p: StickerPlacement): string {

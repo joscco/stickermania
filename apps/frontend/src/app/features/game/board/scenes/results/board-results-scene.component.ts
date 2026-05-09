@@ -11,12 +11,12 @@ import {WorldStore} from '../../../../../core/world.store';
 import {WebSocketService} from '../../../../../core/websocket.service';
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {BoardPlayerAvatarComponent} from '../../player-avatar/board-player-avatar.component';
-import {IconComponent} from '../../../../shared/icon/icon.component';
+import {SvgComponent} from '../../../../shared/svg/svg.component';
 
 @Component({
     selector: "app-board-results-scene",
     standalone: true,
-    imports: [CommonModule, AnimOnInitDirective, BoardPlayerAvatarComponent, IconComponent],
+    imports: [CommonModule, AnimOnInitDirective, BoardPlayerAvatarComponent, SvgComponent],
     templateUrl: "./board-results-scene.component.html",
 })
 export class BoardResultsSceneComponent {

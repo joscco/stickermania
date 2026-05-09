@@ -1,8 +1,9 @@
 <div class="h-full flex flex-col">
   <!-- Results header -->
-  <div animOnInit="medal" class="bg-black text-white px-16 py-5 text-center mt-4">
+  <div animOnInit="medal" class="text-black px-16 py-5 text-center mt-4"
+     style="background-image: url('assets/svg/prompt-background.svg'); background-size: 100% 100%;">
     <h1 class="text-3xl font-black flex items-center justify-center gap-3">
-      <app-icon name="trophy" size="md"/>
+      <app-svg name="icon-trophy-md" w="40"/>
       Ergebnisse
     </h1>
   </div>
@@ -32,7 +33,7 @@
         />
         <span class="text-xs text-stone-500 mt-1">{{ topResults()[0].voteCount }} Stimmen · +{{ topResults()[0].pointsAwarded }}</span>
         <div class="w-36 h-40 bg-black rounded-t-xl mt-2 flex flex-col items-center justify-center gap-1">
-          <app-icon name="trophy" size="md" class="text-white opacity-60"/>
+          <app-svg name="icon-trophy-md" w="40" class="text-white opacity-60"/>
           <span class="text-5xl font-black text-white opacity-30">1</span>
         </div>
       </div>
@@ -66,9 +67,9 @@
                  [class.bg-black]="promptChosen()" [class.text-white]="promptChosen()"
                  [class.bg-stone-100]="!promptChosen()" [class.text-stone-600]="!promptChosen()">
               @if (promptChosen()) {
-                <app-icon name="checkmark" size="md"/>
+                <app-svg name="icon-checkmark-md" w="40"/>
               } @else {
-                <app-icon name="star" size="md"/>
+                <app-svg name="icon-star-md" w="40"/>
               }
             </div>
             <span class="text-xs text-stone-500">Prompt</span>
@@ -78,9 +79,9 @@
                  [class.bg-black]="packUnlocked()" [class.text-white]="packUnlocked()"
                  [class.bg-stone-100]="!packUnlocked()" [class.text-stone-600]="!packUnlocked()">
               @if (packUnlocked()) {
-                <app-icon name="checkmark" size="md"/>
+                <app-svg name="icon-checkmark-md" w="40"/>
               } @else {
-                <app-icon name="trophy" size="md"/>
+                <app-svg name="icon-trophy-md" w="40"/>
               }
             </div>
             <span class="text-xs text-stone-500">Pack</span>
@@ -90,9 +91,9 @@
                  [class.bg-black]="guaranteedChosen()" [class.text-white]="guaranteedChosen()"
                  [class.bg-stone-100]="!guaranteedChosen()" [class.text-stone-600]="!guaranteedChosen()">
               @if (guaranteedChosen()) {
-                <app-icon name="checkmark" size="md"/>
+                <app-svg name="icon-checkmark-md" w="40"/>
               } @else {
-                <app-icon name="star" size="md"/>
+                <app-svg name="icon-star-md" w="40"/>
               }
             </div>
             <span class="text-xs text-stone-500">Garantiert</span>

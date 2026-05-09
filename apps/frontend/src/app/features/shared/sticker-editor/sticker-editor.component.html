@@ -22,7 +22,7 @@
         [disabled]="placements().length <= 0"
         (click)="clearPlacements()"
       >
-        <app-icon name="editor-clear-all" size="sm"/>
+        <app-svg name="icon-editor-clear-all-sm" w="20"/>
       </button>
   </div>
 
@@ -44,6 +44,7 @@
 <div animOnInit="opacity" class="relative z-20 shrink-0 border-t border-black/10 bg-white">
   <app-sticker-palette
     [stickers]="paletteStickers()"
+    [stickerPacks]="stickerPacks()"
     [canAddMore]="canAddMore()"
     (stickerDragStarted)="onStickerDragFromPaletteStarted($event)"
   />

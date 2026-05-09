@@ -1,6 +1,7 @@
 import {Component, computed, input} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {SessionPlayer} from "@birthday/shared";
+import {SvgComponent} from '../../../shared/svg/svg.component';
 
 /**
  * Visual status of a player in the current round phase.
@@ -27,7 +28,7 @@ export type PlayerAvatarStatus =
 @Component({
     selector: "app-board-player-avatar",
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, SvgComponent],
     templateUrl: "./board-player-avatar.component.html",
 })
 export class BoardPlayerAvatarComponent {
@@ -57,10 +58,10 @@ export class BoardPlayerAvatarComponent {
     /** Badge config: { spriteId, bgClass, animate } or null */
     public readonly badge = computed<{spriteId: string; bg: string; animate?: boolean} | null>(() => {
         switch (this.status()) {
-            case "submitted": return {spriteId: "icon-checkmark", bg: "bg-stone-800"};
-            case "drawing":   return {spriteId: "icon-paintbrush", bg: "bg-stone-600", animate: true};
-            case "skipped":   return {spriteId: "icon-pause",      bg: "bg-stone-400"};
-            case "offline":   return {spriteId: "icon-hourglass",  bg: "bg-stone-400"};
+            case "submitted": return {spriteId: "icon-checkmark-sm", bg: "bg-stone-800"};
+            case "drawing":   return {spriteId: "icon-stickers-lg", bg: "bg-stone-600", animate: true};
+            case "skipped":   return {spriteId: "icon-pause-lg",      bg: "bg-stone-400"};
+            case "offline":   return {spriteId: "icon-hourglass-lg",  bg: "bg-stone-400"};
             default:          return null;
         }
     });
@@ -68,9 +69,9 @@ export class BoardPlayerAvatarComponent {
     /** Medal sprite ID for podium positions */
     public readonly medalSpriteId = computed<string | null>(() => {
         switch (this.status()) {
-            case "podium-1": return "icon-medal-gold";
-            case "podium-2": return "icon-medal-silver";
-            case "podium-3": return "icon-medal-bronze";
+            case "podium-1": return "icon-medal-gold-lg";
+            case "podium-2": return "icon-medal-silver-lg";
+            case "podium-3": return "icon-medal-bronze-lg";
             default:         return null;
         }
     });
