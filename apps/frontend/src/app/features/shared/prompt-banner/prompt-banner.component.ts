@@ -79,7 +79,7 @@ export class PromptBannerComponent implements AfterViewInit, OnDestroy {
 
     const iconW = hasIcon ? 52 : 0;
     const availW = w - iconW;
-    const subH = hasSub ? 20 : 0;
+    const subH = hasSub ? this.subtitleLineHeight() : 0;
     const availH = h - subH;
 
     if (!text) return '1rem';
@@ -100,6 +100,17 @@ export class PromptBannerComponent implements AfterViewInit, OnDestroy {
     }
 
     return `${lo.toFixed(3)}rem`;
+  });
+
+  readonly subtitleFontSize = computed(() => {
+    const ew = this.effectiveWidth();
+    const rem = Math.max(0.5625, Math.min(0.75, ew / 640));
+    return `${rem.toFixed(4)}rem`;
+  });
+
+  readonly subtitleLineHeight = computed(() => {
+    const ew = this.effectiveWidth();
+    return Math.round(Math.max(14, ew * 0.035));
   });
 
   readonly effectiveMaxWidthPx = computed(() => {

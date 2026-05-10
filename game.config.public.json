@@ -5,7 +5,7 @@
     "votingDurationSec": 120,
     "resultsDurationSec": 60,
     "handSize": 8,
-    "maxStickersOnCanvas": 12,
+    "maxStickersOnCanvas": 20,
     "votesPerPlayer": 3,
     "pointsByPlacement": [
       100,

@@ -8,6 +8,8 @@ import {
   ElementRef,
   AfterViewInit,
   OnDestroy,
+  effect,
+  inject,
 } from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {StickerDefinition, StickerPlacement, StickerPack} from "@birthday/shared";
@@ -36,7 +38,7 @@ import {isPointerOutsideRect, isPositionOutsideCanvas, clamp, radToDeg, pinchDis
   standalone: true,
   imports: [CommonModule, StickerCanvasComponent, StickerPaletteComponent, StickerCanvasComponent, AnimOnInitDirective, SvgComponent],
   templateUrl: "./sticker-editor.component.html",
-  host: {"class": "flex flex-col overflow-hidden"},
+  host: {"class": "flex flex-col"},
 })
 export class StickerEditorComponent implements AfterViewInit, OnDestroy {
   // ── Inputs / Outputs ──────────────────────────────────────────
@@ -44,33 +46,62 @@ export class StickerEditorComponent implements AfterViewInit, OnDestroy {
   readonly stickerCatalog = input<StickerDefinition[]>([]);
   readonly stickerPacks = input<StickerPack[]>([]);
   readonly maxStickers = input<number>(12);
+  /** Available height for the entire editor (canvas + palette). 0 = auto-detect from host. */
+  readonly availableHeight = input<number>(0);
+  /** Available width for the canvas area. 0 = auto-detect from host. */
+  readonly availableWidth = input<number>(0);
 
   readonly placementsChanged = output<StickerPlacement[]>();
 
   @ViewChild("stickerCanvas") stickerCanvas!: StickerCanvasComponent;
 
-  @ViewChild("canvasSizer") canvasSizer!: ElementRef<HTMLDivElement>;
+  @ViewChild("paletteRef") paletteRef!: ElementRef<HTMLDivElement>;
 
   public readonly placements = signal<StickerPlacement[]>([]);
   public readonly canAddMore = computed(() => this.placements().length < this.maxStickers());
 
   public readonly canvasSizePx = signal(400);
-  private sizerObserver?: ResizeObserver;
+  private resizeObserver?: ResizeObserver;
+  private readonly el = inject(ElementRef);
+
+  constructor() {
+    effect(() => {
+      this.availableHeight();
+      this.availableWidth();
+      if (this.paletteRef) this.recalcCanvasSize();
+    });
+  }
 
   ngAfterViewInit(): void {
-    this.sizerObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        const {width, height} = entry.contentRect;
-        this.canvasSizePx.set(Math.floor(Math.min(width, height)));
-      }
-    });
-    if (this.canvasSizer?.nativeElement) {
-      this.sizerObserver.observe(this.canvasSizer.nativeElement);
-    }
+    this.resizeObserver = new ResizeObserver(() => this.recalcCanvasSize());
+    this.resizeObserver.observe(this.el.nativeElement);
   }
 
   ngOnDestroy(): void {
-    this.sizerObserver?.disconnect();
+    this.resizeObserver?.disconnect();
+  }
+
+  private recalcCanvasSize(): void {
+    const extW = this.availableWidth();
+    const extH = this.availableHeight();
+    const host = this.el.nativeElement as HTMLElement;
+    const paletteH = this.paletteRef?.nativeElement?.offsetHeight ?? 70;
+    const pad = 16;
+
+    let sourceW: number;
+    let sourceH: number;
+
+    if (extW > 0 && extH > 0) {
+      sourceW = extW;
+      sourceH = extH;
+    } else {
+      sourceW = host.clientWidth;
+      sourceH = host.clientHeight;
+    }
+
+    const maxW = sourceW - pad;
+    const maxH = sourceH - paletteH - pad;
+    this.canvasSizePx.set(Math.max(Math.floor(Math.min(maxW, maxH)), 80));
   }
 
   // ── Palette drag → instant sticker creation ───────────────────

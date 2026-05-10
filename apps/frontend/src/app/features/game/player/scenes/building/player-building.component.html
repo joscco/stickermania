@@ -1,29 +1,36 @@
 <app-prompt-banner
+  #banner
   [text]="prompt()"
   [subtitle]="'Runde ' + roundIndex()"
   [maxWidthPx]="512"
   anim="banner"
+  class="shrink-0"
 />
 
-<!-- Shared editor (canvas + palette) -->
-@if (myHand()) {
-  <app-sticker-editor
-    #editor
-    class="flex-1 min-h-0"
-    [paletteStickers]="handStickers()"
-    [stickerCatalog]="stickerCatalog()"
-    [stickerPacks]="stickerPacks()"
-    [maxStickers]="maxStickersOnCanvas()"
-  />
-} @else {
-  <div class="flex-1 flex items-center justify-center gap-2 text-stone-400 text-base">
-    <div class="w-4 h-4 border-2 border-stone-200 border-t-stone-400 rounded-full animate-spin"></div>
-    Sticker werden geladen...
+<!-- Editor wrapper: centered, max-width for wider screens, full-width on narrow -->
+<div class="flex-1 min-h-0 flex flex-col items-center">
+  <div class="flex flex-col items-center w-full">
+    @if (myHand()) {
+      <app-sticker-editor
+        #editor
+        [availableHeight]="availableHeight()"
+        [availableWidth]="availableWidth()"
+        [paletteStickers]="handStickers()"
+        [stickerCatalog]="stickerCatalog()"
+        [stickerPacks]="stickerPacks()"
+        [maxStickers]="maxStickersOnCanvas()"
+      />
+    } @else {
+      <div class="flex items-center justify-center gap-2 text-stone-400 text-base py-8">
+        <div class="w-4 h-4 border-2 border-stone-200 border-t-stone-400 rounded-full animate-spin"></div>
+        Sticker werden geladen...
+      </div>
+    }
   </div>
-}
+</div>
 
 <!-- Footer: submit -->
-<div animOnInit="opacity" class="shrink-0 border-t border-black/10 bg-white px-4 py-3 flex items-center gap-3">
+<div #footer animOnInit="opacity" class="shrink-0 border-t border-black/10 bg-white px-4 py-3 flex items-center gap-3">
   <button
     class="flex-1 bg-yellow-400 text-black py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
     (click)="skipRound.emit()"
