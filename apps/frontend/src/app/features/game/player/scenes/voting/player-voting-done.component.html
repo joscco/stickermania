@@ -1,14 +1,9 @@
 <app-player-status-screen
   icon="icon-checkmark-lg"
   title="Stimme abgegeben"
-  titleClass="text-base font-semibold text-stone-800"
-  iconClass="text-stone-900 mb-2"
+  [subtitle]="allVotingDone() ? 'Alle sind fertig. Ihr könnt zur Auswertung wechseln.' : 'Warte auf die anderen Spieler...' "
 >
-  @if (!allVotingDone()) {
-    <p class="mt-1 text-sm text-stone-500">Warte auf die anderen Spieler...</p>
-    <div class="mt-3 w-6 h-6 border-2 border-stone-200 border-t-stone-400 rounded-full animate-spin mx-auto"></div>
-  } @else {
-    <p class="mt-1 text-sm text-stone-500">Alle sind fertig. Ihr könnt zur Auswertung wechseln.</p>
+  @if (allVotingDone()) {
     <button
       class="mt-4 w-full max-w-xs bg-black text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
       (click)="endVotingEarly.emit()"
