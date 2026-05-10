@@ -7,7 +7,7 @@ export class SessionStateFactory {
         private readonly engineRegistry: GameEngineRegistry,
     ) {}
 
-    public createEmpty(args: {
+    public createEmptySession(args: {
         sessionId: string;
         sessionCode: string;
         now?: number;

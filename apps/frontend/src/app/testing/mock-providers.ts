@@ -9,7 +9,7 @@ import type {
   StickerCollageResultsState,
   SessionState,
 } from '@birthday/shared';
-import {lobbyPhase, buildingPhase, votingPhase, resultsPhase, nextRoundPhase, makeSessionState} from './mock-data';
+import {lobbyPhase, buildingPhase, votingPhase, resultsPhase, nextRoundPhase, makeGameState, makeSessionState, MOCK_SUBMISSIONS} from './mock-data';
 import type {VotingViewModel, VotingVariant, ResultsViewModel, WinnerStep} from '../features/game/player/player-view-models';
 
 @Injectable({providedIn: 'root'})
@@ -196,6 +196,7 @@ export type MockPhase = 'lobby' | 'building' | 'building-submitted' | 'building-
 export function provideMockState(phase: MockPhase) {
   const worldStore = new MockWorldStore();
   const sessionStore = new MockGameSessionStore();
+  const submissions = {0: MOCK_SUBMISSIONS} as Record<number, StickerCollage[]>;
 
   let sessionState: SessionState;
   switch (phase) {
@@ -206,7 +207,7 @@ export function provideMockState(phase: MockPhase) {
       sessionState = makeSessionState(buildingPhase());
       break;
     case 'building-submitted':
-      sessionState = makeSessionState(buildingPhase());
+      sessionState = makeSessionState(buildingPhase(), undefined, { submissions });
       break;
     case 'building-skipped':
       sessionState = makeSessionState(buildingPhase({skippedPlayerIds: ['player-1']}));
@@ -215,22 +216,22 @@ export function provideMockState(phase: MockPhase) {
       sessionState = makeSessionState(votingPhase({
         currentVotes: {'player-1': ['col-2'], 'player-2': ['col-1']},
         doneVotingIds: [],
-      }));
+      }), undefined, { submissions });
       break;
     case 'voting-done':
       sessionState = makeSessionState(votingPhase({
         currentVotes: {'player-1': ['col-2', 'col-3']},
         doneVotingIds: ['player-1'],
-      }));
+      }), undefined, { submissions });
       break;
     case 'voting-all-done':
       sessionState = makeSessionState(votingPhase({
         currentVotes: {'player-1': ['col-2', 'col-3'], 'player-2': ['col-1'], 'player-3': ['col-1', 'col-2']},
         doneVotingIds: ['player-1', 'player-2', 'player-3'],
-      }));
+      }), undefined, { submissions });
       break;
     case 'results':
-      sessionState = makeSessionState(resultsPhase());
+      sessionState = makeSessionState(resultsPhase(), undefined, { submissions });
       break;
     case 'next-round':
       sessionState = makeSessionState(nextRoundPhase());

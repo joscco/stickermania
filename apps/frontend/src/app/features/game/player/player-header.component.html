@@ -1,4 +1,4 @@
-<div class="sticky top-0 z-30 bg-white backdrop-blur border-b border-black/6">
+<div class="sticky top-0 z-30 text-black bg-stone-200 backdrop-blur">
   <div class="mx-auto w-full max-w-lg px-3 py-2">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2 min-w-0">
@@ -6,15 +6,21 @@
       </div>
 
       <div class="flex items-center gap-2 shrink-0">
+        @if (vm().timeLeft) {
+          <span
+            class="text-xs font-mono font-bold text-stone-600 bg-stone-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1">
+            <app-svg name="icon-timer-sm" w="20" class="inline"/> {{ vm().timeLeft }}
+          </span>
+        }
         @if (vm().showEditControls) {
           <button
-            class="text-xs text-stone-400 hover:text-stone-600 transition-colors underline decoration-dotted underline-offset-2 truncate"
+            class="text-black hover:text-stone-600 transition-colors truncate"
             (click)="editName.emit()"
             title="Name ändern"
           >{{ vm().playerName }}
           </button>
           <button
-            class="w-6 h-6 rounded-full border border-black flex items-center justify-center overflow-hidden bg-stone-100 text-[10px] text-stone-500 transition-colors"
+            class="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden bg-stone-100 text-[10px] text-stone-500 transition-colors"
             (click)="editAvatar.emit()"
             title="Avatar ändern"
           >
@@ -25,15 +31,7 @@
             }
           </button>
         }
-        @if (vm().timeLeft) {
-          <span
-            class="text-xs font-mono font-bold text-stone-600 bg-stone-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1">
-            <app-svg name="icon-timer-sm" w="20" class="inline"/> {{ vm().timeLeft }}
-          </span>
-        }
-        <span class="text-xs font-medium text-stone-700 inline-flex items-center gap-0.5">
-          <app-svg name="icon-star-sm" w="20" class="inline"/> {{ vm().score }}
-        </span>
+
       </div>
     </div>
   </div>

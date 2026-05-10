@@ -153,7 +153,7 @@ export async function registerApiRoutes(
             return reply.status(404).send({message: "Session not found"});
         }
 
-        const playerName = state.players[playerId]?.name ?? "anon";
+        const playerName = state.players[playerId]?.name ?? "anonymous";
         const prompt = state.gameState.currentPrompt ?? "";
 
         const saved = await assetRepository.saveCollage({sessionId, playerId, playerName, collageId, imageDataUrl, prompt});

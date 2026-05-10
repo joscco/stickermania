@@ -60,6 +60,9 @@ export class PlayerScreenDataService {
             case 'BUILDING': {
                 if (this.stickerService.hasSubmittedThisRound()) return PlayerScreen.BUILDING_SUBMITTED;
                 if (this.stickerService.hasSkippedThisRound()) return PlayerScreen.BUILDING_SKIPPED;
+                if (!this.stickerService.myHand()) {
+                    this.stickerService.requestHand();
+                }
                 return PlayerScreen.BUILDING;
             }
             case 'VOTING': {

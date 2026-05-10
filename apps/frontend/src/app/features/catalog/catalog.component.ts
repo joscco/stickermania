@@ -58,14 +58,12 @@ type ScreenKey =
 })
 export class CatalogComponent {
   public readonly currentScreen = signal<ScreenKey>('lobby-waiting');
-  public readonly showVmPanel = signal(true);
+  public readonly showVmPanel = signal(false);
   public readonly isEditingVm = signal(false);
   public readonly vmEditJson = signal('');
   public readonly editError = signal<string | null>(null);
 
   public readonly mockWorldStore = inject(WorldStore) as unknown as MockWorldStore;
-  public readonly mockSessionStore = inject(GameSessionStore) as unknown as MockGameSessionStore;
-  public readonly mockStickerService = inject(StickerPlayerService) as unknown as MockStickerPlayerService;
 
   public readonly currentMode = computed<ViewMode>(() =>
     this.currentScreen().startsWith('board-') ? 'board' : 'player'

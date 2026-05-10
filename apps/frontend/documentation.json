@@ -19807,7 +19807,7 @@
                 "deprecated": false,
                 "deprecationMessage": "",
                 "type": "Record<string, SessionPlayer>",
-                "defaultValue": "{\n  'player-1': { id: 'player-1', name: 'Anna', avatarUrl: 'assets/png/example_player_1.png', avatarAssetPath: null, score: 120, joinedAt: 0, connected: true, isHost: true, teamId: null },\n  'player-2': { id: 'player-2', name: 'Bruno', avatarUrl: 'assets/png/example_player_2.png', avatarAssetPath: null, score: 80, joinedAt: 0, connected: true, isHost: false, teamId: null },\n  'player-3': { id: 'player-3', name: 'Clara', avatarUrl: 'assets/png/example_player_3.png', avatarAssetPath: null, score: 60, joinedAt: 0, connected: true, isHost: false, teamId: null },\n}"
+                "defaultValue": "{\n  'player-1': { id: 'player-1', name: 'Anna', avatarUrl: 'assets/png/example_player_1.png', avatarAssetPath: null, score: 120, joinedAt: 0, connected: true, isHost: true, teamId: null },\n  'player-2': { id: 'player-2', name: 'Bruno', avatarUrl: 'assets/png/example_player_2.png', avatarAssetPath: null, score: 80, joinedAt: 0, connected: true, isHost: false, teamId: null },\n  'player-3': { id: 'player-3', name: 'Carl', avatarUrl: 'assets/png/example_player_3.png', avatarAssetPath: null, score: 60, joinedAt: 0, connected: true, isHost: false, teamId: null },\n}"
             },
             {
                 "name": "MOCK_PLAYERS_NO_AVATAR",
@@ -24026,7 +24026,7 @@
                     "deprecated": false,
                     "deprecationMessage": "",
                     "type": "Record<string, SessionPlayer>",
-                    "defaultValue": "{\n  'player-1': { id: 'player-1', name: 'Anna', avatarUrl: 'assets/png/example_player_1.png', avatarAssetPath: null, score: 120, joinedAt: 0, connected: true, isHost: true, teamId: null },\n  'player-2': { id: 'player-2', name: 'Bruno', avatarUrl: 'assets/png/example_player_2.png', avatarAssetPath: null, score: 80, joinedAt: 0, connected: true, isHost: false, teamId: null },\n  'player-3': { id: 'player-3', name: 'Clara', avatarUrl: 'assets/png/example_player_3.png', avatarAssetPath: null, score: 60, joinedAt: 0, connected: true, isHost: false, teamId: null },\n}"
+                    "defaultValue": "{\n  'player-1': { id: 'player-1', name: 'Anna', avatarUrl: 'assets/png/example_player_1.png', avatarAssetPath: null, score: 120, joinedAt: 0, connected: true, isHost: true, teamId: null },\n  'player-2': { id: 'player-2', name: 'Bruno', avatarUrl: 'assets/png/example_player_2.png', avatarAssetPath: null, score: 80, joinedAt: 0, connected: true, isHost: false, teamId: null },\n  'player-3': { id: 'player-3', name: 'Carl', avatarUrl: 'assets/png/example_player_3.png', avatarAssetPath: null, score: 60, joinedAt: 0, connected: true, isHost: false, teamId: null },\n}"
                 },
                 {
                     "name": "MOCK_PLAYERS_NO_AVATAR",

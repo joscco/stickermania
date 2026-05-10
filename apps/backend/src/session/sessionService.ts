@@ -58,7 +58,7 @@ export class SessionService {
         const sessionId = crypto.randomUUID().slice(0, 8);
         const sessionCode = await this.generateUniqueSessionCode();
 
-        const state = this.sessionStateFactory.createEmpty({sessionId, sessionCode});
+        const state = this.sessionStateFactory.createEmptySession({sessionId, sessionCode});
 
         await this.sessionRepository.create(state);
         this.runtimes.set(sessionId, {
