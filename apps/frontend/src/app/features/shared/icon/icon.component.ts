@@ -29,8 +29,6 @@ const SIZE_PX: Record<IconSize, number> = {
     xl: 120,
 };
 
-const SPRITE = 'assets/sprite.svg';
-
 /**
  * Renders an icon from the SVG sprite at a predefined design-tier size.
  *
@@ -73,7 +71,7 @@ export class IconComponent {
     /** Resolved pixel size. */
     readonly px = computed(() => SIZE_PX[this.size()]);
 
-    /** Full sprite href including the size-tier suffix. */
-    readonly href = computed(() => `${SPRITE}#icon-${this.name()}-${this.size()}`);
+    /** Local fragment reference — sprite is injected inline by preloadSprite(). */
+    readonly href = computed(() => `#icon-${this.name()}-${this.size()}`);
 }
 

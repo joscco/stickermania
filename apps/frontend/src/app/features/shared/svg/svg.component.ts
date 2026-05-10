@@ -1,5 +1,5 @@
 import {Component, computed, effect, input, signal} from '@angular/core';
-import {getSpriteViewBox, preloadSprite, SPRITE_PATH} from '../sticker-editor/sprite-url.util';
+import {getSpriteViewBox, preloadSprite} from '../sticker-editor/sprite-url.util';
 
 function parsePx(v: string | number): number | undefined {
   return typeof v === 'number' ? v : Number(v) || undefined;
@@ -35,9 +35,9 @@ export class SvgComponent {
 
   readonly href = computed(() => {
     const n = this.name();
-    if (n.startsWith('sprite:#')) return `${SPRITE_PATH}#${n.replace('sprite:#', '')}`;
-    if (n.startsWith('assets/')) return n;
-    return `${SPRITE_PATH}#${n}`;
+    const id = n.startsWith('sprite:#') ? n.replace('sprite:#', '') : n;
+    // Always use local fragment reference — the sprite is injected inline by preloadSprite()
+    return `#${id}`;
   });
 
   readonly viewBox = signal<string|null>(null);

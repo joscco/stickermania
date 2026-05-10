@@ -62,7 +62,7 @@
                 </div>
               </div>
               <button
-                class="shrink-0 rounded-lg p-2 text-stone-400 hover:text-blue-500 hover:bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-40"
+                class="shrink-0 rounded-lg p-2 text-stone-400 hover:text-blue-500 hover:bg-blue-50 transition-colors disabled:opacity-40"
                 [title]="downloadState(session.sessionId) === 'done' ? 'Heruntergeladen ✓' : downloadState(session.sessionId) === 'error' ? 'Keine Bilder vorhanden' : 'Bilder herunterladen'"
                 [disabled]="downloadState(session.sessionId) === 'loading'"
                 (click)="downloadSessionAssets(session.sessionId, session.sessionCode, $event)"
@@ -75,7 +75,7 @@
                 }
               </button>
               <button
-                class="shrink-0 rounded-lg p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                class="shrink-0 rounded-lg p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                 title="Session löschen"
                 (click)="deleteSession(session.sessionId, $event)"
               >

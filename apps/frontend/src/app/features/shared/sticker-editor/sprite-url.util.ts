@@ -1,8 +1,8 @@
 /**
  * Utilities for resolving sticker imageUrls that reference the SVG sprite.
  *
- * Usage in templates:
- *   <app-sticker-img [imageUrl]="sticker.imageUrl" class="w-10 h-10"/>
+ * The sprite is loaded once and injected as an inline <svg> into the document
+ * so that <use href="#symbol-id"> references work instantly and offline.
  */
 
 /**
@@ -18,22 +18,67 @@ export const SPRITE_PATH = 'assets/sprite.svg';
 
 /**
  * Returns the full href for use in <use href="...">.
- * "sprite:#sticker-eye-round" → "assets/sprite.svg#sticker-eye-round"
+ * After the sprite is injected inline, local fragment IDs (#id) work.
+ * Before injection, falls back to the external file reference.
  */
 export function getSpriteHref(imageUrl: string): string {
+    if (_spriteInjected) {
+        return `#${getSpriteId(imageUrl)}`;
+    }
     return `${SPRITE_PATH}#${getSpriteId(imageUrl)}`;
 }
 
-// ── Sprite → loadable URL ────────────────────────────────────────────────────
+// ── Sprite loading & injection ─────────────────────────────────────────────
 
 let _cachedSpriteText: string | null = null;
 let _cachedSpriteDoc: Document | null = null;
+let _spriteLoadPromise: Promise<string> | null = null;
+let _spriteInjected = false;
 
 async function fetchSpriteSvgText(): Promise<string> {
     if (_cachedSpriteText) return _cachedSpriteText;
-    const res = await fetch(SPRITE_PATH);
-    _cachedSpriteText = await res.text();
-    return _cachedSpriteText;
+    if (_spriteLoadPromise) return _spriteLoadPromise;
+
+    _spriteLoadPromise = (async () => {
+        // Try Cache API first (pre-warmed by service worker).
+        try {
+            const cache = await caches.open('sprite-v1');
+            const cached = await cache.match(SPRITE_PATH);
+            if (cached && cached.ok) {
+                _cachedSpriteText = await cached.text();
+                return _cachedSpriteText;
+            }
+        } catch {}
+
+        const res = await fetch(SPRITE_PATH);
+        if (!res.ok) throw new Error(`Failed to load sprite: ${res.status}`);
+        _cachedSpriteText = await res.text();
+        return _cachedSpriteText;
+    })();
+
+    return _spriteLoadPromise;
+}
+
+function injectSpriteInline(): void {
+    if (_spriteInjected || !_cachedSpriteText) return;
+    const container = document.createElement('div');
+    container.style.display = 'none';
+    container.setAttribute('aria-hidden', 'true');
+    container.innerHTML = _cachedSpriteText;
+
+    // Ensure it's an actual <svg> element
+    const svg = container.querySelector('svg');
+    if (svg) {
+        svg.removeAttribute('width');
+        svg.removeAttribute('height');
+        svg.removeAttribute('style');
+        svg.style.position = 'absolute';
+        svg.style.width = '0';
+        svg.style.height = '0';
+        svg.style.overflow = 'hidden';
+        document.body.appendChild(svg);
+        _spriteInjected = true;
+    }
 }
 
 function getCachedSpriteDoc(): Document | null {
@@ -44,12 +89,13 @@ function getCachedSpriteDoc(): Document | null {
 }
 
 /**
- * Kick off sprite loading so the cached doc is ready for synchronous lookups.
- * Call once at app init or component init.
+ * Kick off sprite loading and inject it inline.
+ * Call once at app init. Returns a promise that resolves when the sprite is ready.
  */
 export async function preloadSprite(): Promise<void> {
     await fetchSpriteSvgText();
     getCachedSpriteDoc();
+    injectSpriteInline();
 }
 
 /**
@@ -101,4 +147,3 @@ export async function resolveToImgUrl(
         intrinsicHeight: vbH,
     };
 }
-

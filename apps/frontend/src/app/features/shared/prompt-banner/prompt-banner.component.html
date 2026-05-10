@@ -1,6 +1,6 @@
 <div
   class="mx-auto shrink-0 w-full flex items-center justify-center text-black text-center overflow-hidden box-border"
-  [style.max-width.px]="effectiveMaxWidthPx()"
+  [style.max-width.px]="cappedMaxWidth()"
   [style.aspect-ratio]="SVG_ASPECT"
   style="background-image: url('assets/svg/prompt-background.svg'); background-size: 100% 100%;"
   [animOnInit]="anim()"

@@ -53,12 +53,9 @@
 }
 
 /* Prevent zoom / magnifier on mobile Safari and Chrome. */
-html {
-  touch-action: manipulation;
-  -webkit-text-size-adjust: 100%;
-  overscroll-behavior: none;
-}
-body {
+html, body {
+  height: 100%;
+  overflow: hidden;
   touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior: none;

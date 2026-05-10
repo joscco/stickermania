@@ -25,6 +25,8 @@ type ScreenKey =
   | 'connecting'
   | 'disconnected'
   | 'reconnecting'
+  | 'lobby-name'
+  | 'lobby-avatar'
   | 'lobby-waiting'
   | 'building'
   | 'building-submitted'
@@ -96,6 +98,8 @@ export class CatalogComponent {
     {key: 'connecting', label: 'Connecting', group: 'Player'},
     {key: 'disconnected', label: 'Disconnected', group: 'Player'},
     {key: 'reconnecting', label: 'Reconnecting', group: 'Player'},
+    {key: 'lobby-name', label: 'Lobby: Name', group: 'Player'},
+    {key: 'lobby-avatar', label: 'Lobby: Avatar', group: 'Player'},
     {key: 'lobby-waiting', label: 'Lobby Waiting', group: 'Player'},
     {key: 'building', label: 'Building', group: 'Player'},
     {key: 'building-submitted', label: 'Building (submitted)', group: 'Player'},
@@ -168,6 +172,8 @@ export class CatalogComponent {
       'connecting': 'lobby',
       'disconnected': 'lobby',
       'reconnecting': 'lobby',
+      'lobby-name': 'lobby',
+      'lobby-avatar': 'lobby',
       'lobby-waiting': 'lobby',
       'building': 'building',
       'building-submitted': 'building-submitted',

@@ -1,7 +1,7 @@
 import {CommonModule} from "@angular/common";
 import {Component, computed, input, OnDestroy, OnInit, signal} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
-import type {StickerCollageClientAction, ServerToClientMessage, SessionPlayer} from "@birthday/shared";
+import type {StickerCollageClientAction, ServerToClientMessage} from "@birthday/shared";
 import * as QRCode from "qrcode";
 import {Subscription} from "rxjs";
 import {BoardLobbyComponent} from './board-lobby.component';
@@ -11,62 +11,54 @@ import {BoardBuildingSceneComponent} from './scenes/building/board-building-scen
 import {BoardVotingSceneComponent} from './scenes/voting/board-voting-scene.component';
 import {BoardResultsSceneComponent} from './scenes/results/board-results-scene.component';
 import {BoardQrPanelComponent} from './qr-panel/board-qr-panel.component';
+import {BoardHeaderComponent} from './board-header.component';
+import {BoardScreenDataService} from './board-screen-data.service';
 import {AnimOnInitDirective} from '../../shared/animations/anim-on-init.directive';
-import {SvgComponent} from '../../shared/svg/svg.component';
 import {WebSocketService} from '../../../core/websocket.service';
 import {ApiService} from '../../../core/api.service';
 import {WorldStore} from '../../../core/world.store';
-import {BoardScreen} from '../player/player-screen.enum';
 
 @Component({
   selector: "app-board",
   standalone: true,
-  imports: [CommonModule, BoardLobbyComponent, BoardSetupDrawerComponent, BoardLobbySceneComponent, BoardBuildingSceneComponent, BoardVotingSceneComponent, BoardResultsSceneComponent, BoardQrPanelComponent, AnimOnInitDirective, SvgComponent],
+  imports: [
+    CommonModule, BoardLobbyComponent, BoardSetupDrawerComponent,
+    BoardLobbySceneComponent, BoardBuildingSceneComponent,
+    BoardVotingSceneComponent, BoardResultsSceneComponent,
+    BoardQrPanelComponent, BoardHeaderComponent,
+    AnimOnInitDirective,
+  ],
+  providers: [BoardScreenDataService],
   templateUrl: "./board.component.html",
 })
 export class BoardComponent implements OnInit, OnDestroy {
-  public readonly worldStore: WorldStore;
-
   public readonly catalogForcedPhase = input<string | null>(null);
 
   public readonly playerUrl = signal<string>("");
   public readonly playerQrDataUrl = signal<string | null>(null);
-  public readonly isSetupDrawerOpen = signal<boolean>(false);
   public readonly isBoardReady = signal<boolean>(false);
   public readonly isBootstrapping = signal<boolean>(true);
   public readonly bootErrorText = signal<string | null>(null);
   public readonly sessionCode = signal<string | null>(null);
-  public readonly timeLeft = signal<string>("");
+
+  public readonly phase = computed(() =>
+    this.catalogForcedPhase() ?? this.screenData.basePhase()
+  );
+
+  public readonly gameState = computed(() => this.screenData.gameState());
 
   private sessionId: string | null = null;
   private routeSubscription: Subscription | null = null;
   private unsubscribeWs: (() => void) | null = null;
-  private timerInterval: ReturnType<typeof setInterval> | null = null;
-
-  public readonly currentTimerEndsAt = computed(() => {
-    const ps = this.worldStore.stickerCollageGameState()?.phaseState;
-    if (!ps) return 0;
-    if (ps.phase === "BUILDING") return ps.roundEndsAt;
-    if (ps.phase === "VOTING") return ps.votingEndsAt;
-    if (ps.phase === "RESULTS") return ps.resultsEndsAt;
-    return 0;
-  });
-
-  public readonly gameState = computed(() => this.worldStore.stickerCollageGameState());
-  public readonly phase = computed(() => this.catalogForcedPhase() ?? (this.gameState()?.phaseState.phase ?? 'LOBBY'));
-  public readonly connectedPlayers = computed<SessionPlayer[]>(() =>
-    Object.values(this.worldStore.players()).filter(p => p.connected)
-  );
 
   public constructor(
     private readonly wsService: WebSocketService,
     private readonly apiService: ApiService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    worldStore: WorldStore,
-  ) {
-    this.worldStore = worldStore;
-  }
+    public readonly worldStore: WorldStore,
+    public readonly screenData: BoardScreenDataService,
+  ) {}
 
   public ngOnInit(): void {
     if (this.catalogForcedPhase()) {
@@ -100,21 +92,11 @@ export class BoardComponent implements OnInit, OnDestroy {
       this.routeSubscription.unsubscribe();
       this.routeSubscription = null;
     }
-
     this.cleanupBoardRuntime();
   }
 
   public async onSessionSelected(sessionCode: string): Promise<void> {
     await this.router.navigate(["/board", sessionCode]);
-  }
-
-
-  public toggleSetupDrawer(): void {
-    this.isSetupDrawerOpen.set(!this.isSetupDrawerOpen());
-  }
-
-  public closeSetupDrawer(): void {
-    this.isSetupDrawerOpen.set(false);
   }
 
   public async backToLobby(): Promise<void> {
@@ -147,13 +129,8 @@ export class BoardComponent implements OnInit, OnDestroy {
   }
 
   public async deleteSession(): Promise<void> {
-    if (!this.sessionId) {
-      return;
-    }
-
-    if (!confirm("Session wirklich löschen? Alle Spieler werden getrennt und alle Daten gehen verloren.")) {
-      return;
-    }
+    if (!this.sessionId) return;
+    if (!confirm("Session wirklich löschen? Alle Spieler werden getrennt und alle Daten gehen verloren.")) return;
 
     try {
       await this.apiService.deleteSession(this.sessionId);
@@ -163,7 +140,6 @@ export class BoardComponent implements OnInit, OnDestroy {
       console.error("Error while deleting session", this.sessionId);
     }
   }
-
 
   private async bootstrapBoardSession(sessionCode: string): Promise<void> {
     this.isBootstrapping.set(true);
@@ -179,7 +155,7 @@ export class BoardComponent implements OnInit, OnDestroy {
       this.playerUrl.set(playerPageUrl);
       this.playerQrDataUrl.set(await QRCode.toDataURL(playerPageUrl, {margin: 1, scale: 6}));
 
-      this.startTimerTick();
+      this.screenData.startTimerTick();
       this.unsubscribeWs = this.wsService.onMessage((message) => this.handleMessage(message));
       this.wsService.connect();
 
@@ -204,50 +180,16 @@ export class BoardComponent implements OnInit, OnDestroy {
       this.unsubscribeWs();
       this.unsubscribeWs = null;
     }
-
     this.wsService.disconnect();
     this.worldStore.clearSessionState();
-    this.isSetupDrawerOpen.set(false);
-
-    if (this.timerInterval) {
-      clearInterval(this.timerInterval);
-      this.timerInterval = null;
-    }
-
+    this.screenData.closeSetupDrawer();
+    this.screenData.stopTimerTick();
     this.isBoardReady.set(false);
   }
 
   private handleMessage(message: ServerToClientMessage): void {
-    switch (message.type) {
-      case "session-state": {
-        this.worldStore.setSessionState(message.state);
-        break;
-      }
-
-      default:
-        break;
+    if (message.type === "session-state") {
+      this.worldStore.setSessionState(message.state);
     }
-  }
-
-  private startTimerTick(): void {
-    if (this.timerInterval) {
-      clearInterval(this.timerInterval);
-      this.timerInterval = null;
-    }
-
-    this.timerInterval = setInterval(() => {
-      const endsAt = this.currentTimerEndsAt();
-
-      if (endsAt <= 0) {
-        this.timeLeft.set("");
-        return;
-      }
-
-      const remainingMilliseconds = Math.max(0, endsAt - Date.now());
-      const totalSeconds = Math.ceil(remainingMilliseconds / 1000);
-      const minutes = Math.floor(totalSeconds / 60);
-      const seconds = totalSeconds % 60;
-      this.timeLeft.set(`${minutes}:${String(seconds).padStart(2, "0")}`);
-    }, 500);
   }
 }

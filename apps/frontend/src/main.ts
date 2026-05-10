@@ -4,6 +4,13 @@ import {AppComponent} from "./app/app.component";
 import {routes} from "./app/app.routes";
 import {provideHttpClient} from '@angular/common/http';
 import {provideBrowserGlobalErrorListeners, provideZonelessChangeDetection} from '@angular/core';
+import {preloadSprite} from "./app/features/shared/sticker-editor/sprite-url.util";
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+preloadSprite();
 
 bootstrapApplication(AppComponent, {
   providers: [

@@ -120,6 +120,11 @@ export class PromptBannerComponent implements AfterViewInit, OnDestroy {
     return mw;
   });
 
+  readonly cappedMaxWidth = computed(() => {
+    const v = this.effectiveMaxWidthPx();
+    return isFinite(v) ? v : null;
+  });
+
   ngAfterViewInit(): void {
     this.resizeObserver = new ResizeObserver(([entry]) => {
       if (entry) {
