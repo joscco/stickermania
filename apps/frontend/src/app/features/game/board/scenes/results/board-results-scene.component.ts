@@ -9,11 +9,12 @@ import type {
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {BoardPlayerAvatarComponent} from '../../player-avatar/board-player-avatar.component';
 import {SvgComponent} from '../../../../shared/svg/svg.component';
+import {PromptBannerComponent} from '../../../../shared/prompt-banner/prompt-banner.component';
 
 @Component({
     selector: "app-board-results-scene",
     standalone: true,
-    imports: [CommonModule, AnimOnInitDirective, BoardPlayerAvatarComponent, SvgComponent],
+    imports: [CommonModule, AnimOnInitDirective, BoardPlayerAvatarComponent, SvgComponent, PromptBannerComponent],
     templateUrl: "./board-results-scene.component.html",
 })
 export class BoardResultsSceneComponent {

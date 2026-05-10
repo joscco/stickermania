@@ -1,9 +1,10 @@
 <div class="flex-1 flex flex-col overflow-y-auto">
   <!-- Results header -->
-  <div animOnInit="banner" class="text-black px-8 py-2 pt-3 text-center shrink-0"
-     style="background-image: url('assets/svg/prompt-background.svg'); background-size: 100% 100%;">
-    <h2 class="text-lg font-bold">Ergebnisse</h2>
-  </div>
+  <app-prompt-banner
+    text="Ergebnisse"
+    icon="icon-trophy-md"
+    anim="banner"
+  />
 
   <!-- My placement -->
   @if (myPlacement(); as placement) {

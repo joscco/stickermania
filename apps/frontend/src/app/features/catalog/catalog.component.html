@@ -1,5 +1,5 @@
-<div class="shrink-0 bg-white border-b border-stone-200 px-4 py-3 flex items-center gap-4 flex-wrap">
-  <h1 class="text-lg font-bold text-stone-800">Component Catalog</h1>
+<div class="shrink-0 bg-white border-b border-stone-200 px-4 py-3 flex flex-nowrap items-center gap-4">
+  <h1 class="text-lg text-nowrap font-bold text-stone-800">Component Catalog</h1>
 
   <label class="flex items-center gap-2 text-sm text-stone-600">
     View:
@@ -21,7 +21,7 @@
   }
 
   <button
-    class="ml-auto text-xs text-stone-500 hover:text-stone-700 border border-stone-300 rounded px-2 py-1"
+    class="ml-auto text-xs text-stone-500 hover:text-stone-700 border border-stone-300 rounded px-2 py-1 text-nowrap"
     (click)="toggleVmPanel()"
   >
     {{ showVmPanel() ? 'Hide' : 'Show' }} State

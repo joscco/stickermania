@@ -4,12 +4,13 @@ import type {StickerPack} from "@birthday/shared";
 import type {WinnerStep} from '../../player-view-models';
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {SvgComponent} from '../../../../shared/svg/svg.component';
+import {PromptBannerComponent} from '../../../../shared/prompt-banner/prompt-banner.component';
 import {PlayerStatusScreenComponent} from '../player-status-screen.component';
 
 @Component({
     selector: "app-player-results",
     standalone: true,
-    imports: [CommonModule, AnimOnInitDirective, SvgComponent, PlayerStatusScreenComponent],
+    imports: [CommonModule, AnimOnInitDirective, SvgComponent, PlayerStatusScreenComponent, PromptBannerComponent],
     templateUrl: "./player-results.component.html",
     host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })

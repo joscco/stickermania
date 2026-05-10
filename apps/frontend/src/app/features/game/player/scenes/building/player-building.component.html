@@ -1,10 +1,8 @@
-<!-- Prompt banner (Banderole) -->
-<div animOnInit="banner" class="text-black px-8 -pb-2 pt-2 text-center shrink-0"
-     style="background-image: url('assets/svg/prompt-background.svg'); background-size: 100% 100%;">
-  <span
-    class="text-xs font-medium opacity-60 uppercase tracking-wider">Runde {{ roundIndex() }}</span>
-  <h2 class="text-base font-bold">{{ prompt() }}</h2>
-</div>
+<app-prompt-banner
+  [text]="prompt()"
+  [subtitle]="'Runde ' + roundIndex()"
+  anim="banner"
+/>
 
 <!-- Shared editor (canvas + palette) -->
 @if (myHand()) {

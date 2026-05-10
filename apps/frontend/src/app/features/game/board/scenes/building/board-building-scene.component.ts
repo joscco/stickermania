@@ -2,12 +2,13 @@ import {Component, computed, input, output} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {StickerCollageGameState, SessionPlayer, StickerPack, StickerCollageBuildingState} from "@birthday/shared";
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
+import {PromptBannerComponent} from '../../../../shared/prompt-banner/prompt-banner.component';
 import {BoardPlayerAvatarComponent, type PlayerAvatarStatus} from '../../player-avatar/board-player-avatar.component';
 
 @Component({
     selector: "app-board-building-scene",
     standalone: true,
-    imports: [CommonModule, AnimOnInitDirective, BoardPlayerAvatarComponent],
+    imports: [CommonModule, AnimOnInitDirective, BoardPlayerAvatarComponent, PromptBannerComponent],
     templateUrl: "./board-building-scene.component.html",
 })
 export class BoardBuildingSceneComponent {

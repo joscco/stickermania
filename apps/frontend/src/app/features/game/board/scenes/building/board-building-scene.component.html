@@ -1,10 +1,10 @@
 <div class="h-full flex flex-col">
   <!-- Prompt banner (Banderole) -->
-  <div animOnInit="banner" class="text-black px-16 py-6 text-center mt-4"
-     style="background-image: url('assets/svg/prompt-background.svg'); background-size: 100% 100%;">
-    <span class="text-sm font-medium opacity-60 uppercase tracking-wider">Runde {{ gameState()?.currentRoundIndex ?? 0 }}</span>
-    <h1 class="text-3xl font-black mt-1">{{ gameState()?.currentPrompt ?? '' }}</h1>
-  </div>
+  <app-prompt-banner
+    [text]="gameState()?.currentPrompt ?? ''"
+    [subtitle]="'Runde ' + (gameState()?.currentRoundIndex ?? 0)"
+    anim="banner"
+  />
 
   <!-- Round info: newly unlocked pack + guaranteed pack -->
   @if (lastUnlockedPack() || guaranteedPack()) {

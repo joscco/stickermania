@@ -2,6 +2,7 @@ import {Component, input, output, ViewChild, computed} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {StickerDefinition, StickerPlacement, StickerPack, StickerHand} from "@birthday/shared";
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
+import {PromptBannerComponent} from '../../../../shared/prompt-banner/prompt-banner.component';
 import {StickerEditorComponent} from '../../../../shared/sticker-editor/sticker-editor.component';
 
 export interface SubmitCollageEvent {
@@ -12,7 +13,7 @@ export interface SubmitCollageEvent {
 @Component({
     selector: "app-player-building",
     standalone: true,
-    imports: [CommonModule, StickerEditorComponent, AnimOnInitDirective],
+    imports: [CommonModule, StickerEditorComponent, AnimOnInitDirective, PromptBannerComponent],
     templateUrl: "./player-building.component.html",
     host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })
