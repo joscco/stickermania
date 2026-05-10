@@ -282,6 +282,7 @@ export type StickerCollageServerEvent =
     | { type: "collage-submitted"; playerId: string; collageId: string }
     | { type: "voting-started"; votingEndsAt: number }
     | { type: "vote-registered"; voterId: string; collageId: string }
+    | { type: "vote-unregistered"; voterId: string; collageId: string }
     | { type: "results-ready"; winnerId: string | null; results: StickerCollageVoteResult[] }
     | { type: "pack-unlocked"; packId: string; packName: string }
     | { type: "prompt-chosen"; prompt: string }

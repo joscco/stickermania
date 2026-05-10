@@ -205,20 +205,6 @@ export class SessionService {
         return result?.state ?? null;
     }
 
-    private getOrCreateRuntime(sessionId: string): RuntimeEntry {
-        const existing = this.runtimes.get(sessionId);
-        if (existing) {
-            return existing;
-        }
-
-        const created: RuntimeEntry = {
-            sessionRuntime: {connectedClients: new Map<string, ConnectedClientSession>()},
-            phaseTimer: null,
-        };
-        this.runtimes.set(sessionId, created);
-        return created;
-    }
-
     private async generateUniqueSessionCode(): Promise<string> {
         for (let attempt = 0; attempt < 20; attempt += 1) {
             const code = generateSessionCode();

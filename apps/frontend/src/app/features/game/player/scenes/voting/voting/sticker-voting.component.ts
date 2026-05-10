@@ -34,17 +34,15 @@ export class StickerVotingComponent {
         return this.catalogMap.get(stickerId)?.imageUrl ?? "";
     }
 
-    public getPlayerName(playerId: string): string {
-        return this.players[playerId]?.name ?? "Anonym";
-    }
-
     public isOwnSubmission(submission: StickerCollage): boolean {
         return !!this.myPlayerId && submission.playerId === this.myPlayerId;
     }
 
     public onVote(collageId: string): void {
         const submission = this.submissions.find(s => s.id === collageId);
-        if (!submission || this.isOwnSubmission(submission)) return;
+        if (!submission || this.isOwnSubmission(submission)) {
+          return;
+        }
         // Clicking the already-voted collage → unvote (server handles retract via same action)
         // Clicking another collage → move vote there
         // In both cases emit the collageId; backend toggles / moves the single vote.

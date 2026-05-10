@@ -3,7 +3,6 @@
   <app-prompt-banner
     text="Ergebnisse"
     icon="icon-trophy-md"
-    [maxWidthPx]="512"
     anim="banner"
   />
 
@@ -73,7 +72,7 @@
             <div class="space-y-2">
               @for (prompt of promptChoices(); track prompt) {
                 <button
-                  class="w-full text-left p-3 rounded-xl border-2 border-stone-200 bg-white text-sm font-medium active:scale-[0.98] transition-transform hover:border-stone-400"
+                  class="w-full text-center p-3 rounded-xl border-2 border-stone-200 bg-white text-sm font-medium active:scale-[0.98] transition-transform hover:border-stone-400"
                   (click)="pickPrompt.emit(prompt)"
                 >
                   {{ prompt }}
@@ -85,14 +84,14 @@
         @case ('unlock') {
           <div animOnInit="choice" [animDelay]="0.25">
             <h3 class="text-sm font-semibold text-stone-700 mb-2">Schalte ein Sticker-Pack frei:</h3>
-            <div class="grid grid-cols-2 gap-2">
+            <div class="flex items-center justify-center">
               @for (pack of packUnlockChoices(); track pack.id) {
                 <button
                   class="p-3 rounded-xl border-2 border-stone-200 bg-white text-center active:scale-95 transition-transform hover:border-stone-400"
                   (click)="unlockPack.emit(pack.id)"
                 >
                   @if (pack.iconId) {
-                    <app-svg [name]="pack.iconId" [w]="28" class="mx-auto mb-1"/>
+                    <app-svg [name]="pack.iconId" [w]="28"/>
                   }
                   <div class="text-xs font-medium mt-1">{{ pack.name }}</div>
                 </button>

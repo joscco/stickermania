@@ -4,6 +4,7 @@ import type {
     StickerCollageGameState,
     StickerCollageVoteResult,
     StickerCollageResultsState,
+    StickerCollage,
     SessionPlayer,
 } from "@birthday/shared";
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
@@ -45,6 +46,18 @@ export class BoardResultsSceneComponent {
     public readonly guaranteedChosen = computed(() => this.resultsPs?.winnerChoicesDone ?? false);
 
     public readonly readyToAdvanceCount = computed(() => this.resultsPs?.readyToAdvanceIds.length ?? 0);
+
+    public readonly currentRoundSubmissions = computed<StickerCollage[]>(() => {
+        const ms = this.gameState();
+        if (!ms) return [];
+        return ms.submissions[ms.currentRoundIndex] ?? [];
+    });
+
+    public getSnapshotUrl(playerId: string): string | null {
+        const subs = this.currentRoundSubmissions();
+        const sub = subs.find(s => s.playerId === playerId);
+        return sub?.snapshotUrl ?? null;
+    }
 
     public getPlayer(playerId: string): SessionPlayer | undefined {
         return this.players()[playerId];

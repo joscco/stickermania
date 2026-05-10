@@ -1,81 +1,44 @@
-<div class="p-3">
-  @if (getMyVote() === null) {
-    <p class="text-xs text-stone-500 mb-2">Tippe auf eine Collage, um deinen Stern zu vergeben</p>
-  } @else {
-    <p class="text-xs text-stone-600 mb-2 font-medium">Stern vergeben — tippe nochmal zum Zurücknehmen, oder auf ein anderes Bild zum Verlegen</p>
-  }
+<div class="p-3 flex flex-col items-center justify-center text-center">
+  <p class="text-sm text-stone-500 mb-3">Tippe auf eine Collage, um deinen Stern zu vergeben.</p>
 
-  @if (ownSubmission(); as mine) {
-    <div class="mb-3 rounded-xl border border-stone-200 bg-stone-50 p-2">
-      <div class="mb-1 text-[11px] font-semibold text-stone-500">Dein Bild</div>
-      <div class="flex items-center gap-2">
-        <div class="h-20 w-20 shrink-0 rounded-lg bg-white overflow-hidden border border-stone-100">
-          @if (mine.snapshotUrl) {
-            <img [src]="mine.snapshotUrl" alt="Eigene Collage" class="w-full h-full object-contain" draggable="false"/>
-          } @else {
-            <div class="relative w-full h-full bg-stone-50">
-              @for (placement of mine.placements; track placement.instanceId) {
-                <app-sticker-img
-                  [imageUrl]="getStickerUrl(placement.stickerId)"
-                  [alt]="placement.stickerId"
-                  class="absolute w-6 h-6"
-                  [style.left.px]="placement.x * 0.24"
-                  [style.top.px]="placement.y * 0.24"
-                  [style.transform]="'rotate(' + placement.rotation + 'deg) scale(' + (placement.scale * 0.24) + ')'"
-                />
-              }
-            </div>
-          }
-        </div>
-        <div class="min-w-0">
-          <div class="text-xs text-stone-600 font-medium truncate">{{ getPlayerName(mine.playerId) }}</div>
-          <div class="text-[11px] text-stone-400">Nicht abstimmbar</div>
-        </div>
-      </div>
-    </div>
-  }
-
-  <div class="grid grid-cols-2 gap-3">
+  <div class="w-full flex flex-row items-center justify-center gap-2 flex-wrap">
     @for (submission of votableSubmissions(); track submission.id) {
       @let voted = getMyVote() === submission.id;
       <button
-        class="relative w-full max-w-55 justify-self-center rounded-xl border-2 p-1 bg-white transition-all active:scale-95"
+        class="relative w-full max-w-48 justify-self-center rounded-xl border-2 p-1 bg-white transition-all active:scale-95"
         [class.border-black]="voted"
         [class.shadow-md]="voted"
         [class.border-stone-200]="!voted"
         (click)="onVote(submission.id)"
       >
-          <div class="relative w-full aspect-square max-h-55 bg-stone-50 rounded-lg overflow-hidden">
-          @if (submission.snapshotUrl) {
-            <img
-              [src]="submission.snapshotUrl"
-              alt="Collage"
-              class="w-full h-full object-contain"
-              draggable="false"
-            />
-          } @else {
-            @for (placement of submission.placements; track placement.instanceId) {
-              <app-sticker-img
-                [imageUrl]="getStickerUrl(placement.stickerId)"
-                [alt]="placement.stickerId"
-                class="absolute w-8 h-8"
-                [style.left.px]="placement.x * 0.4"
-                [style.top.px]="placement.y * 0.4"
-                [style.transform]="'rotate(' + placement.rotation + 'deg) scale(' + (placement.scale * 0.4) + ')'"
-              />
-            }
-          }
-        </div>
-        <div class="mt-1 text-xs text-stone-600 font-medium truncate px-1">
-          {{ getPlayerName(submission.playerId) }}
+        <div class="relative w-full aspect-square max-h-48 bg-stone-50 rounded-lg overflow-hidden">
+          <img
+            [src]="submission.snapshotUrl"
+            alt="Collage"
+            class="w-full h-full object-contain"
+            draggable="false"
+          />
         </div>
         <!-- Star badge: shown when this collage has the vote -->
         @if (voted) {
-          <div class="absolute top-1 right-1 w-6 h-6 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold shadow">
+          <div
+            class="absolute top-1 right-1 w-6 h-6 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold shadow">
             ★
           </div>
         }
       </button>
     }
   </div>
+
+  @if (ownSubmission(); as mine) {
+    <div class="mt-3 text-xs font-semibold text-stone-500">Dein Bild:</div>
+    <div class="w-32 my-1 rounded-xl border border-stone-200 bg-stone-50 p-2">
+      <div class="flex flex-col items-center gap-2">
+        <div class="relative w-full aspect-square max-h-48 shrink-0 rounded-lg bg-white overflow-hidden border border-stone-100">
+          <img [src]="mine.snapshotUrl" alt="Eigene Collage" class="w-full h-full object-contain" draggable="false"/>
+        </div>
+      </div>
+    </div>
+    <div class="text-[0.6rem] text-stone-400">(Nicht abstimmbar)</div>
+  }
 </div>

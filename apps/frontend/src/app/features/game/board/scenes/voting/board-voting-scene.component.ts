@@ -1,6 +1,6 @@
 import {Component, computed, input, output, signal, ElementRef, AfterViewInit, OnDestroy, ViewChild} from "@angular/core";
 import {CommonModule} from "@angular/common";
-import type {StickerCollageGameState, StickerCollage, SessionPlayer} from "@birthday/shared";
+import type {StickerCollageGameState, StickerCollage} from "@birthday/shared";
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {SvgComponent} from '../../../../shared/svg/svg.component';
 import {PromptBannerComponent} from '../../../../shared/prompt-banner/prompt-banner.component';
@@ -18,7 +18,6 @@ const STRIP_PAD  = 32;
 })
 export class BoardVotingSceneComponent implements AfterViewInit, OnDestroy {
     public readonly gameState = input<StickerCollageGameState | null>(null);
-    public readonly players = input<Record<string, SessionPlayer>>({});
     public readonly endVotingEarly = output<void>();
 
     @ViewChild("strip") stripEl!: ElementRef<HTMLDivElement>;
@@ -56,10 +55,6 @@ export class BoardVotingSceneComponent implements AfterViewInit, OnDestroy {
         return ps?.phase === "VOTING" ? ps.doneVotingIds.length : 0;
     });
     public readonly roundParticipantCount = computed(() => this.gameState()?.roundParticipantIds.length ?? 0);
-
-    public getPlayer(playerId: string): SessionPlayer | undefined {
-        return this.players()[playerId];
-    }
 
     ngAfterViewInit(): void {
         const el = this.stripEl?.nativeElement;

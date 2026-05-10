@@ -15,65 +15,63 @@ import {SvgComponent} from '../../../shared/svg/svg.component';
  * - `podium-1/2/3` — results podium position
  */
 export type PlayerAvatarStatus =
-    | "idle"
-    | "drawing"
-    | "submitted"
-    | "skipped"
-    | "offline"
-    | "connected"
-    | "podium-1"
-    | "podium-2"
-    | "podium-3";
+  | "idle"
+  | "drawing"
+  | "submitted"
+  | "skipped"
+  | "offline"
+  | "connected"
+  | "podium";
 
 @Component({
-    selector: "app-board-player-avatar",
-    standalone: true,
-    imports: [CommonModule, SvgComponent],
-    templateUrl: "./board-player-avatar.component.html",
+  selector: "app-board-player-avatar",
+  standalone: true,
+  imports: [CommonModule, SvgComponent],
+  templateUrl: "./board-player-avatar.component.html",
 })
 export class BoardPlayerAvatarComponent {
-    public readonly player = input.required<SessionPlayer>();
-    public readonly status = input<PlayerAvatarStatus>("idle");
+  public readonly player = input.required<SessionPlayer>();
+  public readonly status = input<PlayerAvatarStatus>("idle");
 
-    public readonly sizeClasses = "w-24 h-24 rounded-2xl border-4 text-4xl";
+  public readonly sizeClasses = "w-24 h-24 rounded-2xl border-4 text-4xl";
 
-    public readonly borderClass = computed(() => {
-        switch (this.status()) {
-            case "submitted":  return "border-stone-700";
-            case "drawing":    return "border-stone-500";
-            case "skipped":    return "border-stone-300";
-            case "offline":    return "border-stone-300";
-            case "connected":  return "border-stone-700";
-            case "podium-1":   return "border-black";
-            case "podium-2":   return "border-stone-500";
-            case "podium-3":   return "border-stone-400";
-            default:           return "border-stone-200";
-        }
-    });
+  public readonly borderClass = computed(() => {
+    switch (this.status()) {
+      case "submitted":
+        return "border-stone-700";
+      case "drawing":
+        return "border-stone-500";
+      case "skipped":
+        return "border-stone-300";
+      case "offline":
+        return "border-stone-300";
+      case "connected":
+        return "border-stone-700";
+      case "podium":
+        return "border-black";
+      default:
+        return "border-stone-200";
+    }
+  });
 
-    public readonly dimmed = computed(() =>
-        this.status() === "idle" || this.status() === "skipped" || this.status() === "offline"
-    );
+  public readonly dimmed = computed(() =>
+    this.status() === "idle" || this.status() === "skipped" || this.status() === "offline"
+  );
 
-    /** Badge config: { spriteId, bgClass, animate } or null */
-    public readonly badge = computed<{spriteId: string; bg: string; animate?: boolean} | null>(() => {
-        switch (this.status()) {
-            case "submitted": return {spriteId: "icon-checkmark-sm", bg: "bg-stone-800"};
-            case "drawing":   return {spriteId: "icon-stickers-lg", bg: "bg-stone-600", animate: true};
-            case "skipped":   return {spriteId: "icon-pause-lg",      bg: "bg-stone-400"};
-            case "offline":   return {spriteId: "icon-hourglass-lg",  bg: "bg-stone-400"};
-            default:          return null;
-        }
-    });
-
-    /** Medal sprite ID for podium positions */
-    public readonly medalSpriteId = computed<string | null>(() => {
-        switch (this.status()) {
-            case "podium-1": return "icon-medal-gold-lg";
-            case "podium-2": return "icon-medal-silver-lg";
-            case "podium-3": return "icon-medal-bronze-lg";
-            default:         return null;
-        }
-    });
+  /** Badge config: { spriteId, bgClass, animate } or null */
+  public readonly badge = computed<{ spriteId: string; bg: string; animate?: boolean } | null>(() => {
+    switch (this.status()) {
+      case "submitted":
+        return {spriteId: "icon-checkmark-sm", bg: "bg-stone-800"};
+      case "drawing":
+        return {spriteId: "icon-stickers-lg", bg: "bg-stone-600", animate: true};
+      case "skipped":
+        return {spriteId: "icon-pause-lg", bg: "bg-stone-400"};
+      case "offline":
+        return {spriteId: "icon-hourglass-lg", bg: "bg-stone-400"};
+      default:
+        return null;
+    }
+  });
 }
 

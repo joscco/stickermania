@@ -15,7 +15,6 @@ import {PlayerResultsComponent} from './scenes/results/player-results.component'
 import {PlayerNextRoundComponent} from './scenes/next-round/player-next-round.component';
 import {PlayerHeaderComponent} from './player-header.component';
 import {PlayerScreenDataService} from './player-screen-data.service';
-import {StickerEventHandler} from '../services/sticker-event-handler';
 import {StickerPlayerService} from '../services/sticker-player.service';
 import {PlayerTimerService} from '../services/player-timer.service';
 import {PlayerMessageHandler} from '../services/player-message-handler.service';
@@ -50,7 +49,6 @@ import {PlayerScreen} from './player-screen.enum';
     PlayerMessageHandler,
     PlayerTimerService,
     StickerPlayerService,
-    StickerEventHandler,
     PlayerScreenDataService,
   ],
   templateUrl: "./player.component.html",
@@ -133,7 +131,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
     } catch {
       this.wsService.disconnect();
       this.reconnectService.clear();
-      this.sessionStore.showFeedback("Session wurde nicht gefunden oder ist abgelaufen.", "error");
       setTimeout(() => {
         void this.router.navigate(["/"], {
           queryParams: {error: "invalid-session"},

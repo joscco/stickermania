@@ -55,7 +55,6 @@ export interface NextRoundViewModel {
 export interface PlayerHeaderViewModel {
   playerName: string;
   avatarUrl: string | null;
-  score: number;
   timeLeft: string | null;
   showEditControls: boolean;
 }

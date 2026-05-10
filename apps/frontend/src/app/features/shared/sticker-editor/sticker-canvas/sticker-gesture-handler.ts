@@ -44,7 +44,7 @@ export type GestureCallbacks = {
   onSelectedChanged: (instanceId: string | null) => void;
   onStickerDraggedOff?: (id: string, allIds: string[]) => void;
   onDragNearEdge?: (outsideCanvas: boolean) => void;
-  onPointerUpCommit?: () => void;
+  onPointerUpCommit?: (ids: Set<string>) => void;
   onMoveActiveChanged?: (active: boolean) => void;
   onDoubleTap?: (ids: string[]) => void;
   /** Returns the current selection's bounding box (canvas-local) + rotation, or null. */
@@ -250,7 +250,8 @@ export class StickerGestureHandler {
       }
 
       if (this.didMove) {
-        this.callbacks.onPointerUpCommit?.();
+        const ids = this.currentSelectionIds();
+        this.callbacks.onPointerUpCommit?.(new Set(ids));
       }
       this.finaliseLasso();
       this.moveActive = false;

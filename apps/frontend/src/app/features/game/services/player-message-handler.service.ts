@@ -5,7 +5,6 @@ import {ReconnectService} from '../../../core/reconnect.service';
 import {WebSocketService} from '../../../core/websocket.service';
 import {WorldStore} from '../../../core/world.store';
 import {GameSessionStore} from '../../../core/challenge.store';
-import {StickerEventHandler} from './sticker-event-handler';
 
 @Injectable()
 export class PlayerMessageHandler {
@@ -14,7 +13,6 @@ export class PlayerMessageHandler {
   private readonly wsService = inject(WebSocketService);
   private readonly reconnectService = inject(ReconnectService);
   private readonly router = inject(Router);
-  private readonly stickerHandler = inject(StickerEventHandler);
 
   /** Expose the playerId so the component can read it after 'welcome'. */
   public readonly playerId = signal<string | null>(null);
@@ -32,9 +30,6 @@ export class PlayerMessageHandler {
       case "session-state":
         this.worldStore.setSessionState(message.state);
         this.syncPlayerModeFromState();
-        break;
-      case "game-event":
-        this.stickerHandler.handleEvent(message.event);
         break;
       case "error":
         this.onError(message.message);
@@ -91,14 +86,12 @@ export class PlayerMessageHandler {
       return;
     }
 
-    this.stickerHandler.syncMode();
+    this.sessionStore.clearTask("STICKER_COLLAGE");
   }
 
   // ─── Error handling ─────────────────────────────────────────
 
   private onError(message: string): void {
-    this.sessionStore.showFeedback(message, "error");
-
     const isFatal = /nicht gefunden|abgelaufen|gelöscht|wurde gelöscht|closed|deleted/i.test(message);
     if (isFatal) {
       this.wsService.disconnect();

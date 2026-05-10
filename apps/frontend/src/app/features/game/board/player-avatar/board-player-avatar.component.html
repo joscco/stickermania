@@ -15,11 +15,7 @@
     </div>
 
     <!-- Medal overlay (podium — derived from status) -->
-    @if (medalSpriteId(); as spriteId) {
-      <div class="absolute -top-4 -right-4">
-        <app-svg [name]="spriteId" w="32"/>
-      </div>
-    } @else if (badge(); as b) {
+    @if (badge(); as b) {
       <div class="absolute -top-1 -right-1 w-5 h-5 rounded-full grid place-items-center text-white shadow"
            [ngClass]="b.bg"
            [class.animate-pulse]="b.animate">

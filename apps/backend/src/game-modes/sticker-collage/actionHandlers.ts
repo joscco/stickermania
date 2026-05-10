@@ -197,10 +197,15 @@ export function castVote(
 
     const myVotes = votingPhase.currentVotes[playerId] ?? [];
     if (myVotes.length >= config.stickerCollage.votesPerPlayer) {
-        return noChange;
+        // Remove the first vote
+        votingPhase.currentVotes[playerId] = [...myVotes.slice(1), collageId];
+        return {stateChanged: true, events: [{type: "vote-registered", voterId: playerId, collageId}]};
     }
+
     if (myVotes.includes(collageId)) {
-        return noChange;
+        // Remove the selected vote again
+        votingPhase.currentVotes[playerId] = myVotes.filter(v => v !== collageId);
+        return {stateChanged: true, events: [{type: "vote-unregistered", voterId: playerId, collageId}]};
     }
 
     votingPhase.currentVotes[playerId] = [...myVotes, collageId];

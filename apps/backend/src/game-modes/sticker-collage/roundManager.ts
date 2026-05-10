@@ -100,15 +100,30 @@ export function transitionToResults(
             }))
             .sort((a, b) => b.voteCount - a.voteCount);
 
+        // Shared placements: players with the same voteCount get the same placement index.
+        // Points are awarded by placement index (not array position), so ties share points.
+        const placementOf = new Map<number, number>();
+        let currentPlacement = 0;
+        for (let i = 0; i < ranked.length; i++) {
+            if (i === 0 || ranked[i].voteCount !== ranked[i - 1].voteCount) {
+                currentPlacement = i;
+            }
+            placementOf.set(i, currentPlacement);
+        }
+
         lastVoteResults = ranked.map((entry, index): StickerCollageVoteResult => {
-            const points = index < config.pointsByPlacement.length ? config.pointsByPlacement[index] : 0;
+            const placement = placementOf.get(index)!;
+            const points = placement < config.pointsByPlacement.length ? config.pointsByPlacement[placement] : 0;
             if (points > 0 && state.players[entry.playerId]) {
                 state.players[entry.playerId].score += points;
             }
             return {collageId: entry.collageId, playerId: entry.playerId, voteCount: entry.voteCount, pointsAwarded: points};
         });
 
-        winnerId = ranked[0]?.playerId ?? null;
+        // Winner: random pick among all players tied for first place
+        const topVoteCount = ranked[0]?.voteCount ?? 0;
+        const topPlayers = ranked.filter(e => e.voteCount === topVoteCount);
+        winnerId = topPlayers[Math.floor(Math.random() * topPlayers.length)]?.playerId ?? null;
     }
 
     gameState.phaseState = {

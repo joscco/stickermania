@@ -26,11 +26,6 @@ export class PlayerScreenDataService {
     public readonly isEditingName = signal(false);
     public readonly isEditingAvatar = signal(false);
 
-    public readonly myScore = computed(() => {
-        const id = this.sessionStore.playerId();
-        return id ? (this.worldStore.players()[id]?.score ?? 0) : 0;
-    });
-
     public readonly isNameSet = computed(() => this.sessionStore.playerName().trim().length > 0);
 
     public readonly hasAvatar = computed(() => {
@@ -89,7 +84,6 @@ export class PlayerScreenDataService {
     public readonly headerVm = computed<PlayerHeaderViewModel>(() => ({
         playerName: this.sessionStore.playerName(),
         avatarUrl: this.existingAvatarImage(),
-        score: this.myScore(),
         timeLeft: null,
         showEditControls: this.isNameSet() && this.hasAvatar(),
     }));

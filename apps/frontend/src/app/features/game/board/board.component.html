@@ -36,7 +36,7 @@
                                           (endRoundEarly)="endRoundEarly()"/>
               }
               @case ("VOTING") {
-                <app-board-voting-scene [gameState]="gameState()" [players]="screenData.players()"
+                <app-board-voting-scene [gameState]="gameState()"
                                         (endVotingEarly)="endVotingEarly()"/>
               }
               @case ("RESULTS") {

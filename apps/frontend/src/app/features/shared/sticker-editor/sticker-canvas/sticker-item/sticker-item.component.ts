@@ -8,17 +8,14 @@ import {StickerImgComponent} from '../../sticker-img/sticker-img.component';
 export type StickerAnimState = 'entering' | 'settling' | 'idle' | 'removing';
 
 /**
- * Renders one sticker and owns its enter/settle/remove GSAP animations.
- *
- * The host div is positioned by the canvas (@for loop); the inner `.anim-target`
- * is what GSAP touches so it never conflicts with inline transforms on the host.
- *
- * State machine:
- *   entering  → fades in from opacity:0 (palette drag: pointer still down)
- *   settling  → spring bounce scale 0.72→1 (landed on canvas / duplicated)
- *   idle      → no animation running
- *   removing  → scale+fade out, emits `removed` when done
- */
+   * Renders one sticker and owns its enter/action/remove GSAP animations.
+   *
+   * State machine:
+   *   entering       → fades in from opacity:0 (palette drag: pointer still down)
+   *   settling     → horizontal spring bounce (flip action completed)
+   *   idle           → no animation running
+   *   removing       → scale+fade out, emits `removed` when done
+   */
 @Component({
   selector: 'app-sticker-item',
   standalone: true,
@@ -43,7 +40,6 @@ export class StickerItemComponent implements OnInit {
   @ViewChild('animTarget', {static: true}) private animTarget!: ElementRef<HTMLDivElement>;
 
   ngOnInit(): void {
-    // Start invisible for entering/settling states so first paint is already opacity:0.
     const initial = this.animState();
     if (initial === 'entering' || initial === 'settling') {
       gsap.set(this.animTarget.nativeElement, {opacity: 0});
@@ -65,7 +61,6 @@ export class StickerItemComponent implements OnInit {
 
     switch (state) {
       case 'entering':
-        // Pointer is still down — only fade in, no scale fight with drag.
         gsap.set(el, {scale: 0.5, opacity: 0});
         gsap.to(el, {
           scale: 1,

@@ -1,23 +1,35 @@
 <div class="h-full flex flex-col">
-  <!-- Results header -->
   <app-prompt-banner
     text="Ergebnisse"
     icon="icon-trophy-md"
     anim="medal"
   />
 
-  <!-- Podium -->
-  <div animOnInit="opacity" [animDelay]="0.3" class="flex-1 flex items-end justify-center gap-4 pb-8 px-4 mt-4">
+  <!-- Podium with collage images -->
+  <div animOnInit="opacity" [animDelay]="0.3" class="flex-1 flex items-end justify-center gap-4 px-4 mt-4 pb-2">
     <!-- 2nd place -->
-    @if (topResults().length > 1) {
+    @if (topResults().length > 1; as second) {
       <div class="flex flex-col items-center">
-        <app-board-player-avatar
-          [player]="getPlayer(topResults()[1].playerId)!"
-          status="podium-2"
-        />
-        <span class="text-xs text-stone-500 mt-1">{{ topResults()[1].voteCount }} Stimmen · +{{ topResults()[1].pointsAwarded }}</span>
-        <div class="w-32 h-28 bg-stone-500 rounded-t-xl mt-2 flex flex-col items-center justify-center gap-1">
-          <span class="text-4xl font-black text-white opacity-30">2</span>
+        <div class="mb-2">
+          <app-board-player-avatar
+            [player]="getPlayer(topResults()[1].playerId)!"
+            [status]="'podium'"
+          />
+        </div>
+        <div class="relative w-36 h-36 rounded-2xl overflow-hidden border-4 border-stone-400 bg-stone-100 shadow-lg">
+          @if (getSnapshotUrl(topResults()[1].playerId); as url) {
+            <img [src]="url" alt="" class="w-full h-full object-contain" draggable="false"/>
+          } @else {
+            <div class="w-full h-full grid place-items-center text-stone-300">
+              <app-svg name="icon-camera-lg" w="50" color="black"/>
+            </div>
+          }
+          <div class="absolute top-1.5 right-1.5">
+            <app-svg name="icon-medal-silver-lg" w="28"/>
+          </div>
+        </div>
+        <div class="w-36 h-24 bg-stone-400 rounded-t-xl mt-1 flex flex-col items-center justify-center">
+          <span class="text-3xl font-black text-white opacity-40">2</span>
         </div>
       </div>
     }
@@ -25,14 +37,27 @@
     <!-- 1st place -->
     @if (topResults().length > 0) {
       <div class="flex flex-col items-center">
-        <app-board-player-avatar
-          [player]="getPlayer(topResults()[0].playerId)!"
-          status="podium-1"
-        />
-        <span class="text-xs text-stone-500 mt-1">{{ topResults()[0].voteCount }} Stimmen · +{{ topResults()[0].pointsAwarded }}</span>
-        <div class="w-36 h-40 bg-black rounded-t-xl mt-2 flex flex-col items-center justify-center gap-1">
-          <app-svg name="icon-trophy-md" w="40" class="text-white opacity-60"/>
-          <span class="text-5xl font-black text-white opacity-30">1</span>
+        <div class="mb-2">
+          <app-board-player-avatar
+            [player]="getPlayer(topResults()[0].playerId)!"
+            [status]="'podium'"
+          />
+        </div>
+        <div class="relative w-44 h-44 rounded-2xl overflow-hidden border-4 border-black bg-stone-100 shadow-xl">
+          @if (getSnapshotUrl(topResults()[0].playerId); as url) {
+            <img [src]="url" alt="" class="w-full h-full object-contain" draggable="false"/>
+          } @else {
+            <div class="w-full h-full grid place-items-center text-stone-300">
+              <app-svg name="icon-camera-lg" w="60" color="black"/>
+            </div>
+          }
+          <div class="absolute top-1.5 right-1.5">
+            <app-svg name="icon-medal-gold-lg" w="32"/>
+          </div>
+        </div>
+        <div class="w-44 h-32 bg-black rounded-t-xl mt-1 flex flex-col items-center justify-center gap-1">
+          <app-svg name="icon-trophy-md" w="32" class="text-white opacity-60"/>
+          <span class="text-4xl font-black text-white opacity-30">1</span>
         </div>
       </div>
     }
@@ -40,13 +65,26 @@
     <!-- 3rd place -->
     @if (topResults().length > 2) {
       <div class="flex flex-col items-center">
-        <app-board-player-avatar
-          [player]="getPlayer(topResults()[2].playerId)!"
-          status="podium-3"
-        />
-        <span class="text-xs text-stone-500 mt-1">{{ topResults()[2].voteCount }} Stimmen · +{{ topResults()[2].pointsAwarded }}</span>
-        <div class="w-32 h-20 bg-stone-300 rounded-t-xl mt-2 flex flex-col items-center justify-center gap-1">
-          <span class="text-4xl font-black text-stone-500 opacity-60">3</span>
+        <div class="mb-2">
+          <app-board-player-avatar
+            [player]="getPlayer(topResults()[2].playerId)!"
+            [status]="'podium'"
+          />
+        </div>
+        <div class="relative w-36 h-36 rounded-2xl overflow-hidden border-4 border-stone-300 bg-stone-100 shadow-lg">
+          @if (getSnapshotUrl(topResults()[2].playerId); as url) {
+            <img [src]="url" alt="" class="w-full h-full object-contain" draggable="false"/>
+          } @else {
+            <div class="w-full h-full grid place-items-center text-stone-300">
+              <app-svg name="icon-camera-lg" w="50" color="black"/>
+            </div>
+          }
+          <div class="absolute top-1.5 right-1.5">
+            <app-svg name="icon-medal-bronze-lg" w="28"/>
+          </div>
+        </div>
+        <div class="w-36 h-16 bg-stone-300 rounded-t-xl mt-1 flex flex-col items-center justify-center">
+          <span class="text-3xl font-black text-stone-500 opacity-60">3</span>
         </div>
       </div>
     }

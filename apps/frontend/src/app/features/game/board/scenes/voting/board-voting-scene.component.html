@@ -53,16 +53,5 @@
         </div>
       }
     </div>
-    <!-- Player info -->
-    <div class="flex items-center gap-2">
-      @if (getPlayer(sub.playerId)?.avatarUrl; as url) {
-        <img [src]="url" alt=""
-             class="w-8 h-8 rounded-xl border border-stone-200 bg-white object-cover"
-             (error)="$any($event.target).style.display='none'" />
-      }
-      <span class="text-sm font-semibold text-stone-700">
-        {{ getPlayer(sub.playerId)?.name ?? 'Spieler' }}
-      </span>
-    </div>
   </div>
 </ng-template>
