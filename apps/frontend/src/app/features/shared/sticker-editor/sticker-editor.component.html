@@ -1,33 +1,12 @@
-<!-- Canvas area + Global Top-Bar. No z-index → no stacking context → dragged sticker's z-9500 beats palette's z-20. -->
+<!-- Canvas area. No z-index → no stacking context → dragged sticker's z-9500 beats palette's z-20. -->
 <div animOnInit="opacity"
-     class="flex-1 min-h-0 relative bg-stone-50 flex flex-col items-center justify-center gap-1 p-2 overflow-visible">
+     #canvasSizer
+     class="flex-1 min-h-0 relative flex items-center justify-center p-2 overflow-hidden">
 
-  <!-- Global Top-Bar: only canvas-wide actions -->
-  <div
-    data-canvas-toolbar
-    class="shrink-0 w-full h-9 max-w-[min(100%,var(--canvas-w,100%))] flex items-center gap-1 px-2 bg-stone-100 rounded-md"
-  >
-    <!-- Sticker count -->
-    <span class="text-xs select-none transition-colors"
-          [class.text-red-400]="!canAddMore()"
-          [class.text-stone-400]="canAddMore()"
-    >{{ placements().length }}/{{ maxStickers() }}</span>
-
-    <div class="flex-1"></div>
-
-    <!-- Clear all -->
-      <button
-        class="disabled:opacity-30 flex items-center justify-center"
-        title="Alle Sticker entfernen"
-        [disabled]="placements().length <= 0"
-        (click)="clearPlacements()"
-      >
-        <app-svg name="icon-editor-clear-all-sm" w="20"/>
-      </button>
-  </div>
-
-  <!-- Square canvas wrapper -->
-  <div class="min-h-0 aspect-square max-w-full" style="height: calc(100% - 2.5rem); overflow: visible;">
+  <!-- Square canvas wrapper — JS-sized to fit as a square within available space -->
+  <div class="relative" style="overflow: visible;"
+       [style.width.px]="canvasSizePx()"
+       [style.height.px]="canvasSizePx()">
     <app-sticker-canvas
       #stickerCanvas
       class="block w-full h-full"
@@ -37,6 +16,23 @@
       (placementsChanged)="onPlacementsChanged($event)"
       (stickerRemoved)="onStickerRemoved($event)"
     />
+
+    <!-- Floating toolbar: sticker count + clear all -->
+    <div data-canvas-toolbar
+         class="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 bg-white/80 backdrop-blur-sm rounded-md shadow-sm z-30">
+      <span class="text-xs select-none transition-colors"
+            [class.text-red-400]="!canAddMore()"
+            [class.text-stone-400]="canAddMore()"
+      >{{ placements().length }}/{{ maxStickers() }}</span>
+      <button
+        class="disabled:opacity-30 flex items-center justify-center"
+        title="Alle Sticker entfernen"
+        [disabled]="placements().length <= 0"
+        (click)="clearPlacements()"
+      >
+        <app-svg name="icon-editor-clear-all-sm" w="20"/>
+      </button>
+    </div>
   </div>
 </div>
 

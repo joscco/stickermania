@@ -1,14 +1,14 @@
 <div
-  class="mx-auto shrink-0 flex items-center justify-center text-black text-center overflow-hidden box-border"
-  [style.width.px]="widthPx()"
-  [style.height.px]="bannerHeight()"
+  class="mx-auto shrink-0 w-full flex items-center justify-center text-black text-center overflow-hidden box-border"
+  [style.max-width.px]="effectiveMaxWidthPx()"
+  [style.aspect-ratio]="SVG_ASPECT"
   style="background-image: url('assets/svg/prompt-background.svg'); background-size: 100% 100%;"
   [animOnInit]="anim()"
 >
   <div
     class="flex items-center justify-center overflow-hidden"
-    [style.width.px]="textAreaW()"
-    [style.height.px]="textAreaH()"
+    [style.width.%]="100 * TEXT_W_RATIO"
+    [style.height.%]="100 * TEXT_H_RATIO"
   >
 
     <div class="flex flex-col items-center justify-center min-w-0 flex-1">

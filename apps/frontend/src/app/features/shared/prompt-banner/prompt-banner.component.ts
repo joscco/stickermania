@@ -1,5 +1,6 @@
 import {
-  Component, input, computed,
+  Component, input, computed, signal,
+  ElementRef, AfterViewInit, OnDestroy, inject,
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {SvgComponent} from '../svg/svg.component';
@@ -49,17 +50,25 @@ function wrapLines(text: string, fontSize: number, maxWidth: number): number {
   templateUrl: './prompt-banner.component.html',
   host: {class: 'block'},
 })
-export class PromptBannerComponent {
+export class PromptBannerComponent implements AfterViewInit, OnDestroy {
 
   readonly text = input.required<string>();
-  readonly widthPx = input(400);
+  readonly widthPx = input<number | undefined>(undefined);
+  readonly maxWidthPx = input<number>(512);
   readonly subtitle = input<string>('');
   readonly icon = input<string>('');
   readonly anim = input<AnimType>('banner');
 
-  readonly bannerHeight = computed(() => Math.round(this.widthPx() / SVG_ASPECT));
-  readonly textAreaW = computed(() => Math.round(this.widthPx() * TEXT_W_RATIO));
-  readonly textAreaH = computed(() => Math.round(this.bannerHeight() * TEXT_H_RATIO));
+  private readonly el = inject(ElementRef);
+  private readonly measuredWidth = signal(400);
+  private resizeObserver?: ResizeObserver;
+
+  private readonly uncappedWidth = computed(() => this.widthPx() ?? this.measuredWidth());
+
+  readonly effectiveWidth = computed(() => Math.min(this.uncappedWidth(), this.maxWidthPx()));
+
+  readonly textAreaW = computed(() => Math.round(this.effectiveWidth() * TEXT_W_RATIO));
+  readonly textAreaH = computed(() => Math.round((this.effectiveWidth() / SVG_ASPECT) * TEXT_H_RATIO));
 
   readonly fontSize = computed(() => {
     const text = this.text();
@@ -92,4 +101,28 @@ export class PromptBannerComponent {
 
     return `${lo.toFixed(3)}rem`;
   });
+
+  readonly effectiveMaxWidthPx = computed(() => {
+    const mw = this.maxWidthPx();
+    const wp = this.widthPx();
+    if (wp !== undefined) return Math.min(wp, mw);
+    return mw;
+  });
+
+  ngAfterViewInit(): void {
+    this.resizeObserver = new ResizeObserver(([entry]) => {
+      if (entry) {
+        this.measuredWidth.set(entry.contentRect.width);
+      }
+    });
+    this.resizeObserver.observe(this.el.nativeElement);
+  }
+
+  ngOnDestroy(): void {
+    this.resizeObserver?.disconnect();
+  }
+
+  protected readonly SVG_ASPECT = SVG_ASPECT;
+  protected readonly TEXT_W_RATIO = TEXT_W_RATIO;
+  protected readonly TEXT_H_RATIO = TEXT_H_RATIO;
 }

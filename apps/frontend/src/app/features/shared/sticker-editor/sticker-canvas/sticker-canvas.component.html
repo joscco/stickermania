@@ -8,8 +8,7 @@
   <div class="absolute inset-0 pointer-events-none" style="background-image: url('assets/svg/editor-frame.svg'); background-size: 100% 100%; opacity: 0.2;"></div>
 
   <!-- Delete-zone overlay (animated via GSAP) -->
-  <div #deleteZone
-       [animPresence]="stickerWouldBeDeleted()"
+  <div [animPresence]="stickerWouldBeDeleted()"
        [animPresenceType]="'opacity'"
        data-delete-zone
        class="absolute inset-0 pointer-events-none flex items-center justify-center"

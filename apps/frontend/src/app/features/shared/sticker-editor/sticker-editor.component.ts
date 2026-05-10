@@ -5,6 +5,9 @@ import {
   output,
   signal,
   ViewChild,
+  ElementRef,
+  AfterViewInit,
+  OnDestroy,
 } from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {StickerDefinition, StickerPlacement, StickerPack} from "@birthday/shared";
@@ -35,7 +38,7 @@ import {isPointerOutsideRect, isPositionOutsideCanvas, clamp, radToDeg, pinchDis
   templateUrl: "./sticker-editor.component.html",
   host: {"class": "flex flex-col overflow-hidden"},
 })
-export class StickerEditorComponent {
+export class StickerEditorComponent implements AfterViewInit, OnDestroy {
   // ── Inputs / Outputs ──────────────────────────────────────────
   readonly paletteStickers = input<StickerDefinition[]>([]);
   readonly stickerCatalog = input<StickerDefinition[]>([]);
@@ -46,8 +49,29 @@ export class StickerEditorComponent {
 
   @ViewChild("stickerCanvas") stickerCanvas!: StickerCanvasComponent;
 
+  @ViewChild("canvasSizer") canvasSizer!: ElementRef<HTMLDivElement>;
+
   public readonly placements = signal<StickerPlacement[]>([]);
   public readonly canAddMore = computed(() => this.placements().length < this.maxStickers());
+
+  public readonly canvasSizePx = signal(400);
+  private sizerObserver?: ResizeObserver;
+
+  ngAfterViewInit(): void {
+    this.sizerObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const {width, height} = entry.contentRect;
+        this.canvasSizePx.set(Math.floor(Math.min(width, height)));
+      }
+    });
+    if (this.canvasSizer?.nativeElement) {
+      this.sizerObserver.observe(this.canvasSizer.nativeElement);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.sizerObserver?.disconnect();
+  }
 
   // ── Palette drag → instant sticker creation ───────────────────
 
