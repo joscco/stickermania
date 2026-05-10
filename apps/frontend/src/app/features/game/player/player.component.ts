@@ -1,5 +1,4 @@
-import {CommonModule} from "@angular/common";
-import {Component, computed, OnDestroy, OnInit, signal} from "@angular/core";
+import {Component, computed, input, OnDestroy, OnInit, signal} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
 import {LobbyAvatarComponent} from './lobby/lobby-avatar.component';
 import {LobbyNameComponent} from './lobby/lobby-name.component';
@@ -11,8 +10,11 @@ import {PlayerBuildingComponent, SubmitCollageEvent} from './scenes/building/pla
 import {PlayerBuildingSubmittedComponent} from './scenes/building-submitted/player-building-submitted.component';
 import {PlayerBuildingSkippedComponent} from './scenes/building-skipped/player-building-skipped.component';
 import {PlayerVotingComponent} from './scenes/voting/player-voting.component';
+import {PlayerVotingDoneComponent} from './scenes/voting/player-voting-done.component';
 import {PlayerResultsComponent} from './scenes/results/player-results.component';
 import {PlayerNextRoundComponent} from './scenes/next-round/player-next-round.component';
+import {PlayerHeaderComponent} from './player-header.component';
+import {PlayerScreenDataService} from './player-screen-data.service';
 import {StickerEventHandler} from '../services/sticker-event-handler';
 import {StickerPlayerService} from '../services/sticker-player.service';
 import {PlayerTimerService} from '../services/player-timer.service';
@@ -23,14 +25,12 @@ import {GameSessionStore} from '../../../core/challenge.store';
 import {WorldStore} from '../../../core/world.store';
 import {ReconnectService} from '../../../core/reconnect.service';
 import {PlayerScreen} from './player-screen.enum';
-import {SvgComponent} from '../../shared/svg/svg.component';
 
 
 @Component({
   selector: "app-player",
   standalone: true,
   imports: [
-    CommonModule,
     LobbyNameComponent,
     LobbyAvatarComponent,
     PlayerConnectingComponent,
@@ -41,32 +41,31 @@ import {SvgComponent} from '../../shared/svg/svg.component';
     PlayerBuildingSubmittedComponent,
     PlayerBuildingSkippedComponent,
     PlayerVotingComponent,
+    PlayerVotingDoneComponent,
     PlayerResultsComponent,
     PlayerNextRoundComponent,
-    SvgComponent,
+    PlayerHeaderComponent,
   ],
   providers: [
     PlayerMessageHandler,
     PlayerTimerService,
     StickerPlayerService,
     StickerEventHandler,
+    PlayerScreenDataService,
   ],
   templateUrl: "./player.component.html",
 })
 export class PlayerComponent implements OnInit, OnDestroy {
   private unsubscribeWs: (() => void) | null = null;
 
-  public readonly isEditingName = signal(false);
-  public readonly isEditingAvatar = signal(false);
-  public readonly wasConnected = computed(() => this.wsService.wasConnected());
+  public readonly catalogForcedScreen = input<PlayerScreen | null>(null);
 
-  /** When set via ?screen= query param, this overrides all live-state logic. */
-  private readonly forcedScreen = signal<PlayerScreen | null>(null);
+  private forcedScreenFromUrl = signal<PlayerScreen | null>(null);
 
-  /** Resolves which PlayerScreen to render from live store/connection state. */
   public readonly currentScreen = computed<PlayerScreen>(
-    () => this.forcedScreen() ?? this.screenFromStore()
+    () => this.catalogForcedScreen() ?? this.forcedScreenFromUrl() ?? this.screenData.baseScreen()
   );
+
   public readonly PlayerScreen = PlayerScreen;
 
   constructor(
@@ -80,6 +79,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     public readonly timer: PlayerTimerService,
     private readonly messageHandler: PlayerMessageHandler,
     public readonly stickerService: StickerPlayerService,
+    public readonly screenData: PlayerScreenDataService,
   ) {
     const deviceName = this.reconnectService.loadDeviceName();
     if (deviceName) {
@@ -87,36 +87,14 @@ export class PlayerComponent implements OnInit, OnDestroy {
     }
   }
 
-  public readonly myScore = computed(() => {
-    const id = this.sessionStore.playerId();
-    return id ? (this.worldStore.players()[id]?.score ?? 0) : 0;
-  });
-  public readonly isNameSet = computed(() => this.sessionStore.playerName().trim().length > 0);
-  public readonly hasAvatar = computed(() => {
-    const id = this.sessionStore.playerId();
-    return id ? !!this.worldStore.players()[id]?.avatarUrl : false;
-  });
-
-  public readonly existingAvatarImage = computed(() => {
-    const id = this.sessionStore.playerId();
-    return id ? (this.worldStore.players()[id]?.avatarUrl ?? null) : null;
-  });
-
-  public readonly isReady = computed(() => {
-    const state = this.worldStore.sessionState();
-    if (!state) return false;
-    const playerId = this.sessionStore.playerId();
-    if (!playerId) return false;
-    return !!state.players[playerId];
-  });
-
-  // ── Lifecycle ──────────────────────────────────────────────
-
   public async ngOnInit(): Promise<void> {
-    // ?screen=connecting  →  render that screen directly, skip all WS logic.
+    if (this.catalogForcedScreen()) {
+      return;
+    }
+
     const forcedScreenParam = this.route.snapshot.queryParamMap.get('screen');
     if (forcedScreenParam) {
-      this.forcedScreen.set(forcedScreenParam as PlayerScreen);
+      this.forcedScreenFromUrl.set(forcedScreenParam as PlayerScreen);
       return;
     }
 
@@ -169,58 +147,25 @@ export class PlayerComponent implements OnInit, OnDestroy {
     this.unsubscribeWs?.();
   }
 
-  // ── Screen resolution from live store ─────────────────────
-
-  private screenFromStore(): PlayerScreen {
-    const wsStatus = this.wsService.status();
-    if (wsStatus === 'idle' || wsStatus === 'connecting') {
-      return this.wasConnected() ? PlayerScreen.RECONNECTING : PlayerScreen.CONNECTING;
-    }
-    if (wsStatus === 'disconnected') return PlayerScreen.DISCONNECTED;
-    if (!this.isNameSet() || this.isEditingName()) return PlayerScreen.LOBBY_NAME;
-    if (this.isEditingAvatar()) return PlayerScreen.LOBBY_AVATAR;
-    if (!this.isReady()) return PlayerScreen.CONNECTING;
-    if (!this.hasAvatar()) return PlayerScreen.LOBBY_AVATAR;
-
-    const phase = this.worldStore.stickerCollageGameState()?.phaseState.phase ?? 'LOBBY';
-    switch (phase) {
-      case 'LOBBY':            return PlayerScreen.LOBBY_WAITING;
-      case 'BUILDING': {
-        if (this.stickerService.hasSubmittedThisRound()) return PlayerScreen.BUILDING_SUBMITTED;
-        if (this.stickerService.hasSkippedThisRound())  return PlayerScreen.BUILDING_SKIPPED;
-        if (!this.stickerService.myHand()) {
-          this.stickerService.requestHand();
-        }
-        return PlayerScreen.BUILDING;
-      }
-      case 'VOTING':           return PlayerScreen.VOTING;
-      case 'RESULTS':          return PlayerScreen.RESULTS;
-      case 'NEXT_ROUND_SETUP': return PlayerScreen.NEXT_ROUND;
-      default:                 return PlayerScreen.LOBBY_WAITING;
-    }
-  }
-
-  // ── UI actions ─────────────────────────────────────────────
-
-  public startEditName(): void { this.isEditingName.set(true); }
-  public startEditAvatar(): void { this.isEditingAvatar.set(true); }
+  public startEditName(): void { this.screenData.isEditingName.set(true); }
+  public startEditAvatar(): void { this.screenData.isEditingAvatar.set(true); }
 
   public onNameSubmitted(name: string): void {
     this.wsService.send({ type: "set-name", name });
     this.sessionStore.playerName.set(name);
     this.reconnectService.saveDeviceName(name);
-    this.isEditingName.set(false);
+    this.screenData.isEditingName.set(false);
   }
 
   public onAvatarSubmitted(dataUrl: string): void {
     this.wsService.send({ type: "submit-avatar", avatarDataUrl: dataUrl });
     this.sessionStore.clearTask();
-    this.isEditingAvatar.set(false);
+    this.screenData.isEditingAvatar.set(false);
   }
 
   public onAvatarSkipped(): void {
     this.sessionStore.clearTask();
-    this.isEditingAvatar.set(false);
+    this.screenData.isEditingAvatar.set(false);
   }
 
   public onSubmitCollage(event: SubmitCollageEvent): void {

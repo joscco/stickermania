@@ -1,4 +1,4 @@
-import {signal, computed, Injectable} from '@angular/core';
+import {signal, computed, inject, Injectable} from '@angular/core';
 import type {
   StickerCollageGameState,
   StickerCollage,
@@ -10,6 +10,7 @@ import type {
   SessionState,
 } from '@birthday/shared';
 import {lobbyPhase, buildingPhase, votingPhase, resultsPhase, nextRoundPhase, makeSessionState} from './mock-data';
+import type {VotingViewModel, VotingVariant, ResultsViewModel, WinnerStep} from '../features/game/player/player-view-models';
 
 @Injectable({providedIn: 'root'})
 export class MockWorldStore {
@@ -59,8 +60,8 @@ export class MockWebSocketService {
 
 @Injectable({providedIn: 'root'})
 export class MockStickerPlayerService {
-  private readonly worldStore = inject(MockWorldStore);
-  private readonly sessionStore = inject(MockGameSessionStore);
+  private readonly worldStore = inject(WorldStore);
+  private readonly sessionStore = inject(GameSessionStore);
 
   readonly gameState = computed<StickerCollageGameState | null>(() =>
     this.worldStore.stickerCollageGameState()
@@ -163,7 +164,7 @@ export class MockStickerPlayerService {
     const ms = this.gameState();
     return !!ms && !!ms.promptHistory[ms.currentRoundIndex + 1];
   });
-  readonly hasUnlockedPack = computed(() => !!this.resultsState()?.lastUnlockedPackId);
+  readonly hasUnlockedPack = computed(() => !!(this.resultsState()?.lastUnlockedPackId));
   readonly hasLockedPacks = computed(() => (this.resultsState()?.packUnlockChoices ?? []).length > 0);
   readonly canReadyToAdvance = computed(() => this.resultsState()?.winnerChoicesDone ?? true);
   readonly stickerPacks = computed(() => this.gameState()?.stickerPacks ?? []);
@@ -185,7 +186,6 @@ export class MockStickerPlayerService {
   pickGuaranteedPack(_packId: string) {}
 }
 
-import {inject} from '@angular/core';
 import {WorldStore} from '../core/world.store';
 import {GameSessionStore} from '../core/challenge.store';
 import {WebSocketService} from '../core/websocket.service';
@@ -248,5 +248,60 @@ export function provideMockState(phase: MockPhase) {
       {provide: WebSocketService, useClass: MockWebSocketService},
       {provide: StickerPlayerService, useClass: MockStickerPlayerService},
     ],
+  };
+}
+
+export function getMockVotingVm(phase: MockPhase, worldStore: MockWorldStore, sessionStore: MockGameSessionStore, stickerService: MockStickerPlayerService): VotingViewModel {
+  let variant: VotingVariant = 'active';
+  if (phase === 'voting-done') variant = 'done';
+  if (phase === 'voting-all-done') variant = 'all-done';
+
+  return {
+    variant,
+    prompt: stickerService.currentPrompt(),
+    submissions: stickerService.currentRoundSubmissions(),
+    stickerCatalog: stickerService.stickerCatalog(),
+    myVotes: stickerService.myVotes(),
+    votesRemaining: (stickerService.gameState()?.votesPerPlayer ?? 3) - stickerService.myVotes().length,
+    players: worldStore.players(),
+    myPlayerId: sessionStore.playerId(),
+  };
+}
+
+export function getMockResultsVm(worldStore: MockWorldStore, sessionStore: MockGameSessionStore, stickerService: MockStickerPlayerService): ResultsViewModel {
+  const isWinner = stickerService.isWinner();
+  const winnerChoicesDone = stickerService.winnerChoicesDone();
+  const hasChosenPrompt = stickerService.hasChosenPrompt();
+  const hasLockedPacks = stickerService.hasLockedPacks();
+  const hasUnlockedPack = stickerService.hasUnlockedPack();
+  const promptChoices = stickerService.promptChoices();
+  const packUnlockChoices = stickerService.packUnlockChoices();
+
+  let currentWinnerStep: WinnerStep = null;
+  if (isWinner && !winnerChoicesDone) {
+    if (!hasChosenPrompt && promptChoices.length > 0) {
+      currentWinnerStep = 'prompt';
+    } else if (hasChosenPrompt && !hasUnlockedPack && packUnlockChoices.length > 0) {
+      currentWinnerStep = 'unlock';
+    } else if (hasChosenPrompt && (hasUnlockedPack || !hasLockedPacks) && stickerService.guaranteedPackChoices().length > 0) {
+      currentWinnerStep = 'guaranteed';
+    }
+  }
+
+  const winnerId = stickerService.winnerId();
+  return {
+    myPlacement: stickerService.myPlacement(),
+    isWinner,
+    winnerChoicesDone,
+    currentWinnerStep,
+    hasChosenPrompt,
+    hasLockedPacks,
+    hasUnlockedPack,
+    promptChoices,
+    packUnlockChoices,
+    guaranteedPackChoices: stickerService.guaranteedPackChoices(),
+    winnerId,
+    winnerName: winnerId ? (worldStore.players()[winnerId]?.name ?? 'Der Gewinner') : '',
+    canReadyToAdvance: stickerService.canReadyToAdvance(),
   };
 }

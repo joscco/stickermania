@@ -1,6 +1,7 @@
-import {Component, computed, input, output} from "@angular/core";
+import {Component, input, output} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {StickerPack} from "@birthday/shared";
+import type {WinnerStep} from '../../player-view-models';
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {SvgComponent} from '../../../../shared/svg/svg.component';
 import {PlayerStatusScreenComponent} from '../player-status-screen.component';
@@ -16,6 +17,7 @@ export class PlayerResultsComponent {
     public readonly myPlacement = input<number | null>(null);
     public readonly isWinner = input<boolean>(false);
     public readonly winnerChoicesDone = input<boolean>(false);
+    public readonly currentWinnerStep = input<WinnerStep>(null);
     public readonly hasChosenPrompt = input<boolean>(false);
     public readonly hasLockedPacks = input<boolean>(false);
     public readonly hasUnlockedPack = input<boolean>(false);
@@ -30,27 +32,4 @@ export class PlayerResultsComponent {
     public readonly unlockPack = output<string>();
     public readonly pickGuaranteedPack = output<string>();
     public readonly readyToAdvance = output<void>();
-
-    public readonly currentWinnerStep = computed<"prompt" | "unlock" | "guaranteed" | null>(() => {
-        if (!this.isWinner() || this.winnerChoicesDone()) return null;
-
-        if (!this.hasChosenPrompt() && this.promptChoices().length > 0) {
-            return "prompt";
-        }
-        if (
-            this.hasChosenPrompt()
-            && !this.hasUnlockedPack()
-            && this.packUnlockChoices().length > 0
-        ) {
-            return "unlock";
-        }
-        if (
-            this.hasChosenPrompt()
-            && (this.hasUnlockedPack() || !this.hasLockedPacks())
-            && this.guaranteedPackChoices().length > 0
-        ) {
-            return "guaranteed";
-        }
-        return null;
-    });
 }

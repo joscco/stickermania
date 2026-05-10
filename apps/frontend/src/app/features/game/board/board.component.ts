@@ -1,5 +1,5 @@
 import {CommonModule} from "@angular/common";
-import {Component, computed, OnDestroy, OnInit, signal} from "@angular/core";
+import {Component, computed, input, OnDestroy, OnInit, signal} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
 import type {StickerCollageClientAction, ServerToClientMessage, SessionPlayer} from "@birthday/shared";
 import * as QRCode from "qrcode";
@@ -16,6 +16,7 @@ import {SvgComponent} from '../../shared/svg/svg.component';
 import {WebSocketService} from '../../../core/websocket.service';
 import {ApiService} from '../../../core/api.service';
 import {WorldStore} from '../../../core/world.store';
+import {BoardScreen} from '../player/player-screen.enum';
 
 @Component({
   selector: "app-board",
@@ -25,6 +26,8 @@ import {WorldStore} from '../../../core/world.store';
 })
 export class BoardComponent implements OnInit, OnDestroy {
   public readonly worldStore: WorldStore;
+
+  public readonly catalogForcedPhase = input<string | null>(null);
 
   public readonly playerUrl = signal<string>("");
   public readonly playerQrDataUrl = signal<string | null>(null);
@@ -50,7 +53,7 @@ export class BoardComponent implements OnInit, OnDestroy {
   });
 
   public readonly gameState = computed(() => this.worldStore.stickerCollageGameState());
-  public readonly phase = computed(() => this.gameState()?.phaseState.phase ?? 'LOBBY');
+  public readonly phase = computed(() => this.catalogForcedPhase() ?? (this.gameState()?.phaseState.phase ?? 'LOBBY'));
   public readonly connectedPlayers = computed<SessionPlayer[]>(() =>
     Object.values(this.worldStore.players()).filter(p => p.connected)
   );
@@ -66,6 +69,12 @@ export class BoardComponent implements OnInit, OnDestroy {
   }
 
   public ngOnInit(): void {
+    if (this.catalogForcedPhase()) {
+      this.isBoardReady.set(true);
+      this.isBootstrapping.set(false);
+      return;
+    }
+
     this.routeSubscription = this.route.paramMap.subscribe(async (paramMap) => {
       const routeSessionCode = paramMap.get("sessionCode");
 

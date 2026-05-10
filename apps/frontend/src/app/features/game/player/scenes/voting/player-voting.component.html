@@ -1,18 +1,18 @@
 <div animOnInit="banner" class="text-black px-8 py-2 pt-3 text-center shrink-0"
      style="background-image: url('assets/svg/prompt-background.svg'); background-size: 100% 100%;">
   <span class="text-xs font-medium opacity-60 uppercase tracking-wider">Abstimmung</span>
-  <h2 class="text-base font-bold">{{ prompt() }}</h2>
+  <h2 class="text-base font-bold">{{ vm().prompt }}</h2>
 </div>
 
-@if (!myDoneVoting()) {
+@if (vm().variant === 'active') {
   <div animOnInit="opacity" [animDelay]="0.15" class="flex-1 overflow-y-auto">
     <app-sticker-voting
-      [submissions]="submissions()"
-      [stickerCatalog]="stickerCatalog()"
-      [myVotes]="myVotes()"
-      [votesRemaining]="votesRemaining()"
-      [players]="players()"
-      [myPlayerId]="myPlayerId()"
+      [submissions]="vm().submissions"
+      [stickerCatalog]="vm().stickerCatalog"
+      [myVotes]="vm().myVotes"
+      [votesRemaining]="vm().votesRemaining"
+      [players]="vm().players"
+      [myPlayerId]="vm().myPlayerId"
       (voteClicked)="castVote.emit($event)"
     />
   </div>
@@ -25,7 +25,7 @@
   </div>
 } @else {
   <app-player-voting-done
-    [allVotingDone]="allVotingDone()"
+    [allVotingDone]="vm().variant === 'all-done'"
     (endVotingEarly)="endVotingEarly.emit()"
   />
 }

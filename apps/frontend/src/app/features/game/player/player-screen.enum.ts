@@ -15,6 +15,8 @@ export enum PlayerScreen {
     BUILDING_SUBMITTED  = 'building-submitted',
     BUILDING_SKIPPED    = 'building-skipped',
     VOTING              = 'voting',
+    VOTING_DONE         = 'voting-done',
+    VOTING_ALL_DONE     = 'voting-all-done',
     RESULTS             = 'results',
     NEXT_ROUND          = 'next-round',
 }
@@ -42,6 +44,8 @@ export const ALL_PLAYER_SCREENS: PlayerScreen[] = [
     PlayerScreen.BUILDING_SUBMITTED,
     PlayerScreen.BUILDING_SKIPPED,
     PlayerScreen.VOTING,
+    PlayerScreen.VOTING_DONE,
+    PlayerScreen.VOTING_ALL_DONE,
     PlayerScreen.RESULTS,
     PlayerScreen.NEXT_ROUND,
 ];

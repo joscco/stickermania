@@ -1,53 +1,12 @@
 <div class="h-dvh overflow-hidden bg-white text-stone-900 overscroll-none flex flex-col no-select"
      style="padding-bottom: env(safe-area-inset-bottom);">
 
-  <!-- Header -->
-  <div class="sticky top-0 z-30 bg-white backdrop-blur border-b border-black/6">
-    <div class="mx-auto w-full max-w-lg px-3 py-2">
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2 min-w-0">
-          <span class="text-sm font-semibold shrink-0">Stickermania</span>
-        </div>
+  <app-player-header
+    [vm]="screenData.headerVm()"
+    (editName)="startEditName()"
+    (editAvatar)="startEditAvatar()"
+  />
 
-        <div class="flex items-center gap-2 shrink-0">
-          @if (isNameSet()
-          && hasAvatar()
-          && currentScreen() !== PlayerScreen.LOBBY_NAME
-          && currentScreen() !== PlayerScreen.LOBBY_AVATAR) {
-
-            <button
-              class="text-xs text-stone-400 hover:text-stone-600 transition-colors underline decoration-dotted underline-offset-2 truncate"
-              (click)="startEditName()"
-              title="Name ändern"
-            >{{ sessionStore.playerName() }}
-            </button>
-            <button
-              class="w-6 h-6 rounded-full border border-black flex items-center justify-center overflow-hidden bg-stone-100 text-[10px] text-stone-500 transition-colors"
-              (click)="startEditAvatar()"
-              title="Avatar ändern"
-            >
-              @if (existingAvatarImage(); as avatarUrl) {
-                <img class="w-full h-full object-cover" [src]="avatarUrl" alt="Avatar"/>
-              } @else {
-                <span>?</span>
-              }
-            </button>
-          }
-          @if (timer.timeLeft()) {
-            <span
-              class="text-xs font-mono font-bold text-stone-600 bg-stone-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1">
-              <app-svg name="icon-timer-sm" w="20" class="inline"/> {{ timer.timeLeft() }}
-            </span>
-          }
-          <span class="text-xs font-medium text-stone-700 inline-flex items-center gap-0.5">
-            <app-svg name="icon-star-sm" w="20" class="inline"/> {{ myScore() }}
-          </span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Content — single master switch over every possible screen -->
   <div class="flex-1 overflow-hidden flex flex-col">
     @switch (currentScreen()) {
       @case (PlayerScreen.CONNECTING) {
@@ -65,7 +24,7 @@
       @case (PlayerScreen.LOBBY_AVATAR) {
         <app-lobby-avatar
           [playerName]="sessionStore.playerName()"
-          [initialAvatarImage]="existingAvatarImage()"
+          [initialAvatarImage]="screenData.existingAvatarImage()"
           (avatarSubmitted)="onAvatarSubmitted($event)"
           (skipped)="onAvatarSkipped()"
         />
@@ -75,58 +34,63 @@
       }
       @case (PlayerScreen.BUILDING) {
         <app-player-building
-          [roundIndex]="stickerService.currentRoundIndex()"
-          [prompt]="stickerService.currentPrompt()"
-          [myHand]="stickerService.myHand() ?? null"
-          [stickerCatalog]="stickerService.stickerCatalog()"
-          [stickerPacks]="stickerService.stickerPacks()"
-          [maxStickersOnCanvas]="stickerService.maxStickersOnCanvas()"
+          [roundIndex]="screenData.buildingVm().roundIndex"
+          [prompt]="screenData.buildingVm().prompt"
+          [myHand]="screenData.buildingVm().myHand"
+          [stickerCatalog]="screenData.buildingVm().stickerCatalog"
+          [stickerPacks]="screenData.buildingVm().stickerPacks"
+          [maxStickersOnCanvas]="screenData.buildingVm().maxStickersOnCanvas"
           (skipRound)="stickerService.skipRound()"
           (submitCollage)="onSubmitCollage($event)"
         />
       }
       @case (PlayerScreen.BUILDING_SUBMITTED) {
         <app-player-building-submitted
-          [allPlayersDone]="stickerService.allPlayersDone()"
+          [allPlayersDone]="screenData.buildingSubmittedVm().allPlayersDone"
           (endRoundEarly)="stickerService.endRoundEarly()"
         />
       }
       @case (PlayerScreen.BUILDING_SKIPPED) {
         <app-player-building-skipped
-          [allPlayersDone]="stickerService.allPlayersDone()"
+          [allPlayersDone]="screenData.buildingSkippedVm().allPlayersDone"
           (endRoundEarly)="stickerService.endRoundEarly()"
         />
       }
       @case (PlayerScreen.VOTING) {
         <app-player-voting
-          [prompt]="stickerService.currentPrompt()"
-          [submissions]="stickerService.currentRoundSubmissions()"
-          [stickerCatalog]="stickerService.stickerCatalog()"
-          [myVotes]="stickerService.myVotes()"
-          [votesRemaining]="stickerService.votesPerPlayer() - stickerService.myVotes().length"
-          [players]="worldStore.players()"
-          [myPlayerId]="sessionStore.playerId() ?? ''"
-          [myDoneVoting]="stickerService.myDoneVoting()"
-          [allVotingDone]="stickerService.allVotingDone()"
+          [vm]="screenData.votingVm()"
           (castVote)="stickerService.castVote($event)"
           (doneVoting)="stickerService.doneVoting()"
           (endVotingEarly)="stickerService.endVotingEarly()"
         />
       }
+      @case (PlayerScreen.VOTING_DONE) {
+        <app-player-voting-done
+          [allVotingDone]="false"
+          (endVotingEarly)="stickerService.endVotingEarly()"
+        />
+      }
+      @case (PlayerScreen.VOTING_ALL_DONE) {
+        <app-player-voting-done
+          [allVotingDone]="true"
+          (endVotingEarly)="stickerService.endVotingEarly()"
+        />
+      }
       @case (PlayerScreen.RESULTS) {
         <app-player-results
-          [myPlacement]="stickerService.myPlacement()"
-          [isWinner]="stickerService.isWinner()"
-          [winnerChoicesDone]="stickerService.winnerChoicesDone()"
-          [hasChosenPrompt]="stickerService.hasChosenPrompt()"
-          [hasLockedPacks]="stickerService.hasLockedPacks()"
-          [hasUnlockedPack]="stickerService.hasUnlockedPack()"
-          [promptChoices]="stickerService.promptChoices()"
-          [packUnlockChoices]="stickerService.packUnlockChoices()"
-          [guaranteedPackChoices]="stickerService.guaranteedPackChoices()"
-          [winnerId]="stickerService.winnerId()"
-          [winnerName]="stickerService.winnerId() ? (worldStore.players()[stickerService.winnerId()!]?.name ?? 'Der Gewinner') : ''"
-          [canReadyToAdvance]="stickerService.canReadyToAdvance()"
+          [myPlacement]="screenData.resultsVm().myPlacement"
+          [isWinner]="screenData.resultsVm().isWinner"
+          [winnerChoicesDone]="screenData.resultsVm().winnerChoicesDone"
+          [currentWinnerStep]="screenData.resultsVm().currentWinnerStep"
+          [hasChosenPrompt]="screenData.resultsVm().hasChosenPrompt"
+          [hasLockedPacks]="screenData.resultsVm().hasLockedPacks"
+          [hasUnlockedPack]="screenData.resultsVm().hasUnlockedPack"
+          [promptChoices]="screenData.resultsVm().promptChoices"
+          [packUnlockChoices]="screenData.resultsVm().packUnlockChoices"
+          [guaranteedPackChoices]="screenData.resultsVm().guaranteedPackChoices"
+          [winnerId]="screenData.resultsVm().winnerId"
+          [winnerName]="screenData.resultsVm().winnerName"
+          [canReadyToAdvance]="screenData.resultsVm().canReadyToAdvance"
           (pickPrompt)="stickerService.pickPrompt($event)"
           (unlockPack)="stickerService.unlockPack($event)"
           (pickGuaranteedPack)="stickerService.pickGuaranteedPack($event)"
@@ -134,7 +98,7 @@
         />
       }
       @case (PlayerScreen.NEXT_ROUND) {
-        <app-player-next-round [hasNewPack]="!!stickerService.lastUnlockedPackId()"/>
+        <app-player-next-round [hasNewPack]="screenData.nextRoundVm().hasNewPack"/>
       }
       @default {
         <app-player-connecting/>
