@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type {FastifyInstance} from "fastify";
-import type {StickerDefinition, StickerPack} from "@birthday/shared";
+import type {StickerDefinition} from "@birthday/shared";
 import type {BackendConfig} from "../config.js";
 import {buildCatalog, buildPacks} from "../game-modes/sticker-collage/stickerCatalog.js";
 

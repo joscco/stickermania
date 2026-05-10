@@ -1,11 +1,10 @@
 import {CommonModule} from "@angular/common";
 import {Component, computed, input, OnDestroy, OnInit, signal} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
-import type {StickerCollageClientAction, ServerToClientMessage} from "@birthday/shared";
+import type {ServerToClientMessage, StickerCollageClientAction} from "@birthday/shared";
 import * as QRCode from "qrcode";
 import {Subscription} from "rxjs";
 import {BoardLobbyComponent} from './board-lobby.component';
-import {BoardSetupDrawerComponent} from './setup-drawer/board-setup-drawer.component';
 import {BoardLobbySceneComponent} from './scenes/lobby/board-lobby-scene.component';
 import {BoardBuildingSceneComponent} from './scenes/building/board-building-scene.component';
 import {BoardVotingSceneComponent} from './scenes/voting/board-voting-scene.component';
@@ -22,7 +21,7 @@ import {WorldStore} from '../../../core/world.store';
   selector: "app-board",
   standalone: true,
   imports: [
-    CommonModule, BoardLobbyComponent, BoardSetupDrawerComponent,
+    CommonModule, BoardLobbyComponent,
     BoardLobbySceneComponent, BoardBuildingSceneComponent,
     BoardVotingSceneComponent, BoardResultsSceneComponent,
     BoardQrPanelComponent, BoardHeaderComponent,

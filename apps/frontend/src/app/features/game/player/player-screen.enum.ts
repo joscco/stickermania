@@ -32,27 +32,3 @@ export enum BoardScreen {
 /** Union of all screen identifiers used in the screenshot script. */
 export type AnyScreen = PlayerScreen | BoardScreen;
 
-/** All screens in the order they appear during a session. */
-export const ALL_PLAYER_SCREENS: PlayerScreen[] = [
-    PlayerScreen.CONNECTING,
-    PlayerScreen.RECONNECTING,
-    PlayerScreen.DISCONNECTED,
-    PlayerScreen.LOBBY_NAME,
-    PlayerScreen.LOBBY_AVATAR,
-    PlayerScreen.LOBBY_WAITING,
-    PlayerScreen.BUILDING,
-    PlayerScreen.BUILDING_SUBMITTED,
-    PlayerScreen.BUILDING_SKIPPED,
-    PlayerScreen.VOTING,
-    PlayerScreen.VOTING_DONE,
-    PlayerScreen.VOTING_ALL_DONE,
-    PlayerScreen.RESULTS,
-    PlayerScreen.NEXT_ROUND,
-];
-
-export const ALL_BOARD_SCREENS: BoardScreen[] = [
-    BoardScreen.LOBBY,
-    BoardScreen.BUILDING,
-    BoardScreen.VOTING,
-    BoardScreen.RESULTS,
-];

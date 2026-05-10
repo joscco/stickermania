@@ -1,4 +1,4 @@
-<div pageRoot class="h-screen w-screen bg-stone-100 text-stone-900 flex flex-col items-center">
+<div pageRoot class="h-screen w-screen bg-stone-100 text-stone-900 flex flex-col items-center justify-center">
   <div class="w-full max-w-xl px-4 flex flex-col flex-1 min-h-0 py-10">
 
     <!-- Header – flex-1 oben damit er sich vertikal zentriert -->
@@ -21,7 +21,7 @@
             [disabled]="isCreating()"
             (click)="createSession()"
     >
-      {{ isCreating() ? 'Erstelle...' : 'Neue Session starten →' }}
+      {{ isCreating() ? 'Erstelle...' : 'Neue Session starten' }}
     </button>
 
     <!-- Existing sessions -->
@@ -54,8 +54,6 @@
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
                   <span class="font-bold tracking-widest text-stone-900">{{ session.sessionCode }}</span>
-                  <span
-                    class="text-xs px-2 py-0.5 rounded-full bg-stone-100 text-stone-500">Stickermania</span>
                 </div>
                 <div class="text-xs text-stone-400 mt-0.5">
                   {{ session.playerCount }} Spieler · {{ timeAgo(session.createdAt) }}

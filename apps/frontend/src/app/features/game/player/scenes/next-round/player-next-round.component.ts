@@ -1,10 +1,11 @@
 import {Component, input} from "@angular/core";
 import {PlayerStatusScreenComponent} from '../player-status-screen.component';
+import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 
 @Component({
     selector: "app-player-next-round",
     standalone: true,
-    imports: [PlayerStatusScreenComponent],
+  imports: [PlayerStatusScreenComponent, AnimOnInitDirective],
     templateUrl: "./player-next-round.component.html",
     host: {"class": "flex-1 flex flex-col"},
 })

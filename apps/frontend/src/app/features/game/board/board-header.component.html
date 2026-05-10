@@ -14,15 +14,9 @@
     <div></div>
   }
 
-  <div class="flex items-center gap-2 text-xs text-stone-400">
+  <div class="flex items-center gap-2 text-md">
     @if (vm().timeLeft) {
-      <span class="rounded-lg bg-stone-100 px-2 py-1 font-mono text-stone-600">{{ vm().timeLeft }}</span>
+      <span class="rounded-lg bg-black px-2 py-1 font-mono text-white">{{ vm().timeLeft }}</span>
     }
-    <button
-      class="h-8 flex items-center justify-center rounded-lg border border-black/10 bg-white px-3 text-stone-600 hover:bg-stone-50 gap-2"
-      (click)="openSettings.emit()">
-      <app-svg name="icon-settings-sm" w="20"/>
-      Einstellungen
-    </button>
   </div>
 </div>
