@@ -1,13 +1,12 @@
 import {Component, input, output} from "@angular/core";
-import {AnimOnInitDirective, AnimGroupDirective} from '../../../../shared/animations/anim-on-init.directive';
-import {SvgComponent} from '../../../../shared/svg/svg.component';
+import {PlayerStatusScreenComponent} from '../player-status-screen.component';
 
 @Component({
     selector: "app-player-building-skipped",
     standalone: true,
-    imports: [AnimOnInitDirective, AnimGroupDirective, SvgComponent],
+    imports: [PlayerStatusScreenComponent],
     templateUrl: "./player-building-skipped.component.html",
-    host: {"class": "flex-1 flex flex-col overflow-hidden"},
+    host: {"class": "flex-1 flex flex-col"},
 })
 export class PlayerBuildingSkippedComponent {
     public readonly allPlayersDone = input<boolean>(false);

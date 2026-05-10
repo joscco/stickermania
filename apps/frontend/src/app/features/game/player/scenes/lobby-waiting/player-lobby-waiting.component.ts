@@ -1,13 +1,13 @@
 import {Component, output} from "@angular/core";
-import {AnimOnInitDirective, AnimGroupDirective} from '../../../../shared/animations/anim-on-init.directive';
-import {SvgComponent} from '../../../../shared/svg/svg.component';
+import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
+import {PlayerStatusScreenComponent} from '../player-status-screen.component';
 
 @Component({
     selector: "app-player-lobby-waiting",
     standalone: true,
-    imports: [AnimOnInitDirective, AnimGroupDirective, SvgComponent],
+  imports: [AnimOnInitDirective, PlayerStatusScreenComponent],
     templateUrl: "./player-lobby-waiting.component.html",
-    host: {"class": "h-full flex-1 flex flex-col"},
+    host: {"class": "flex-1 flex flex-col"},
 })
 export class PlayerLobbyWaitingComponent {
     public readonly startGame = output<void>();

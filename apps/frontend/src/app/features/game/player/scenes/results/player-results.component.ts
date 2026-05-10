@@ -3,11 +3,12 @@ import {CommonModule} from "@angular/common";
 import type {StickerPack} from "@birthday/shared";
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {SvgComponent} from '../../../../shared/svg/svg.component';
+import {PlayerStatusScreenComponent} from '../player-status-screen.component';
 
 @Component({
     selector: "app-player-results",
     standalone: true,
-    imports: [CommonModule, AnimOnInitDirective, SvgComponent],
+    imports: [CommonModule, AnimOnInitDirective, SvgComponent, PlayerStatusScreenComponent],
     templateUrl: "./player-results.component.html",
     host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })
