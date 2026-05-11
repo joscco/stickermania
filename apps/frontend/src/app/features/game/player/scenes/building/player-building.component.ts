@@ -1,7 +1,7 @@
 import {Component, input, output, ViewChild, computed, ElementRef, AfterViewInit, OnDestroy, inject, signal, DestroyRef} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {StickerDefinition, StickerPlacement, StickerPack, StickerHand} from "@birthday/shared";
-import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
+import {AnimGroupDirective, AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {PromptBannerComponent} from '../../../../shared/prompt-banner/prompt-banner.component';
 import {StickerEditorComponent} from '../../../../shared/sticker-editor/sticker-editor.component';
 
@@ -13,9 +13,9 @@ export interface SubmitCollageEvent {
 @Component({
     selector: "app-player-building",
     standalone: true,
-    imports: [CommonModule, StickerEditorComponent, AnimOnInitDirective, PromptBannerComponent],
+  imports: [CommonModule, StickerEditorComponent, AnimOnInitDirective, PromptBannerComponent, AnimGroupDirective],
     templateUrl: "./player-building.component.html",
-    host: {"class": "flex-1 flex flex-col overflow-hidden"},
+    host: {"class": "flex-1 flex flex-col"},
 })
 export class PlayerBuildingComponent implements AfterViewInit, OnDestroy {
     public readonly roundIndex = input<number>(0);

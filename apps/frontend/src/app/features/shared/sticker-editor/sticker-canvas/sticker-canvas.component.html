@@ -102,7 +102,7 @@
     />
   </div>
 
-  <div [animPresence]="stickers().length === 0"
+  <div [animPresence]="stickers().length === 0 && canvasSize() > 250"
        [animPresenceType]="'opacity'"
        class="absolute inset-0 flex items-center justify-center text-stone-300 pointer-events-none">
     <div class="text-center">

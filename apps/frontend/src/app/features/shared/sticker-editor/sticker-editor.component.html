@@ -10,6 +10,7 @@
       #stickerCanvas
       class="block w-full h-full"
       [stickers]="placements()"
+      [canvasSize]="canvasSizePx()"
       [stickerCatalog]="stickerCatalog()"
       [maxStickers]="maxStickers()"
       (placementsChanged)="onPlacementsChanged($event)"
@@ -18,7 +19,7 @@
 
     <!-- Floating toolbar: sticker count + clear all -->
     <div data-canvas-toolbar
-         class="absolute top-1.5 left-1.5 flex items-center gap-1.5 px-2 py-1 bg-white/80 backdrop-blur-sm rounded-md shadow-sm z-30">
+         class="absolute top-[3%] left-[3%] flex items-center gap-1.5 px-2 py-1 bg-white/80 backdrop-blur-sm rounded-md shadow-sm z-30">
       <span class="text-xs select-none transition-colors"
             [class.text-red-400]="!canAddMore()"
             [class.text-stone-400]="canAddMore()"
@@ -36,7 +37,7 @@
 </div>
 
 <!-- Palette strip — z-20 so it visually covers canvas overflow upwards (stickers go behind palette once released) -->
-<div #paletteRef animOnInit="opacity" class="relative z-20 shrink-0 border-t border-black/10 bg-white">
+<div #paletteRef animOnInit="opacity" class="relative z-20 shrink-0 bg-white">
   <app-sticker-palette
     [stickers]="paletteStickers()"
     [stickerPacks]="stickerPacks()"

@@ -3,20 +3,21 @@
     text="Ergebnisse"
     icon="icon-trophy-md"
     anim="medal"
+    class="shrink-0"
   />
 
-  <!-- Podium with collage images -->
-  <div animOnInit="opacity" [animDelay]="0.3" class="flex-1 flex items-end justify-center gap-4 px-4 mt-4 pb-2">
+  <!-- Podium: grows to fill space, items shrink to fit -->
+  <div animOnInit="opacity" [animDelay]="0.3" class="flex-1 min-h-0 flex items-center justify-center gap-2 sm:gap-4 px-2 sm:px-4 py-2">
     @for (slot of podiumSlots(); track slot.placement) {
-      <div class="flex flex-col items-center">
-        <div class="mb-2">
+      <div class="flex flex-col items-center min-h-0 min-w-0">
+        <div class="mb-1 shrink-0">
           <app-board-player-avatar
             [player]="getPlayer(slot.result.playerId)!"
             [status]="'podium'"
           />
         </div>
-        <div class="relative rounded-2xl overflow-hidden border-4 bg-stone-100"
-             [ngClass]="[slot.imgSize, slot.borderClass, slot.shadowClass]">
+        <div class="relative rounded-2xl overflow-hidden border-4 bg-stone-100 shrink-0 aspect-square"
+             [ngClass]="[slot.imgSizeClass, slot.borderClass, slot.shadowClass]">
           @if (getSnapshotUrl(slot.result.playerId); as url) {
             <img [src]="url" alt="" class="w-full h-full object-contain" draggable="false"/>
           } @else {
@@ -28,14 +29,14 @@
             <app-svg [name]="slot.medalIcon" [w]="slot.medalW"/>
           </div>
         </div>
-        <app-svg [name]="slot.stepIcon" [ngClass]="[slot.stepW, slot.stepColor]"/>
-        <app-stars-display [count]="slot.result.voteCount" [starSize]="slot.starSize" [colorClass]="slot.starColor" class="mt-1"/>
+        <app-svg [name]="slot.stepIcon" [ngClass]="[slot.stepColor]" class="w-24 sm:w-32 md:w-36 max-h-16 sm:max-h-20 md:max-h-28"/>
+        <app-stars-display [count]="slot.result.voteCount" [starSize]="slot.starSize" [colorClass]="slot.starColor" class="mt-0.5 shrink-0"/>
       </div>
     }
   </div>
 
   <!-- Winner action status -->
-  <div animOnInit="opacity" [animDelay]="0.7" class="mx-4 mb-4 p-4 bg-stone-50 rounded-2xl border border-stone-200">
+  <div animOnInit="opacity" [animDelay]="0.7" class="shrink-0 mx-4 mb-2 p-4 bg-stone-50 rounded-2xl border border-stone-200">
     @if (winnerId() && !winnerChoicesDone()) {
       <div class="text-center">
         <p class="text-lg font-bold text-stone-800">
@@ -88,7 +89,7 @@
   </div>
 
   <!-- Advance button -->
-  <div animOnInit="opacity" [animDelay]="0.85" class="text-center pb-6 flex flex-col items-center gap-2">
+  <div animOnInit="opacity" [animDelay]="0.85" class="shrink-0 text-center pb-4 flex flex-col items-center gap-2">
     @if (winnerChoicesDone()) {
       <p class="text-sm text-stone-400">{{ readyToAdvanceCount() }}/{{ gameState()?.roundParticipantIds?.length ?? 0 }} bereit</p>
     }

@@ -1,46 +1,46 @@
-<app-prompt-banner
-  #banner
-  [text]="prompt()"
-  [subtitle]="'Runde ' + roundIndex()"
-  anim="banner"
-  class="shrink-0"
-/>
+<div animGroup="opacity" class="h-full w-full flex flex-col items-center justify-center">
+  <app-prompt-banner
+    #banner
+    [text]="prompt()"
+    [subtitle]="'Runde ' + roundIndex()"
+    anim="banner"
+    class="w-full max-w-80"
+  />
 
-<!-- Editor wrapper: centered, max-width for wider screens, full-width on narrow -->
-<div class="flex-1 min-h-0 flex flex-col items-center">
-  <div class="flex flex-col items-center w-full">
-    @if (myHand()) {
-      <app-sticker-editor
-        #editor
-        [availableHeight]="availableHeight()"
-        [availableWidth]="availableWidth()"
-        [paletteStickers]="handStickers()"
-        [stickerCatalog]="stickerCatalog()"
-        [stickerPacks]="stickerPacks()"
-        [maxStickers]="maxStickersOnCanvas()"
-      />
-    } @else {
-      <div class="flex items-center justify-center gap-2 text-stone-400 text-base py-8">
-        <div class="w-4 h-4 border-2 border-stone-200 border-t-stone-400 rounded-full animate-spin"></div>
-        Sticker werden geladen...
-      </div>
-    }
+  @if (myHand()) {
+    <app-sticker-editor
+      #editor
+      [availableHeight]="availableHeight()"
+      [availableWidth]="availableWidth()"
+      [paletteStickers]="handStickers()"
+      [stickerCatalog]="stickerCatalog()"
+      [stickerPacks]="stickerPacks()"
+      [maxStickers]="maxStickersOnCanvas()"
+      class="shrink-0"
+    />
+  } @else {
+    <div class="h-full flex items-center justify-center gap-2 text-stone-400 text-base">
+      <div class="w-4 h-4 border-2 border-stone-200 border-t-stone-400 rounded-full animate-spin"></div>
+      Sticker werden geladen...
+    </div>
+  }
+
+
+  <!-- Footer: submit -->
+  <div #footer animOnInit="opacity"
+       class="w-full max-w-lg bg-white px-4 pb-2 flex items-center gap-3">
+    <button
+      class="flex-1 bg-yellow-400 text-black py-2.5 rounded-xl font-semibold active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
+      (click)="skipRound.emit()"
+    >
+      Überspringen
+    </button>
+    <button
+      class="flex-2 bg-black text-white py-2.5 rounded-xl font-semibold active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
+      [disabled]="placements.length === 0"
+      (click)="onSubmit()"
+    >
+      Einreichen
+    </button>
   </div>
-</div>
-
-<!-- Footer: submit -->
-<div #footer animOnInit="opacity" class="shrink-0 border-t border-black/10 bg-white px-4 py-3 flex items-center gap-3">
-  <button
-    class="flex-1 bg-yellow-400 text-black py-2.5 rounded-xl font-semibold active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
-    (click)="skipRound.emit()"
-  >
-    Überspringen
-  </button>
-  <button
-    class="flex-2 bg-black text-white py-2.5 rounded-xl font-semibold active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
-    [disabled]="placements.length === 0"
-    (click)="onSubmit()"
-  >
-    Einreichen
-  </button>
 </div>
