@@ -98,6 +98,48 @@
           (readyToAdvance)="stickerService.readyToAdvance()"
         />
       }
+      @case (PlayerScreen.WINNER_PROMPT) {
+        <app-player-winner-choices
+          [currentWinnerStep]="'prompt'"
+          [hasChosenPrompt]="screenData.resultsVm().hasChosenPrompt"
+          [hasLockedPacks]="screenData.resultsVm().hasLockedPacks"
+          [hasUnlockedPack]="screenData.resultsVm().hasUnlockedPack"
+          [promptChoices]="screenData.resultsVm().promptChoices"
+          [packUnlockChoices]="screenData.resultsVm().packUnlockChoices"
+          [guaranteedPackChoices]="screenData.resultsVm().guaranteedPackChoices"
+          (pickPrompt)="stickerService.pickPrompt($event)"
+          (unlockPack)="stickerService.unlockPack($event)"
+          (pickGuaranteedPack)="stickerService.pickGuaranteedPack($event)"
+        />
+      }
+      @case (PlayerScreen.WINNER_UNLOCK) {
+        <app-player-winner-choices
+          [currentWinnerStep]="'unlock'"
+          [hasChosenPrompt]="screenData.resultsVm().hasChosenPrompt"
+          [hasLockedPacks]="screenData.resultsVm().hasLockedPacks"
+          [hasUnlockedPack]="screenData.resultsVm().hasUnlockedPack"
+          [promptChoices]="screenData.resultsVm().promptChoices"
+          [packUnlockChoices]="screenData.resultsVm().packUnlockChoices"
+          [guaranteedPackChoices]="screenData.resultsVm().guaranteedPackChoices"
+          (pickPrompt)="stickerService.pickPrompt($event)"
+          (unlockPack)="stickerService.unlockPack($event)"
+          (pickGuaranteedPack)="stickerService.pickGuaranteedPack($event)"
+        />
+      }
+      @case (PlayerScreen.WINNER_GUARANTEED) {
+        <app-player-winner-choices
+          [currentWinnerStep]="'guaranteed'"
+          [hasChosenPrompt]="screenData.resultsVm().hasChosenPrompt"
+          [hasLockedPacks]="screenData.resultsVm().hasLockedPacks"
+          [hasUnlockedPack]="screenData.resultsVm().hasUnlockedPack"
+          [promptChoices]="screenData.resultsVm().promptChoices"
+          [packUnlockChoices]="screenData.resultsVm().packUnlockChoices"
+          [guaranteedPackChoices]="screenData.resultsVm().guaranteedPackChoices"
+          (pickPrompt)="stickerService.pickPrompt($event)"
+          (unlockPack)="stickerService.unlockPack($event)"
+          (pickGuaranteedPack)="stickerService.pickGuaranteedPack($event)"
+        />
+      }
       @case (PlayerScreen.NEXT_ROUND) {
         <app-player-next-round [hasNewPack]="screenData.nextRoundVm().hasNewPack"/>
       }

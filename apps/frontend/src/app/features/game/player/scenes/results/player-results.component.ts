@@ -3,16 +3,16 @@ import {CommonModule} from "@angular/common";
 import type {StickerPack} from "@birthday/shared";
 import type {WinnerStep} from '../../player-view-models';
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
-import {SvgComponent} from '../../../../shared/svg/svg.component';
 import {PromptBannerComponent} from '../../../../shared/prompt-banner/prompt-banner.component';
 import {PlayerStatusScreenComponent} from '../player-status-screen.component';
 import {PlacementBadgeComponent} from '../../../shared/placement-badge.component';
 import {StarsDisplayComponent} from '../../../shared/stars-display.component';
+import {PlayerWinnerChoicesComponent} from '../winner-choices/player-winner-choices.component';
 
 @Component({
     selector: "app-player-results",
     standalone: true,
-    imports: [CommonModule, AnimOnInitDirective, SvgComponent, PlayerStatusScreenComponent, PromptBannerComponent, PlacementBadgeComponent, StarsDisplayComponent],
+    imports: [CommonModule, AnimOnInitDirective, PlayerStatusScreenComponent, PromptBannerComponent, PlacementBadgeComponent, StarsDisplayComponent, PlayerWinnerChoicesComponent],
     templateUrl: "./player-results.component.html",
     host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })

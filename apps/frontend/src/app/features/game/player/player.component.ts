@@ -13,6 +13,7 @@ import {PlayerVotingComponent} from './scenes/voting/player-voting.component';
 import {PlayerVotingDoneComponent} from './scenes/voting/player-voting-done.component';
 import {PlayerResultsComponent} from './scenes/results/player-results.component';
 import {PlayerNextRoundComponent} from './scenes/next-round/player-next-round.component';
+import {PlayerWinnerChoicesComponent} from './scenes/winner-choices/player-winner-choices.component';
 import {PlayerHeaderComponent} from './player-header.component';
 import {PlayerScreenDataService} from './player-screen-data.service';
 import {StickerPlayerService} from '../services/sticker-player.service';
@@ -43,6 +44,7 @@ import {PlayerScreen} from './player-screen.enum';
     PlayerVotingDoneComponent,
     PlayerResultsComponent,
     PlayerNextRoundComponent,
+    PlayerWinnerChoicesComponent,
     PlayerHeaderComponent,
   ],
   providers: [

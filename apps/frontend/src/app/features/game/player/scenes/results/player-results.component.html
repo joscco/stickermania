@@ -22,92 +22,18 @@
 
   <!-- Winner choices (only if I'm the winner) -->
   @if (isWinner() && !winnerChoicesDone()) {
-    <div class="px-4 pb-4 space-y-4">
-      <!-- Progress dots -->
-      <div animOnInit="choice" [animDelay]="0.2" class="flex justify-center gap-3 py-2">
-        <div class="w-8 h-8 rounded-full grid place-items-center text-sm shadow-sm transition-colors duration-200"
-             [class.bg-black]="hasChosenPrompt()"
-             [class.text-white]="hasChosenPrompt()"
-             [class.bg-stone-200]="!hasChosenPrompt()"
-             [class.text-stone-600]="!hasChosenPrompt()">
-          @if (hasChosenPrompt()) {
-            <app-svg name="icon-checkmark-sm" [w]="20"/>
-          } @else {
-            <app-svg name="icon-star-sm" [w]="20"/>
-          }
-        </div>
-        @if (hasLockedPacks()) {
-          <div class="w-8 h-8 rounded-full grid place-items-center text-sm shadow-sm transition-colors duration-200"
-               [class.bg-black]="hasUnlockedPack()"
-               [class.text-white]="hasUnlockedPack()"
-               [class.bg-stone-200]="!hasUnlockedPack()"
-               [class.text-stone-600]="!hasUnlockedPack()">
-            @if (hasUnlockedPack()) {
-              <app-svg name="icon-checkmark-sm" [w]="20"/>
-            } @else {
-              <app-svg name="icon-trophy-sm" [w]="20"/>
-            }
-          </div>
-        }
-        <div class="w-8 h-8 rounded-full bg-stone-200 text-stone-600 grid place-items-center text-sm shadow-sm">
-          <app-svg name="icon-star-sm" [w]="20"/>
-        </div>
-      </div>
-
-      @switch (currentWinnerStep()) {
-        @case ('prompt') {
-          <div animOnInit="choice" [animDelay]="0.25">
-            <h3 class="text-sm font-semibold text-stone-700 mb-2">Wähle den nächsten Prompt:</h3>
-            <div class="space-y-2">
-              @for (prompt of promptChoices(); track prompt) {
-                <button
-                  class="w-full text-center p-3 rounded-xl border-2 border-stone-200 bg-white text-sm font-medium active:scale-[0.98] transition-transform hover:border-stone-400"
-                  (click)="pickPrompt.emit(prompt)"
-                >
-                  {{ prompt }}
-                </button>
-              }
-            </div>
-          </div>
-        }
-        @case ('unlock') {
-          <div animOnInit="choice" [animDelay]="0.25">
-            <h3 class="text-sm font-semibold text-stone-700 mb-2">Schalte ein Sticker-Pack frei:</h3>
-            <div class="flex items-center justify-center">
-              @for (pack of packUnlockChoices(); track pack.id) {
-                <button
-                  class="p-3 rounded-xl border-2 border-stone-200 bg-white text-center active:scale-95 transition-transform hover:border-stone-400"
-                  (click)="unlockPack.emit(pack.id)"
-                >
-                  @if (pack.iconId) {
-                    <app-svg [name]="pack.iconId" [w]="28"/>
-                  }
-                  <div class="text-xs font-medium mt-1">{{ pack.name }}</div>
-                </button>
-              }
-            </div>
-          </div>
-        }
-        @case ('guaranteed') {
-          <div animOnInit="choice" [animDelay]="0.25">
-            <h3 class="text-sm font-semibold text-stone-700 mb-2">"Auf jeden Fall dabei"-Pack:</h3>
-            <div class="grid grid-cols-2 gap-2">
-              @for (pack of guaranteedPackChoices(); track pack.id) {
-                <button
-                  class="p-3 rounded-xl border-2 border-stone-200 bg-white text-center active:scale-95 transition-transform hover:border-stone-400"
-                  (click)="pickGuaranteedPack.emit(pack.id)"
-                >
-                  @if (pack.iconId) {
-                    <app-svg [name]="pack.iconId" [w]="28" class="mx-auto mb-1"/>
-                  }
-                  <div class="text-xs font-medium mt-1">{{ pack.name }}</div>
-                </button>
-              }
-            </div>
-          </div>
-        }
-      }
-    </div>
+    <app-player-winner-choices
+      [currentWinnerStep]="currentWinnerStep()"
+      [hasChosenPrompt]="hasChosenPrompt()"
+      [hasLockedPacks]="hasLockedPacks()"
+      [hasUnlockedPack]="hasUnlockedPack()"
+      [promptChoices]="promptChoices()"
+      [packUnlockChoices]="packUnlockChoices()"
+      [guaranteedPackChoices]="guaranteedPackChoices()"
+      (pickPrompt)="pickPrompt.emit($event)"
+      (unlockPack)="unlockPack.emit($event)"
+      (pickGuaranteedPack)="pickGuaranteedPack.emit($event)"
+    />
   } @else if (isWinner() && winnerChoicesDone()) {
     <app-player-status-screen
       icon=""

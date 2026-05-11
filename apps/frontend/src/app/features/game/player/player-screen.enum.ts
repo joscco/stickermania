@@ -1,9 +1,3 @@
-/**
- * Every distinct screen a player (phone) can be on.
- *
- * In normal play the current screen is derived from the live store state.
- * In mock/screenshot mode it can be forced via the `?screen=` query param.
- */
 export enum PlayerScreen {
     CONNECTING          = 'connecting',
     RECONNECTING        = 'reconnecting',
@@ -18,10 +12,12 @@ export enum PlayerScreen {
     VOTING_DONE         = 'voting-done',
     VOTING_ALL_DONE     = 'voting-all-done',
     RESULTS             = 'results',
+    WINNER_PROMPT       = 'winner-prompt',
+    WINNER_UNLOCK       = 'winner-unlock',
+    WINNER_GUARANTEED   = 'winner-guaranteed',
     NEXT_ROUND          = 'next-round',
 }
 
-/** Every distinct screen visible on the board (TV / big display). */
 export enum BoardScreen {
     LOBBY       = 'board-lobby',
     BUILDING    = 'board-building',
@@ -29,6 +25,4 @@ export enum BoardScreen {
     RESULTS     = 'board-results',
 }
 
-/** Union of all screen identifiers used in the screenshot script. */
 export type AnyScreen = PlayerScreen | BoardScreen;
-

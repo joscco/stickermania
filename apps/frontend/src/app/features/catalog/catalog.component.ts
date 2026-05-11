@@ -18,10 +18,15 @@ import {WebSocketService} from '../../core/websocket.service';
 import {StickerPlayerService} from '../game/services/sticker-player.service';
 import {PlayerComponent} from '../game/player/player.component';
 import {BoardComponent} from '../game/board/board.component';
+import {LandingComponent} from '../game/landing/landing.component';
+import {OfflineComponent} from '../game/offline/offline.component';
+import {BoardLobbyComponent} from '../game/board/board-lobby.component';
 
-type ViewMode = 'player' | 'board';
+type ViewMode = 'player' | 'board' | 'landing' | 'offline';
 
 type ScreenKey =
+  | 'landing'
+  | 'offline'
   | 'connecting'
   | 'disconnected'
   | 'reconnecting'
@@ -35,8 +40,12 @@ type ScreenKey =
   | 'voting-done'
   | 'voting-all-done'
   | 'results'
+  | 'winner-prompt'
+  | 'winner-unlock'
+  | 'winner-guaranteed'
   | 'next-round'
   | 'board-lobby'
+  | 'board-lobby-scene'
   | 'board-building'
   | 'board-voting'
   | 'board-results';
@@ -48,6 +57,9 @@ type ScreenKey =
     CommonModule,
     PlayerComponent,
     BoardComponent,
+    LandingComponent,
+    OfflineComponent,
+    BoardLobbyComponent,
   ],
   providers: [
     {provide: WorldStore, useClass: MockWorldStore},
@@ -67,13 +79,21 @@ export class CatalogComponent {
 
   public readonly mockWorldStore = inject(WorldStore) as unknown as MockWorldStore;
 
-  public readonly currentMode = computed<ViewMode>(() =>
-    this.currentScreen().startsWith('board-') ? 'board' : 'player'
-  );
+  public readonly currentMode = computed<ViewMode>(() => {
+    const screen = this.currentScreen();
+    if (screen === 'landing') return 'landing';
+    if (screen === 'offline') return 'offline';
+    if (screen.startsWith('board-')) return 'board';
+    return 'player';
+  });
 
   public readonly playerScreen = computed<PlayerScreen | null>(() => {
     const screen = this.currentScreen();
+    if (screen === 'landing' || screen === 'offline') return null;
     if (screen.startsWith('board-')) return null;
+    if (screen === 'winner-prompt') return PlayerScreen.WINNER_PROMPT;
+    if (screen === 'winner-unlock') return PlayerScreen.WINNER_UNLOCK;
+    if (screen === 'winner-guaranteed') return PlayerScreen.WINNER_GUARANTEED;
     return screen as PlayerScreen;
   });
 
@@ -81,6 +101,7 @@ export class CatalogComponent {
     const screen = this.currentScreen();
     switch (screen) {
       case 'board-lobby': return 'LOBBY';
+      case 'board-lobby-scene': return 'LOBBY';
       case 'board-building': return 'BUILDING';
       case 'board-voting': return 'VOTING';
       case 'board-results': return 'RESULTS';
@@ -95,6 +116,8 @@ export class CatalogComponent {
   });
 
   public readonly screens: {key: ScreenKey; label: string; group: string}[] = [
+    {key: 'landing', label: 'Landing / Code Entry', group: 'Other'},
+    {key: 'offline', label: 'Offline', group: 'Other'},
     {key: 'connecting', label: 'Connecting', group: 'Player'},
     {key: 'disconnected', label: 'Disconnected', group: 'Player'},
     {key: 'reconnecting', label: 'Reconnecting', group: 'Player'},
@@ -108,8 +131,12 @@ export class CatalogComponent {
     {key: 'voting-done', label: 'Voting (done)', group: 'Player'},
     {key: 'voting-all-done', label: 'Voting (all done)', group: 'Player'},
     {key: 'results', label: 'Results', group: 'Player'},
+    {key: 'winner-prompt', label: 'Winner: Prompt Choice', group: 'Player'},
+    {key: 'winner-unlock', label: 'Winner: Pack Unlock', group: 'Player'},
+    {key: 'winner-guaranteed', label: 'Winner: Guaranteed Pack', group: 'Player'},
     {key: 'next-round', label: 'Next Round', group: 'Player'},
-    {key: 'board-lobby', label: 'Lobby', group: 'Board'},
+    {key: 'board-lobby', label: 'Board Lobby (session list)', group: 'Board'},
+    {key: 'board-lobby-scene', label: 'Board Lobby (game)', group: 'Board'},
     {key: 'board-building', label: 'Building', group: 'Board'},
     {key: 'board-voting', label: 'Voting', group: 'Board'},
     {key: 'board-results', label: 'Results', group: 'Board'},
@@ -169,6 +196,8 @@ export class CatalogComponent {
 
   private phaseForScreen(screen: ScreenKey): MockPhase {
     const map: Record<ScreenKey, MockPhase> = {
+      'landing': 'lobby',
+      'offline': 'lobby',
       'connecting': 'lobby',
       'disconnected': 'lobby',
       'reconnecting': 'lobby',
@@ -182,8 +211,12 @@ export class CatalogComponent {
       'voting-done': 'voting-done',
       'voting-all-done': 'voting-all-done',
       'results': 'results',
+      'winner-prompt': 'results',
+      'winner-unlock': 'results',
+      'winner-guaranteed': 'results',
       'next-round': 'next-round',
       'board-lobby': 'lobby',
+      'board-lobby-scene': 'lobby',
       'board-building': 'building',
       'board-voting': 'voting',
       'board-results': 'results',
