@@ -34,6 +34,7 @@ export interface BuildingSkippedViewModel {
 
 export interface ResultsViewModel {
   myPlacement: number | null;
+  myVoteCount: number;
   isWinner: boolean;
   winnerChoicesDone: boolean;
   currentWinnerStep: WinnerStep;

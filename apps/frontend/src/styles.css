@@ -61,6 +61,11 @@ html, body {
   overscroll-behavior: none;
 }
 
+app-root {
+  display: block;
+  height: 100%;
+}
+
 /*
  * Globally kill Safari auto-features:
  *  - double-tap zoom (touch-action: manipulation)

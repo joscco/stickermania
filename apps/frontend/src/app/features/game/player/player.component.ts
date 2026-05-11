@@ -52,6 +52,7 @@ import {PlayerScreen} from './player-screen.enum';
     PlayerScreenDataService,
   ],
   templateUrl: "./player.component.html",
+  host: {style: 'display: block; height: 100%;'},
 })
 export class PlayerComponent implements OnInit, OnDestroy {
   private unsubscribeWs: (() => void) | null = null;

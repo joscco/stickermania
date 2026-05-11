@@ -6,12 +6,7 @@
     "resultsDurationSec": 60,
     "handSize": 8,
     "maxStickersOnCanvas": 20,
-    "votesPerPlayer": 3,
-    "pointsByPlacement": [
-      100,
-      60,
-      30
-    ],
+    "votesPerPlayer": 1,
     "prompts": [
       "Biblisch akkurate Darstellung eines Engels",
       "Gab es im Angebot bei Tchibo",
@@ -104,7 +99,7 @@
           "id": "pack_circles",
           "name": "Circles",
           "iconId": "pack-icon-circles",
-          "unlockedAtStart": true,
+          "unlockedAtStart": false,
           "stickers": [
             "circles-circle",
             "circles-circle-filled",

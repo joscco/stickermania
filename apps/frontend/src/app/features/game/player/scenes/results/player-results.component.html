@@ -8,20 +8,9 @@
 
   <!-- My placement -->
   @if (myPlacement(); as placement) {
-    <div animOnInit="medal" [animDelay]="0.15" class="text-center py-4">
-      @if (placement === 1) {
-        <app-svg name="icon-medal-gold-lg" [w]="70" class="mx-auto text-black"/>
-        <p class="text-lg font-bold text-stone-900 mt-1">Du hast gewonnen!</p>
-      } @else if (placement === 2) {
-        <app-svg name="icon-medal-silver-lg" [w]="70" class="mx-auto text-stone-600"/>
-        <p class="text-lg font-bold text-stone-700 mt-1">Platz 2!</p>
-      } @else if (placement === 3) {
-        <app-svg name="icon-medal-bronze-lg" [w]="70" class="mx-auto text-stone-500"/>
-        <p class="text-lg font-bold text-stone-600 mt-1">Platz 3!</p>
-      } @else {
-        <div class="text-4xl font-bold text-stone-600">{{ placement }}.</div>
-        <p class="text-sm text-stone-500 mt-1">Platz {{ placement }}</p>
-      }
+    <div animOnInit="medal" [animDelay]="0.15">
+      <app-placement-badge [placement]="placement"/>
+      <app-stars-display [count]="myVoteCount()" class="mt-2"/>
     </div>
   } @else {
     <app-player-status-screen

@@ -1,0 +1,6 @@
+@for (_ of starsArray(); track _) {
+  <app-svg [name]="starIcon()" [w]="starSize()" [class]="colorClass()"/>
+}
+@if (count() === 0) {
+  <span class="text-xs text-stone-400">{{ emptyLabel() }}</span>
+}

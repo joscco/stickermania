@@ -22,7 +22,6 @@ export interface StickerCollageGameConfig {
     handSize: number;
     maxStickersOnCanvas: number;
     votesPerPlayer: number;
-    pointsByPlacement: number[];
     prompts: string[];
     promptChoiceCount: number;
     packUnlockChoiceCount: number;
@@ -76,7 +75,6 @@ export function parseGameConfig(raw: unknown): GameConfig {
             handSize: typeof sc["handSize"] === "number" ? sc["handSize"] : 8,
             maxStickersOnCanvas: typeof sc["maxStickersOnCanvas"] === "number" ? sc["maxStickersOnCanvas"] : 12,
             votesPerPlayer: typeof sc["votesPerPlayer"] === "number" ? sc["votesPerPlayer"] : 3,
-            pointsByPlacement: Array.isArray(sc["pointsByPlacement"]) ? sc["pointsByPlacement"] as number[] : [100, 60, 30],
             prompts: Array.isArray(sc["prompts"]) ? sc["prompts"] as string[] : ["Bau ein Monster", "Mach eine Geburtstagstorte"],
             promptChoiceCount: typeof sc["promptChoiceCount"] === "number" ? sc["promptChoiceCount"] : 3,
             packUnlockChoiceCount: typeof sc["packUnlockChoiceCount"] === "number" ? sc["packUnlockChoiceCount"] : 3,
@@ -194,7 +192,6 @@ export interface StickerCollageVoteResult {
     collageId: string;
     playerId: string;
     voteCount: number;
-    pointsAwarded: number;
 }
 
 // ─── Phase-specific state slices ──────────────────────────────
@@ -287,8 +284,7 @@ export type StickerCollageServerEvent =
     | { type: "pack-unlocked"; packId: string; packName: string }
     | { type: "prompt-chosen"; prompt: string }
     | { type: "guaranteed-pack-chosen"; packId: string; packName: string }
-    | { type: "round-ended"; roundIndex: number; results: StickerCollageVoteResult[] }
-    | { type: "score-update"; playerId: string; newScore: number };
+    | { type: "round-ended"; roundIndex: number; results: StickerCollageVoteResult[] };
 
 export type GameClientEnvelope = {
     type: "game-action";

@@ -1,18 +1,7 @@
 import crypto from "node:crypto";
-import type {
-    GameConfig,
-    SessionState,
-    StickerCollageGameState,
-    StickerCollageServerEvent,
-    StickerPlacement,
-    StickerDefinition,
-    StickerCollage,
-    StickerCollageBuildingState,
-    StickerCollageVotingState,
-    StickerCollageResultsState,
-} from "@birthday/shared";
+import type {GameConfig, SessionState, StickerCollage, StickerCollageBuildingState, StickerCollageGameState, StickerCollageResultsState, StickerCollageServerEvent, StickerCollageVotingState, StickerPlacement,} from "@birthday/shared";
 import {dealHand} from "./stickerCatalog.js";
-import {transitionToBuilding, transitionToVoting, transitionToResults, transitionToNextRound} from "./roundManager.js";
+import {shouldSkipVoting, transitionToBuilding, transitionToNextRound, transitionToResults, transitionToVoting} from "./roundManager.js";
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -151,7 +140,7 @@ export function skipRound(
 }
 
 /**
- * "end-round-early": BUILDING → VOTING (triggered by a player or the board).
+ * "end-round-early": BUILDING → VOTING (or RESULTS if ≤1 submissions).
  */
 export function endBuildingPhaseEarly(
     state: SessionState,
@@ -160,6 +149,12 @@ export function endBuildingPhaseEarly(
 ): HandlerResult {
     if (!asBuildingPhase(state.gameState)) {
         return noChange;
+    }
+
+    if (shouldSkipVoting(state.gameState)) {
+        transitionToVoting(state, config.stickerCollage, now);
+        transitionToResults(state, config.stickerCollage, now);
+        return buildResultsEvents(state);
     }
 
     transitionToVoting(state, config.stickerCollage, now);
@@ -251,14 +246,10 @@ export function endVotingPhaseEarly(
 
 function buildResultsEvents(state: SessionState): HandlerResult {
     const resultsPhase = asResultsPhase(state.gameState)!;
-    const scoreEvents: StickerCollageServerEvent[] = resultsPhase.lastVoteResults
-        .filter(result => result.pointsAwarded > 0 && state.players[result.playerId])
-        .map(result => ({type: "score-update", playerId: result.playerId, newScore: state.players[result.playerId].score}));
 
     return {
         stateChanged: true,
         events: [
-            ...scoreEvents,
             {type: "results-ready", winnerId: resultsPhase.winnerId, results: resultsPhase.lastVoteResults},
         ],
     };

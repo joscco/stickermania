@@ -50,6 +50,15 @@ export function transitionToBuilding(
 }
 
 /**
+ * Returns true when voting should be skipped because there are
+ * 0 or 1 submissions – nothing meaningful to vote on.
+ */
+export function shouldSkipVoting(gameState: StickerCollageGameState): boolean {
+    const currentSubmissions = gameState.submissions[gameState.currentRoundIndex] ?? [];
+    return currentSubmissions.length <= 1;
+}
+
+/**
  * BUILDING → VOTING: end the building phase and open voting.
  */
 export function transitionToVoting(
@@ -66,7 +75,7 @@ export function transitionToVoting(
 }
 
 /**
- * VOTING → RESULTS: tally votes, award points, determine winner, prepare choices.
+ * VOTING → RESULTS: tally votes, determine winner, prepare choices.
  */
 export function transitionToResults(
     state: SessionState,
@@ -100,25 +109,11 @@ export function transitionToResults(
             }))
             .sort((a, b) => b.voteCount - a.voteCount);
 
-        // Shared placements: players with the same voteCount get the same placement index.
-        // Points are awarded by placement index (not array position), so ties share points.
-        const placementOf = new Map<number, number>();
-        let currentPlacement = 0;
-        for (let i = 0; i < ranked.length; i++) {
-            if (i === 0 || ranked[i].voteCount !== ranked[i - 1].voteCount) {
-                currentPlacement = i;
-            }
-            placementOf.set(i, currentPlacement);
-        }
-
-        lastVoteResults = ranked.map((entry, index): StickerCollageVoteResult => {
-            const placement = placementOf.get(index)!;
-            const points = placement < config.pointsByPlacement.length ? config.pointsByPlacement[placement] : 0;
-            if (points > 0 && state.players[entry.playerId]) {
-                state.players[entry.playerId].score += points;
-            }
-            return {collageId: entry.collageId, playerId: entry.playerId, voteCount: entry.voteCount, pointsAwarded: points};
-        });
+        lastVoteResults = ranked.map((entry): StickerCollageVoteResult => ({
+            collageId: entry.collageId,
+            playerId: entry.playerId,
+            voteCount: entry.voteCount,
+        }));
 
         // Winner: random pick among all players tied for first place
         const topVoteCount = ranked[0]?.voteCount ?? 0;

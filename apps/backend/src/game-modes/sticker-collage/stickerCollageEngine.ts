@@ -3,7 +3,7 @@ import path from "node:path";
 import type {GameConfig, SessionState, StickerCollageGameState, StickerCollageServerEvent, StickerDefinition,} from "@birthday/shared";
 import type {GameActionResult, GameEngine} from "../gameModeEngine.js";
 import {buildCatalog, buildPacks} from "./stickerCatalog.js";
-import {transitionToNextRound, transitionToResults, transitionToVoting} from "./roundManager.js";
+import {transitionToNextRound, transitionToResults, transitionToVoting, shouldSkipVoting} from "./roundManager.js";
 import {advanceToNextRound, boardAdvancesToNextRound, castVote, dealHandToPlayer, endBuildingPhaseEarly, endVotingPhaseEarly, markPlayerDoneVoting, skipRound, startGame, submitCollage, winnerPicksGuaranteedPack, winnerPicksPrompt, winnerUnlocksPack,} from "./actionHandlers.js";
 
 /**
@@ -140,6 +140,20 @@ export class StickerCollageEngine implements GameEngine {
         const {phaseState} = gameState;
 
         if (phaseState.phase === "BUILDING") {
+            if (shouldSkipVoting(gameState)) {
+                transitionToVoting(sessionState, this.config.stickerCollage, now);
+                transitionToResults(sessionState, this.config.stickerCollage, now);
+                const newPhase = gameState.phaseState;
+                if (newPhase.phase !== "RESULTS") {
+                    return {stateChanged: false, emittedEvents: []};
+                }
+                return {
+                    stateChanged: true,
+                    emittedEvents: [
+                        {type: "results-ready", winnerId: newPhase.winnerId, results: newPhase.lastVoteResults},
+                    ],
+                };
+            }
             transitionToVoting(sessionState, this.config.stickerCollage, now);
             const newPhase = gameState.phaseState;
             if (newPhase.phase !== "VOTING") {
@@ -154,13 +168,9 @@ export class StickerCollageEngine implements GameEngine {
             if (newPhase.phase !== "RESULTS") {
                 return {stateChanged: false, emittedEvents: []};
             }
-            const scoreEvents: StickerCollageServerEvent[] = newPhase.lastVoteResults
-                .filter(result => result.pointsAwarded > 0 && sessionState.players[result.playerId])
-                .map(result => ({type: "score-update", playerId: result.playerId, newScore: sessionState.players[result.playerId].score}));
             return {
                 stateChanged: true,
                 emittedEvents: [
-                    ...scoreEvents,
                     {type: "results-ready", winnerId: newPhase.winnerId, results: newPhase.lastVoteResults},
                 ],
             };

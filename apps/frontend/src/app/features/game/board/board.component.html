@@ -1,6 +1,6 @@
-<div class="min-h-dvh">
+<div class="h-full">
   @if (isBootstrapping()) {
-    <div class="h-screen w-screen grid place-items-center bg-white text-stone-500">
+    <div class="h-full w-full grid place-items-center bg-white text-stone-500">
       <div class="text-center">
         <div class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-stone-300 border-t-stone-600"></div>
         <div class="mt-4 text-sm">Session wird geladen...</div>
@@ -9,7 +9,7 @@
   } @else if (!isBoardReady()) {
     <app-board-lobby (sessionCreated)="onSessionSelected($event)"/>
   } @else {
-    <div class="relative h-screen w-screen overflow-hidden bg-white text-stone-900 flex flex-col">
+    <div class="relative h-full w-full overflow-hidden bg-white text-stone-900 flex flex-col">
       <app-board-header
         [vm]="screenData.headerVm()"
         (backToLobby)="backToLobby()"

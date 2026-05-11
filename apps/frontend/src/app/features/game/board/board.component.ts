@@ -29,6 +29,7 @@ import {WorldStore} from '../../../core/world.store';
   ],
   providers: [BoardScreenDataService],
   templateUrl: "./board.component.html",
+  host: {style: 'display: block; height: 100%;'},
 })
 export class BoardComponent implements OnInit, OnDestroy {
   public readonly catalogForcedPhase = input<string | null>(null);

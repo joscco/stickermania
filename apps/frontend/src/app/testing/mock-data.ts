@@ -69,9 +69,9 @@ export const MOCK_PLAYER_HAND: StickerHand = {
 };
 
 const MOCK_VOTE_RESULTS: StickerCollageVoteResult[] = [
-  { collageId: 'col-1', playerId: 'player-1', voteCount: 2, pointsAwarded: 100 },
-  { collageId: 'col-2', playerId: 'player-2', voteCount: 1, pointsAwarded: 60 },
-  { collageId: 'col-3', playerId: 'player-3', voteCount: 0, pointsAwarded: 0 },
+  { collageId: 'col-1', playerId: 'player-1', voteCount: 2 },
+  { collageId: 'col-2', playerId: 'player-2', voteCount: 1 },
+  { collageId: 'col-3', playerId: 'player-3', voteCount: 0 },
 ];
 
 // ── Phase state builders ────────────────────────────────────────────────────

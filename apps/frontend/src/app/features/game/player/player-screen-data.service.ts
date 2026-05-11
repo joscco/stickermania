@@ -148,9 +148,11 @@ export class PlayerScreenDataService {
             }
         }
 
-        const winnerId = stickerService.winnerId();
+const winnerId = stickerService.winnerId();
+        const myResult = stickerService.lastVoteResults().find(r => r.playerId === (this.sessionStore.playerId() ?? ''));
         return {
             myPlacement: stickerService.myPlacement(),
+            myVoteCount: myResult?.voteCount ?? 0,
             isWinner,
             winnerChoicesDone,
             currentWinnerStep,

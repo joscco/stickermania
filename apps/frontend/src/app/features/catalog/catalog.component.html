@@ -28,8 +28,8 @@
   </button>
 </div>
 
-<div class="flex-1 flex">
-  <div class="flex-1 ">
+<div class="flex-1 flex overflow-hidden">
+  <div class="flex-1 overflow-hidden">
     @if (currentMode() === 'player') {
       <app-player [catalogForcedScreen]="playerScreen()!"/>
     } @else {

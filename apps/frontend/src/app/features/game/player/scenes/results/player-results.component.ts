@@ -6,16 +6,19 @@ import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.di
 import {SvgComponent} from '../../../../shared/svg/svg.component';
 import {PromptBannerComponent} from '../../../../shared/prompt-banner/prompt-banner.component';
 import {PlayerStatusScreenComponent} from '../player-status-screen.component';
+import {PlacementBadgeComponent} from '../../../shared/placement-badge.component';
+import {StarsDisplayComponent} from '../../../shared/stars-display.component';
 
 @Component({
     selector: "app-player-results",
     standalone: true,
-    imports: [CommonModule, AnimOnInitDirective, SvgComponent, PlayerStatusScreenComponent, PromptBannerComponent],
+    imports: [CommonModule, AnimOnInitDirective, SvgComponent, PlayerStatusScreenComponent, PromptBannerComponent, PlacementBadgeComponent, StarsDisplayComponent],
     templateUrl: "./player-results.component.html",
     host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })
 export class PlayerResultsComponent {
     public readonly myPlacement = input<number | null>(null);
+    public readonly myVoteCount = input<number>(0);
     public readonly isWinner = input<boolean>(false);
     public readonly winnerChoicesDone = input<boolean>(false);
     public readonly currentWinnerStep = input<WinnerStep>(null);

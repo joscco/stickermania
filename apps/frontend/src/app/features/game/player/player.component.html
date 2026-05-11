@@ -1,4 +1,4 @@
-<div class="h-dvh overflow-hidden bg-white text-stone-900 overscroll-none flex flex-col no-select"
+<div class="h-full overflow-hidden bg-white text-stone-900 overscroll-none flex flex-col no-select"
      style="padding-bottom: env(safe-area-inset-bottom);">
 
   <app-player-header
@@ -79,6 +79,7 @@
       @case (PlayerScreen.RESULTS) {
         <app-player-results
           [myPlacement]="screenData.resultsVm().myPlacement"
+          [myVoteCount]="screenData.resultsVm().myVoteCount"
           [isWinner]="screenData.resultsVm().isWinner"
           [winnerChoicesDone]="screenData.resultsVm().winnerChoicesDone"
           [currentWinnerStep]="screenData.resultsVm().currentWinnerStep"
