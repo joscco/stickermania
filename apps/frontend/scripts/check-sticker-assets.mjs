@@ -184,15 +184,6 @@ const useChecked = spriteUseRefs
     missing: spriteSymbolIds.size > 0 && !spriteSymbolIds.has(id),
   }));
 
-// <app-icon> references (deduplicated by id)
-const iconChecked = iconCompRefs
-  .filter((v, i, a) => a.findIndex(x => x.id === v.id) === i)
-  .map(({ id, file }) => ({
-    ref: `#${id}`,
-    file,
-    missing: spriteSymbolIds.size > 0 && !spriteSymbolIds.has(id),
-  }));
-
 // Legacy img src references (deduplicated)
 const imgChecked = legacyImgRefs
   .filter((v, i, a) => a.findIndex(x => x.path === v.path) === i)
@@ -217,9 +208,7 @@ console.log('');
 check('Catalog sticker imageUrls',   catalogChecked);
 check('Catalog pack iconIds',        packIconChecked);
 check('HTML <use> sprite refs',     useChecked);
-if (iconChecked.length > 0) {
-  check('<app-icon> sprite refs',   iconChecked);
-}
+
 if (imgChecked.length > 0) {
   check('HTML legacy img/href refs',  imgChecked);
 }

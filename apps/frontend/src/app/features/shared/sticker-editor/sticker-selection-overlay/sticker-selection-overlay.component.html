@@ -16,41 +16,41 @@
   </svg>
 
   <!-- Center: move icon -->
-  <div class="absolute flex items-center justify-center w-11 h-11 select-none pointer-events-none -translate-1/2"
+  <div class="absolute flex items-center justify-center w-8 h-8 select-none pointer-events-none -translate-1/2"
        [style.left.px]="centerX" [style.top.px]="centerY"
        style="z-index:8050;">
-    <app-svg name="icon-overlay-move-md" w="40" [color]="LIGHT_PURPLE_SEMI"/>
+    <app-svg name="icon-overlay-move-md" w="40" [color]="YELLOW"/>
   </div>
 
   <!-- NW: Rotate handle -->
   @let nw = rotatePt(boundingBox.x - pad, boundingBox.y - pad, centerX, centerY, rad);
   <div
-    class="absolute flex items-center justify-center w-11 h-11 rounded-full border-2 shadow select-none touch-none -translate-1/2 bg-white border-stone-700"
+    class="absolute flex items-center justify-center w-8 h-8 rounded-full border-2 shadow select-none touch-none -translate-1/2 bg-white border-stone-700"
     [style.left.px]="nw.x" [style.top.px]="nw.y"
     style="z-index:8100; cursor:grab; pointer-events:auto;"
     (pointerdown)="onHandleDown($event, 'rotate')">
-    <app-svg name="icon-overlay-rotate-md" w="40" [color]="mode === 'rotating' ? DARK_PURPLE :  LIGHT_PURPLE"/>
+    <app-svg name="icon-overlay-rotate-md" w="28" [color]="mode === 'rotating' ? YELLOW : BLACK"/>
   </div>
 
   <!-- NE: Context-menu button -->
   @let ne = rotatePt(boundingBox.x + boundingBox.w + pad, boundingBox.y - pad, centerX, centerY, rad);
   <div
-    class="absolute flex items-center justify-center w-11 h-11 rounded-full border-2 shadow select-none touch-none cursor-pointer -translate-1/2 bg-white border-stone-700"
+    class="absolute flex items-center justify-center w-8 h-8 rounded-full border-2 shadow select-none touch-none cursor-pointer -translate-1/2 bg-white border-stone-700"
     [style.left.px]="ne.x" [style.top.px]="ne.y"
     style="z-index:8200; pointer-events:auto;"
     title="Optionen"
     (pointerdown)="$event.stopPropagation(); menuToggle.emit()">
-    <app-svg name="icon-overlay-menu-md" w="40" [color]="mode === 'menu' ? DARK_PURPLE : LIGHT_PURPLE"/>
+    <app-svg name="icon-overlay-menu-md" w="28" [color]="mode === 'menu' ? YELLOW : BLACK"/>
   </div>
 
   <!-- SE: Scale handle -->
   @let scale = rotatePt(boundingBox.x + boundingBox.w + pad, boundingBox.y + boundingBox.h + pad, centerX, centerY, rad);
   <div
-    class="absolute flex items-center justify-center w-11 h-11 rounded-full border-2 shadow select-none touch-none -translate-1/2 bg-white border-stone-700"
+    class="absolute flex items-center justify-center w-8 h-8 rounded-full border-2 shadow select-none touch-none -translate-1/2 bg-white border-stone-700"
     [style.left.px]="scale.x" [style.top.px]="scale.y"
     style="z-index:8100; cursor:se-resize; pointer-events:auto;"
     (pointerdown)="onHandleDown($event, 'scale')">
-    <app-svg name="icon-overlay-scale-md" w="40" [color]="mode === 'scaling' ? DARK_PURPLE : LIGHT_PURPLE"/>
+    <app-svg name="icon-overlay-scale-md" w="28" [color]="mode === 'scaling' ? YELLOW : BLACK"/>
   </div>
 
   <!-- Stretch side handles (stretch mode only) -->

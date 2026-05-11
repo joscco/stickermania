@@ -28,13 +28,29 @@ export const MOCK_CATALOG: StickerDefinition[] = MOCK_STICKER_IDS.map(id => ({
   packId: 'pack_shapes',
 }));
 
-export const MOCK_PACK: StickerPack = {
+export const MOCK_SHAPES_PACK: StickerPack = {
   id: 'pack_shapes',
   name: 'Shapes',
   stickerIds: MOCK_STICKER_IDS,
   unlockedAtStart: true,
   iconId: 'pack-icon-shapes',
 };
+
+export const MOCK_HOME_PACK: StickerPack = {
+  id: 'pack_home',
+  name: 'Home',
+  stickerIds: MOCK_STICKER_IDS,
+  unlockedAtStart: true,
+  iconId: 'pack-icon-home',
+}
+
+export const MOCK_LINES_PACK: StickerPack = {
+  id: 'pack_lines',
+  name: 'Lines',
+  stickerIds: MOCK_STICKER_IDS,
+  unlockedAtStart: true,
+  iconId: 'pack-icon-lines',
+}
 
 export const MOCK_PLAYERS: Record<string, SessionPlayer> = {
   'player-1': { id: 'player-1', name: 'Anna', avatarUrl: 'assets/png/example_avatar_player_1.png', avatarAssetPath: null, score: 120, joinedAt: 0, connected: true, isHost: true, teamId: null },
@@ -116,8 +132,8 @@ export function resultsPhase(): StickerCollageResultsState {
     lastVoteResults: MOCK_VOTE_RESULTS,
     winnerId: 'player-1',
     promptChoices: ['Das gruseligste Tier', 'Mein Traumfrühstück', 'Ein Roboter im Urlaub'],
-    packUnlockChoices: [],
-    guaranteedPackChoices: [],
+    packUnlockChoices: ['pack_shapes', 'pack_home', 'pack_lines'],
+    guaranteedPackChoices: ['pack_shapes', 'pack_home', 'pack_lines'],
     lastUnlockedPackId: null,
     winnerChoicesDone: false,
     readyToAdvanceIds: [],
@@ -139,7 +155,7 @@ export function makeGameState(
     currentPrompt: 'Das schönste Geburtstagsmonster',
     roundStartedAt: Date.now() - 60_000,
     stickerCatalog: MOCK_CATALOG,
-    stickerPacks: [MOCK_PACK],
+    stickerPacks: [MOCK_SHAPES_PACK, MOCK_HOME_PACK, MOCK_LINES_PACK],
     unlockedPackIds: ['pack_shapes'],
     guaranteedPackId: null,
     submissions: {},
