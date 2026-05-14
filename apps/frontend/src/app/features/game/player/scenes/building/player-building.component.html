@@ -1,6 +1,5 @@
-<div animGroup="opacity" class="h-full w-full flex flex-col items-center justify-center">
+<div animGroup="opacity" class="h-full flex flex-col items-center">
   <app-prompt-banner
-    #banner
     [text]="prompt()"
     [subtitle]="'Runde ' + roundIndex()"
     anim="banner"
@@ -10,13 +9,11 @@
   @if (myHand()) {
     <app-sticker-editor
       #editor
-      [availableHeight]="availableHeight()"
-      [availableWidth]="availableWidth()"
       [paletteStickers]="handStickers()"
       [stickerCatalog]="stickerCatalog()"
       [stickerPacks]="stickerPacks()"
       [maxStickers]="maxStickersOnCanvas()"
-      class="shrink-0"
+      class="flex-1 min-h-0 max-w-full"
     />
   } @else {
     <div class="h-full flex items-center justify-center gap-2 text-stone-400 text-base">
@@ -27,8 +24,7 @@
 
 
   <!-- Footer: submit -->
-  <div #footer animOnInit="opacity"
-       class="w-full max-w-lg bg-white px-4 pb-2 flex items-center gap-3">
+  <div animOnInit="opacity" class="w-full max-w-lg bg-white px-4 pb-2 flex items-center gap-3">
     <button
       class="flex-1 bg-yellow-400 text-black py-2.5 rounded-xl font-semibold active:scale-95 transition-transform disabled:opacity-40 disabled:active:scale-100"
       (click)="skipRound.emit()"

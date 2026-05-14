@@ -36,7 +36,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   readonly stickers = input<StickerPlacement[]>([]);
   readonly stickerCatalog = input<StickerDefinition[]>([]);
   readonly maxStickers = input<number>(20);
-  readonly canvasSize = input<number>(200);
 
   readonly placementsChanged = output<StickerPlacement[]>();
   readonly stickerRemoved = output<string>();

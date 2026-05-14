@@ -15,9 +15,9 @@ export interface SubmitCollageEvent {
     standalone: true,
   imports: [CommonModule, StickerEditorComponent, AnimOnInitDirective, PromptBannerComponent, AnimGroupDirective],
     templateUrl: "./player-building.component.html",
-    host: {"class": "flex-1 flex flex-col"},
+    host: {"class": "h-full flex-1 flex flex-col"},
 })
-export class PlayerBuildingComponent implements AfterViewInit, OnDestroy {
+export class PlayerBuildingComponent {
     public readonly roundIndex = input<number>(0);
     public readonly prompt = input<string>('');
     public readonly myHand = input<StickerHand | null>(null);
@@ -29,12 +29,6 @@ export class PlayerBuildingComponent implements AfterViewInit, OnDestroy {
     public readonly submitCollage = output<SubmitCollageEvent>();
 
     @ViewChild("editor") editor!: StickerEditorComponent;
-    @ViewChild("banner") bannerRef!: ElementRef<HTMLElement>;
-    @ViewChild("footer") footerRef!: ElementRef<HTMLElement>;
-    @ViewChild("editorWrap") editorWrapRef!: ElementRef<HTMLElement>;
-
-    public readonly availableHeight = signal(400);
-    public readonly availableWidth = signal(400);
 
     public readonly handStickers = computed<StickerDefinition[]>(() => {
         const hand = this.myHand();
@@ -42,10 +36,6 @@ export class PlayerBuildingComponent implements AfterViewInit, OnDestroy {
         const ids = new Set(hand.stickerIds);
         return this.stickerCatalog().filter(s => ids.has(s.id));
     });
-
-    private readonly el = inject(ElementRef);
-    private readonly destroyRef = inject(DestroyRef);
-    private resizeObserver?: ResizeObserver;
 
     public get placements(): StickerPlacement[] {
         return this.editor?.placements() ?? [];
@@ -59,24 +49,5 @@ export class PlayerBuildingComponent implements AfterViewInit, OnDestroy {
         try { imageDataUrl = await this.editor.toDataUrl(); } catch {}
 
         this.submitCollage.emit({ placements, imageDataUrl });
-    }
-
-    ngAfterViewInit(): void {
-        this.resizeObserver = new ResizeObserver(() => {
-            const host = this.el.nativeElement as HTMLElement;
-            const hostH = host.clientHeight;
-            const hostW = host.clientWidth;
-            const bannerH = this.bannerRef?.nativeElement?.offsetHeight ?? 70;
-            const footerH = this.footerRef?.nativeElement?.offsetHeight ?? 56;
-            const gap = 8;
-            this.availableHeight.set(Math.max(hostH - bannerH - footerH - gap, 100));
-            this.availableWidth.set(Math.max(hostW, 100));
-        });
-        this.resizeObserver.observe(this.el.nativeElement);
-        this.destroyRef.onDestroy(() => this.resizeObserver?.disconnect());
-    }
-
-    ngOnDestroy(): void {
-        this.resizeObserver?.disconnect();
     }
 }
