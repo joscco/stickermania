@@ -1,33 +1,26 @@
 <div
-  class="mx-auto shrink-0 w-full flex items-center justify-center text-black text-center overflow-hidden box-border"
+  class="mx-auto shrink-0 w-full flex items-center justify-center text-black text-center box-border banner-bg"
   [style.max-width.px]="cappedMaxWidth()"
-  [style.aspect-ratio]="SVG_ASPECT"
-  style="background-image: url('assets/svg/prompt-background.svg'); background-size: 100% 100%;"
+  [style.height.px]="BANNER_HEIGHT"
+  [style.border-width]="borderWidthPx()"
   [animOnInit]="anim()"
 >
-  <div
-    class="flex items-center justify-center overflow-hidden"
-    [style.width.%]="100 * TEXT_W_RATIO"
-    [style.height.%]="100 * TEXT_H_RATIO"
-  >
-
-    <div class="flex flex-col items-center justify-center min-w-0 flex-1">
-      @if (subtitle()) {
-        <span
-          class="font-semibold uppercase tracking-wider opacity-60 whitespace-nowrap shrink-0"
-          [style.fontSize]="subtitleFontSize()"
-          [style.lineHeight.px]="subtitleLineHeight()"
-        >{{ subtitle() }}</span>
+  <div class="flex flex-col items-center justify-center min-w-0 flex-1 px-2">
+    @if (subtitle()) {
+      <span
+        class="font-semibold uppercase tracking-wider opacity-60 whitespace-nowrap shrink-0"
+        [style.fontSize]="subtitleFontSize()"
+        [style.lineHeight.px]="subtitleLineHeight()"
+      >{{ subtitle() }}</span>
+    }
+    <div
+      class="flex items-center justify-center gap-2 font-extrabold leading-tight break-words text-center w-full"
+      [style.fontSize]="fontSize()"
+    >
+      @if (icon()) {
+        <app-svg [name]="icon()" [w]="40" class="shrink-0 self-center"/>
       }
-      <div
-        class="flex items-center justify-center gap-2 font-extrabold leading-tight break-words text-center w-full"
-        [style.fontSize]="fontSize()"
-      >
-        @if (icon()) {
-          <app-svg [name]="icon()" [w]="40" class="shrink-0 self-center"/>
-        }
-        {{ text() }}
-      </div>
+      {{ text() }}
     </div>
   </div>
 </div>

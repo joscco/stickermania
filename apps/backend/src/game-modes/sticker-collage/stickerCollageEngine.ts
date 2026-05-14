@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type {GameConfig, SessionState, StickerCollageGameState, StickerCollageServerEvent, StickerDefinition,} from "@birthday/shared";
 import type {GameActionResult, GameEngine} from "../gameModeEngine.js";
-import {buildCatalog, buildPacks} from "./stickerCatalog.js";
+import {buildCatalog, buildPacks, dealHand} from "./stickerCatalog.js";
 import {transitionToNextRound, transitionToResults, transitionToVoting, shouldSkipVoting} from "./roundManager.js";
 import {advanceToNextRound, boardAdvancesToNextRound, castVote, dealHandToPlayer, endBuildingPhaseEarly, endVotingPhaseEarly, markPlayerDoneVoting, skipRound, startGame, submitCollage, winnerPicksGuaranteedPack, winnerPicksPrompt, winnerUnlocksPack,} from "./actionHandlers.js";
 
@@ -63,6 +63,18 @@ export class StickerCollageEngine implements GameEngine {
 
         if (isNotLobby && isNewParticipant) {
             gameState.roundParticipantIds.push(args.player.id);
+
+            if (gameState.phaseState.phase === "BUILDING") {
+                const hand = dealHand(
+                    gameState.stickerCatalog,
+                    this.config.stickerCollage,
+                    gameState.unlockedPackIds,
+                    gameState.guaranteedPackId,
+                    gameState.stickerPacks,
+                );
+                gameState.phaseState.playerHands[args.player.id] = hand;
+            }
+
             return {stateChanged: true, emittedEvents: []};
         }
         return {stateChanged: false, emittedEvents: []};
