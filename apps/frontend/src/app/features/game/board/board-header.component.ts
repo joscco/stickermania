@@ -1,12 +1,13 @@
 import {Component, input, output} from '@angular/core';
 import {SvgComponent} from '../../shared/svg/svg.component';
 import {CountdownBarComponent} from '../../shared/countdown-bar/countdown-bar.component';
+import {AnimPresenceDirective} from '../../shared/animations/anim-on-init.directive';
 import type {BoardHeaderViewModel} from './board-view-models';
 
 @Component({
     selector: 'app-board-header',
     standalone: true,
-    imports: [SvgComponent, CountdownBarComponent],
+    imports: [SvgComponent, CountdownBarComponent, AnimPresenceDirective],
     templateUrl: './board-header.component.html',
 })
 export class BoardHeaderComponent {

@@ -6,11 +6,34 @@ import {CommonModule} from '@angular/common';
 import {SvgComponent} from '../svg/svg.component';
 import {AnimOnInitDirective, type AnimType} from '../animations/anim-on-init.directive';
 
+// ── Banner layout ──────────────────────────────────────────
 const BANNER_HEIGHT = 100;
-const TOP_BOTTOM_BORDER = 16;
-const SIDE_BORDER = 40;
+const BORDER_TOP_BOTTOM = 16;
+const BORDER_SIDE = 40;
+const CONTENT_PAD_X = 20;
 const CONTENT_PAD_Y = 8;
+
+// ── Border-image (from SVG Schrift polygon) ────────────────
+const BORDER_IMAGE_SLICE = '150 500 700 500 fill';
+
+// ── Font measurement ───────────────────────────────────────
+const FONT_FAMILY = "'Darumadrop One Fixed', 'Darumadrop One', cursive";
+const BASE_FONT_PX = 16;
 const LINE_HEIGHT = 1.15;
+const FONT_LO = 0.25;
+
+// ── Subtitle ───────────────────────────────────────────────
+const SUBTITLE_FONT_MIN = 0.4;
+const SUBTITLE_FONT_MAX = 0.75;
+const SUBTITLE_WIDTH_FACTOR = 600;
+const SUBTITLE_LINE_HEIGHT_FACTOR = 1.4;
+
+// ── Main text ──────────────────────────────────────────────
+const ICON_WIDTH = 52;
+const LINE_HEIGHT_SINGLE = 1.2;
+const LINE_HEIGHT_MULTI = 1.1;
+
+// ── Helpers ────────────────────────────────────────────────
 
 let _ctx: CanvasRenderingContext2D | null = null;
 function getCtx(): CanvasRenderingContext2D {
@@ -20,21 +43,16 @@ function getCtx(): CanvasRenderingContext2D {
   return _ctx;
 }
 
-const FONT_FAMILY = "'Darumadrop One Fixed', 'Darumadrop One', cursive";
-
-function wrapLines(text: string, fontSize: number, maxWidth: number): number {
+function wrapLines(text: string, fontSizePx: number, maxWidth: number): number {
   const ctx = getCtx();
-  ctx.font = `800 ${fontSize}px ${FONT_FAMILY}`;
+  ctx.font = `800 ${fontSizePx}px ${FONT_FAMILY}`;
   const words = text.split(/\s+/).filter(w => w.length > 0);
   let lines = 0;
   let current = '';
   for (const word of words) {
     const wordWidth = ctx.measureText(word).width;
     if (wordWidth > maxWidth) {
-      if (current) {
-        lines++;
-        current = '';
-      }
+      if (current) { lines++; current = ''; }
       lines += Math.max(1, Math.ceil(wordWidth / maxWidth));
       continue;
     }
@@ -50,6 +68,8 @@ function wrapLines(text: string, fontSize: number, maxWidth: number): number {
   return Math.max(1, lines);
 }
 
+// ── Component ──────────────────────────────────────────────
+
 @Component({
   selector: 'app-prompt-banner',
   standalone: true,
@@ -60,8 +80,8 @@ function wrapLines(text: string, fontSize: number, maxWidth: number): number {
     .banner-bg {
       border-style: solid;
       border-image-source: url(/assets/svg/prompt-background.svg);
-      border-image-slice: 125 450 125 450 fill;
-      border-image-repeat: stretch;
+      border-image-slice: ${BORDER_IMAGE_SLICE};
+      border-image-repeat: repeat;
       border-image-width: 1;
     }
   `],
@@ -83,10 +103,10 @@ export class PromptBannerComponent implements AfterViewInit, OnDestroy {
 
   readonly effectiveWidth = computed(() => Math.min(this.uncappedWidth(), this.maxWidthPx()));
 
-  readonly contentWidth = computed(() => Math.max(0, this.effectiveWidth() - 2 * SIDE_BORDER));
-  readonly contentHeight = computed(() => BANNER_HEIGHT - 2 * TOP_BOTTOM_BORDER - CONTENT_PAD_Y);
+  readonly contentWidth = computed(() => Math.max(0, this.effectiveWidth() - 2 * BORDER_SIDE));
+  readonly contentHeight = computed(() => BANNER_HEIGHT - 2 * BORDER_TOP_BOTTOM - CONTENT_PAD_Y);
 
-  readonly borderWidthPx = computed(() => `${TOP_BOTTOM_BORDER}px ${SIDE_BORDER}px`);
+  readonly borderWidthPx = computed(() => `${BORDER_TOP_BOTTOM}px ${BORDER_SIDE}px`);
 
   readonly fontSize = computed(() => {
     const text = this.text();
@@ -95,23 +115,19 @@ export class PromptBannerComponent implements AfterViewInit, OnDestroy {
     const hasIcon = !!this.icon();
     const hasSub = !!this.subtitle();
 
-    const innerPadW = 20;
-    const innerPadH = 10;
-    const iconW = hasIcon ? 52 : 0;
-    const availW = w - innerPadW - iconW;
+    const iconW = hasIcon ? ICON_WIDTH : 0;
+    const availW = w - CONTENT_PAD_X - iconW;
     const subH = hasSub ? this.subtitleLineHeight() : 0;
-    const availH = h - innerPadH - subH;
+    const availH = h - CONTENT_PAD_Y - subH;
 
     if (!text || availW <= 0 || availH <= 0) return '1rem';
 
-    // Binary search: find largest font size where text fits both width and height.
-    // lo = minimum readable  |  hi = theoretical max (single line filling entire height)
-    let lo = 0.25;
-    let hi = (availH / LINE_HEIGHT) / 16;
+    let lo = FONT_LO;
+    let hi = (availH / LINE_HEIGHT) / BASE_FONT_PX;
 
     for (let i = 0; i < 16; i++) {
       const mid = (lo + hi) / 2;
-      const px = mid * 16;
+      const px = mid * BASE_FONT_PX;
       const lines = wrapLines(text, px, availW);
       const totalH = lines * px * LINE_HEIGHT;
       if (totalH > availH) {
@@ -121,13 +137,12 @@ export class PromptBannerComponent implements AfterViewInit, OnDestroy {
       }
     }
 
-    // Final exact fit: scale lo so the measured text height precisely fills availH
     {
-      const px = lo * 16;
+      const px = lo * BASE_FONT_PX;
       const lines = wrapLines(text, px, availW);
       const totalH = lines * px * LINE_HEIGHT;
       if (totalH > availH && availH > 0) {
-        lo = availH / (lines * 16 * LINE_HEIGHT);
+        lo = availH / (lines * BASE_FONT_PX * LINE_HEIGHT);
       }
     }
 
@@ -137,22 +152,22 @@ export class PromptBannerComponent implements AfterViewInit, OnDestroy {
   readonly subtitleFontSize = computed(() => {
     if (!this.subtitle()) return '0rem';
     const cw = this.contentWidth();
-    const rem = Math.max(0.4, Math.min(0.75, cw / 600));
+    const rem = Math.max(SUBTITLE_FONT_MIN, Math.min(SUBTITLE_FONT_MAX, cw / SUBTITLE_WIDTH_FACTOR));
     return `${rem.toFixed(4)}rem`;
   });
 
   readonly subtitleLineHeight = computed(() => {
-    const subRem = parseFloat(this.subtitleFontSize()) || 0.5;
-    return Math.round(subRem * 16 * 1.4);
+    const subRem = parseFloat(this.subtitleFontSize()) || SUBTITLE_FONT_MIN;
+    return Math.round(subRem * BASE_FONT_PX * SUBTITLE_LINE_HEIGHT_FACTOR);
   });
 
   readonly textLineHeight = computed(() => {
     const text = this.text();
-    const px = parseFloat(this.fontSize()) * 16;
-    const iconW = this.icon() ? 52 : 0;
-    const availW = this.contentWidth() - 20 - iconW;
+    const px = parseFloat(this.fontSize()) * BASE_FONT_PX;
+    const iconW = this.icon() ? ICON_WIDTH : 0;
+    const availW = this.contentWidth() - CONTENT_PAD_X - iconW;
     const lines = wrapLines(text, px, availW);
-    return lines > 1 ? 1.1 : 1.2;
+    return lines > 1 ? LINE_HEIGHT_MULTI : LINE_HEIGHT_SINGLE;
   });
 
   readonly effectiveMaxWidthPx = computed(() => {

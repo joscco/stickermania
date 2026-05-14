@@ -165,6 +165,9 @@ export function makeGameState(
     maxStickersOnCanvas: 12,
     votesPerPlayer: 3,
     phaseState,
+    roundDurationSec: 300,
+    votingDurationSec: 120,
+    resultsDurationSec: 60,
   };
   return overrides ? { ...base, ...overrides } : base;
 }

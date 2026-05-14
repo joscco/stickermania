@@ -49,6 +49,9 @@ export class StickerCollageEngine implements GameEngine {
             maxStickersOnCanvas: this.config.stickerCollage.maxStickersOnCanvas,
             votesPerPlayer: this.config.stickerCollage.votesPerPlayer,
             phaseState: {phase: "LOBBY"},
+            roundDurationSec: this.config.stickerCollage.roundDurationSec,
+            votingDurationSec: this.config.stickerCollage.votingDurationSec,
+            resultsDurationSec: this.config.stickerCollage.resultsDurationSec,
         };
     }
 

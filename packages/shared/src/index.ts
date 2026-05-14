@@ -255,6 +255,9 @@ export interface StickerCollageGameState {
     maxStickersOnCanvas: number;
     votesPerPlayer: number;
     phaseState: StickerCollagePhaseState;
+    roundDurationSec: number;
+    votingDurationSec: number;
+    resultsDurationSec: number;
 }
 
 export type StickerCollageClientAction =

@@ -49,8 +49,19 @@ export class BoardScreenDataService {
             }
 
             if (endsAt !== lastEndsAt) {
-                const initialRemaining = Math.max(0, endsAt - Date.now());
-                this.currentTimerTotalSec.set(Math.ceil(initialRemaining / 1000));
+                const gameState = this.worldStore.stickerCollageGameState();
+                const phase = gameState?.phaseState.phase;
+                let totalSec = 0;
+                if (phase === 'BUILDING') {
+                    totalSec = gameState?.roundDurationSec
+                        || (gameState?.roundStartedAt ? Math.ceil((endsAt - gameState.roundStartedAt) / 1000) : 0)
+                        || 0;
+                } else if (phase === 'VOTING') {
+                    totalSec = gameState?.votingDurationSec ?? 0;
+                } else if (phase === 'RESULTS') {
+                    totalSec = gameState?.resultsDurationSec ?? 0;
+                }
+                this.currentTimerTotalSec.set(totalSec);
                 lastEndsAt = endsAt;
             }
 

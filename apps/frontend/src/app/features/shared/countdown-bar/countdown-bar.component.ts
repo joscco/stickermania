@@ -23,7 +23,10 @@ export class CountdownBarComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.timer !== null) clearInterval(this.timer);
+    if (this.timer !== null) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
   }
 
   readonly remainingSec = computed(() => {

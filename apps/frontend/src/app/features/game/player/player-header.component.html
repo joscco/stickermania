@@ -5,8 +5,8 @@
         <span class="text-xs font-semibold shrink-0">Stickermania</span>
       </div>
 
-      <!-- Countdown bar — full width -->
-      <div class="flex-1 px-2">
+      <!-- Countdown bar — animates in/out -->
+      <div class="flex-1 px-2" [animPresence]="timerEndsAt() > 0" animPresenceType="opacity">
         <app-countdown-bar
           [endsAt]="timerEndsAt()"
           [totalDurationSec]="timerTotalSec()"
