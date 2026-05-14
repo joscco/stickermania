@@ -9,14 +9,19 @@
   <!-- Podium: constrained to available space, items bottom-aligned -->
   <div animOnInit="opacity" [animDelay]="0.3" class="flex-1 min-h-0 flex items-end justify-center gap-2 sm:gap-4 px-2 sm:px-4 pt-2 overflow-hidden">
     @for (slot of podiumSlots(); track slot.placement) {
-      <div class="flex flex-col items-center max-h-full overflow-hidden">
-        <div class="mb-1 shrink-0">
+      <div class="flex flex-col items-center justify-end max-h-full">
+        <!-- Avatar -->
+        <div class="mb-1 shrink-0 relative">
           <app-board-player-avatar
             [player]="getPlayer(slot.result.playerId)!"
             [status]="'podium'"
           />
+          @if (slot.placement === 1) {
+            <app-svg name="icon-crown" w="24" color="#eab308" class="absolute -top-3 left-1/2 -translate-x-1/2 drop-shadow-md"/>
+          }
         </div>
-        <div class="relative rounded-2xl overflow-hidden border-4 bg-stone-100 shrink-0 aspect-square"
+        <!-- Snapshot image -->
+        <div class="relative rounded-2xl border-4 bg-stone-100 shrink-0 aspect-square"
              [ngClass]="[slot.imgSizeClass, slot.borderClass, slot.shadowClass]">
           @if (getSnapshotUrl(slot.result.playerId); as url) {
             <img [src]="url" alt="" class="w-full h-full object-contain" draggable="false"/>
@@ -25,12 +30,15 @@
               <app-svg name="icon-camera-lg" [w]="slot.camW" color="black"/>
             </div>
           }
-          <div class="absolute top-1.5 right-1.5">
+          <div class="absolute translate-x-1/2 -translate-y-1/2 top-1 right-1">
             <app-svg [name]="slot.medalIcon" [w]="slot.medalW"/>
           </div>
         </div>
-        <app-svg [name]="slot.stepIcon" [ngClass]="[slot.stepColor]" class="w-24 sm:w-32 md:w-36 max-h-16 sm:max-h-20 md:max-h-28"/>
-        <app-stars-display [count]="slot.result.voteCount" [starSize]="slot.starSize" [colorClass]="slot.starColor" class="mt-0.5 shrink-0"/>
+        <!-- Podium step bar -->
+        <div class="w-20 sm:w-28 md:w-30 shrink-0" [ngClass]="[slot.barColorClass + ' ' + slot.barHeightClass]"></div>
+        <!-- Vote stars -->
+        <app-stars-display [count]="slot.result.voteCount" [starSize]="slot.starSize" [colorClass]="slot.starColor" class="shrink-0"/>
+
       </div>
     }
   </div>

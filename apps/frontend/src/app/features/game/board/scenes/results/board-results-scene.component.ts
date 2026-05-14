@@ -18,11 +18,11 @@ interface PodiumSlot {
     result: StickerCollageVoteResult;
     medalIcon: string;
     medalW: number;
-    stepIcon: string;
     imgSizeClass: string;
     borderClass: string;
     shadowClass: string;
-    stepColor: string;
+    barHeightClass: string;
+    barColorClass: string;
     starSize: number;
     starColor: string;
     camW: number;
@@ -51,9 +51,9 @@ export class BoardResultsSceneComponent {
     public readonly podiumSlots = computed<PodiumSlot[]>(() => {
         const results = this.topResults();
         const config: Record<number, Omit<PodiumSlot, 'placement' | 'result'>> = {
-            1: {medalIcon: 'icon-medal-gold-lg', medalW: 32, stepIcon: 'podium-step-1', imgSizeClass: 'w-28 sm:w-36 md:w-44', borderClass: 'border-black', shadowClass: 'shadow-xl', stepColor: 'text-black', starSize: 16, starColor: 'text-amber-500', camW: 60},
-            2: {medalIcon: 'icon-medal-silver-lg', medalW: 28, stepIcon: 'podium-step-2', imgSizeClass: 'w-24 sm:w-32 md:w-36', borderClass: 'border-stone-400', shadowClass: 'shadow-lg', stepColor: 'text-stone-400', starSize: 14, starColor: 'text-stone-400', camW: 50},
-            3: {medalIcon: 'icon-medal-bronze-lg', medalW: 28, stepIcon: 'podium-step-3', imgSizeClass: 'w-24 sm:w-32 md:w-36', borderClass: 'border-stone-300', shadowClass: 'shadow-lg', stepColor: 'text-stone-300', starSize: 14, starColor: 'text-stone-400', camW: 50},
+            1: {medalIcon: 'icon-medal-gold-lg', medalW: 65, imgSizeClass: 'w-28 sm:w-36 md:w-44', borderClass: 'border-yellow-400', shadowClass: 'shadow-xl', barColorClass: 'bg-yellow-400', barHeightClass: 'h-8', starSize: 16, starColor: 'text-amber-500', camW: 60},
+            2: {medalIcon: 'icon-medal-silver-lg', medalW: 60, imgSizeClass: 'w-24 sm:w-32 md:w-36', borderClass: 'border-stone-400', shadowClass: 'shadow-lg', barColorClass: 'bg-stone-300', barHeightClass: 'h-5', starSize: 14, starColor: 'text-stone-400', camW: 50},
+            3: {medalIcon: 'icon-medal-bronze-lg', medalW: 55, imgSizeClass: 'w-24 sm:w-32 md:w-36', borderClass: 'border-amber-700', shadowClass: 'shadow-lg', barColorClass: 'bg-amber-700', barHeightClass: 'h-3', starSize: 14, starColor: 'text-stone-400', camW: 50},
         };
         const displayOrder = [1, 0, 2];
         return displayOrder
