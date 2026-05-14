@@ -9,7 +9,8 @@ import {AnimOnInitDirective, type AnimType} from '../animations/anim-on-init.dir
 const BANNER_HEIGHT = 100;
 const TOP_BOTTOM_BORDER = 16;
 const SIDE_BORDER = 40;
-const LINE_HEIGHT = 1.25;
+const CONTENT_PAD_Y = 8;
+const LINE_HEIGHT = 1.15;
 
 let _ctx: CanvasRenderingContext2D | null = null;
 function getCtx(): CanvasRenderingContext2D {
@@ -59,7 +60,7 @@ function wrapLines(text: string, fontSize: number, maxWidth: number): number {
     .banner-bg {
       border-style: solid;
       border-image-source: url(/assets/svg/prompt-background.svg);
-      border-image-slice: 94 406 94 406 fill;
+      border-image-slice: 125 450 125 450 fill;
       border-image-repeat: stretch;
       border-image-width: 1;
     }
@@ -69,7 +70,7 @@ export class PromptBannerComponent implements AfterViewInit, OnDestroy {
 
   readonly text = input.required<string>();
   readonly widthPx = input<number | undefined>(undefined);
-  readonly maxWidthPx = input<number>(640);
+  readonly maxWidthPx = input<number>(540);
   readonly subtitle = input<string>('');
   readonly icon = input<string>('');
   readonly anim = input<AnimType>('banner');
@@ -83,7 +84,7 @@ export class PromptBannerComponent implements AfterViewInit, OnDestroy {
   readonly effectiveWidth = computed(() => Math.min(this.uncappedWidth(), this.maxWidthPx()));
 
   readonly contentWidth = computed(() => Math.max(0, this.effectiveWidth() - 2 * SIDE_BORDER));
-  readonly contentHeight = computed(() => BANNER_HEIGHT - 2 * TOP_BOTTOM_BORDER);
+  readonly contentHeight = computed(() => BANNER_HEIGHT - 2 * TOP_BOTTOM_BORDER - CONTENT_PAD_Y);
 
   readonly borderWidthPx = computed(() => `${TOP_BOTTOM_BORDER}px ${SIDE_BORDER}px`);
 
@@ -94,17 +95,21 @@ export class PromptBannerComponent implements AfterViewInit, OnDestroy {
     const hasIcon = !!this.icon();
     const hasSub = !!this.subtitle();
 
+    const innerPadW = 20;
+    const innerPadH = 10;
     const iconW = hasIcon ? 52 : 0;
-    const availW = w - iconW;
+    const availW = w - innerPadW - iconW;
     const subH = hasSub ? this.subtitleLineHeight() : 0;
-    const availH = h - subH;
+    const availH = h - innerPadH - subH;
 
-    if (!text) return '1rem';
+    if (!text || availW <= 0 || availH <= 0) return '1rem';
 
-    let lo = 0.3;
-    let hi = 2.5;
+    // Binary search: find largest font size where text fits both width and height.
+    // lo = minimum readable  |  hi = theoretical max (single line filling entire height)
+    let lo = 0.25;
+    let hi = (availH / LINE_HEIGHT) / 16;
 
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 16; i++) {
       const mid = (lo + hi) / 2;
       const px = mid * 16;
       const lines = wrapLines(text, px, availW);
@@ -116,12 +121,13 @@ export class PromptBannerComponent implements AfterViewInit, OnDestroy {
       }
     }
 
+    // Final exact fit: scale lo so the measured text height precisely fills availH
     {
       const px = lo * 16;
       const lines = wrapLines(text, px, availW);
       const totalH = lines * px * LINE_HEIGHT;
       if (totalH > availH && availH > 0) {
-        lo = (availH / (lines * 16 * LINE_HEIGHT));
+        lo = availH / (lines * 16 * LINE_HEIGHT);
       }
     }
 
@@ -129,14 +135,24 @@ export class PromptBannerComponent implements AfterViewInit, OnDestroy {
   });
 
   readonly subtitleFontSize = computed(() => {
+    if (!this.subtitle()) return '0rem';
     const cw = this.contentWidth();
-    const rem = Math.max(0.5, Math.min(0.75, cw / 500));
+    const rem = Math.max(0.4, Math.min(0.75, cw / 600));
     return `${rem.toFixed(4)}rem`;
   });
 
   readonly subtitleLineHeight = computed(() => {
-    const cw = this.contentWidth();
-    return Math.round(Math.max(12, cw * 0.035));
+    const subRem = parseFloat(this.subtitleFontSize()) || 0.5;
+    return Math.round(subRem * 16 * 1.4);
+  });
+
+  readonly textLineHeight = computed(() => {
+    const text = this.text();
+    const px = parseFloat(this.fontSize()) * 16;
+    const iconW = this.icon() ? 52 : 0;
+    const availW = this.contentWidth() - 20 - iconW;
+    const lines = wrapLines(text, px, availW);
+    return lines > 1 ? 1.1 : 1.2;
   });
 
   readonly effectiveMaxWidthPx = computed(() => {
