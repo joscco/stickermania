@@ -152,6 +152,11 @@ export function endBuildingPhaseEarly(
     }
 
     if (shouldSkipVoting(state.gameState)) {
+        const roundSubmissions = state.gameState.submissions[state.gameState.currentRoundIndex] ?? [];
+        if (roundSubmissions.length === 0) {
+            state.gameState.phaseState = {phase: "LOBBY"};
+            return {stateChanged: true, events: []};
+        }
         transitionToVoting(state, config.stickerCollage, now);
         transitionToResults(state, config.stickerCollage, now);
         return buildResultsEvents(state);
@@ -348,6 +353,12 @@ export function advanceToNextRound(
         return noChange;
     }
 
+    const roundSubmissions = state.gameState.submissions[state.gameState.currentRoundIndex] ?? [];
+    if (roundSubmissions.length === 0) {
+        state.gameState.phaseState = {phase: "LOBBY"};
+        return {stateChanged: true, events: []};
+    }
+
     resultsPhase.readyToAdvanceIds.push(playerId);
     transitionToNextRound(state, config.stickerCollage, now);
 
@@ -373,6 +384,12 @@ export function boardAdvancesToNextRound(
 ): HandlerResult {
     if (!asResultsPhase(state.gameState)) {
         return noChange;
+    }
+
+    const roundSubmissions = state.gameState.submissions[state.gameState.currentRoundIndex] ?? [];
+    if (roundSubmissions.length === 0) {
+        state.gameState.phaseState = {phase: "LOBBY"};
+        return {stateChanged: true, events: []};
     }
 
     transitionToNextRound(state, config.stickerCollage, now);

@@ -156,6 +156,11 @@ export class StickerCollageEngine implements GameEngine {
 
         if (phaseState.phase === "BUILDING") {
             if (shouldSkipVoting(gameState)) {
+                const roundSubmissions = gameState.submissions[gameState.currentRoundIndex] ?? [];
+                if (roundSubmissions.length === 0) {
+                    gameState.phaseState = {phase: "LOBBY"};
+                    return {stateChanged: true, emittedEvents: []};
+                }
                 transitionToVoting(sessionState, this.config.stickerCollage, now);
                 transitionToResults(sessionState, this.config.stickerCollage, now);
                 const newPhase = gameState.phaseState;
@@ -192,6 +197,11 @@ export class StickerCollageEngine implements GameEngine {
         }
 
         if (phaseState.phase === "RESULTS") {
+            const roundSubmissions = gameState.submissions[gameState.currentRoundIndex] ?? [];
+            if (roundSubmissions.length === 0) {
+                gameState.phaseState = {phase: "LOBBY"};
+                return {stateChanged: true, emittedEvents: []};
+            }
             transitionToNextRound(sessionState, this.config.stickerCollage, now);
             const newPhase = gameState.phaseState;
             if (newPhase.phase !== "BUILDING") {
