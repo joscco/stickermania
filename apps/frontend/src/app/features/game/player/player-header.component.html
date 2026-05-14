@@ -1,14 +1,22 @@
 <div class="sticky top-0 z-30 text-black bg-stone-200 backdrop-blur">
-  <div class="mx-auto w-full max-w-lg px-3 pt-2 pb-1">
+  <div class="mx-auto w-full max-w-lg px-3 py-2">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2 min-w-0">
-        <span class="text-sm font-semibold shrink-0">Stickermania</span>
+        <span class="text-xs font-semibold shrink-0">Stickermania</span>
       </div>
 
-      <div class="flex items-center gap-2 shrink-0">
+      <!-- Countdown bar — full width -->
+      <div class="flex-1 px-2">
+        <app-countdown-bar
+          [endsAt]="timerEndsAt()"
+          [totalDurationSec]="timerTotalSec()"
+        />
+      </div>
+
+      <div class="flex items-center justify-center gap-2 shrink-0">
         @if (vm().showEditControls) {
           <button
-            class="text-black hover:text-stone-600 transition-colors truncate"
+            class="text-black text-xs hover:text-stone-600 transition-colors truncate"
             (click)="editName.emit()"
             title="Name ändern"
           >{{ vm().playerName }}
@@ -27,13 +35,5 @@
         }
       </div>
     </div>
-  </div>
-
-  <!-- Countdown bar — full width -->
-  <div class="px-2 pb-1.5">
-    <app-countdown-bar
-      [endsAt]="timerEndsAt()"
-      [totalDurationSec]="timerTotalSec()"
-    />
   </div>
 </div>
