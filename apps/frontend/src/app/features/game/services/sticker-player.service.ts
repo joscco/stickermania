@@ -1,4 +1,4 @@
-import {inject, Injectable, computed} from "@angular/core";
+import {inject, Injectable, computed, effect} from "@angular/core";
 import type {
   StickerCollageClientAction, StickerCollageGameState, StickerCollage, StickerHand,
   StickerPlacement, StickerPack,
@@ -38,9 +38,6 @@ export class StickerPlayerService {
   public readonly currentPrompt = computed(() => this.gameState()?.currentPrompt ?? "");
   public readonly currentRoundIndex = computed(() => this.gameState()?.currentRoundIndex ?? 0);
   public readonly phase = computed(() => this.gameState()?.phaseState.phase ?? "LOBBY");
-  public readonly roundEndsAt = computed(() => this.buildingState()?.roundEndsAt ?? 0);
-  public readonly votingEndsAt = computed(() => this.votingState()?.votingEndsAt ?? 0);
-  public readonly resultsEndsAt = computed(() => this.resultsState()?.resultsEndsAt ?? 0);
   public readonly stickerCatalog = computed(() => this.gameState()?.stickerCatalog ?? []);
   public readonly votesPerPlayer = computed(() => this.gameState()?.votesPerPlayer ?? 3);
   public readonly maxStickersOnCanvas = computed(() => this.gameState()?.maxStickersOnCanvas ?? 12);
@@ -151,25 +148,26 @@ export class StickerPlayerService {
   /** True once the winner has completed all choices — unlocks the "Weiter" button for everyone. */
   public readonly canReadyToAdvance = computed<boolean>(() => this.resultsState()?.winnerChoicesDone ?? true);
 
-  public readonly myReadyToAdvance = computed<boolean>(() => {
-    const playerId = this.sessionStore.playerId();
-    if (!playerId) return false;
-    return this.resultsState()?.readyToAdvanceIds.includes(playerId) ?? false;
-  });
-
   // ─── Sticker packs (cross-phase) ─────────────────────────────
 
   public readonly stickerPacks = computed(() => this.gameState()?.stickerPacks ?? []);
-  public readonly unlockedPackIds = computed(() => this.gameState()?.unlockedPackIds ?? []);
   public readonly lastUnlockedPackId = computed(() => this.resultsState()?.lastUnlockedPackId ?? null);
-  public readonly guaranteedPackId = computed(() => this.gameState()?.guaranteedPackId ?? null);
+
+  // ─── Side-effects ────────────────────────────────────────────
+
+  constructor() {
+    effect(() => {
+      if (this.phase() !== 'BUILDING') return;
+      if (this.hasSubmittedThisRound() || this.hasSkippedThisRound()) return;
+      if (!this.myHand()) this.requestHand();
+    });
+  }
 
   // ─── Actions ─────────────────────────────────────────────────
 
   public requestHand(): void {
     this.sendAction({type: "request-hand"});
   }
-
   public submitCollage(placements: StickerPlacement[]): void {
     this.sendAction({type: "submit-collage", placements});
   }
