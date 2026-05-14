@@ -124,3 +124,16 @@ canvas,
   background-color: #fff;
 }
 
+/* ── Animated board background pattern ───────────────────── */
+.board-pattern-bg {
+  background-color: #fafaf9;
+  background-image: url('/assets/svg/bg-pattern.svg');
+  background-size: 120px 120px;
+  animation: board-pattern-drift 20s linear infinite;
+}
+
+@keyframes board-pattern-drift {
+  0%   { background-position: 0 0; }
+  100% { background-position: 120px 120px; }
+}
+

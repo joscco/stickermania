@@ -1,5 +1,5 @@
 import {CommonModule} from "@angular/common";
-import {Component, computed, input, OnDestroy, OnInit, signal} from "@angular/core";
+import {Component, computed, input, OnDestroy, OnInit, signal, inject} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
 import type {ServerToClientMessage, StickerCollageClientAction} from "@birthday/shared";
 import * as QRCode from "qrcode";
@@ -16,6 +16,7 @@ import {AnimOnInitDirective} from '../../shared/animations/anim-on-init.directiv
 import {WebSocketService} from '../../../core/websocket.service';
 import {ApiService} from '../../../core/api.service';
 import {WorldStore} from '../../../core/world.store';
+import {AudioService} from '../../../core/audio.service';
 
 @Component({
   selector: "app-board",
@@ -47,6 +48,8 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   public readonly gameState = computed(() => this.screenData.gameState());
 
+  public readonly musicPlaying;
+
   private sessionId: string | null = null;
   private routeSubscription: Subscription | null = null;
   private unsubscribeWs: (() => void) | null = null;
@@ -58,7 +61,10 @@ export class BoardComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     public readonly worldStore: WorldStore,
     public readonly screenData: BoardScreenDataService,
-  ) {}
+    public readonly audio: AudioService,
+  ) {
+    this.musicPlaying = audio.musicPlaying;
+  }
 
   public ngOnInit(): void {
     if (this.catalogForcedPhase()) {
@@ -109,21 +115,25 @@ export class BoardComponent implements OnInit, OnDestroy {
   }
 
   public startGame(): void {
+    this.audio.playStart();
     const action: StickerCollageClientAction = {type: "start-game"};
     this.wsService.send({type: "game-action", action});
   }
 
   public endRoundEarly(): void {
+    this.audio.playClick();
     const action: StickerCollageClientAction = {type: "end-round-early"};
     this.wsService.send({type: "game-action", action});
   }
 
   public endVotingEarly(): void {
+    this.audio.playClick();
     const action: StickerCollageClientAction = {type: "end-voting-early"};
     this.wsService.send({type: "game-action", action});
   }
 
   public advanceFromResults(): void {
+    this.audio.playAction();
     const action: StickerCollageClientAction = {type: "advance-from-results"};
     this.wsService.send({type: "game-action", action});
   }
@@ -159,6 +169,9 @@ export class BoardComponent implements OnInit, OnDestroy {
       this.unsubscribeWs = this.wsService.onMessage((message) => this.handleMessage(message));
       this.wsService.connect();
 
+      // Start background music (when file is provided)
+      this.audio.musicStart();
+
       const joinCheckInterval = setInterval(() => {
         if (this.wsService.status() === "connected" && this.sessionId) {
           this.wsService.send({type: "join", kind: "board", sessionId: this.sessionId});
@@ -184,6 +197,7 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.worldStore.clearSessionState();
     this.screenData.closeSetupDrawer();
     this.screenData.stopTimerTick();
+    this.audio.musicStop();
     this.isBoardReady.set(false);
   }
 

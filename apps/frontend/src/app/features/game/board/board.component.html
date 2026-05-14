@@ -1,6 +1,6 @@
-<div class="h-full">
+<div class="h-full board-pattern-bg">
   @if (isBootstrapping()) {
-    <div class="h-full w-full grid place-items-center bg-white text-stone-500">
+    <div class="h-full w-full grid place-items-center text-stone-500">
       <div class="text-center">
         <div class="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-stone-300 border-t-stone-600"></div>
         <div class="mt-4 text-sm">Session wird geladen...</div>
@@ -9,16 +9,20 @@
   } @else if (!isBoardReady()) {
     <app-board-lobby (sessionCreated)="onSessionSelected($event)"/>
   } @else {
-    <div class="relative h-full w-full overflow-hidden bg-white text-stone-900 flex flex-col">
+    <div class="relative h-full w-full overflow-hidden text-stone-900 flex flex-col">
+      <!-- Animated background pattern -->
+      <div class="absolute inset-0 z-0 pointer-events-none"></div>
       <app-board-header
         [vm]="screenData.headerVm()"
         [timerEndsAt]="screenData.currentTimerEndsAt()"
         [timerTotalSec]="screenData.currentTimerTotalSec()"
+        [musicPlaying]="musicPlaying()"
         (backToLobby)="backToLobby()"
         (openSettings)="screenData.toggleSetupDrawer()"
+        (toggleMusic)="audio.musicToggle()"
       />
 
-      <div class="flex-1 min-h-0 relative bg-white">
+      <div class="flex-1 min-h-0 relative">
         @if (!worldStore.sessionState()) {
           <div animOnInit="opacity" class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
             <div class="h-8 w-8 animate-spin rounded-full border-4 border-stone-200 border-t-stone-500"></div>

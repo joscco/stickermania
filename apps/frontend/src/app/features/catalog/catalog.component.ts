@@ -68,7 +68,7 @@ type ScreenKey =
     {provide: StickerPlayerService, useClass: MockStickerPlayerService},
   ],
   templateUrl: './catalog.component.html',
-  host: {class: 'h-dvh bg-stone-100 text-stone-900 flex flex-col'},
+  host: {class: 'h-dvh text-stone-900 flex flex-col'},
 })
 export class CatalogComponent {
   public readonly currentScreen = signal<ScreenKey>('lobby-waiting');

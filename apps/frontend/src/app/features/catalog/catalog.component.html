@@ -1,4 +1,4 @@
-<div class="shrink-0 bg-white border-b border-stone-200 px-4 py-3 flex flex-nowrap items-center gap-4">
+<div class="shrink-0 border-b border-stone-200 px-4 py-3 flex flex-nowrap items-center gap-4">
   <h1 class="text-lg text-nowrap font-bold text-stone-800">Component Catalog</h1>
 
   <label class="flex items-center gap-2 text-sm text-stone-600">
@@ -32,7 +32,7 @@
   </button>
 </div>
 
-<div class="flex-1 flex overflow-hidden">
+<div class="flex-1 flex overflow-hidden board-pattern-bg">
   <div class="flex-1 overflow-hidden">
     @if (currentMode() === 'player') {
       <app-player [catalogForcedScreen]="playerScreen()!"/>

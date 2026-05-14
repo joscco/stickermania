@@ -32,7 +32,7 @@
         />
       }
       @case (PlayerScreen.LOBBY_WAITING) {
-        <app-player-lobby-waiting (startGame)="stickerService.startGame()"/>
+        <app-player-lobby-waiting (startGame)="startGameWithSound()"/>
       }
       @case (PlayerScreen.BUILDING) {
         <app-player-building
@@ -42,40 +42,40 @@
           [stickerCatalog]="screenData.buildingVm().stickerCatalog"
           [stickerPacks]="screenData.buildingVm().stickerPacks"
           [maxStickersOnCanvas]="screenData.buildingVm().maxStickersOnCanvas"
-          (skipRound)="stickerService.skipRound()"
-          (submitCollage)="onSubmitCollage($event)"
+          (skipRound)="skipRoundWithSound()"
+          (submitCollage)="submitCollageWithSound($event)"
         />
       }
       @case (PlayerScreen.BUILDING_SUBMITTED) {
         <app-player-building-submitted
           [allPlayersDone]="screenData.buildingSubmittedVm().allPlayersDone"
-          (endRoundEarly)="stickerService.endRoundEarly()"
+          (endRoundEarly)="endRoundEarlyWithSound()"
         />
       }
       @case (PlayerScreen.BUILDING_SKIPPED) {
         <app-player-building-skipped
           [allPlayersDone]="screenData.buildingSkippedVm().allPlayersDone"
-          (endRoundEarly)="stickerService.endRoundEarly()"
+          (endRoundEarly)="endRoundEarlyWithSound()"
         />
       }
       @case (PlayerScreen.VOTING) {
         <app-player-voting
           [vm]="screenData.votingVm()"
-          (castVote)="stickerService.castVote($event)"
-          (doneVoting)="stickerService.doneVoting()"
-          (endVotingEarly)="stickerService.endVotingEarly()"
+          (castVote)="castVoteWithSound($event)"
+          (doneVoting)="doneVotingWithSound()"
+          (endVotingEarly)="endVotingEarlyWithSound()"
         />
       }
       @case (PlayerScreen.VOTING_DONE) {
         <app-player-voting-done
           [allVotingDone]="false"
-          (endVotingEarly)="stickerService.endVotingEarly()"
+          (endVotingEarly)="endVotingEarlyWithSound()"
         />
       }
       @case (PlayerScreen.VOTING_ALL_DONE) {
         <app-player-voting-done
           [allVotingDone]="true"
-          (endVotingEarly)="stickerService.endVotingEarly()"
+          (endVotingEarly)="endVotingEarlyWithSound()"
         />
       }
       @case (PlayerScreen.RESULTS) {
@@ -94,10 +94,10 @@
           [winnerId]="screenData.resultsVm().winnerId"
           [winnerName]="screenData.resultsVm().winnerName"
           [canReadyToAdvance]="screenData.resultsVm().canReadyToAdvance"
-          (pickPrompt)="stickerService.pickPrompt($event)"
-          (unlockPack)="stickerService.unlockPack($event)"
-          (pickGuaranteedPack)="stickerService.pickGuaranteedPack($event)"
-          (readyToAdvance)="stickerService.readyToAdvance()"
+          (pickPrompt)="pickPromptWithSound($event)"
+          (unlockPack)="unlockPackWithSound($event)"
+          (pickGuaranteedPack)="pickGuaranteedPackWithSound($event)"
+          (readyToAdvance)="readyToAdvanceWithSound()"
         />
       }
       @case (PlayerScreen.WINNER_PROMPT) {
@@ -109,9 +109,9 @@
           [promptChoices]="screenData.resultsVm().promptChoices"
           [packUnlockChoices]="screenData.resultsVm().packUnlockChoices"
           [guaranteedPackChoices]="screenData.resultsVm().guaranteedPackChoices"
-          (pickPrompt)="stickerService.pickPrompt($event)"
-          (unlockPack)="stickerService.unlockPack($event)"
-          (pickGuaranteedPack)="stickerService.pickGuaranteedPack($event)"
+          (pickPrompt)="pickPromptWithSound($event)"
+          (unlockPack)="unlockPackWithSound($event)"
+          (pickGuaranteedPack)="pickGuaranteedPackWithSound($event)"
         />
       }
       @case (PlayerScreen.WINNER_UNLOCK) {
@@ -123,9 +123,9 @@
           [promptChoices]="screenData.resultsVm().promptChoices"
           [packUnlockChoices]="screenData.resultsVm().packUnlockChoices"
           [guaranteedPackChoices]="screenData.resultsVm().guaranteedPackChoices"
-          (pickPrompt)="stickerService.pickPrompt($event)"
-          (unlockPack)="stickerService.unlockPack($event)"
-          (pickGuaranteedPack)="stickerService.pickGuaranteedPack($event)"
+          (pickPrompt)="pickPromptWithSound($event)"
+          (unlockPack)="unlockPackWithSound($event)"
+          (pickGuaranteedPack)="pickGuaranteedPackWithSound($event)"
         />
       }
       @case (PlayerScreen.WINNER_GUARANTEED) {
@@ -137,9 +137,9 @@
           [promptChoices]="screenData.resultsVm().promptChoices"
           [packUnlockChoices]="screenData.resultsVm().packUnlockChoices"
           [guaranteedPackChoices]="screenData.resultsVm().guaranteedPackChoices"
-          (pickPrompt)="stickerService.pickPrompt($event)"
-          (unlockPack)="stickerService.unlockPack($event)"
-          (pickGuaranteedPack)="stickerService.pickGuaranteedPack($event)"
+          (pickPrompt)="pickPromptWithSound($event)"
+          (unlockPack)="unlockPackWithSound($event)"
+          (pickGuaranteedPack)="pickGuaranteedPackWithSound($event)"
         />
       }
       @case (PlayerScreen.NEXT_ROUND) {

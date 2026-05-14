@@ -1,9 +1,9 @@
 {
   "port": 3001,
   "stickerCollage": {
-    "roundDurationSec": 120,
-    "votingDurationSec": 120,
-    "resultsDurationSec": 60,
+    "roundDurationSec": 60,
+    "votingDurationSec": 60,
+    "resultsDurationSec": 100,
     "handSize": 8,
     "maxStickersOnCanvas": 20,
     "votesPerPlayer": 1,

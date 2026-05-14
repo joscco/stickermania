@@ -1,4 +1,4 @@
-import {Component, computed, input, OnDestroy, OnInit, signal} from "@angular/core";
+import {Component, computed, input, OnDestroy, OnInit, signal, inject} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
 import {LobbyAvatarComponent} from './lobby/lobby-avatar.component';
 import {LobbyNameComponent} from './lobby/lobby-name.component';
@@ -24,6 +24,7 @@ import {ApiService} from '../../../core/api.service';
 import {GameSessionStore} from '../../../core/challenge.store';
 import {WorldStore} from '../../../core/world.store';
 import {ReconnectService} from '../../../core/reconnect.service';
+import {AudioService} from '../../../core/audio.service';
 import {PlayerScreen} from './player-screen.enum';
 
 
@@ -81,6 +82,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     private readonly messageHandler: PlayerMessageHandler,
     public readonly stickerService: StickerPlayerService,
     public readonly screenData: PlayerScreenDataService,
+    public readonly audio: AudioService,
   ) {
     const deviceName = this.reconnectService.loadDeviceName();
     if (deviceName) {
@@ -174,6 +176,20 @@ export class PlayerComponent implements OnInit, OnDestroy {
       this.uploadSnapshot(event.imageDataUrl);
     }
   }
+
+  // ── Sound-wrapped actions ────────────────────────────────
+
+  public startGameWithSound(): void { this.audio.playClick(); this.stickerService.startGame(); }
+  public skipRoundWithSound(): void { this.audio.playClick(); this.stickerService.skipRound(); }
+  public submitCollageWithSound(event: SubmitCollageEvent): void { this.audio.playAction(); this.onSubmitCollage(event); }
+  public endRoundEarlyWithSound(): void { this.audio.playClick(); this.stickerService.endRoundEarly(); }
+  public castVoteWithSound(collageId: string): void { this.audio.playClick(); this.stickerService.castVote(collageId); }
+  public doneVotingWithSound(): void { this.audio.playClick(); this.stickerService.doneVoting(); }
+  public endVotingEarlyWithSound(): void { this.audio.playClick(); this.stickerService.endVotingEarly(); }
+  public pickPromptWithSound(prompt: string): void { this.audio.playClick(); this.stickerService.pickPrompt(prompt); }
+  public unlockPackWithSound(packId: string): void { this.audio.playClick(); this.stickerService.unlockPack(packId); }
+  public pickGuaranteedPackWithSound(packId: string): void { this.audio.playClick(); this.stickerService.pickGuaranteedPack(packId); }
+  public readyToAdvanceWithSound(): void { this.audio.playAction(); this.stickerService.readyToAdvance(); }
 
   private async uploadSnapshot(imageDataUrl: string): Promise<void> {
     const sessionId = this.sessionStore.sessionId();
