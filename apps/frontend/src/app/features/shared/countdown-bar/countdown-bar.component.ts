@@ -9,24 +9,7 @@ import {
 @Component({
   selector: "app-countdown-bar",
   standalone: true,
-  template: `
-    <div class="relative w-full h-7 bg-stone-300/60 rounded-md overflow-hidden select-none">
-      <!-- fill that shrinks left ← right -->
-      <div
-        class="absolute inset-y-0 left-0 rounded-md transition-[width] duration-500 ease-linear"
-        [style.width.%]="percent()"
-        [class.bg-yellow-400]="percent() > 25"
-        [class.bg-red-400]="percent() <= 25"
-      ></div>
-      <!-- time label centred on top -->
-      <div class="absolute inset-0 flex items-center justify-center">
-        <span class="text-xs font-mono font-bold tracking-tight drop-shadow-sm"
-          [class.text-black]="percent() > 25"
-          [class.text-white]="percent() <= 25"
-        >{{ display() }}</span>
-      </div>
-    </div>
-  `,
+  templateUrl: "./countdown-bar.component.html",
 })
 export class CountdownBarComponent implements OnDestroy {
   readonly endsAt = input<number | null>(null);

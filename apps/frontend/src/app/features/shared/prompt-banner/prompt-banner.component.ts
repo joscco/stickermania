@@ -19,9 +19,11 @@ function getCtx(): CanvasRenderingContext2D {
   return _ctx;
 }
 
+const FONT_FAMILY = "'Darumadrop One Fixed', 'Darumadrop One', cursive";
+
 function wrapLines(text: string, fontSize: number, maxWidth: number): number {
   const ctx = getCtx();
-  ctx.font = `800 ${fontSize}px sans-serif`;
+  ctx.font = `800 ${fontSize}px ${FONT_FAMILY}`;
   const words = text.split(/\s+/).filter(w => w.length > 0);
   let lines = 0;
   let current = '';
@@ -84,7 +86,7 @@ export class PromptBannerComponent implements AfterViewInit, OnDestroy {
 
     if (!text) return '1rem';
 
-    let lo = 0.55;
+    let lo = 0.3;
     let hi = 2.5;
 
     for (let i = 0; i < 18; i++) {
@@ -96,6 +98,15 @@ export class PromptBannerComponent implements AfterViewInit, OnDestroy {
         hi = mid;
       } else {
         lo = mid;
+      }
+    }
+
+    {
+      const px = lo * 16;
+      const lines = wrapLines(text, px, availW);
+      const totalH = lines * px * LINE_HEIGHT;
+      if (totalH > availH && availH > 0) {
+        lo = (availH / (lines * 16 * LINE_HEIGHT));
       }
     }
 

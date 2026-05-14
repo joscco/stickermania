@@ -1,4 +1,4 @@
-import {inject, Injectable, computed, effect} from "@angular/core";
+import {inject, Injectable, computed} from "@angular/core";
 import type {
   StickerCollageClientAction, StickerCollageGameState, StickerCollage, StickerHand,
   StickerPlacement, StickerPack,
@@ -152,16 +152,6 @@ export class StickerPlayerService {
 
   public readonly stickerPacks = computed(() => this.gameState()?.stickerPacks ?? []);
   public readonly lastUnlockedPackId = computed(() => this.resultsState()?.lastUnlockedPackId ?? null);
-
-  // ─── Side-effects ────────────────────────────────────────────
-
-  constructor() {
-    effect(() => {
-      if (this.phase() !== 'BUILDING') return;
-      if (this.hasSubmittedThisRound() || this.hasSkippedThisRound()) return;
-      if (!this.myHand()) this.requestHand();
-    });
-  }
 
   // ─── Actions ─────────────────────────────────────────────────
 

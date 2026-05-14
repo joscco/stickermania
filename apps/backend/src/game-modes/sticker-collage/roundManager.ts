@@ -2,6 +2,7 @@ import type {
     SessionState, StickerCollageGameState, StickerCollageGameConfig, StickerCollage,
     StickerCollageVoteResult, StickerCollageResultsState,
 } from "@birthday/shared";
+import {dealHand} from "./stickerCatalog.js";
 
 function pickRandom<T>(arr: T[], count: number): T[] {
     return [...arr].sort(() => Math.random() - 0.5).slice(0, count);
@@ -41,10 +42,21 @@ export function transitionToBuilding(
         gameState.submissions[gameState.currentRoundIndex] = [];
     }
 
+    const playerHands: Record<string, {stickerIds: string[]}> = {};
+    for (const playerId of gameState.roundParticipantIds) {
+        playerHands[playerId] = dealHand(
+            gameState.stickerCatalog,
+            config,
+            gameState.unlockedPackIds,
+            gameState.guaranteedPackId,
+            gameState.stickerPacks,
+        );
+    }
+
     gameState.phaseState = {
         phase: "BUILDING",
         roundEndsAt: now + config.roundDurationSec * 1000,
-        playerHands: {},
+        playerHands,
         skippedPlayerIds: [],
     };
 }
