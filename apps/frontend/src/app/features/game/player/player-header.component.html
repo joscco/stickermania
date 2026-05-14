@@ -1,17 +1,11 @@
 <div class="sticky top-0 z-30 text-black bg-stone-200 backdrop-blur">
-  <div class="mx-auto w-full max-w-lg px-3 py-2">
+  <div class="mx-auto w-full max-w-lg px-3 pt-2 pb-1">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2 min-w-0">
         <span class="text-sm font-semibold shrink-0">Stickermania</span>
       </div>
 
       <div class="flex items-center gap-2 shrink-0">
-        @if (vm().timeLeft) {
-          <span
-            class="text-xs font-mono font-bold text-stone-600 bg-stone-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1">
-            <app-svg name="icon-timer-sm" w="20" class="inline"/> {{ vm().timeLeft }}
-          </span>
-        }
         @if (vm().showEditControls) {
           <button
             class="text-black hover:text-stone-600 transition-colors truncate"
@@ -31,8 +25,15 @@
             }
           </button>
         }
-
       </div>
     </div>
+  </div>
+
+  <!-- Countdown bar — full width -->
+  <div class="px-2 pb-1.5">
+    <app-countdown-bar
+      [endsAt]="timerEndsAt()"
+      [totalDurationSec]="timerTotalSec()"
+    />
   </div>
 </div>

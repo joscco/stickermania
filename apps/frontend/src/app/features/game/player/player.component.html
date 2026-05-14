@@ -3,6 +3,8 @@
 
   <app-player-header
     [vm]="screenData.headerVm()"
+    [timerEndsAt]="screenData.timerEndsAt()"
+    [timerTotalSec]="screenData.timerTotalSec()"
     (editName)="startEditName()"
     (editAvatar)="startEditAvatar()"
   />

@@ -56,7 +56,7 @@
               (click)="unlockPack.emit(pack.id)"
             >
               @if (pack.iconId) {
-                <app-svg [name]="pack.iconId" [w]="28"/>
+                <app-svg [name]="pack.iconId" [w]="40"/>
               }
               <div class="text-xs font-medium mt-1">{{ pack.name }}</div>
             </button>
@@ -74,7 +74,7 @@
               (click)="pickGuaranteedPack.emit(pack.id)"
             >
               @if (pack.iconId) {
-                <app-svg [name]="pack.iconId" [w]="28"/>
+                <app-svg [name]="pack.iconId" [w]="40"/>
               }
               <div class="text-xs font-medium mt-1">{{ pack.name }}</div>
             </button>

@@ -17,7 +17,7 @@ export class BoardScreenDataService {
     readonly timeLeft = signal('');
     readonly isSetupDrawerOpen = signal(false);
 
-    private readonly currentTimerEndsAt = computed(() => {
+    readonly currentTimerEndsAt = computed(() => {
         const ps = this.worldStore.stickerCollageGameState()?.phaseState;
         if (!ps) return 0;
         if (ps.phase === 'BUILDING') return ps.roundEndsAt;
@@ -25,6 +25,8 @@ export class BoardScreenDataService {
         if (ps.phase === 'RESULTS') return ps.resultsEndsAt;
         return 0;
     });
+
+    readonly currentTimerTotalSec = signal(0);
 
     private timerInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -35,17 +37,28 @@ export class BoardScreenDataService {
 
     startTimerTick(): void {
         this.stopTimerTick();
+
+        let lastEndsAt = 0;
+
         this.timerInterval = setInterval(() => {
             const endsAt = this.currentTimerEndsAt();
             if (endsAt <= 0) {
                 this.timeLeft.set('');
+                this.currentTimerTotalSec.set(0);
                 return;
             }
-            const remainingMilliseconds = Math.max(0, endsAt - Date.now());
-            const totalSeconds = Math.ceil(remainingMilliseconds / 1000);
-            const minutes = Math.floor(totalSeconds / 60);
-            const seconds = totalSeconds % 60;
-            this.timeLeft.set(`${minutes}:${String(seconds).padStart(2, '0')}`);
+
+            if (endsAt !== lastEndsAt) {
+                const initialRemaining = Math.max(0, endsAt - Date.now());
+                this.currentTimerTotalSec.set(Math.ceil(initialRemaining / 1000));
+                lastEndsAt = endsAt;
+            }
+
+            const remaining = Math.max(0, endsAt - Date.now());
+            const s = Math.ceil(remaining / 1000);
+            const min = Math.floor(s / 60);
+            const sec = s % 60;
+            this.timeLeft.set(`${min}:${String(sec).padStart(2, '0')}`);
         }, 500);
     }
 

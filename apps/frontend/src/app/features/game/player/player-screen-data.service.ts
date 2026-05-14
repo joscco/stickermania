@@ -3,6 +3,7 @@ import {GameSessionStore} from '../../../core/challenge.store';
 import {WorldStore} from '../../../core/world.store';
 import {WebSocketService} from '../../../core/websocket.service';
 import {StickerPlayerService} from '../services/sticker-player.service';
+import {PlayerTimerService} from '../services/player-timer.service';
 import {PlayerScreen} from './player-screen.enum';
 import type {
     VotingViewModel,
@@ -22,6 +23,7 @@ export class PlayerScreenDataService {
     private readonly worldStore = inject(WorldStore);
     private readonly wsService = inject(WebSocketService);
     private readonly stickerService = inject(StickerPlayerService);
+    private readonly timerService = inject(PlayerTimerService);
 
     public readonly isEditingName = signal(false);
     public readonly isEditingAvatar = signal(false);
@@ -84,9 +86,12 @@ export class PlayerScreenDataService {
     public readonly headerVm = computed<PlayerHeaderViewModel>(() => ({
         playerName: this.sessionStore.playerName(),
         avatarUrl: this.existingAvatarImage(),
-        timeLeft: null,
+        timeLeft: this.timerService.timeLeft(),
         showEditControls: this.isNameSet() && this.hasAvatar(),
     }));
+
+    readonly timerEndsAt = computed(() => this.timerService.endsAt());
+    readonly timerTotalSec = computed(() => this.timerService.totalDurationSec());
 
     public readonly votingVm = computed<VotingViewModel>(() => {
         const gameState = this.stickerService.gameState();

@@ -12,6 +12,8 @@
     <div class="relative h-full w-full overflow-hidden bg-white text-stone-900 flex flex-col">
       <app-board-header
         [vm]="screenData.headerVm()"
+        [timerEndsAt]="screenData.currentTimerEndsAt()"
+        [timerTotalSec]="screenData.currentTimerTotalSec()"
         (backToLobby)="backToLobby()"
         (openSettings)="screenData.toggleSetupDrawer()"
       />
