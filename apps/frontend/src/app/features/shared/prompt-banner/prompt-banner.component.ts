@@ -14,7 +14,7 @@ const CONTENT_PAD_X = 20;
 const CONTENT_PAD_Y = 8;
 
 // ── Border-image (from SVG Schrift polygon) ────────────────
-const BORDER_IMAGE_SLICE = '150 500 700 500 fill';
+const BORDER_IMAGE_SLICE = '94 406 95 406 fill';
 
 // ── Font measurement ───────────────────────────────────────
 const FONT_FAMILY = "'Darumadrop One Fixed', 'Darumadrop One', cursive";
@@ -81,7 +81,7 @@ function wrapLines(text: string, fontSizePx: number, maxWidth: number): number {
       border-style: solid;
       border-image-source: url(/assets/svg/prompt-background.svg);
       border-image-slice: ${BORDER_IMAGE_SLICE};
-      border-image-repeat: repeat;
+      border-image-repeat: stretch;
       border-image-width: 1;
     }
   `],

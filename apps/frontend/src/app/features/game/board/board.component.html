@@ -18,7 +18,7 @@
         (openSettings)="screenData.toggleSetupDrawer()"
       />
 
-      <div class="flex-1 relative bg-white">
+      <div class="flex-1 min-h-0 relative bg-white">
         @if (!worldStore.sessionState()) {
           <div animOnInit="opacity" class="h-full flex flex-col items-center justify-center gap-3 text-stone-400">
             <div class="h-8 w-8 animate-spin rounded-full border-4 border-stone-200 border-t-stone-500"></div>
