@@ -7,6 +7,23 @@
   <!-- Editor frame background (faint) -->
   <div class="absolute inset-0 pointer-events-none" style="background-image: url('assets/svg/editor-frame.svg'); background-size: 100% 100%; opacity: 0.2;"></div>
 
+  <!-- Floating toolbar: sticker count + clear all -->
+  <div
+    class="absolute top-[3%] left-[3%] flex items-center gap-1.5 px-2 py-1 bg-white/80 backdrop-blur-sm rounded-md shadow-sm z-30">
+    <span class="text-xs select-none transition-colors"
+          [class.text-red-400]="!canAddMore()"
+          [class.text-stone-400]="canAddMore()"
+    >{{ stickers().length }}/{{ maxStickers() }}</span>
+    <button
+      class="disabled:opacity-30 flex items-center justify-center"
+      title="Alle Sticker entfernen"
+      [disabled]="stickers().length <= 0"
+      (click)="clearAll.emit()"
+    >
+      <app-svg name="icon-editor-clear-all-sm" w="20"/>
+    </button>
+  </div>
+
   <!-- Delete-zone overlay (animated via GSAP) -->
   <div [animPresence]="stickerWouldBeDeleted()"
        [animPresenceType]="'opacity'"
@@ -43,7 +60,7 @@
         [instanceId]="sticker.instanceId"
         [imageUrl]="getStickerUrl(sticker.stickerId)"
         [width]="getStickerWidth(sticker.stickerId)"
-        [height]="stickerSizePx"
+        [height]="stickerSizePx()"
         [hitboxPoints]="isSelected(sticker.instanceId) ? getHitboxSvgPoints(sticker.stickerId) : ''"
         [lassoSelected]="isLassoSelected(sticker.instanceId)"
         [animState]="getStickerAnimState(sticker.instanceId)"

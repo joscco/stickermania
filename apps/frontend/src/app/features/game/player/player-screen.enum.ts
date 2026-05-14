@@ -17,12 +17,3 @@ export enum PlayerScreen {
     WINNER_GUARANTEED   = 'winner-guaranteed',
     NEXT_ROUND          = 'next-round',
 }
-
-export enum BoardScreen {
-    LOBBY       = 'board-lobby',
-    BUILDING    = 'board-building',
-    VOTING      = 'board-voting',
-    RESULTS     = 'board-results',
-}
-
-export type AnyScreen = PlayerScreen | BoardScreen;

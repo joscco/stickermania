@@ -1,18 +1,16 @@
 import type {StickerPlacement} from "@birthday/shared";
 import {degToRad} from '../geometry-helpers';
 import {resolveToImgUrl, getSpriteViewBox} from '../sprite-url.util';
-import {CANVAS_STICKER_PX} from '../sticker-types';
 
 /**
  * Renders all sticker placements onto an off-screen Canvas2D and returns a
  * PNG data-URL at 2× pixel density.
- *
- * Supports only sprite references ("sprite:#id").
  */
 export async function renderCanvasToDataUrl(
   canvasEl: HTMLElement,
   stickers: StickerPlacement[],
   getUrl: (stickerId: string) => string,
+  stickerPx: number,
 ): Promise<string> {
   const size = canvasEl.clientWidth;
   const pixelScale = 2;
@@ -23,7 +21,7 @@ export async function renderCanvasToDataUrl(
   const ctx = offscreen.getContext("2d")!;
   ctx.scale(pixelScale, pixelScale);
 
-  const imageCache = await loadImages(stickers, getUrl);
+  const imageCache = await loadImages(stickers, getUrl, stickerPx);
 
   const sorted = [...stickers].sort((a, b) => a.zIndex - b.zIndex);
   for (const placement of sorted) {
@@ -31,10 +29,10 @@ export async function renderCanvasToDataUrl(
     const img = imageCache.get(imageUrl);
     if (!img) continue;
 
-    // Derive rendered size from viewBox aspect ratio (same as getRenderedSize)
     const vb = getSpriteViewBox(imageUrl);
-    const drawH = CANVAS_STICKER_PX;
-    const drawW = vb && vb.height > 0 ? Math.round(drawH * vb.width / vb.height) : CANVAS_STICKER_PX;
+    const drawH = stickerPx;
+    const drawW = vb && vb.height > 0
+      ? Math.round(drawH * vb.width / vb.height) : stickerPx;
 
     const cx = placement.x;
     const cy = placement.y;
@@ -53,17 +51,16 @@ export async function renderCanvasToDataUrl(
   return offscreen.toDataURL("image/png");
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
 async function loadImages(
   stickers: StickerPlacement[],
   getUrl: (stickerId: string) => string,
+  stickerPx: number,
 ): Promise<Map<string, HTMLImageElement>> {
   const cache = new Map<string, HTMLImageElement>();
   const uniqueUrls = [...new Set(stickers.map(p => getUrl(p.stickerId)).filter(Boolean))];
 
   await Promise.all(uniqueUrls.map(async url => {
-    const {url: resolved} = await resolveToImgUrl(url, CANVAS_STICKER_PX * 3);
+    const {url: resolved} = await resolveToImgUrl(url, stickerPx * 3);
     await new Promise<void>(resolve => {
       const img = new Image();
       img.crossOrigin = "anonymous";

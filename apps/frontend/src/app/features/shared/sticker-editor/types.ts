@@ -1,14 +1,20 @@
-import {BoundingBox} from './sticker-types';
-import {degToRad, rotatePt} from './geometry-helpers';
+import {degToRad, rotatePt} from "./geometry-helpers";
+
+/** Axis-aligned bounding box in canvas-local pixels. */
+export interface BoundingBox {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+}
+
+/** Initial rendered height of a sticker on the canvas — matches the CSS class on the sticker element. */
+export const CANVAS_STICKER_PX = 200;
 
 export interface CornerHandles {
-    /** Top-left corner (after rotation). */
     tl: { x: number; y: number };
-    /** Top-right corner (after rotation). */
     tr: { x: number; y: number };
-    /** Bottom-right corner (after rotation). */
     br: { x: number; y: number };
-    /** Bottom-left corner (after rotation). */
     bl: { x: number; y: number };
 }
 
@@ -29,16 +35,14 @@ export class SelectionInfo {
     }
 
     private static computeCorners(box: BoundingBox, rotation: number): CornerHandles {
-        const {x, y, w, h} = box;
-        const cx = x + w / 2;
-        const cy = y + h / 2;
+        const cx = box.x + box.w / 2;
+        const cy = box.y + box.h / 2;
         const rad = degToRad(rotation);
         return {
-            tl: rotatePt(x,     y,     cx, cy, rad),
-            tr: rotatePt(x + w, y,     cx, cy, rad),
-            br: rotatePt(x + w, y + h, cx, cy, rad),
-            bl: rotatePt(x,     y + h, cx, cy, rad),
+            tl: rotatePt(box.x,          box.y,          cx, cy, rad),
+            tr: rotatePt(box.x + box.w,  box.y,          cx, cy, rad),
+            br: rotatePt(box.x + box.w,  box.y + box.h,  cx, cy, rad),
+            bl: rotatePt(box.x,          box.y + box.h,  cx, cy, rad),
         };
     }
 }
-

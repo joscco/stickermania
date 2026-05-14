@@ -1,7 +1,7 @@
 import type {StickerPlacement} from '@birthday/shared';
-import type {BoundingBox} from './sticker-types';
+import type {BoundingBox} from './types';
 import {centroid, clamp, degToRad, rotatedBoundingBox, rotateVec, clampGroupScaleFactor, MIN_SCALE, MAX_SCALE} from './geometry-helpers';
-import {SelectionInfo} from './selection-info';
+import {SelectionInfo} from './types';
 
 /**
  * Pure functions for transforming StickerPlacement arrays.

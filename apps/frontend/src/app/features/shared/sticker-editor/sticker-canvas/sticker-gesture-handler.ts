@@ -1,436 +1,367 @@
 import type {StickerPlacement} from "@birthday/shared";
-import {
-    pointInPoly,
-    pointInRotatedRect,
-    isPointerOutsideRect,
-    isPositionOutsideCanvas,
-    distance,
-    centroid,
-    pinchDistance,
-    pinchAngle,
-    pinchMidpoint,
-    applyPinchToBaseline,
-    clampGroupScaleFactor,
-} from '../geometry-helpers';
+import {applyPinchToBaseline, centroid, clampGroupScaleFactor, distance, isPointerOutsideRect, isPositionOutsideCanvas, pinchAngle, pinchDistance, pinchMidpoint, pointInRotatedRect,} from '../geometry-helpers';
+import {LassoHandler} from './lasso-handler';
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────
 
 export interface ActivePointer {
-  id: number;
-  x: number;
-  y: number;
+    id: number;
+    x: number;
+    y: number;
 }
 
 export interface GroupBaseline {
-  instanceId: string;
-  baseX: number;
-  baseY: number;
-  baseScale: number;
-  baseRotation: number;
-  relCx: number;
-  relCy: number;
+    instanceId: string;
+    baseX: number;
+    baseY: number;
+    baseScale: number;
+    baseRotation: number;
+    relCx: number;
+    relCy: number;
 }
 
 export interface MoveBaseline {
-  instanceId: string;
-  baseX: number;
-  baseY: number;
+    instanceId: string;
+    baseX: number;
+    baseY: number;
 }
 
 export type GestureCallbacks = {
-  onPlacementsChanged: (placements: StickerPlacement[]) => void;
-  onLassoPathChanged: (path: { x: number; y: number }[] | null) => void;
-  onLassoSelectionChanged: (ids: Set<string>) => void;
-  onSelectedChanged: (instanceId: string | null) => void;
-  onStickerDraggedOff?: (id: string, allIds: string[]) => void;
-  onDragNearEdge?: (outsideCanvas: boolean) => void;
-  onPointerUpCommit?: (ids: Set<string>) => void;
-  onMoveActiveChanged?: (active: boolean) => void;
-  onDoubleTap?: (ids: string[]) => void;
-  /** Returns the current selection's bounding box (canvas-local) + rotation, or null. */
-  getSelectionBounds?: () => { box: { x: number; y: number; w: number; h: number }; rotation: number } | null;
+    onPlacementsChanged: (placements: StickerPlacement[]) => void;
+    onLassoPathChanged: (path: { x: number; y: number }[] | null) => void;
+    onLassoSelectionChanged: (ids: Set<string>) => void;
+    onSelectedChanged: (instanceId: string | null) => void;
+    onStickerDraggedOff?: (id: string, allIds: string[]) => void;
+    onDragNearEdge?: (outsideCanvas: boolean) => void;
+    onPointerUpCommit?: (ids: Set<string>) => void;
+    onMoveActiveChanged?: (active: boolean) => void;
+    onDoubleTap?: (ids: string[]) => void;
+    getSelectionBounds?: () => { box: { x: number; y: number; w: number; h: number }; rotation: number } | null;
 };
 
+// ── Main class ─────────────────────────────────────────────────────
 
-// ── GestureHandler ───────────────────────────────────────────────────────────
 export class StickerGestureHandler {
-  private pointers: ActivePointer[] = [];
+    private pointers: ActivePointer[] = [];
+    private lasso: LassoHandler;
 
+    // Move state
+    private moveActive = false;
+    private moveOffsetX = 0;
+    private moveOffsetY = 0;
+    private moveBaselines: MoveBaseline[] = [];
+    private didMove = false;
 
-  // Freehand lasso state
-  private lassoActive = false;
-  private lassoPath: { x: number; y: number }[] = [];
+    // Pinch state
+    private pinchBaseDistance = 0;
+    private pinchBaseAngle = 0;
+    private pinchBaselines: GroupBaseline[] = [];
 
-  // Move state
-  private moveActive = false;
-  private moveOffsetX = 0;
-  private moveOffsetY = 0;
-  private moveBaselines: MoveBaseline[] = [];
-  private didMove = false;
+    // Tap detection
+    private tapStartX = 0;
+    private tapStartY = 0;
+    private tapMoved = false;
 
-  // Pinch state
-  private pinchBaseDistance = 0;
-  private pinchBaseAngle = 0;
-  private pinchBaselines: GroupBaseline[] = [];
+    // Double-tap detection
+    private lastTapTime = 0;
+    private lastTapX = 0;
+    private lastTapY = 0;
 
-  // Tap detection
-  private tapStartX = 0;
-  private tapStartY = 0;
-  private tapMoved = false;
+    // Snapshot (kept in sync by Angular effects)
+    private stickers: StickerPlacement[] = [];
+    private selectedInstanceId: string | null = null;
+    private lassoSelection: Set<string> = new Set();
 
-  // Double-tap detection
-  private lastTapTime = 0;
-  private lastTapX = 0;
-  private lastTapY = 0;
-
-  // Snapshot
-  private stickers: StickerPlacement[] = [];
-  private selectedInstanceId: string | null = null;
-  private lassoSelection: Set<string> = new Set();
-
-  constructor(
-    private readonly getCanvasRect: () => DOMRect,
-    private readonly hitTest: (clientX: number, clientY: number) => string | null,
-    private readonly callbacks: GestureCallbacks,
-  ) {
-  }
-
-  public syncState(
-    stickers: StickerPlacement[],
-    selectedInstanceId: string | null,
-    lassoSelection: Set<string>,
-  ): void {
-    this.stickers = stickers;
-    this.selectedInstanceId = selectedInstanceId;
-    this.lassoSelection = lassoSelection;
-  }
-
-
-  // ── Pointer events ────────────────────────────────────────────────────────
-
-  public onPointerDown(id: number, clientX: number, clientY: number): void {
-    this.pointers.push({id, x: clientX, y: clientY});
-
-    // Second finger → upgrade to pinch
-    if (this.pointers.length === 2) {
-      this.tapMoved = true;
-      this.lassoActive = false;
-      this.lassoPath = [];
-      this.callbacks.onLassoPathChanged(null);
-      this.moveActive = false;
-      const ids = this.currentSelectionIds();
-      if (ids.length > 0) this.initPinch(ids);
-      return;
-    }
-
-    // First finger
-    this.tapStartX = clientX;
-    this.tapStartY = clientY;
-    this.tapMoved = false;
-    this.didMove = false;
-
-    const rect = this.getCanvasRect();
-    const localX = clientX - rect.left;
-    const localY = clientY - rect.top;
-    const hitId = this.hitTest(clientX, clientY);
-
-    if (this.hasSelection()) {
-      // If the tap lands inside the selection's bounding box, drag it —
-      // regardless of whether a sticker hitbox was actually hit.
-      // This makes small stickers and groups much easier to move.
-      const selBounds = this.callbacks.getSelectionBounds?.();
-      const inBounds = selBounds
-        ? pointInRotatedRect(localX, localY, selBounds.box, selBounds.rotation, 8)
-        : false;
-
-      if (inBounds) {
-        // Inside the overlay → move current selection
-        this.startMove(localX, localY);
-      } else if (!hitId) {
-        // Outside bounds, no hitbox hit → deselect + start lasso
-        this.selectedInstanceId = null;
-        this.lassoSelection = new Set();
-        this.callbacks.onSelectedChanged(null);
-        this.callbacks.onLassoSelectionChanged(new Set());
-        this.lassoActive = true;
-        this.lassoPath = [{x: localX, y: localY}];
-        this.callbacks.onLassoPathChanged(this.lassoPath);
-      } else if (!this.isSelected(hitId)) {
-        // Hit a different sticker outside the selection → switch to it
-        this.selectAndMove(hitId, localX, localY);
-      } else {
-        // Hit an already-selected sticker → move
-        this.startMove(localX, localY);
-      }
-    } else if (hitId) {
-      this.selectAndMove(hitId, localX, localY);
-    } else {
-      // Empty area → freehand lasso
-      this.lassoActive = true;
-      this.lassoPath = [{x: localX, y: localY}];
-      this.callbacks.onLassoPathChanged(this.lassoPath);
-    }
-  }
-
-  public onPointerMove(id: number, clientX: number, clientY: number): void {
-    const idx = this.pointers.findIndex(p => p.id === id);
-    if (idx < 0) return;
-    this.pointers[idx] = {id, x: clientX, y: clientY};
-
-    if (!this.tapMoved && Math.hypot(clientX - this.tapStartX, clientY - this.tapStartY) > 6)
-      this.tapMoved = true;
-
-    const rect = this.getCanvasRect();
-    const localX = clientX - rect.left;
-    const localY = clientY - rect.top;
-
-    if (this.pointers.length === 2 && this.pinchBaselines.length > 0) {
-      this.applyPinch();
-      this.didMove = true;
-      return;
-    }
-
-    if (this.moveActive && this.pointers.length === 1) {
-      const dx = localX - this.moveOffsetX;
-      const dy = localY - this.moveOffsetY;
-      const updated = this.stickers.map(p => {
-        const b = this.moveBaselines.find(b => b.instanceId === p.instanceId);
-        return b ? {...p, x: b.baseX + dx, y: b.baseY + dy} : p;
-      });
-      this.callbacks.onPlacementsChanged(updated);
-      this.didMove = true;
-      if (this.callbacks.onDragNearEdge && this.hasSelection()) {
-        this.callbacks.onDragNearEdge(
-          this.isPointerOrCentroidNotOnCanvas(clientX, clientY, rect, updated),
+    constructor(
+        private readonly getCanvasRect: () => DOMRect,
+        private readonly hitTest: (clientX: number, clientY: number) => string | null,
+        private readonly cb: GestureCallbacks,
+    ) {
+        this.lasso = new LassoHandler(
+            () => this.stickers,
+            {
+                onPathChanged: path => this.cb.onLassoPathChanged(path),
+                onSelectionChanged: ids => this.cb.onLassoSelectionChanged(ids),
+                onSelectedChanged: id => this.cb.onSelectedChanged(id),
+            },
         );
-      }
-      return;
     }
 
-    if (this.lassoActive && this.pointers.length === 1) {
-      const last = this.lassoPath[this.lassoPath.length - 1];
-      if (!last || distance(localX, localY, last.x, last.y) > 2) {
-        this.lassoPath.push({x: localX, y: localY});
-        this.callbacks.onLassoPathChanged([...this.lassoPath]);
-      }
+    syncState(
+        stickers: StickerPlacement[],
+        selectedInstanceId: string | null,
+        lassoSelection: Set<string>,
+    ): void {
+        this.stickers = stickers;
+        this.selectedInstanceId = selectedInstanceId;
+        this.lassoSelection = lassoSelection;
     }
-  }
 
-  public onPointerUp(id: number, clientX: number, clientY: number): void {
-    this.pointers = this.pointers.filter(p => p.id !== id);
+    // ── Pointer events ────────────────────────────────────────────
 
-    if (this.pointers.length === 0) {
+    onPointerDown(id: number, clientX: number, clientY: number): void {
+        this.pointers.push({id, x: clientX, y: clientY});
 
-      if (this.moveActive && this.tapMoved && this.callbacks.onStickerDraggedOff) {
+        if (this.pointers.length === 2) {
+            this.tapMoved = true;
+            this.lasso.cancel();
+            this.moveActive = false;
+            const ids = this.currentSelectionIds();
+            if (ids.length > 0) this.initPinch(ids);
+            return;
+        }
+
+        this.tapStartX = clientX;
+        this.tapStartY = clientY;
+        this.tapMoved = false;
+        this.didMove = false;
+
         const rect = this.getCanvasRect();
-        // Compute final placements with the current move offsets
-        // (this.stickers may be stale — syncState hasn't run yet)
         const localX = clientX - rect.left;
         const localY = clientY - rect.top;
-        const dx = localX - this.moveOffsetX;
-        const dy = localY - this.moveOffsetY;
-        const finalPlacements = this.stickers.map(p => {
-          const b = this.moveBaselines.find(b => b.instanceId === p.instanceId);
-          return b ? {...p, x: b.baseX + dx, y: b.baseY + dy} : p;
-        });
-        const outside = this.isPointerOrCentroidNotOnCanvas(clientX, clientY, rect, finalPlacements);
-        if (outside && this.hasSelection()) {
-          const ids = this.currentSelectionIds();
-          this.selectedInstanceId = null;
-          this.lassoSelection = new Set();
-          this.moveActive = false;
-          this.moveBaselines = [];
-          this.callbacks.onMoveActiveChanged?.(false);
-          this.callbacks.onSelectedChanged(null);
-          this.callbacks.onLassoSelectionChanged(new Set());
-          this.callbacks.onDragNearEdge?.(false);
-          this.callbacks.onStickerDraggedOff(ids[0], ids);
-          return;
-        }
-      }
+        const hitId = this.hitTest(clientX, clientY);
 
-      if (this.didMove) {
-        const ids = this.currentSelectionIds();
-        this.callbacks.onPointerUpCommit?.(new Set(ids));
-      }
-      this.finaliseLasso();
-      this.moveActive = false;
-      this.moveBaselines = [];
-      this.pinchBaselines = [];
-      this.didMove = false;
-      this.callbacks.onMoveActiveChanged?.(false);
-      this.callbacks.onDragNearEdge?.(false);
+        if (this.hasSelection()) {
+            const selBounds = this.cb.getSelectionBounds?.();
+            const inBounds = selBounds
+                ? pointInRotatedRect(localX, localY, selBounds.box, selBounds.rotation, 8)
+                : false;
 
-      // Double-tap detection
-      if (!this.tapMoved && this.hasSelection()) {
-        const now = Date.now();
-        const dist = distance(clientX, clientY, this.lastTapX, this.lastTapY);
-        if (now - this.lastTapTime < 350 && dist < 30) {
-          this.callbacks.onDoubleTap?.(this.currentSelectionIds());
-          this.lastTapTime = 0; // reset so triple-tap doesn't fire again
+            if (inBounds) {
+                this.startMove(localX, localY);
+            } else if (!hitId) {
+                this.selectedInstanceId = null;
+                this.lassoSelection = new Set();
+                this.cb.onSelectedChanged(null);
+                this.cb.onLassoSelectionChanged(new Set());
+                this.lasso.start(localX, localY);
+            } else if (!this.isSelected(hitId)) {
+                this.selectAndMove(hitId, localX, localY);
+            } else {
+                this.startMove(localX, localY);
+            }
+        } else if (hitId) {
+            this.selectAndMove(hitId, localX, localY);
         } else {
-          this.lastTapTime = now;
-          this.lastTapX = clientX;
-          this.lastTapY = clientY;
+            this.lasso.start(localX, localY);
         }
-      }
     }
 
-    // Re-anchor when going 2 → 1 finger
-    if (this.pointers.length === 1 && this.moveActive) {
-      const remaining = this.pointers[0];
-      const rect = this.getCanvasRect();
-      this.moveOffsetX = remaining.x - rect.left;
-      this.moveOffsetY = remaining.y - rect.top;
-      this.moveBaselines = this.selectedStickers()
-        .map(p => ({instanceId: p.instanceId, baseX: p.x, baseY: p.y}));
-      this.pinchBaselines = [];
-    }
-  }
+    onPointerMove(id: number, clientX: number, clientY: number): void {
+        const idx = this.pointers.findIndex(p => p.id === id);
+        if (idx < 0) return;
+        this.pointers[idx] = {id, x: clientX, y: clientY};
 
-  // ── Private helpers ───────────────────────────────────────────────────────
+        if (!this.tapMoved
+            && Math.hypot(clientX - this.tapStartX, clientY - this.tapStartY) > 6) {
+            this.tapMoved = true;
+        }
 
-  private hasSelection(): boolean {
-    return !!this.selectedInstanceId || this.lassoSelection.size > 0;
-  }
+        const rect = this.getCanvasRect();
+        const localX = clientX - rect.left;
+        const localY = clientY - rect.top;
 
-  /**
-   * Returns true if the pointer OR the centroid of the selected stickers
-   * is outside the canvas bounds. This allows stickers to be deleted when
-   * they're dragged to the edge even if the pointer is still barely inside.
-   */
-  private isPointerOrCentroidNotOnCanvas(clientX: number, clientY: number, rect: DOMRect, placements?: StickerPlacement[]): boolean {
-    if (isPointerOutsideRect(clientX, clientY, rect)) return true;
+        if (this.pointers.length === 2 && this.pinchBaselines.length > 0) {
+            this.applyPinch();
+            this.didMove = true;
+            return;
+        }
 
-    const source = placements ?? this.stickers;
-    const sel = source.filter(p => this.isSelected(p.instanceId));
-    if (sel.length === 0) return false;
-    const c = centroid(sel);
-    return isPositionOutsideCanvas(c.x, c.y, rect);
-  }
+        if (this.moveActive && this.pointers.length === 1) {
+            const dx = localX - this.moveOffsetX;
+            const dy = localY - this.moveOffsetY;
+            const updated = this.stickers.map(p => {
+                const b = this.moveBaselines.find(b => b.instanceId === p.instanceId);
+                return b ? {...p, x: b.baseX + dx, y: b.baseY + dy} : p;
+            });
+            this.cb.onPlacementsChanged(updated);
+            this.didMove = true;
+            if (this.cb.onDragNearEdge && this.hasSelection()) {
+                this.cb.onDragNearEdge(
+                    this.isPointerOrCentroidNotOnCanvas(clientX, clientY, rect, updated));
+            }
+            return;
+        }
 
-  private isSelected(id: string): boolean {
-    return this.selectedInstanceId === id || this.lassoSelection.has(id);
-  }
-
-  private currentSelectionIds(): string[] {
-    if (this.lassoSelection.size > 0) return [...this.lassoSelection];
-    return this.selectedInstanceId ? [this.selectedInstanceId] : [];
-  }
-
-  private selectedStickers(): StickerPlacement[] {
-    return this.stickers.filter(p => this.isSelected(p.instanceId));
-  }
-
-  // Returns all instanceIds for the same group if hit sticker belongs to one,
-  // otherwise just [hitId].
-  private resolveHit(hitId: string): string[] {
-    const hit = this.stickers.find(p => p.instanceId === hitId);
-    if (hit?.groupId) {
-      return this.stickers
-        .filter(p => p.groupId === hit.groupId)
-        .map(p => p.instanceId);
-    }
-    return [hitId];
-  }
-
-  private selectAndMove(hitId: string, localX: number, localY: number): void {
-    const ids = this.resolveHit(hitId);
-    if (ids.length > 1) {
-      const groupSet = new Set(ids);
-      this.lassoSelection = groupSet;
-      this.selectedInstanceId = null;
-      // Emit lasso first; do NOT call onSelectedChanged(null) afterwards —
-      // that would trigger clearSelection() in the canvas and wipe the lasso set.
-      this.callbacks.onLassoSelectionChanged(groupSet);
-    } else {
-      this.selectedInstanceId = hitId;
-      this.lassoSelection = new Set();
-      this.callbacks.onSelectedChanged(hitId);
-      this.callbacks.onLassoSelectionChanged(new Set());
-    }
-    this.startMove(localX, localY);
-  }
-
-  private startMove(localX: number, localY: number): void {
-    this.moveActive = true;
-    this.moveOffsetX = localX;
-    this.moveOffsetY = localY;
-    this.moveBaselines = this.selectedStickers()
-      .map(p => ({instanceId: p.instanceId, baseX: p.x, baseY: p.y}));
-  }
-
-  private finaliseLasso(): void {
-    if (!this.lassoActive) return;
-    this.lassoActive = false;
-    this.callbacks.onLassoPathChanged(null);
-
-    const path = this.lassoPath;
-    this.lassoPath = [];
-
-    if (path.length < 2) return;
-
-    // Build closed polygon — if only 2 points, expand to a rect
-    let poly: { x: number; y: number }[];
-    if (path.length === 2) {
-      const [a, b] = path;
-      poly = [
-        {x: a.x, y: a.y}, {x: b.x, y: a.y},
-        {x: b.x, y: b.y}, {x: a.x, y: b.y},
-        {x: a.x, y: a.y},
-      ];
-    } else {
-      poly = [...path, path[0]];
+        if (this.lasso.isActive() && this.pointers.length === 1) {
+            this.lasso.addPoint(localX, localY);
+        }
     }
 
-    const captured = this.stickers.filter(p => pointInPoly(p.x, p.y, poly));
+    onPointerUp(id: number, clientX: number, clientY: number): void {
+        this.pointers = this.pointers.filter(p => p.id !== id);
 
-    if (captured.length > 1) {
-      // First clear single selection, then set the lasso group
-      this.callbacks.onSelectedChanged(null);
-      this.callbacks.onLassoSelectionChanged(new Set(captured.map(p => p.instanceId)));
-    } else if (captured.length === 1) {
-      this.callbacks.onLassoSelectionChanged(new Set());
-      this.callbacks.onSelectedChanged(captured[0].instanceId);
+        if (this.pointers.length === 0) {
+            // Drag-off-delete
+            if (this.moveActive && this.tapMoved && this.cb.onStickerDraggedOff) {
+                const rect = this.getCanvasRect();
+                const localX = clientX - rect.left;
+                const localY = clientY - rect.top;
+                const dx = localX - this.moveOffsetX;
+                const dy = localY - this.moveOffsetY;
+                const finalPlacements = this.stickers.map(p => {
+                    const b = this.moveBaselines.find(b => b.instanceId === p.instanceId);
+                    return b ? {...p, x: b.baseX + dx, y: b.baseY + dy} : p;
+                });
+                const outside = this.isPointerOrCentroidNotOnCanvas(
+                    clientX, clientY, rect, finalPlacements);
+                if (outside && this.hasSelection()) {
+                    const ids = this.currentSelectionIds();
+                    this.selectedInstanceId = null;
+                    this.lassoSelection = new Set();
+                    this.moveActive = false;
+                    this.moveBaselines = [];
+                    this.cb.onMoveActiveChanged?.(false);
+                    this.cb.onSelectedChanged(null);
+                    this.cb.onLassoSelectionChanged(new Set());
+                    this.cb.onDragNearEdge?.(false);
+                    this.cb.onStickerDraggedOff(ids[0], ids);
+                    return;
+                }
+            }
+
+            if (this.didMove) {
+                this.cb.onPointerUpCommit?.(new Set(this.currentSelectionIds()));
+            }
+            this.lasso.finalize();
+            this.moveActive = false;
+            this.moveBaselines = [];
+            this.pinchBaselines = [];
+            this.didMove = false;
+            this.cb.onMoveActiveChanged?.(false);
+            this.cb.onDragNearEdge?.(false);
+
+            // Double-tap
+            if (!this.tapMoved && this.hasSelection()) {
+                const now = Date.now();
+                const dist = distance(clientX, clientY, this.lastTapX, this.lastTapY);
+                if (now - this.lastTapTime < 350 && dist < 30) {
+                    this.cb.onDoubleTap?.(this.currentSelectionIds());
+                    this.lastTapTime = 0;
+                } else {
+                    this.lastTapTime = now;
+                    this.lastTapX = clientX;
+                    this.lastTapY = clientY;
+                }
+            }
+        }
+
+        // Re-anchor 2→1 finger
+        if (this.pointers.length === 1 && this.moveActive) {
+            const remaining = this.pointers[0];
+            const rect = this.getCanvasRect();
+            this.moveOffsetX = remaining.x - rect.left;
+            this.moveOffsetY = remaining.y - rect.top;
+            this.moveBaselines = this.selectedStickers()
+                .map(p => ({instanceId: p.instanceId, baseX: p.x, baseY: p.y}));
+            this.pinchBaselines = [];
+        }
     }
-  }
 
-  private initPinch(ids: string[]): void {
-    if (this.pointers.length < 2) return;
-    const [a, b] = this.pointers;
-    const pp = {ax: a.x, ay: a.y, bx: b.x, by: b.y};
-    const rect = this.getCanvasRect();
-    this.pinchBaseDistance = pinchDistance(pp);
-    this.pinchBaseAngle = pinchAngle(pp);
-    const mid = pinchMidpoint(pp, rect);
-    this.pinchBaselines = ids
-      .map(iid => this.stickers.find(p => p.instanceId === iid))
-      .filter((p): p is StickerPlacement => !!p)
-      .map(p => ({
-        instanceId: p.instanceId,
-        baseX: p.x,
-        baseY: p.y,
-        baseScale: p.scale,
-        baseRotation: p.rotation,
-        relCx: p.x - mid.x,
-        relCy: p.y - mid.y,
-      }));
-  }
+    // ── Private helpers ───────────────────────────────────────────
 
-  private applyPinch(): void {
-    if (this.pointers.length < 2 || !this.pinchBaselines.length) return;
-    const [a, b] = this.pointers;
-    const pp = {ax: a.x, ay: a.y, bx: b.x, by: b.y};
-    const mid = pinchMidpoint(pp, this.getCanvasRect());
-    const rawFactor = pinchDistance(pp) / this.pinchBaseDistance;
-    const factor = clampGroupScaleFactor(rawFactor, this.pinchBaselines.map(bl => bl.baseScale));
-    this.callbacks.onPlacementsChanged(
-      this.stickers.map(p => {
-        const base = this.pinchBaselines.find(b => b.instanceId === p.instanceId);
-        if (!base) return p;
-        const result = applyPinchToBaseline(base, this.pinchBaseAngle, factor, pp, mid);
-        return {...p, ...result};
-      }),
-    );
-  }
+    private hasSelection(): boolean {
+        return !!this.selectedInstanceId || this.lassoSelection.size > 0;
+    }
+
+    private isSelected(id: string): boolean {
+        return this.selectedInstanceId === id || this.lassoSelection.has(id);
+    }
+
+    private currentSelectionIds(): string[] {
+        return this.lassoSelection.size > 0
+            ? [...this.lassoSelection]
+            : this.selectedInstanceId ? [this.selectedInstanceId] : [];
+    }
+
+    private selectedStickers(): StickerPlacement[] {
+        return this.stickers.filter(p => this.isSelected(p.instanceId));
+    }
+
+    private resolveHit(hitId: string): string[] {
+        const hit = this.stickers.find(p => p.instanceId === hitId);
+        if (hit?.groupId) {
+            return this.stickers
+                .filter(p => p.groupId === hit.groupId)
+                .map(p => p.instanceId);
+        }
+        return [hitId];
+    }
+
+    private selectAndMove(hitId: string, localX: number, localY: number): void {
+        const ids = this.resolveHit(hitId);
+        if (ids.length > 1) {
+            const groupSet = new Set(ids);
+            this.lassoSelection = groupSet;
+            this.selectedInstanceId = null;
+            this.cb.onLassoSelectionChanged(groupSet);
+        } else {
+            this.selectedInstanceId = hitId;
+            this.lassoSelection = new Set();
+            this.cb.onSelectedChanged(hitId);
+            this.cb.onLassoSelectionChanged(new Set());
+        }
+        this.startMove(localX, localY);
+    }
+
+    private startMove(localX: number, localY: number): void {
+        this.moveActive = true;
+        this.moveOffsetX = localX;
+        this.moveOffsetY = localY;
+        this.moveBaselines = this.selectedStickers()
+            .map(p => ({instanceId: p.instanceId, baseX: p.x, baseY: p.y}));
+    }
+
+    private isPointerOrCentroidNotOnCanvas(
+        clientX: number,
+        clientY: number,
+        rect: DOMRect,
+        placements?: StickerPlacement[],
+    ): boolean {
+        if (isPointerOutsideRect(clientX, clientY, rect)) return true;
+        const sel = (placements ?? this.stickers).filter(p => this.isSelected(p.instanceId));
+        if (!sel.length) return false;
+        const c = centroid(sel);
+        return isPositionOutsideCanvas(c.x, c.y, rect);
+    }
+
+    private initPinch(ids: string[]): void {
+        if (this.pointers.length < 2) return;
+        const [a, b] = this.pointers;
+        const pp = {ax: a.x, ay: a.y, bx: b.x, by: b.y};
+        const rect = this.getCanvasRect();
+        this.pinchBaseDistance = pinchDistance(pp);
+        this.pinchBaseAngle = pinchAngle(pp);
+        const mid = pinchMidpoint(pp, rect);
+        this.pinchBaselines = ids
+            .map(iid => this.stickers.find(p => p.instanceId === iid))
+            .filter((p): p is StickerPlacement => !!p)
+            .map(p => ({
+                instanceId: p.instanceId,
+                baseX: p.x,
+                baseY: p.y,
+                baseScale: p.scale,
+                baseRotation: p.rotation,
+                relCx: p.x - mid.x,
+                relCy: p.y - mid.y,
+            }));
+    }
+
+    private applyPinch(): void {
+        if (this.pointers.length < 2 || !this.pinchBaselines.length) return;
+        const [a, b] = this.pointers;
+        const pp = {ax: a.x, ay: a.y, bx: b.x, by: b.y};
+        const mid = pinchMidpoint(pp, this.getCanvasRect());
+        const rawFactor = pinchDistance(pp) / this.pinchBaseDistance;
+        const factor = clampGroupScaleFactor(
+            rawFactor, this.pinchBaselines.map(bl => bl.baseScale));
+        this.cb.onPlacementsChanged(
+            this.stickers.map(p => {
+                const base = this.pinchBaselines.find(b => b.instanceId === p.instanceId);
+                if (!base) return p;
+                const result = applyPinchToBaseline(base, this.pinchBaseAngle, factor, pp, mid);
+                return {...p, ...result};
+            }),
+        );
+    }
 }
