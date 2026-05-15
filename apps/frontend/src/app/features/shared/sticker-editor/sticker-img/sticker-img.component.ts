@@ -1,4 +1,4 @@
-import {Component, input} from '@angular/core';
+import {Component, input, computed} from '@angular/core';
 import {getSpriteId} from '../sprite-url.util';
 
 @Component({
@@ -10,6 +10,8 @@ import {getSpriteId} from '../sprite-url.util';
 export class StickerImgComponent {
     readonly imageUrl = input.required<string>();
     readonly alt      = input<string>('');
+
+    readonly isFilled = computed(() => getSpriteId(this.imageUrl()).includes('-filled'));
 
     getLocalHref(imageUrl: string): string {
         return `#${getSpriteId(imageUrl)}`;

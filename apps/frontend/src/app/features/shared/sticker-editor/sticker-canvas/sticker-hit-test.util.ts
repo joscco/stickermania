@@ -45,12 +45,13 @@ export function hitTestOnCanvas(
         if (lx < 0 || lx > 1 || ly < 0 || ly > 1) {
           continue;
         }
+        // Bounding box matched — this sticker owns the space.
+        // Honour optional hitbox polygon for precise targeting, but never
+        // let a click within the visual bounds fall through to stickers below.
         const def = catalogMap.get(stickerPlacement.stickerId);
-        if (def?.hitboxPolygon && def.hitboxPolygon.length >= 3) {
-            if (pointInPoly(lx, ly, def.hitboxPolygon)) {
-              return stickerPlacement.instanceId;
-            }
-            continue;
+        if (def?.hitboxPolygon && def.hitboxPolygon.length >= 3
+            && !pointInPoly(lx, ly, def.hitboxPolygon)) {
+          return null;
         }
         return stickerPlacement.instanceId;
     }

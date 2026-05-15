@@ -5,6 +5,7 @@ const SFX_CLICK = 'audio/sfx/click.mp3';
 const SFX_ACTION = 'audio/sfx/action.mp3';
 const SFX_START = 'audio/sfx/start.mp3';
 const SFX_SUCCESS = 'audio/sfx/success.mp3';
+const SFX_DELETE = 'audio/sfx/delete.mp3';
 
 const SFX_PATHS = [SFX_CLICK, SFX_ACTION, SFX_START, SFX_SUCCESS];
 
@@ -104,5 +105,6 @@ export class AudioService {
   public playClick(): void   { this.playBuffer(SFX_CLICK, 0.35); }
   public playAction(): void  { this.playBuffer(SFX_ACTION, 0.4); }
   public playStart(): void   { this.playBuffer(SFX_START, 0.45); }
-  public playSuccess(): void { this.playBuffer(SFX_SUCCESS, 0.4); }
+  public playSettle(): void  { this.playBuffer(SFX_CLICK, 0.2); }
+  public playDelete(): void  { this.playBuffer(SFX_DELETE, 0.25); }
 }

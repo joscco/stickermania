@@ -19,21 +19,18 @@ export class PaletteDragSession {
     private cleanupFn: (() => void) | null = null;
     private canvas: StickerCanvasComponent;
     private canvasEl: HTMLDivElement;
-    private getPlacements: () => StickerPlacement[];
-    private updatePlacements: (p: StickerPlacement[]) => void;
-    private onDrop: (instanceId: string, isOutside: boolean) => void;
+    private setPendingPlacement: (p: StickerPlacement | null) => void;
+    private onDrop: (instanceId: string, isOutside: boolean, finalPlacement: StickerPlacement) => void;
 
     constructor(deps: {
         canvasEl: HTMLDivElement;
         canvas: StickerCanvasComponent;
-        getPlacements: () => StickerPlacement[];
-        updatePlacements: (p: StickerPlacement[]) => void;
-        onDrop: (instanceId: string, isOutside: boolean) => void;
+        setPendingPlacement: (p: StickerPlacement | null) => void;
+        onDrop: (instanceId: string, isOutside: boolean, finalPlacement: StickerPlacement) => void;
     }) {
         this.canvas = deps.canvas;
         this.canvasEl = deps.canvasEl;
-        this.getPlacements = deps.getPlacements;
-        this.updatePlacements = deps.updatePlacements;
+        this.setPendingPlacement = deps.setPendingPlacement;
         this.onDrop = deps.onDrop;
     }
 
@@ -44,6 +41,8 @@ export class PaletteDragSession {
         let y = placement.y;
         let scale = placement.scale;
         let rotation = placement.rotation;
+
+        this.setPendingPlacement({...placement});
 
         const pointers = new Map<number, { x: number; y: number }>();
         pointers.set(event.pointerId, {x: event.clientX, y: event.clientY});
@@ -60,13 +59,7 @@ export class PaletteDragSession {
             isPointerOutsideRect(cx, cy, r) || isPositionOutsideCanvas(x, y, r);
 
         const update = () => {
-            this.updatePlacements(
-                this.getPlacements().map(p =>
-                    p.instanceId === instanceId
-                        ? {...p, x, y, scale, rotation}
-                        : p,
-                ),
-            );
+            this.setPendingPlacement({...placement, x, y, scale, rotation});
         };
 
         const initPinch = () => {
@@ -135,9 +128,10 @@ export class PaletteDragSession {
 
             this.canvas.isMoveActive.set(false);
             this.canvas.stickerWouldBeDeleted.set(false);
+            this.setPendingPlacement(null);
             cleanup();
 
-            this.onDrop(instanceId, outside);
+            this.onDrop(instanceId, outside, {...placement, x, y, scale, rotation});
         };
 
         const cleanup = () => {
@@ -145,6 +139,7 @@ export class PaletteDragSession {
             window.removeEventListener('pointermove', onPointerMove);
             window.removeEventListener('pointerup', onPointerUp);
             window.removeEventListener('pointercancel', onPointerUp);
+            this.setPendingPlacement(null);
             this.canvas.isMoveActive.set(false);
             this.canvas.stickerWouldBeDeleted.set(false);
             this.canvas.paletteDragInProgress.set(false);

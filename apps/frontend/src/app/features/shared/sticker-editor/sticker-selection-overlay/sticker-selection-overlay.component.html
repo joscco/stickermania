@@ -25,32 +25,32 @@
   <!-- NW: Rotate handle -->
   @let nw = rotatePt(boundingBox.x - pad, boundingBox.y - pad, centerX, centerY, rad);
   <div
-    class="absolute flex items-center justify-center w-8 h-8 rounded-full border-2 shadow select-none touch-none -translate-1/2 bg-white border-stone-700"
+    class="absolute flex items-center justify-center w-10 h-10 rounded-full border-2 shadow select-none touch-none -translate-1/2 bg-white border-stone-700"
     [style.left.px]="nw.x" [style.top.px]="nw.y"
     style="z-index:8100; cursor:grab; pointer-events:auto;"
     (pointerdown)="onHandleDown($event, 'rotate')">
-    <app-svg name="icon-overlay-rotate-md" w="28" [color]="mode === 'rotating' ? YELLOW : BLACK"/>
+    <app-svg name="icon-overlay-rotate-md" w="32" [color]="mode === 'rotating' ? YELLOW : BLACK"/>
   </div>
 
   <!-- NE: Context-menu button -->
   @let ne = rotatePt(boundingBox.x + boundingBox.w + pad, boundingBox.y - pad, centerX, centerY, rad);
   <div
-    class="absolute flex items-center justify-center w-8 h-8 rounded-full border-2 shadow select-none touch-none cursor-pointer -translate-1/2 bg-white border-stone-700"
+    class="absolute flex items-center justify-center w-10 h-10 rounded-full border-2 shadow select-none touch-none cursor-pointer -translate-1/2 bg-white border-stone-700"
     [style.left.px]="ne.x" [style.top.px]="ne.y"
     style="z-index:8200; pointer-events:auto;"
     title="Optionen"
     (pointerdown)="$event.stopPropagation(); menuToggle.emit()">
-    <app-svg name="icon-overlay-menu-md" w="28" [color]="mode === 'menu' ? YELLOW : BLACK"/>
+    <app-svg name="icon-overlay-menu-md" w="32" [color]="mode === 'menu' ? YELLOW : BLACK"/>
   </div>
 
   <!-- SE: Scale handle -->
   @let scale = rotatePt(boundingBox.x + boundingBox.w + pad, boundingBox.y + boundingBox.h + pad, centerX, centerY, rad);
   <div
-    class="absolute flex items-center justify-center w-8 h-8 rounded-full border-2 shadow select-none touch-none -translate-1/2 bg-white border-stone-700"
+    class="absolute flex items-center justify-center w-10 h-10 rounded-full border-2 shadow select-none touch-none -translate-1/2 bg-white border-stone-700"
     [style.left.px]="scale.x" [style.top.px]="scale.y"
     style="z-index:8100; cursor:se-resize; pointer-events:auto;"
     (pointerdown)="onHandleDown($event, 'scale')">
-    <app-svg name="icon-overlay-scale-md" w="28" [color]="mode === 'scaling' ? YELLOW : BLACK"/>
+    <app-svg name="icon-overlay-scale-md" w="32" [color]="mode === 'scaling' ? YELLOW : BLACK"/>
   </div>
 
   <!-- Stretch side handles (stretch mode only) -->

@@ -59,9 +59,11 @@ export function dealHand(
     const handSize = config.handSize;
 
     let availableCatalog = catalog;
+    let availablePacks = allPacks ?? [];
     if (unlockedPackIds && allPacks) {
         const availableIds = getAvailableStickerIds(allPacks, unlockedPackIds);
         availableCatalog = catalog.filter(s => availableIds.has(s.id));
+        availablePacks = allPacks.filter(p => unlockedPackIds.includes(p.id));
     }
     if (availableCatalog.length < handSize) availableCatalog = catalog;
 
@@ -81,11 +83,37 @@ export function dealHand(
         }
     }
 
-    // 2. Fill rest randomly
-    const shuffled = availableCatalog.filter(s => !usedIds.has(s.id)).sort(() => Math.random() - 0.5);
-    for (const sticker of shuffled) {
-        if (selected.length >= handSize) break;
-        selected.push(sticker);
+    // 2. Group available stickers by pack and shuffle each pack
+    const byPack = new Map<string, StickerDefinition[]>();
+    for (const s of availableCatalog) {
+        if (usedIds.has(s.id)) continue;
+        const packId = s.packId ?? '';
+        if (!byPack.has(packId)) byPack.set(packId, []);
+        byPack.get(packId)!.push(s);
+    }
+    for (const stickers of byPack.values()) {
+        stickers.sort(() => Math.random() - 0.5);
+    }
+
+    // 3. Round-robin through packs to fill hand
+    const packIds = [...byPack.keys()].sort(() => Math.random() - 0.5);
+    const indices = new Map<string, number>();
+    for (const pid of packIds) indices.set(pid, 0);
+
+    while (selected.length < handSize) {
+        let added = false;
+        for (const pid of packIds) {
+            const stickers = byPack.get(pid)!;
+            const idx = indices.get(pid)!;
+            if (idx < stickers.length) {
+                selected.push(stickers[idx]);
+                usedIds.add(stickers[idx].id);
+                indices.set(pid, idx + 1);
+                added = true;
+                if (selected.length >= handSize) break;
+            }
+        }
+        if (!added) break;
     }
 
     return {stickerIds: [...selected].sort(() => Math.random() - 0.5).map(s => s.id)};

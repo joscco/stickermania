@@ -13,11 +13,11 @@
     <span class="text-xs select-none transition-colors"
           [class.text-red-400]="!canAddMore()"
           [class.text-stone-400]="canAddMore()"
-    >{{ stickers().length }}/{{ maxStickers() }}</span>
+    >{{ committedCount() }}/{{ maxStickers() }}</span>
     <button
       class="disabled:opacity-30 flex items-center justify-center"
       title="Alle Sticker entfernen"
-      [disabled]="stickers().length <= 0"
+      [disabled]="committedCount() <= 0"
       (click)="clearAll.emit()"
     >
       <app-svg name="icon-editor-clear-all-sm" w="20"/>
@@ -86,8 +86,11 @@
   }
 
   <!-- Selection overlay (handles + menu toggle) — hidden in delete zone -->
-  @if (hasSelection() && !stickerWouldBeDeleted() && !paletteDragInProgress() && selectionInfo(); as si) {
-    <div #selectionOverlayWrap data-canvas-overlay style="pointer-events:none;position:absolute;inset:0;">
+  <div #selectionOverlayWrap data-canvas-overlay
+       [animPresence]="overlayVisible()" [animPresenceType]="'opacity'"
+       class="pointer-events-none"
+       style="position:absolute;inset:0;z-index:9000;">
+    @if (selectionInfo(); as si) {
       <app-sticker-selection-overlay
         [box]="si.box"
         [padding]="0"
@@ -98,8 +101,8 @@
         (handleDrag)="onHandleDrag($event)"
         (menuToggle)="onMenuToggle()"
       />
-    </div>
-  }
+    }
+  </div>
 
   <!-- Context menu -->
   <div [animPresence]="menuVisible() && !stickerWouldBeDeleted()"
@@ -119,7 +122,7 @@
     />
   </div>
 
-  <div [animPresence]="stickers().length === 0 && canvasW() > 250"
+  <div [animPresence]="committedCount() === 0 && canvasW() > 250"
        [animPresenceType]="'opacity'"
        class="absolute inset-0 flex items-center justify-center text-stone-300 pointer-events-none">
     <div class="text-center">

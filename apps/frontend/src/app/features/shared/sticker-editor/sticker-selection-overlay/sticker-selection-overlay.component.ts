@@ -1,4 +1,4 @@
-import {Component, input, output, computed, signal, OnDestroy, AfterViewInit, ElementRef} from '@angular/core';
+import {Component, input, output, computed, signal, OnDestroy, ElementRef, effect, untracked} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import gsap from 'gsap';
 import {SvgComponent} from '../../svg/svg.component';
@@ -24,7 +24,7 @@ export const YELLOW = 'oklch(85.2% 0.199 91.936)'
   templateUrl: './sticker-selection-overlay.component.html',
   host: {style: 'position:absolute;inset:0;pointer-events:none;'},
 })
-export class StickerSelectionOverlayComponent implements AfterViewInit, OnDestroy {
+export class StickerSelectionOverlayComponent implements OnDestroy {
   readonly padding = input<number>(0)
   readonly box = input<BoundingBox | null>(null);
   readonly rotation = input<number>(0);
@@ -37,13 +37,23 @@ export class StickerSelectionOverlayComponent implements AfterViewInit, OnDestro
   readonly handleDrag = output<HandleDragEvent>();
   readonly menuToggle = output<void>();
 
+  private wasHidden = true;
+
   constructor(private readonly hostRef: ElementRef<HTMLElement>) {
+    effect(() => {
+      const b = this.box();
+      if (b && this.wasHidden) {
+        this.wasHidden = false;
+        untracked(() => {
+          setTimeout(() => this.animateHandlesIn());
+        });
+      } else if (!b) {
+        this.wasHidden = true;
+      }
+    });
   }
 
-  ngAfterViewInit(): void {
-    // Fade in all handle circles + SVG on creation.
-    // Only animate opacity — no scale/transform tweens on positioned elements,
-    // because Angular updates their left/top every frame during moves.
+  private animateHandlesIn(): void {
     const el = this.hostRef.nativeElement;
     const targets = el.querySelectorAll<HTMLElement>('div[style*="pointer-events:auto"], svg');
     if (targets.length) {

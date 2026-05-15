@@ -1,6 +1,6 @@
 import {
   Component, input, output, signal, computed, effect,
-  ElementRef, ViewChild, AfterViewInit, OnDestroy,
+  ElementRef, ViewChild, AfterViewInit, OnDestroy, inject,
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
 import type {StickerPlacement, StickerDefinition} from '@birthday/shared';
@@ -16,6 +16,7 @@ import {HandleDragEvent, StickerSelectionOverlayComponent} from '../sticker-sele
 import {AnimOnInitDirective, AnimPresenceDirective} from '../../animations/anim-on-init.directive';
 import {SvgComponent} from '../../svg/svg.component';
 import {getSpriteViewBox, preloadSprite} from '../sprite-url.util';
+import {AudioService} from '../../../../core/audio.service';
 import {StickerItemComponent, type StickerAnimState} from './sticker-item/sticker-item.component';
 
 @Component({
@@ -47,7 +48,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   readonly stickerRemoved = output<string>();
   readonly clearAll = output<void>();
 
-  readonly canAddMore = computed(() => this.stickers().length < this.maxStickers());
+  readonly committedCount = computed(() =>
+    this.stickers().length - (this.paletteDragInProgress() ? 1 : 0));
+  readonly canAddMore = computed(() => this.committedCount() < this.maxStickers());
 
   @ViewChild('canvasArea') private canvasArea!: ElementRef<HTMLDivElement>;
 
@@ -98,6 +101,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   readonly boundingBox = computed<BoundingBox | null>(() =>
     this.selectionInfo()?.box ?? null);
 
+  readonly overlayVisible = computed(() =>
+    this.hasSelection() && !this.stickerWouldBeDeleted() && !this.paletteDragInProgress());
+
   readonly menuAnchorX = computed(() =>
     (this.selectionInfo()?.corners.tr.x ?? 0) + 14);
 
@@ -126,7 +132,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   readonly canDuplicate = computed(() =>
     this.selectionIds().length > 0
-    && (this.stickers().length + this.selectionIds().length) <= this.maxStickers());
+    && (this.committedCount() + this.selectionIds().length) <= this.maxStickers());
 
   readonly isGroupSelection = computed(() => {
     const ids = this.selectionIds();
@@ -139,6 +145,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   // ── Internals ─────────────────────────────────────────────────
 
+  private readonly audio = inject(AudioService);
   private catalogMap = new Map<string, StickerDefinition>();
   private gesture!: StickerGestureHandler;
   private removeListeners: (() => void) | null = null;
@@ -156,6 +163,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   setAnimState(id: string, state: StickerAnimState): void {
     this.animStates.update(m => new Map(m).set(id, state));
+    if (state === 'settling') {
+      this.audio.playSettle();
+    }
   }
 
   clearAnimState(id: string): void {
@@ -168,6 +178,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   scheduleRemoval(ids: string[], done: () => void): void {
     if (!ids.length) { done(); return; }
+    this.audio.playDelete();
     let pending = ids.length;
     const onOne = () => { if (--pending === 0) done(); };
     ids.forEach(id => {

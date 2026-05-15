@@ -37,6 +37,11 @@ export class StickerEditorComponent implements AfterViewInit, OnDestroy {
   @ViewChild("canvasAreaEl") private canvasAreaEl!: ElementRef<HTMLDivElement>;
 
   readonly placements = signal<StickerPlacement[]>([]);
+  readonly pendingDropPlacement = signal<StickerPlacement | null>(null);
+  readonly allPlacements = computed(() => {
+    const p = this.pendingDropPlacement();
+    return p ? [...this.placements(), p] : this.placements();
+  });
   readonly canAddMore = computed(() => this.placements().length < this.maxStickers());
 
   readonly canvasSizePx = signal(400);
@@ -88,9 +93,6 @@ export class StickerEditorComponent implements AfterViewInit, OnDestroy {
     };
 
     this.stickerCanvas.setAnimState(instanceId, 'entering');
-    const updated = [...this.placements(), placement];
-    this.placements.set(updated);
-    this.placementsChanged.emit(updated);
 
     this.dragSession?.abort();
 
@@ -102,36 +104,27 @@ export class StickerEditorComponent implements AfterViewInit, OnDestroy {
     this.dragSession = new PaletteDragSession({
       canvasEl,
       canvas: this.stickerCanvas,
-      getPlacements: () => this.placements(),
-      updatePlacements: (p) => {
-        this.placements.set(p);
-        this.placementsChanged.emit(p);
-      },
-      onDrop: (id, outside) => this.finalizeDrop(id, outside),
+      setPendingPlacement: (p) => this.pendingDropPlacement.set(p),
+      onDrop: (id, outside, finalPlacement) => this.finalizeDrop(id, outside, finalPlacement),
     });
 
     this.dragSession.start(event, placement);
   }
 
-  private finalizeDrop(instanceId: string, outside: boolean): void {
+  private finalizeDrop(instanceId: string, outside: boolean, finalPlacement: StickerPlacement): void {
     if (outside) {
       this.stickerCanvas.selectedInstanceId.set(null);
       this.stickerCanvas.lassoSelection.set(new Set());
-      this.stickerCanvas.scheduleRemoval([instanceId], () => {
-        const updated = this.placements().filter(p => p.instanceId !== instanceId);
-        this.placements.set(updated);
-        this.placementsChanged.emit(updated);
-      });
+      this.stickerCanvas.scheduleRemoval([instanceId], () => {});
     } else {
-      const others = this.placements().filter(p => p.instanceId !== instanceId);
-      const normalZ = others.length > 0
-        ? Math.max(...others.map(p => p.zIndex)) + 1
-        : 1;
-      const normalized = this.placements().map(p =>
-        p.instanceId === instanceId ? {...p, zIndex: normalZ} : p,
-      );
-      this.placements.set(normalized);
-      this.placementsChanged.emit(normalized);
+      const existing = this.placements();
+      const maxZ = existing.length > 0
+        ? Math.max(...existing.map(p => p.zIndex))
+        : 0;
+      const committed = {...finalPlacement, zIndex: maxZ + 1};
+      const updated = [...existing, committed];
+      this.placements.set(updated);
+      this.placementsChanged.emit(updated);
       this.stickerCanvas.selectedInstanceId.set(instanceId);
       this.stickerCanvas.setAnimState(instanceId, 'settling');
     }
@@ -149,6 +142,7 @@ export class StickerEditorComponent implements AfterViewInit, OnDestroy {
   }
 
   clearPlacements(): void {
+    this.pendingDropPlacement.set(null);
     this.placements.set([]);
     this.placementsChanged.emit([]);
   }
