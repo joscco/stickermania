@@ -3,6 +3,15 @@
   title="Stickermania"
   subtitle="Warte, bis das Spiel gestartet wird..."
 >
+  <!-- Connected players -->
+  <div class="flex flex-wrap justify-center gap-3 max-w-xs mt-2">
+    @for (player of connectedPlayers(); track player.id) {
+      <app-board-player-avatar
+        [player]="player"
+        [status]="'connected'"
+      />
+    }
+  </div>
   <button
     animOnInit="opacity"
     class="mt-4 bg-black text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"

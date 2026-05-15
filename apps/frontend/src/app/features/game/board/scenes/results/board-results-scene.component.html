@@ -6,41 +6,44 @@
     class="shrink-0"
   />
 
-  <!-- Podium: constrained to available space, items bottom-aligned -->
-  <div animOnInit="opacity" [animDelay]="0.3" class="flex-1 min-h-0 flex items-end justify-center gap-3 sm:gap-5 px-2 sm:px-4 pt-2 overflow-hidden">
-    @for (slot of podiumSlots(); track slot.placement) {
-      <div class="flex flex-col items-center justify-end max-h-full">
-        <!-- Avatar -->
-        <div class="mb-1 shrink-0 relative">
-          <app-board-player-avatar
-            [player]="getPlayer(slot.result.playerId)!"
-            [status]="'podium'"
-          />
-          @if (slot.placement === 1) {
-            <app-svg name="crown" w="60" color="black" class="absolute -top-10 left-1/2 -translate-x-1/2"/>
-          }
-        </div>
-        <!-- Snapshot image -->
-        <div class="relative rounded-2xl border-4 bg-stone-100 shrink-0 aspect-square"
-             [ngClass]="[slot.imgSizeClass, slot.borderClass, slot.shadowClass]">
-          @if (getSnapshotUrl(slot.result.playerId); as url) {
-            <img [src]="url" alt="" class="w-full h-full object-contain" draggable="false"/>
-          } @else {
-            <div class="w-full h-full grid place-items-center text-stone-300">
-              <app-svg name="icon-camera-lg" [w]="slot.camW" color="black"/>
-            </div>
-          }
-          <div class="absolute translate-x-1/2 -translate-y-1/2 top-1 right-0">
-            <app-svg [name]="slot.medalIcon" [w]="slot.medalW"/>
+  <!-- Podium: scales proportionally to fit available height -->
+  <div #podiumArea animOnInit="opacity" [animDelay]="0.3" class="flex-1 min-h-0 overflow-hidden relative">
+    <div class="absolute bottom-0 left-0 right-0 flex items-end justify-center gap-3 sm:gap-5 px-2 sm:px-4 pt-2"
+         [style.transform]="'scale(' + podiumScale() + ')'"
+         style="transform-origin: bottom center">
+      @for (slot of podiumSlots(); track slot.placement) {
+        <div class="flex flex-col items-center justify-end">
+          <!-- Avatar -->
+          <div class="mb-1 shrink-0 relative">
+            <app-board-player-avatar
+              [player]="getPlayer(slot.result.playerId)!"
+              [status]="'podium'"
+            />
+            @if (slot.placement === 1) {
+              <app-svg name="crown" w="60" color="black" class="absolute -top-10 left-1/2 -translate-x-1/2"/>
+            }
           </div>
+          <!-- Snapshot image -->
+          <div class="relative rounded-2xl border-4 bg-stone-100 shrink-0 aspect-square"
+               [ngClass]="[slot.imgSizeClass, slot.borderClass, slot.shadowClass]">
+            @if (getSnapshotUrl(slot.result.playerId); as url) {
+              <img [src]="url" alt="" class="w-full h-full object-contain" draggable="false"/>
+            } @else {
+              <div class="w-full h-full grid place-items-center text-stone-300">
+                <app-svg name="icon-camera-lg" [w]="slot.camW" color="black"/>
+              </div>
+            }
+            <div class="absolute translate-x-1/2 -translate-y-1/2 top-1 right-0">
+              <app-svg [name]="slot.medalIcon" [w]="slot.medalW"/>
+            </div>
+          </div>
+          <!-- Podium step bar -->
+          <div class="w-20 sm:w-28 md:w-30 shrink-0" [ngClass]="[slot.barColorClass + ' ' + slot.barHeightClass]"></div>
+          <!-- Vote stars -->
+          <app-stars-display [count]="slot.result.voteCount" [starSize]="slot.starSize" [colorClass]="slot.starColor" class="shrink-0"/>
         </div>
-        <!-- Podium step bar -->
-        <div class="w-20 sm:w-28 md:w-30 shrink-0" [ngClass]="[slot.barColorClass + ' ' + slot.barHeightClass]"></div>
-        <!-- Vote stars -->
-        <app-stars-display [count]="slot.result.voteCount" [starSize]="slot.starSize" [colorClass]="slot.starColor" class="shrink-0"/>
-
-      </div>
-    }
+      }
+    </div>
   </div>
 
   <!-- Winner action status -->

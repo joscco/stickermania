@@ -85,9 +85,9 @@ export const MOCK_PLAYER_HAND: StickerHand = {
 };
 
 const MOCK_VOTE_RESULTS: StickerCollageVoteResult[] = [
-  { collageId: 'col-1', playerId: 'player-1', voteCount: 2 },
-  { collageId: 'col-2', playerId: 'player-2', voteCount: 1 },
-  { collageId: 'col-3', playerId: 'player-3', voteCount: 0 },
+  { collageId: 'col-1', playerId: 'player-1', voteCount: 2, placement: 1 },
+  { collageId: 'col-2', playerId: 'player-2', voteCount: 1, placement: 2 },
+  { collageId: 'col-3', playerId: 'player-3', voteCount: 0, placement: 3 },
 ];
 
 // ── Phase state builders ────────────────────────────────────────────────────
@@ -136,6 +136,7 @@ export function resultsPhase(): StickerCollageResultsState {
     guaranteedPackChoices: ['pack_shapes', 'pack_home', 'pack_lines'],
     lastUnlockedPackId: null,
     winnerChoicesDone: false,
+    tiedWinnerIds: [],
     readyToAdvanceIds: [],
   };
 }

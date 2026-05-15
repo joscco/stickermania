@@ -105,6 +105,8 @@ export function transitionToResults(
     let lastVoteResults: StickerCollageVoteResult[] = [];
     let winnerId: string | null = null;
 
+    let tiedWinnerIds: string[] = [];
+
     if (currentSubmissions.length > 0) {
         const voteCounts = new Map<string, number>();
         for (const collageIds of Object.values(currentVotes) as string[][]) {
@@ -121,16 +123,29 @@ export function transitionToResults(
             }))
             .sort((a, b) => b.voteCount - a.voteCount);
 
-        lastVoteResults = ranked.map((entry): StickerCollageVoteResult => ({
-            collageId: entry.collageId,
-            playerId: entry.playerId,
-            voteCount: entry.voteCount,
-        }));
+        // Compute tied placements: same voteCount → same placement
+        let currentPlacement = 0;
+        let prevVoteCount: number | undefined;
+        lastVoteResults = ranked.map((entry, i): StickerCollageVoteResult => {
+            if (entry.voteCount !== prevVoteCount) {
+                currentPlacement = i + 1;
+                prevVoteCount = entry.voteCount;
+            }
+            return {
+                collageId: entry.collageId,
+                playerId: entry.playerId,
+                voteCount: entry.voteCount,
+                placement: currentPlacement,
+            };
+        });
 
         // Winner: random pick among all players tied for first place
         const topVoteCount = ranked[0]?.voteCount ?? 0;
         const topPlayers = ranked.filter(e => e.voteCount === topVoteCount);
         winnerId = topPlayers[Math.floor(Math.random() * topPlayers.length)]?.playerId ?? null;
+        tiedWinnerIds = topPlayers
+            .filter(e => e.playerId !== winnerId)
+            .map(e => e.playerId);
     }
 
     gameState.phaseState = {
@@ -138,6 +153,7 @@ export function transitionToResults(
         resultsEndsAt: now + config.resultsDurationSec * 1000,
         lastVoteResults,
         winnerId,
+        tiedWinnerIds,
         readyToAdvanceIds: [],
         ...buildWinnerChoices(gameState, config, winnerId),
     };

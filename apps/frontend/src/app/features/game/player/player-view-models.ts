@@ -26,16 +26,30 @@ export interface BuildingViewModel {
 
 export interface BuildingSubmittedViewModel {
   allPlayersDone: boolean;
+  players: Record<string, SessionPlayer>;
+  roundParticipantIds: string[];
+  submittedPlayerIds: Set<string>;
 }
 
 export interface BuildingSkippedViewModel {
   allPlayersDone: boolean;
+  players: Record<string, SessionPlayer>;
+  roundParticipantIds: string[];
+  submittedPlayerIds: Set<string>;
+}
+
+export interface VotingDoneViewModel {
+  allVotingDone: boolean;
+  players: Record<string, SessionPlayer>;
+  roundParticipantIds: string[];
+  doneVotingIds: string[];
 }
 
 export interface ResultsViewModel {
   myPlacement: number | null;
   myVoteCount: number;
   isWinner: boolean;
+  isTiedWinner: boolean;
   winnerChoicesDone: boolean;
   currentWinnerStep: WinnerStep;
   hasChosenPrompt: boolean;

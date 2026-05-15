@@ -7,7 +7,7 @@ const SFX_START = 'audio/sfx/start.mp3';
 const SFX_SUCCESS = 'audio/sfx/success.mp3';
 const SFX_DELETE = 'audio/sfx/delete.mp3';
 
-const SFX_PATHS = [SFX_CLICK, SFX_ACTION, SFX_START, SFX_SUCCESS];
+const SFX_PATHS = [SFX_CLICK, SFX_ACTION, SFX_START, SFX_SUCCESS, SFX_DELETE];
 
 @Injectable({providedIn: 'root'})
 export class AudioService {

@@ -11,6 +11,7 @@ import type {
     BuildingViewModel,
     BuildingSubmittedViewModel,
     BuildingSkippedViewModel,
+    VotingDoneViewModel,
     ResultsViewModel,
     WinnerStep,
     NextRoundViewModel,
@@ -121,13 +122,34 @@ export class PlayerScreenDataService {
         maxStickersOnCanvas: this.stickerService.maxStickersOnCanvas(),
     }));
 
+    public readonly lobbyWaitingVm = computed(() => ({
+        connectedPlayers: Object.values(this.worldStore.players()).filter(p => p.connected),
+    }));
+
     public readonly buildingSubmittedVm = computed<BuildingSubmittedViewModel>(() => ({
         allPlayersDone: this.stickerService.allPlayersDone(),
+        players: this.worldStore.players(),
+        roundParticipantIds: this.stickerService.gameState()?.roundParticipantIds ?? [],
+        submittedPlayerIds: new Set((this.stickerService.gameState()?.submissions?.[this.stickerService.currentRoundIndex()] ?? []).map(s => s.playerId)),
     }));
 
     public readonly buildingSkippedVm = computed<BuildingSkippedViewModel>(() => ({
         allPlayersDone: this.stickerService.allPlayersDone(),
+        players: this.worldStore.players(),
+        roundParticipantIds: this.stickerService.gameState()?.roundParticipantIds ?? [],
+        submittedPlayerIds: new Set((this.stickerService.gameState()?.submissions?.[this.stickerService.currentRoundIndex()] ?? []).map(s => s.playerId)),
     }));
+
+    public readonly votingDoneVm = computed<VotingDoneViewModel>(() => {
+        const gameState = this.stickerService.gameState();
+        const vs = gameState?.phaseState;
+        return {
+            allVotingDone: this.stickerService.allVotingDone(),
+            players: this.worldStore.players(),
+            roundParticipantIds: gameState?.roundParticipantIds ?? [],
+            doneVotingIds: (vs?.phase === 'VOTING' ? vs.doneVotingIds : []),
+        };
+    });
 
     public readonly resultsVm = computed<ResultsViewModel>(() => {
         const stickerService = this.stickerService;
@@ -156,6 +178,7 @@ const winnerId = stickerService.winnerId();
             myPlacement: stickerService.myPlacement(),
             myVoteCount: myResult?.voteCount ?? 0,
             isWinner,
+            isTiedWinner: stickerService.isTiedWinner(),
             winnerChoicesDone,
             currentWinnerStep,
             hasChosenPrompt,

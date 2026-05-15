@@ -3,6 +3,18 @@
   title="Du hast eingereicht!"
   subtitle="Warte auf das Ende der Runde..."
 >
+  <!-- Player status -->
+  <div class="flex flex-wrap justify-center gap-2 mt-3 max-w-xs">
+    @for (pid of roundParticipantIds(); track pid) {
+      @let player = players()[pid];
+      @if (player) {
+        <app-board-player-avatar
+          [player]="player"
+          [status]="submittedPlayerIds().has(pid) ? 'submitted' : (player.connected ? 'drawing' : 'offline')"
+        />
+      }
+    }
+  </div>
   @if (allPlayersDone()) {
     <button
       class="mt-2 bg-black text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"

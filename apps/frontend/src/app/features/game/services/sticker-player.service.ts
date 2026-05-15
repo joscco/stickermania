@@ -116,12 +116,18 @@ export class StickerPlayerService {
     return !!playerId && playerId === this.winnerId();
   });
 
+  public readonly isTiedWinner = computed(() => {
+    const playerId = this.sessionStore.playerId();
+    if (!playerId) return false;
+    return (this.resultsState()?.tiedWinnerIds ?? []).includes(playerId);
+  });
+
   public readonly myPlacement = computed<number | null>(() => {
     const playerId = this.sessionStore.playerId();
     const r = this.lastVoteResults();
     if (!playerId || r.length === 0) return null;
-    const idx = r.findIndex(r => r.playerId === playerId);
-    return idx >= 0 ? idx + 1 : null;
+    const myResult = r.find(r => r.playerId === playerId);
+    return myResult?.placement ?? null;
   });
 
   public readonly promptChoices = computed(() => this.resultsState()?.promptChoices ?? []);

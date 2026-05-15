@@ -3,6 +3,18 @@
   title="Stimme abgegeben"
   [subtitle]="allVotingDone() ? 'Alle sind fertig. Ihr könnt zur Auswertung wechseln.' : 'Warte auf die anderen Spieler...' "
 >
+  <!-- Player status -->
+  <div class="flex flex-wrap justify-center gap-2 mt-3 max-w-xs">
+    @for (pid of roundParticipantIds(); track pid) {
+      @let player = players()[pid];
+      @if (player) {
+        <app-board-player-avatar
+          [player]="player"
+          [status]="doneVotingIds().includes(pid) ? 'submitted' : (player.connected ? 'idle' : 'offline')"
+        />
+      }
+    }
+  </div>
   @if (allVotingDone()) {
     <button
       class="mt-4 w-full max-w-xs bg-black text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"

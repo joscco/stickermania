@@ -32,7 +32,10 @@
         />
       }
       @case (PlayerScreen.LOBBY_WAITING) {
-        <app-player-lobby-waiting (startGame)="startGameWithSound()"/>
+        <app-player-lobby-waiting
+          [connectedPlayers]="screenData.lobbyWaitingVm().connectedPlayers"
+          (startGame)="startGameWithSound()"
+        />
       }
       @case (PlayerScreen.BUILDING) {
         <app-player-building
@@ -49,12 +52,18 @@
       @case (PlayerScreen.BUILDING_SUBMITTED) {
         <app-player-building-submitted
           [allPlayersDone]="screenData.buildingSubmittedVm().allPlayersDone"
+          [players]="screenData.buildingSubmittedVm().players"
+          [roundParticipantIds]="screenData.buildingSubmittedVm().roundParticipantIds"
+          [submittedPlayerIds]="screenData.buildingSubmittedVm().submittedPlayerIds"
           (endRoundEarly)="endRoundEarlyWithSound()"
         />
       }
       @case (PlayerScreen.BUILDING_SKIPPED) {
         <app-player-building-skipped
           [allPlayersDone]="screenData.buildingSkippedVm().allPlayersDone"
+          [players]="screenData.buildingSkippedVm().players"
+          [roundParticipantIds]="screenData.buildingSkippedVm().roundParticipantIds"
+          [submittedPlayerIds]="screenData.buildingSkippedVm().submittedPlayerIds"
           (endRoundEarly)="endRoundEarlyWithSound()"
         />
       }
@@ -69,12 +78,18 @@
       @case (PlayerScreen.VOTING_DONE) {
         <app-player-voting-done
           [allVotingDone]="false"
+          [players]="screenData.votingDoneVm().players"
+          [roundParticipantIds]="screenData.votingDoneVm().roundParticipantIds"
+          [doneVotingIds]="screenData.votingDoneVm().doneVotingIds"
           (endVotingEarly)="endVotingEarlyWithSound()"
         />
       }
       @case (PlayerScreen.VOTING_ALL_DONE) {
         <app-player-voting-done
           [allVotingDone]="true"
+          [players]="screenData.votingDoneVm().players"
+          [roundParticipantIds]="screenData.votingDoneVm().roundParticipantIds"
+          [doneVotingIds]="screenData.votingDoneVm().doneVotingIds"
           (endVotingEarly)="endVotingEarlyWithSound()"
         />
       }
@@ -83,6 +98,7 @@
           [myPlacement]="screenData.resultsVm().myPlacement"
           [myVoteCount]="screenData.resultsVm().myVoteCount"
           [isWinner]="screenData.resultsVm().isWinner"
+          [isTiedWinner]="screenData.resultsVm().isTiedWinner"
           [winnerChoicesDone]="screenData.resultsVm().winnerChoicesDone"
           [currentWinnerStep]="screenData.resultsVm().currentWinnerStep"
           [hasChosenPrompt]="screenData.resultsVm().hasChosenPrompt"

@@ -32,52 +32,45 @@
 
   @switch (currentWinnerStep()) {
     @case ('prompt') {
-      <div animOnInit="choice" [animDelay]="0.25">
-        <h3 class="text-sm font-semibold text-stone-700 mb-2">Wähle den nächsten Prompt:</h3>
-        <div class="space-y-2">
+      <div animOnInit="choice" [animDelay]="0.25" class="flex flex-col items-center">
+        <h3 class="text-sm font-semibold text-stone-700 mb-3">Wähle den nächsten Prompt:</h3>
+        <div class="space-y-2 flex flex-col items-center w-full">
           @for (prompt of promptChoices(); track prompt) {
-            <button
-              class="w-full text-center p-3 rounded-xl border-2 border-stone-200 bg-white text-sm font-medium active:scale-[0.98] transition-transform hover:border-stone-400"
-              (click)="pickPrompt.emit(prompt)"
-            >
-              {{ prompt }}
-            </button>
+            <app-choice-button
+              [id]="prompt"
+              [label]="prompt"
+              (selected)="pickPrompt.emit($event)"
+            />
           }
         </div>
       </div>
     }
     @case ('unlock') {
-      <div animOnInit="choice" [animDelay]="0.25">
-        <h3 class="text-center text-sm font-semibold text-stone-700 mb-2">Schalte ein Sticker-Pack frei:</h3>
-        <div class="flex items-center justify-center gap-2">
+      <div animOnInit="choice" [animDelay]="0.25" class="flex flex-col items-center">
+        <h3 class="text-sm font-semibold text-stone-700 mb-3">Schalte ein Sticker-Pack frei:</h3>
+        <div class="space-y-2 flex flex-col items-center w-full">
           @for (pack of packUnlockChoices(); track pack.id) {
-            <button
-              class="w-24 h-24 rounded-xl border-2 border-stone-200 bg-white text-center active:scale-95 transition-all hover:border-stone-400"
-              (click)="unlockPack.emit(pack.id)"
-            >
-              @if (pack.iconId) {
-                <app-svg [name]="pack.iconId" [w]="40"/>
-              }
-              <div class="text-xs font-medium mt-1">{{ pack.name }}</div>
-            </button>
+            <app-choice-button
+              [id]="pack.id"
+              [label]="pack.name"
+              [iconId]="pack.iconId ?? null"
+              (selected)="unlockPack.emit($event)"
+            />
           }
         </div>
       </div>
     }
     @case ('guaranteed') {
-      <div animOnInit="choice" [animDelay]="0.25">
-        <h3 class="text-center text-sm font-semibold text-stone-700 mb-2">Dieses Pack soll auf jeden Fall dabei sein:</h3>
-        <div class="flex items-center justify-center gap-2">
+      <div animOnInit="choice" [animDelay]="0.25" class="flex flex-col items-center">
+        <h3 class="text-sm font-semibold text-stone-700 mb-3">Dieses Pack soll auf jeden Fall dabei sein:</h3>
+        <div class="space-y-2 flex flex-col items-center w-full">
           @for (pack of guaranteedPackChoices(); track pack.id) {
-            <button
-              class="w-24 h-24 rounded-xl border-2 border-stone-200 bg-white text-center active:scale-95 transition-all hover:border-stone-400"
-              (click)="pickGuaranteedPack.emit(pack.id)"
-            >
-              @if (pack.iconId) {
-                <app-svg [name]="pack.iconId" [w]="40"/>
-              }
-              <div class="text-xs font-medium mt-1">{{ pack.name }}</div>
-            </button>
+            <app-choice-button
+              [id]="pack.id"
+              [label]="pack.name"
+              [iconId]="pack.iconId ?? null"
+              (selected)="pickGuaranteedPack.emit($event)"
+            />
           }
         </div>
       </div>

@@ -42,7 +42,11 @@
     />
   } @else if (winnerId()) {
     <app-player-status-screen icon="" title="" subtitle="">
-      <p class="text-stone-500 text-sm">{{ winnerName() }} wählt die nächste Runde...</p>
+      @if (isTiedWinner()) {
+        <p class="text-stone-500 text-sm text-center px-4">Du teilst dir den ersten Platz — {{ winnerName() }} wählt die nächste Runde aus.</p>
+      } @else {
+        <p class="text-stone-500 text-sm">{{ winnerName() }} wählt die nächste Runde...</p>
+      }
       <div class="w-6 h-6 border-2 border-stone-200 border-t-stone-400 rounded-full animate-spin mx-auto mt-2"></div>
     </app-player-status-screen>
   }

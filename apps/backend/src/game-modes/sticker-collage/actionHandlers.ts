@@ -196,18 +196,20 @@ export function castVote(
     }
 
     const myVotes = votingPhase.currentVotes[playerId] ?? [];
-    if (myVotes.length >= config.stickerCollage.votesPerPlayer) {
-        // Remove the first vote
-        votingPhase.currentVotes[playerId] = [...myVotes.slice(1), collageId];
-        return {stateChanged: true, events: [{type: "vote-registered", voterId: playerId, collageId}]};
-    }
 
+    // Toggle: clicking an already-voted collage removes the vote
     if (myVotes.includes(collageId)) {
-        // Remove the selected vote again
         votingPhase.currentVotes[playerId] = myVotes.filter(v => v !== collageId);
         return {stateChanged: true, events: [{type: "vote-unregistered", voterId: playerId, collageId}]};
     }
 
+    // At capacity: remove the oldest vote before adding the new one
+    if (myVotes.length >= config.stickerCollage.votesPerPlayer) {
+        votingPhase.currentVotes[playerId] = [...myVotes.slice(1), collageId];
+        return {stateChanged: true, events: [{type: "vote-registered", voterId: playerId, collageId}]};
+    }
+
+    // Add the new vote
     votingPhase.currentVotes[playerId] = [...myVotes, collageId];
     return {stateChanged: true, events: [{type: "vote-registered", voterId: playerId, collageId}]};
 }

@@ -192,6 +192,7 @@ export interface StickerCollageVoteResult {
     collageId: string;
     playerId: string;
     voteCount: number;
+    placement: number;
 }
 
 // ─── Phase-specific state slices ──────────────────────────────
@@ -219,6 +220,8 @@ export interface StickerCollageResultsState {
     resultsEndsAt: number;
     lastVoteResults: StickerCollageVoteResult[];
     winnerId: string | null;
+    /** Player IDs that tied for first place but were not selected as winner */
+    tiedWinnerIds: string[];
     promptChoices: string[];
     packUnlockChoices: string[];
     guaranteedPackChoices: string[];

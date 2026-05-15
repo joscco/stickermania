@@ -51,14 +51,8 @@ export class LobbyAvatarComponent implements AfterViewInit, OnDestroy {
   @ViewChild("buttonsRef") buttonsRef!: ElementRef<HTMLElement>;
 
   public ngAfterViewInit(): void {
-    // Defer initial dimension read so the browser has finished layout.
-    // A direct read of clientWidth/clientHeight in ngAfterViewInit can return
-    // stale or zero values when the component is created dynamically (e.g.
-    // after an @switch transition) instead of during the initial page render.
-    requestAnimationFrame(() => {
-      this.hostWidth.set(this.el.nativeElement.clientWidth);
-      this.hostHeight.set(this.el.nativeElement.clientHeight);
-    });
+    this.hostWidth.set(this.el.nativeElement.clientWidth);
+    this.hostHeight.set(this.el.nativeElement.clientHeight);
 
     this.resizeObserver = new ResizeObserver(() => {
       this.hostWidth.set(this.el.nativeElement.clientWidth);
@@ -67,10 +61,8 @@ export class LobbyAvatarComponent implements AfterViewInit, OnDestroy {
     this.resizeObserver.observe(this.el.nativeElement);
     this.destroyRef.onDestroy(() => this.resizeObserver?.disconnect());
 
-    setTimeout(() => {
-      this.titleH.set(this.titleRef?.nativeElement?.offsetHeight ?? 50);
-      this.buttonsH.set(this.buttonsRef?.nativeElement?.offsetHeight ?? 120);
-    });
+    this.titleH.set(this.titleRef?.nativeElement?.offsetHeight ?? 50);
+    this.buttonsH.set(this.buttonsRef?.nativeElement?.offsetHeight ?? 120);
   }
 
   public ngOnDestroy(): void {

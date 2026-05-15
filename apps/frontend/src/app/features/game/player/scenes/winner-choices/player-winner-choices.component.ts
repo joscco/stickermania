@@ -4,11 +4,12 @@ import type {StickerPack} from "@birthday/shared";
 import type {WinnerStep} from '../../player-view-models';
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {SvgComponent} from '../../../../shared/svg/svg.component';
+import {ChoiceButtonComponent} from '../../../shared/choice-button.component';
 
 @Component({
     selector: "app-player-winner-choices",
     standalone: true,
-    imports: [CommonModule, AnimOnInitDirective, SvgComponent],
+    imports: [CommonModule, AnimOnInitDirective, SvgComponent, ChoiceButtonComponent],
     templateUrl: "./player-winner-choices.component.html",
     host: {"class": "flex-1 flex flex-col overflow-y-auto"},
 })

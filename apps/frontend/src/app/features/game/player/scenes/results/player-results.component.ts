@@ -20,6 +20,7 @@ export class PlayerResultsComponent {
     public readonly myPlacement = input<number | null>(null);
     public readonly myVoteCount = input<number>(0);
     public readonly isWinner = input<boolean>(false);
+    public readonly isTiedWinner = input<boolean>(false);
     public readonly winnerChoicesDone = input<boolean>(false);
     public readonly currentWinnerStep = input<WinnerStep>(null);
     public readonly hasChosenPrompt = input<boolean>(false);
