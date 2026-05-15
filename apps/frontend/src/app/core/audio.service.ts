@@ -66,7 +66,9 @@ export class AudioService {
   // ── Background music (HTML5 Audio for looping) ───────────
 
   public musicStart(): void {
-    if (this.musicAudio) return;
+    if (this.musicAudio) {
+      return;
+    }
     this.musicAudio = new Audio(MUSIC_SRC);
     this.musicAudio.loop = true;
     this.musicAudio.volume = 0.25;
