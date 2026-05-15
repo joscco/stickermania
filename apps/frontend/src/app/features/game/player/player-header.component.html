@@ -1,4 +1,4 @@
-<div class="sticky top-0 z-30 text-black bg-stone-200 backdrop-blur">
+<div class="sticky top-0 z-30 text-black bg-white backdrop-blur">
   <div class="mx-auto w-full max-w-lg px-3 py-2">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2 min-w-0">
@@ -22,7 +22,7 @@
           >{{ vm().playerName }}
           </button>
           <button
-            class="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden bg-stone-100 text-[10px] text-stone-500 transition-colors"
+            class="w-6 h-6 rounded-md flex items-center justify-center overflow-hidden bg-stone-100 text-[10px] text-stone-500 transition-colors"
             (click)="editAvatar.emit()"
             title="Avatar ändern"
           >

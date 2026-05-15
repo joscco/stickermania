@@ -2,7 +2,7 @@
 <div
   #canvasAreaEl
   animOnInit="opacity"
-  class="flex-1 min-h-0 bg-white p-2 flex items-center justify-center"
+  class="flex-1 min-h-0 p-2 flex items-center justify-center"
 >
 
   <div
@@ -25,7 +25,7 @@
 </div>
 
 <!-- Palette strip — z-20 so it visually covers canvas overflow upwards -->
-<div animOnInit="opacity" class="relative z-20 shrink-0 bg-white">
+<div animOnInit="opacity" class="relative z-20 shrink-0 pb-1">
   <app-sticker-palette
     [stickers]="paletteStickers()"
     [stickerPacks]="stickerPacks()"

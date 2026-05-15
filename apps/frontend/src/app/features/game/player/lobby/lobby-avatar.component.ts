@@ -43,7 +43,7 @@ export class LobbyAvatarComponent implements AfterViewInit, OnDestroy {
   /** Brush icon size scales with canvas side */
   public readonly brushSize = computed(() => {
     const s = this.canvasSide();
-    return s / 5;
+    return s / 6;
   });
 
   @ViewChild("drawingCanvas") drawingCanvas!: DrawingCanvasComponent;
