@@ -67,6 +67,9 @@ export class BoardComponent implements OnInit, OnDestroy {
   }
 
   public ngOnInit(): void {
+    // Start music once when entering the board area (no-op if already playing)
+    this.audio.musicStart();
+
     if (this.catalogForcedPhase()) {
       this.isBoardReady.set(true);
       this.isBootstrapping.set(false);
@@ -169,9 +172,6 @@ export class BoardComponent implements OnInit, OnDestroy {
       this.unsubscribeWs = this.wsService.onMessage((message) => this.handleMessage(message));
       this.wsService.connect();
 
-      // Start background music (when file is provided)
-      this.audio.musicStart();
-
       const joinCheckInterval = setInterval(() => {
         if (this.wsService.status() === "connected" && this.sessionId) {
           this.wsService.send({type: "join", kind: "board", sessionId: this.sessionId});
@@ -197,7 +197,6 @@ export class BoardComponent implements OnInit, OnDestroy {
     this.worldStore.clearSessionState();
     this.screenData.closeSetupDrawer();
     this.screenData.stopTimerTick();
-    this.audio.musicStop();
     this.isBoardReady.set(false);
   }
 

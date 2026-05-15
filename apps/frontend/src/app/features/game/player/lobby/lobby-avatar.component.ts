@@ -25,15 +25,15 @@ export class LobbyAvatarComponent implements AfterViewInit, OnDestroy {
   private readonly hostHeight = signal(600);
   private resizeObserver?: ResizeObserver;
 
-  /** Measured heights of sections (set once after view init) */
-  private titleH = 0;
-  private buttonsH = 0;
+  /** Measured heights of sections (signals so canvasSide recomputes) */
+  private readonly titleH = signal(0);
+  private readonly buttonsH = signal(0);
 
   /** Computed canvas square side length — fits in remaining space */
   public readonly canvasSide = computed(() => {
     const w = this.hostWidth();
     const h = this.hostHeight();
-    const chrome = this.titleH + this.buttonsH + 32; // padding + gaps
+    const chrome = this.titleH() + this.buttonsH() + 32;
     const availableH = Math.max(h - chrome, 100);
     return Math.max(Math.min(w, availableH), 80);
   });
@@ -49,6 +49,10 @@ export class LobbyAvatarComponent implements AfterViewInit, OnDestroy {
   @ViewChild("buttonsRef") buttonsRef!: ElementRef<HTMLElement>;
 
   public ngAfterViewInit(): void {
+    // Set initial dimensions immediately (don't wait for async ResizeObserver)
+    this.hostWidth.set(this.el.nativeElement.clientWidth);
+    this.hostHeight.set(this.el.nativeElement.clientHeight);
+
     this.resizeObserver = new ResizeObserver(() => {
       this.hostWidth.set(this.el.nativeElement.clientWidth);
       this.hostHeight.set(this.el.nativeElement.clientHeight);
@@ -58,8 +62,8 @@ export class LobbyAvatarComponent implements AfterViewInit, OnDestroy {
 
     // Measure static section heights after a tick
     setTimeout(() => {
-      this.titleH = this.titleRef?.nativeElement?.offsetHeight ?? 50;
-      this.buttonsH = this.buttonsRef?.nativeElement?.offsetHeight ?? 120;
+      this.titleH.set(this.titleRef?.nativeElement?.offsetHeight ?? 50);
+      this.buttonsH.set(this.buttonsRef?.nativeElement?.offsetHeight ?? 120);
     });
   }
 
