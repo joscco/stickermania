@@ -11,7 +11,8 @@ const CANVAS_SIZE = 3416;
   selector: "app-drawing-canvas",
   standalone: true,
   templateUrl: "./drawing-canvas.component.html",
-  imports: [SvgComponent]
+  imports: [SvgComponent],
+  host: {"style": "display: block"}
 })
 export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
   public readonly submitted = output<string>();
