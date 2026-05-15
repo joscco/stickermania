@@ -2,6 +2,7 @@ import {AfterViewInit, Component, computed, DestroyRef, ElementRef, inject, inpu
 import {DrawingCanvasComponent} from '../../../shared/paint-canvas/drawing-canvas.component';
 import {AnimOnInitDirective, AnimGroupDirective} from '../../../shared/animations/anim-on-init.directive';
 import {SvgComponent} from '../../../shared/svg/svg.component';
+import {AudioService} from '../../../../core/audio.service';
 
 
 @Component({
@@ -21,6 +22,7 @@ export class LobbyAvatarComponent implements AfterViewInit, OnDestroy {
 
   private readonly el = inject(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
+  public readonly audio = inject(AudioService);
   private readonly hostWidth = signal(400);
   private readonly hostHeight = signal(600);
   private resizeObserver?: ResizeObserver;
@@ -76,22 +78,32 @@ export class LobbyAvatarComponent implements AfterViewInit, OnDestroy {
   }
 
   public clear(): void {
+    this.audio.playClick();
     this.drawingCanvas.clear();
   }
 
   public submit(): void {
+    this.audio.playClick();
     this.drawingCanvas.submit();
   }
 
   protected selectThinBrush() {
+    this.audio.playClick();
     this.drawMode.set("small");
   }
 
   protected selectThickBrush() {
+    this.audio.playClick();
     this.drawMode.set("big");
   }
 
   protected selectEraser() {
+    this.audio.playClick();
     this.drawMode.set("erase");
+  }
+
+  protected skip(): void {
+    this.audio.playClick();
+    this.skipped.emit();
   }
 }

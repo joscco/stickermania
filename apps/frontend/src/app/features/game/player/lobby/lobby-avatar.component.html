@@ -1,4 +1,4 @@
-<div animGroup="opacity" class="h-full flex flex-col items-center justify-center overflow-hidden px-4 py-2">
+<div animGroup="opacity" class="h-full flex flex-col items-center justify-center overflow-hidden px-4">
 
   <!-- Title -->
   <div #titleRef animOnInit="opacity" class="text-center shrink-0 py-1.5">
@@ -46,23 +46,18 @@
 
     <!-- Action buttons -->
     <div class="flex items-center justify-center w-full gap-2 pt-2">
-      <button class="max-w-1/2 h-10 transition-transform hover:scale-105 active:translate-y-px"
+      <button class="flex-1 rounded-2xl bg-stone-200 text-stone-700 px-4 py-3 text-sm font-medium hover:bg-stone-300 active:translate-y-px transition-colors"
               (click)="clear()">
-        <svg viewBox="0 0 1600 700" style="height:100%;width:100%;display:block;" aria-hidden="true">
-          <use href="#draw-btn-new"/>
-        </svg>
+        Leeren
       </button>
-
-      <button class="max-w-1/2 h-10 transition-transform hover:scale-105 active:translate-y-px"
+      <button class="flex-1 rounded-2xl bg-stone-900 text-white px-4 py-3 text-sm font-medium hover:bg-stone-800 active:translate-y-px transition-colors"
               (click)="submit()">
-        <svg viewBox="0 0 2000 700" style="height:100%;width:100%;display:block;" aria-hidden="true">
-          <use href="#draw-btn-complete"/>
-        </svg>
+        Fertig!
       </button>
     </div>
 
-    <button animOnInit="opacity" class="text-xs text-stone-400 hover:text-stone-600 underline pt-2"
-            (click)="skipped.emit()">
+    <button animOnInit="opacity" class="text-xs text-stone-400 hover:text-stone-600 underline py-2"
+            (click)="skip()">
       Überspringen
     </button>
   </div>
