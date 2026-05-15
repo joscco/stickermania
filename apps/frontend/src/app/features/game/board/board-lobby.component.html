@@ -5,7 +5,7 @@
     (click)="audio.musicToggle()"
     [title]="audio.musicPlaying() ? 'Musik aus' : 'Musik an'"
   >
-    <app-svg [name]="audio.musicPlaying() ? 'icon-music' : 'icon-music-off'" w="18"/>
+    <app-svg [name]="audio.musicPlaying() ? 'icon-music' : 'icon-no-music'" w="18"/>
   </button>
   <div class="w-full max-w-xl px-4 flex flex-col flex-1 min-h-0 py-10">
 

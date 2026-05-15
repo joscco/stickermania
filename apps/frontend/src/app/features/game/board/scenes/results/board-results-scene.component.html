@@ -7,7 +7,7 @@
   />
 
   <!-- Podium: constrained to available space, items bottom-aligned -->
-  <div animOnInit="opacity" [animDelay]="0.3" class="flex-1 min-h-0 flex items-end justify-center gap-2 sm:gap-4 px-2 sm:px-4 pt-2 overflow-hidden">
+  <div animOnInit="opacity" [animDelay]="0.3" class="flex-1 min-h-0 flex items-end justify-center gap-3 sm:gap-5 px-2 sm:px-4 pt-2 overflow-hidden">
     @for (slot of podiumSlots(); track slot.placement) {
       <div class="flex flex-col items-center justify-end max-h-full">
         <!-- Avatar -->
@@ -17,7 +17,7 @@
             [status]="'podium'"
           />
           @if (slot.placement === 1) {
-            <app-svg name="crown" w="40" color="black" class="absolute -top-9 left-1/2 -translate-x-1/2 drop-shadow-md"/>
+            <app-svg name="crown" w="60" color="black" class="absolute -top-10 left-1/2 -translate-x-1/2"/>
           }
         </div>
         <!-- Snapshot image -->
@@ -30,7 +30,7 @@
               <app-svg name="icon-camera-lg" [w]="slot.camW" color="black"/>
             </div>
           }
-          <div class="absolute translate-x-1/2 -translate-y-1/2 top-1 right-1">
+          <div class="absolute translate-x-1/2 -translate-y-1/2 top-1 right-0">
             <app-svg [name]="slot.medalIcon" [w]="slot.medalW"/>
           </div>
         </div>
