@@ -1,13 +1,13 @@
-<div class="h-full flex flex-col">
+<div class="h-full flex flex-col items-center justify-center">
   <app-prompt-banner
     text="Ergebnisse"
     icon="icon-trophy-md"
     anim="medal"
-    class="shrink-0"
+    class="w-full shrink-0"
   />
 
   <!-- Podium: scales proportionally to fit available height -->
-  <div #podiumArea animOnInit="opacity" [animDelay]="0.3" class="flex-1 min-h-0 overflow-hidden relative">
+  <div #podiumArea animOnInit="opacity" [animDelay]="0.3" class="w-full h-full min-h-0 overflow-hidden relative">
     <div class="absolute bottom-0 left-0 right-0 flex items-end justify-center gap-3 sm:gap-5 px-2 sm:px-4 pt-2"
          [style.transform]="'scale(' + podiumScale() + ')'"
          style="transform-origin: bottom center">

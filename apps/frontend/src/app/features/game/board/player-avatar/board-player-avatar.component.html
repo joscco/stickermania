@@ -16,17 +16,17 @@
 
     <!-- Medal overlay (podium — derived from status) -->
     @if (badge(); as b) {
-      <div class="absolute -top-1 -right-1 w-5 h-5 rounded-full grid place-items-center text-white shadow"
+      <div class="absolute -top-2.5 -right-2.5 w-8 h-8 rounded-full grid place-items-center text-white shadow"
            [ngClass]="b.bg"
            [class.animate-pulse]="b.animate">
 
-        <app-svg [name]="b.spriteId" w="12"/>
+        <app-svg [name]="b.spriteId" w="20"/>
       </div>
     }
   </div>
 
   <!-- Name -->
-  <span class="text-xs font-medium truncate max-w-14 text-stone-600">
+  <span class="text-xs font-medium max-w-14 text-stone-600">
     {{ player().name || 'Spieler' }}
   </span>
 </div>
