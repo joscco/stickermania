@@ -1,19 +1,23 @@
-<div class="min-h-dvh bg-stone-100 flex flex-col items-center justify-center px-4">
-  <div animOnInit="opacity" class="w-full max-w-md rounded-3xl bg-white border border-black/5 shadow-sm p-6 text-center">
-    <div class="text-2xl font-bold text-stone-900">Stickermania</div>
-    <p class="mt-2 text-sm text-stone-500">
-      Gib den Session-Code vom Board ein, um mitzuspielen.
+<div class="min-h-dvh lobby-pattern-bg flex flex-col items-center justify-center px-4">
+
+  <!-- Logo -->
+  <img src="assets/svg/logo.svg" alt="Stickermania" class="w-full max-w-lg mx-auto mb-4"/>
+
+  <div animOnInit="opacity" class="w-full max-w-sm rounded-3xl bg-neutral-600 shadow-sm p-4 text-center mb-5">
+
+    <p class="text-sm text-neutral-300 leading-relaxed mb-5">
+      Gib zum Mitspielen den Session-Code ein:
     </p>
 
-    <div class="mt-6 flex items-center justify-center gap-2" [class.ui-shake]="sessionCodeShakeActive()">
+    <div class="flex items-center justify-center gap-2" [class.ui-shake]="sessionCodeShakeActive()">
       @for (index of digitSlots; track index) {
         <input
           #codeInput
-          class="h-14 w-14 rounded-xl border border-black/10 bg-white text-center text-2xl text-stone-900 outline-none focus:border-stone-400"
+          class="h-14 w-14 rounded-xl border border-neutral-500 bg-neutral-700 text-center text-2xl text-neutral-100 outline-none focus:border-neutral-300 placeholder-neutral-400"
           type="text"
           inputmode="numeric"
           maxlength="1"
-          autocomplete="one-time-code"
+          autocomplete="false"
           autocorrect="off"
           spellcheck="false"
           [value]="codeDigits()[index]"
@@ -25,22 +29,20 @@
     </div>
 
     <button
-      class="mt-4 w-full rounded-2xl bg-stone-900 text-white px-4 py-3 text-sm font-medium hover:bg-stone-800 disabled:opacity-40 transition-all"
+      class="mt-4 w-full rounded-2xl bg-white text-neutral-900 px-4 py-3 text-sm font-medium hover:bg-neutral-200 disabled:opacity-40 transition-all"
       [disabled]="sessionCode().length < 4 || sessionJoinLoading()"
       (click)="joinSession()"
     >
       Beitreten
     </button>
-
-    <div class="mt-6 border-t border-black/5 pt-4">
-      <button
-        class="text-xs text-stone-400 hover:text-stone-600 underline underline-offset-2 transition-colors"
-        (click)="goToBoard()"
-      >
-        Ich bin der Moderator → Zum Board
-      </button>
-    </div>
   </div>
+
+  <button
+    class="bg-black/50 hover:bg-black text-xs text-neutral-300/50 hover:text-neutral-300 transition-colors p-4 w-full max-w-75 rounded-2xl "
+    (click)="goToBoard()"
+  >
+    → Als Moderator zum Board
+  </button>
 </div>
 
 <!-- Password dialog -->
@@ -51,20 +53,21 @@
   (click)="cancelPasswordDialog()"
 >
   <div
-    class="w-full max-w-sm rounded-3xl bg-white shadow-2xl p-6"
+    class="w-full max-w-sm rounded-3xl bg-neutral-600 shadow-2xl p-6"
     [animPresence]="showPasswordDialog()"
     animPresenceType="opacity"
     [class.ui-shake]="passwordShakeActive()"
     (click)="$event.stopPropagation()"
   >
-    <div class="text-lg font-bold text-stone-900">Board-Zugang</div>
-    <p class="mt-1 text-sm text-stone-500">Bitte das Board-Passwort eingeben.</p>
+    <div class="text-lg font-bold text-neutral-100">Board-Zugang</div>
+    <p class="mt-1 text-sm text-neutral-400">Bitte das Board-Passwort eingeben.</p>
 
     <input
-      class="mt-4 w-full rounded-2xl border border-black/10 px-4 py-3 text-sm text-stone-900 outline-none focus:border-stone-400"
+      class="mt-4 w-full rounded-2xl border border-neutral-500 bg-neutral-700 px-4 py-3 text-sm text-neutral-100 outline-none focus:border-neutral-300 placeholder-neutral-500"
       type="password"
       placeholder="Passwort"
-      autocomplete="current-password"
+      autocomplete="false"
+      autocorrect="off"
       [value]="boardPassword()"
       (input)="boardPassword.set($any($event.target).value)"
       (keydown.enter)="submitPassword()"
@@ -72,13 +75,13 @@
 
     <div class="mt-4 flex gap-2">
       <button
-        class="flex-1 rounded-2xl border border-black/10 bg-stone-50 px-4 py-2 text-sm hover:bg-stone-100"
+        class="flex-1 rounded-2xl border border-neutral-500 bg-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-600 transition-colors"
         (click)="cancelPasswordDialog()"
       >
         Abbrechen
       </button>
       <button
-        class="flex-1 rounded-2xl bg-stone-900 text-white px-4 py-2 text-sm hover:bg-stone-800 disabled:opacity-40 transition-all"
+        class="flex-1 rounded-2xl bg-white text-neutral-900 px-4 py-2 text-sm font-medium hover:bg-neutral-200 disabled:opacity-40 transition-all"
         [disabled]="passwordLoading()"
         (click)="submitPassword()"
       >

@@ -3,7 +3,11 @@
   @if (icon(); as iconName) {
     <app-svg animOnInit="opacity" [name]="iconName" w="70" [class]="iconClass()"/>
   }
-  <p animOnInit="opacity" [class]="titleClass()">{{ title() }}</p>
+  @if (titleImg(); as imgSrc) {
+    <img animOnInit="opacity" [src]="imgSrc" alt="Stickermania" class="w-full max-w-[200px]"/>
+  } @else if (title()) {
+    <p animOnInit="opacity" [class]="titleClass()">{{ title() }}</p>
+  }
   @if (subtitle()) {
     <p animOnInit="opacity" [class]="subtitleClass()">{{ subtitle() }}</p>
   }

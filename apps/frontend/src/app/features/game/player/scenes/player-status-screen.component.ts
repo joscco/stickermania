@@ -11,7 +11,8 @@ import {SvgComponent} from '../../../shared/svg/svg.component';
 })
 export class PlayerStatusScreenComponent {
     public readonly icon = input<string>('');
-    public readonly title = input.required<string>();
+    public readonly title = input<string>('');
+    public readonly titleImg = input<string>('');
     public readonly titleClass = input('text-stone-600 text-base font-medium');
     public readonly subtitle = input<string>('');
     public readonly subtitleClass = input('text-stone-400 text-sm');

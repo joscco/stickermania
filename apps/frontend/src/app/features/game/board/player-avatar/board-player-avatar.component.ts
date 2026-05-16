@@ -68,7 +68,7 @@ export class BoardPlayerAvatarComponent {
       case "skipped":
         return {spriteId: "icon-pause-lg", bg: "bg-stone-400"};
       case "offline":
-        return {spriteId: "icon-hourglass-lg", bg: "bg-stone-400"};
+        return {spriteId: "disconnected", bg: "bg-stone-400"};
       default:
         return null;
     }

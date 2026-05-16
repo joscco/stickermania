@@ -127,13 +127,20 @@ canvas,
 /* ── Animated board background pattern ───────────────────── */
 .board-pattern-bg {
   background-color: #fafaf9;
-  background-image: url('/assets/svg/bg-pattern.svg');
-  background-size: 120px 120px;
-  animation: board-pattern-drift 20s linear infinite;
+  background-image: url('/assets/png/pattern_2.png');
+  background-size: 240px 240px;
+  animation: board-pattern-drift 40s linear infinite;
+}
+
+.lobby-pattern-bg {
+  background-color: #fafaf9;
+  background-image: url('/assets/png/pattern_1.png');
+  background-size: 240px 240px;
+  animation: board-pattern-drift 40s linear infinite;
 }
 
 @keyframes board-pattern-drift {
   0%   { background-position: 0 0; }
-  100% { background-position: 120px 120px; }
+  100% { background-position: 240px 240px; }
 }
 
