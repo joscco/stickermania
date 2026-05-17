@@ -38,19 +38,19 @@ export class BoardPlayerAvatarComponent {
   public readonly borderClass = computed(() => {
     switch (this.status()) {
       case "submitted":
-        return "border-stone-700";
+        return "border-neutral-700";
       case "drawing":
-        return "border-stone-500";
+        return "border-neutral-500";
       case "skipped":
-        return "border-stone-300";
+        return "border-neutral-300";
       case "offline":
-        return "border-stone-300";
+        return "border-neutral-300";
       case "connected":
-        return "border-stone-700";
+        return "border-neutral-700";
       case "podium":
         return "border-black";
       default:
-        return "border-stone-200";
+        return "border-neutral-200";
     }
   });
 
@@ -62,13 +62,13 @@ export class BoardPlayerAvatarComponent {
   public readonly badge = computed<{ spriteId: string; bg: string; animate?: boolean } | null>(() => {
     switch (this.status()) {
       case "submitted":
-        return {spriteId: "icon-checkmark-sm", bg: "bg-stone-800"};
+        return {spriteId: "icon-checkmark-sm", bg: "bg-neutral-800"};
       case "drawing":
-        return {spriteId: "icon-stickers-lg", bg: "bg-stone-600", animate: true};
+        return {spriteId: "icon-stickers-lg", bg: "bg-neutral-600", animate: true};
       case "skipped":
-        return {spriteId: "icon-pause-lg", bg: "bg-stone-400"};
+        return {spriteId: "icon-pause-lg", bg: "bg-neutral-400"};
       case "offline":
-        return {spriteId: "disconnected", bg: "bg-stone-400"};
+        return {spriteId: "disconnected", bg: "bg-neutral-400"};
       default:
         return null;
     }

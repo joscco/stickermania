@@ -95,8 +95,8 @@ export class BoardResultsSceneComponent implements AfterViewInit, OnDestroy {
         const allResults = this.resultsPs?.lastVoteResults ?? [];
         const config: Record<number, Omit<PodiumSlot, 'placement' | 'result' | 'isTied'>> = {
             1: {medalIcon: 'icon-medal-gold-lg', medalW: 65, imgSizeClass: 'w-28 sm:w-36 md:w-44', borderClass: 'border-yellow-400', shadowClass: 'shadow-xl', barColorClass: 'bg-yellow-400', barHeightClass: 'h-8', starSize: 16, starColor: 'text-amber-500', camW: 60},
-            2: {medalIcon: 'icon-medal-silver-lg', medalW: 60, imgSizeClass: 'w-24 sm:w-32 md:w-36', borderClass: 'border-stone-400', shadowClass: 'shadow-lg', barColorClass: 'bg-stone-300', barHeightClass: 'h-5', starSize: 14, starColor: 'text-stone-400', camW: 50},
-            3: {medalIcon: 'icon-medal-bronze-lg', medalW: 55, imgSizeClass: 'w-24 sm:w-32 md:w-36', borderClass: 'border-amber-700', shadowClass: 'shadow-lg', barColorClass: 'bg-amber-700', barHeightClass: 'h-3', starSize: 14, starColor: 'text-stone-400', camW: 50},
+            2: {medalIcon: 'icon-medal-silver-lg', medalW: 60, imgSizeClass: 'w-24 sm:w-32 md:w-36', borderClass: 'border-neutral-400', shadowClass: 'shadow-lg', barColorClass: 'bg-neutral-300', barHeightClass: 'h-5', starSize: 14, starColor: 'text-neutral-400', camW: 50},
+            3: {medalIcon: 'icon-medal-bronze-lg', medalW: 55, imgSizeClass: 'w-24 sm:w-32 md:w-36', borderClass: 'border-amber-700', shadowClass: 'shadow-lg', barColorClass: 'bg-amber-700', barHeightClass: 'h-3', starSize: 14, starColor: 'text-neutral-400', camW: 50},
         };
         const displayOrder = [1, 0, 2];
         return displayOrder

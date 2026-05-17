@@ -14,12 +14,12 @@
     }
   </div>
 
-  <p animOnInit="opacity" class="text-xl text-stone-500">{{ connectedPlayers().length }} Spieler verbunden</p>
+  <p animOnInit="opacity" class="text-xl text-neutral-500">{{ connectedPlayers().length }} Spieler verbunden</p>
 
   <!-- Start button -->
   <button
     animOnInit="opacity"
-    class="bg-black text-white px-10 py-5 rounded-2xl text-2xl font-bold shadow-xl hover:bg-stone-800 active:scale-95 transition-[background-color,box-shadow]"
+    class="bg-black text-white px-10 py-5 rounded-2xl text-2xl font-bold shadow-xl hover:bg-neutral-800 active:scale-95 transition-[background-color,box-shadow]"
     (click)="startGame.emit()"
   >
     Spiel starten

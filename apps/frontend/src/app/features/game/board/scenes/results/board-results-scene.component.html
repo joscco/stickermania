@@ -24,12 +24,12 @@
             }
           </div>
           <!-- Snapshot image -->
-          <div class="relative rounded-2xl border-4 bg-stone-100 shrink-0 aspect-square"
+          <div class="relative rounded-2xl border-4 bg-neutral-100 shrink-0 aspect-square"
                [ngClass]="[slot.imgSizeClass, slot.borderClass, slot.shadowClass]">
             @if (getSnapshotUrl(slot.result.playerId); as url) {
               <img [src]="url" alt="" class="w-full h-full object-contain" draggable="false"/>
             } @else {
-              <div class="w-full h-full grid place-items-center text-stone-300">
+              <div class="w-full h-full grid place-items-center text-neutral-300">
                 <app-svg name="icon-camera-lg" [w]="slot.camW" color="black"/>
               </div>
             }
@@ -47,54 +47,54 @@
   </div>
 
   <!-- Winner action status -->
-  <div animOnInit="opacity" [animDelay]="0.7" class="w-full max-w-lg self-center shrink-0 mx-4 mb-2 p-3 bg-white rounded-2xl border border-stone-200">
+  <div animOnInit="opacity" [animDelay]="0.7" class="w-full max-w-lg self-center shrink-0 mx-4 mb-2 p-3 bg-white rounded-2xl border border-neutral-200">
     @if (winnerId() && !winnerChoicesDone()) {
       <div class="text-center">
-        <p class="text-base font-bold text-stone-800">
+        <p class="text-base font-bold text-neutral-800">
           {{ getPlayer(winnerId()!)?.name ?? 'Der Gewinner' }}, stimme für die nächste Runde ab!
         </p>
         <div class="flex justify-center gap-3 mt-2">
           <div class="flex flex-col items-center gap-1" [class.opacity-30]="promptChosen()">
             <div class="w-10 h-10 rounded-full grid place-items-center text-lg shadow-sm transition-colors"
                  [class.bg-black]="promptChosen()" [class.text-white]="promptChosen()"
-                 [class.bg-stone-100]="!promptChosen()" [class.text-stone-600]="!promptChosen()">
+                 [class.bg-neutral-100]="!promptChosen()" [class.text-neutral-600]="!promptChosen()">
               @if (promptChosen()) {
                 <app-svg name="icon-checkmark-md" w="40"/>
               } @else {
                 <app-svg name="icon-star-md" w="40"/>
               }
             </div>
-            <span class="text-xs text-stone-500">Prompt</span>
+            <span class="text-xs text-neutral-500">Prompt</span>
           </div>
           <div class="flex flex-col items-center gap-1" [class.opacity-30]="packUnlocked()">
             <div class="w-10 h-10 rounded-full grid place-items-center text-lg shadow-sm transition-colors"
                  [class.bg-black]="packUnlocked()" [class.text-white]="packUnlocked()"
-                 [class.bg-stone-100]="!packUnlocked()" [class.text-stone-600]="!packUnlocked()">
+                 [class.bg-neutral-100]="!packUnlocked()" [class.text-neutral-600]="!packUnlocked()">
               @if (packUnlocked()) {
                 <app-svg name="icon-checkmark-md" w="40"/>
               } @else {
                 <app-svg name="icon-trophy-md" w="40"/>
               }
             </div>
-            <span class="text-xs text-stone-500">Pack</span>
+            <span class="text-xs text-neutral-500">Pack</span>
           </div>
           <div class="flex flex-col items-center gap-1" [class.opacity-30]="guaranteedChosen()">
             <div class="w-10 h-10 rounded-full grid place-items-center text-lg shadow-sm transition-colors"
                  [class.bg-black]="guaranteedChosen()" [class.text-white]="guaranteedChosen()"
-                 [class.bg-stone-100]="!guaranteedChosen()" [class.text-stone-600]="!guaranteedChosen()">
+                 [class.bg-neutral-100]="!guaranteedChosen()" [class.text-neutral-600]="!guaranteedChosen()">
               @if (guaranteedChosen()) {
                 <app-svg name="icon-checkmark-md" w="40"/>
               } @else {
                 <app-svg name="icon-star-md" w="40"/>
               }
             </div>
-            <span class="text-xs text-stone-500">Garantiert</span>
+            <span class="text-xs text-neutral-500">Garantiert</span>
           </div>
         </div>
       </div>
     } @else if (winnerChoicesDone()) {
       <div class="text-center">
-        <p class="text-base font-bold text-stone-800">Auswahl getroffen!</p>
+        <p class="text-base font-bold text-neutral-800">Auswahl getroffen!</p>
       </div>
     }
   </div>
@@ -102,10 +102,10 @@
   <!-- Advance button -->
   <div animOnInit="opacity" [animDelay]="0.85" class="shrink-0 text-center pb-4 flex flex-col items-center gap-2">
     @if (winnerChoicesDone()) {
-      <p class="text-sm text-stone-400">{{ readyToAdvanceCount() }}/{{ gameState()?.roundParticipantIds?.length ?? 0 }} bereit</p>
+      <p class="text-sm text-neutral-400">{{ readyToAdvanceCount() }}/{{ gameState()?.roundParticipantIds?.length ?? 0 }} bereit</p>
     }
     <button
-      class="bg-black text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-stone-800 active:scale-95 transition-all"
+      class="bg-black text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-neutral-800 active:scale-95 transition-all"
       (click)="advanceFromResults.emit()"
     >
       Nächste Runde

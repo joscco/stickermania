@@ -6,7 +6,7 @@
     <button
       #prevBtn
       class="shrink-0 w-12 self-stretch flex items-center justify-center rounded-xl text-white"
-      [class.bg-stone-300]="canPrev()"
+      [class.bg-neutral-300]="canPrev()"
       [class.cursor-default]="!canPrev()"
       [disabled]="!canPrev()"
       (click)="prevPage()"
@@ -27,7 +27,7 @@
             class="relative shrink-0 w-16 h-16 rounded-xl border-2 flex items-center justify-center select-none touch-none checkerboard-sm"
             [class.border-yellow-300]="canAddMore()"
             [class.shadow-sm]="canAddMore()"
-            [class.border-stone-200]="!canAddMore()"
+            [class.border-neutral-200]="!canAddMore()"
             [class.opacity-40]="!canAddMore()"
             [class.cursor-grab]="canAddMore()"
             [class.cursor-not-allowed]="!canAddMore()"
@@ -54,7 +54,7 @@
     <button
       #nextBtn
       class="shrink-0 w-12 self-stretch flex items-center justify-center rounded-xl text-white"
-      [class.bg-stone-300]="canNext()"
+      [class.bg-neutral-300]="canNext()"
       [class.cursor-default]="!canNext()"
       [disabled]="!canNext()"
       (click)="nextPage()"
@@ -70,9 +70,9 @@
     @for (i of range(pageCount()); track i) {
       <div
         class="rounded-full transition-all duration-200 w-1.5 h-1.5"
-        [class.bg-stone-700]="currentPage() === i"
+        [class.bg-neutral-700]="currentPage() === i"
         [class.scale-125]="currentPage() === i"
-        [class.bg-stone-300]="currentPage() !== i"
+        [class.bg-neutral-300]="currentPage() !== i"
       ></div>
     }
   </div>

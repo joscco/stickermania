@@ -2,7 +2,7 @@
   <div class="mx-auto w-full max-w-lg px-3 py-2">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2 min-w-0">
-        <img src="assets/svg/logo.svg" alt="Stickermania" class="h-3.5 w-auto shrink-0"/>
+        <img src="assets/svg/logo.svg" alt="Stickermania" class="h-6 w-auto shrink-0"/>
       </div>
 
       <!-- Countdown bar — animates in/out -->
@@ -16,13 +16,13 @@
       <div class="flex items-center justify-center gap-2 shrink-0">
         @if (vm().showEditControls) {
           <button
-            class="text-black text-xs hover:text-stone-600 transition-colors truncate"
+            class="text-black text-xs hover:text-neutral-600 transition-colors truncate"
             (click)="editName.emit()"
             title="Name ändern"
           >{{ vm().playerName }}
           </button>
           <button
-            class="w-6 h-6 rounded-md flex items-center justify-center overflow-hidden bg-stone-100 text-[10px] text-stone-500 transition-colors"
+            class="w-6 h-6 rounded-md flex items-center justify-center overflow-hidden bg-neutral-100 text-[10px] text-neutral-500 transition-colors"
             (click)="editAvatar.emit()"
             title="Avatar ändern"
           >

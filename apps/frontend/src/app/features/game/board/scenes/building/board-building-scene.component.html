@@ -10,15 +10,15 @@
   @if (lastUnlockedPack() || guaranteedPack()) {
     <div animOnInit="opacity" [animDelay]="0.1" class="flex justify-center gap-6 mt-4 px-4">
       @if (lastUnlockedPack(); as pack) {
-        <div class="bg-stone-100 border border-stone-300 rounded-xl px-4 py-2 text-center">
-          <div class="text-xs text-stone-500 font-semibold uppercase tracking-wider">Neu freigeschaltet</div>
-          <div class="text-lg font-bold text-stone-800">{{ pack.name }}</div>
+        <div class="bg-neutral-100 border border-neutral-300 rounded-xl px-4 py-2 text-center">
+          <div class="text-xs text-neutral-500 font-semibold uppercase tracking-wider">Neu freigeschaltet</div>
+          <div class="text-lg font-bold text-neutral-800">{{ pack.name }}</div>
         </div>
       }
       @if (guaranteedPack(); as pack) {
-        <div class="bg-stone-100 border border-stone-300 rounded-xl px-4 py-2 text-center">
-          <div class="text-xs text-stone-500 font-semibold uppercase tracking-wider">Auf jeden Fall dabei</div>
-          <div class="text-lg font-bold text-stone-800">{{ pack.name }}</div>
+        <div class="bg-neutral-100 border border-neutral-300 rounded-xl px-4 py-2 text-center">
+          <div class="text-xs text-neutral-500 font-semibold uppercase tracking-wider">Auf jeden Fall dabei</div>
+          <div class="text-lg font-bold text-neutral-800">{{ pack.name }}</div>
         </div>
       }
     </div>
@@ -36,14 +36,14 @@
     </div>
 
     <div animOnInit="opacity" [animDelay]="0.35" class="mt-8 text-center">
-      <p class="text-lg font-medium text-stone-600">{{ submissionCount() }}/{{ roundParticipants().length }} eingereicht</p>
+      <p class="text-lg font-medium text-neutral-600">{{ submissionCount() }}/{{ roundParticipants().length }} eingereicht</p>
     </div>
   </div>
 
   <!-- End round button -->
   <div animOnInit="opacity" [animDelay]="0.45" class="text-center pb-6">
     <button
-      class="bg-black text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-stone-800 active:scale-95 transition-[background-color,box-shadow]"
+      class="bg-black text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-neutral-800 active:scale-95 transition-[background-color,box-shadow]"
       (click)="endRoundEarly.emit()"
     >
       Runde beenden

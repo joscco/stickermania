@@ -51,7 +51,7 @@ Das Skript (`scripts/build-sprite.mjs`):
 </svg>
 
 <!-- Icon (currentColor für Färbung): -->
-<svg class="w-5 h-5 text-stone-600" aria-hidden="true">
+<svg class="w-5 h-5 text-neutral-600" aria-hidden="true">
   <use href="assets/sprite.svg#icon-trash"/>
 </svg>
 ```

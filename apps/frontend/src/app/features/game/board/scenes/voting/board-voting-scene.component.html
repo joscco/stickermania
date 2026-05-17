@@ -30,9 +30,9 @@
 
   <!-- End voting button -->
   <div animOnInit="opacity" [animDelay]="0.4" class="text-center pb-6 flex flex-col items-center gap-2">
-    <p class="text-sm text-stone-400">{{ doneVotingCount() }}/{{ roundParticipantCount() }} fertig abgestimmt</p>
+    <p class="text-sm text-neutral-400">{{ doneVotingCount() }}/{{ roundParticipantCount() }} fertig abgestimmt</p>
     <button
-      class="bg-black text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-stone-800 active:scale-95 transition-[background-color,box-shadow]"
+      class="bg-black text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-neutral-800 active:scale-95 transition-[background-color,box-shadow]"
       (click)="endVotingEarly.emit()"
     >
       Abstimmung beenden
@@ -48,7 +48,7 @@
         <img [src]="sub.snapshotUrl" alt="Collage"
              class="w-full h-full object-contain" draggable="false" />
       } @else {
-        <div class="w-full h-full grid place-items-center text-stone-200">
+        <div class="w-full h-full grid place-items-center text-neutral-200">
           <app-svg name="icon-camera-lg" w="70" color="black"/>
         </div>
       }

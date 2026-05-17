@@ -1,7 +1,7 @@
-<div pageRoot class="h-full w-full text-stone-900 flex flex-col items-center justify-center">
+<div pageRoot class="h-full w-full text-neutral-900 flex flex-col items-center justify-center">
   <!-- Music toggle -->
   <button
-    class="absolute top-3 right-3 z-20 w-9 h-9 flex items-center justify-center rounded-lg border border-black/10 bg-white/70 p-1.5 text-stone-400 hover:text-stone-600 hover:bg-white transition-colors"
+    class="absolute top-3 right-3 z-20 w-9 h-9 flex items-center justify-center rounded-lg border border-black/10 bg-white/70 p-1.5 text-neutral-400 hover:text-neutral-600 hover:bg-white transition-colors"
     (click)="audio.musicToggle()"
     [title]="audio.musicPlaying() ? 'Musik aus' : 'Musik an'"
   >
@@ -25,7 +25,7 @@
 
     <!-- New session button -->
     <button animOnInit="opacity" [animDelay]="0.1"
-            class="w-full shrink-0 rounded-2xl bg-stone-900 px-5 py-3 text-white font-medium hover:bg-stone-800 disabled:opacity-50 transition-colors"
+            class="w-full shrink-0 rounded-2xl bg-neutral-900 px-5 py-3 text-white font-medium hover:bg-neutral-800 disabled:opacity-50 transition-colors"
             [disabled]="isCreating()"
             (click)="createSession()"
     >
@@ -35,17 +35,17 @@
     <!-- Existing sessions -->
     <div class="mt-8 flex flex-col min-h-0 flex-1">
       <div animOnInit="opacity" [animDelay]="0.2"
-           class="shrink-0 text-xs font-semibold uppercase tracking-wider text-stone-400 mb-3 px-1">
+           class="shrink-0 text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-3 px-1">
         Bestehende Sessions
       </div>
 
       @if (isLoadingSessions()) {
-        <div animOnInit="opacity" [animDelay]="0.25" class="shrink-0 text-sm text-stone-400 text-center py-8">Lade
+        <div animOnInit="opacity" [animDelay]="0.25" class="shrink-0 text-sm text-neutral-400 text-center py-8">Lade
           Sessions...
         </div>
       } @else if (sessions().length === 0) {
         <div animOnInit="opacity" [animDelay]="0.25"
-             class="shrink-0 text-sm text-stone-400 text-center py-4 px-4 rounded-2xl border border-dashed border-stone-300 bg-white">
+             class="shrink-0 text-sm text-neutral-400 text-center py-4 px-4 rounded-2xl border border-dashed border-neutral-300 bg-white">
           Keine aktiven Sessions vorhanden.
         </div>
       } @else {
@@ -55,20 +55,20 @@
               animOnInit="opacity"
               [animPresence]="!isSessionLeaving(session.sessionId)"
               animPresenceType="opacity"
-              class="rounded-2xl bg-white border border-black/5 px-4 py-3 flex items-center gap-4 hover:bg-stone-50 cursor-pointer transition-colors group"
+              class="rounded-2xl bg-white border border-black/5 px-4 py-3 flex items-center gap-4 hover:bg-neutral-50 cursor-pointer transition-colors group"
               [class.pointer-events-none]="isSessionLeaving(session.sessionId)"
               (click)="openSession(session.sessionCode)"
             >
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
-                  <span class="font-bold tracking-widest text-stone-900">{{ session.sessionCode }}</span>
+                  <span class="font-bold tracking-widest text-neutral-900">{{ session.sessionCode }}</span>
                 </div>
-                <div class="text-xs text-stone-400 mt-0.5">
+                <div class="text-xs text-neutral-400 mt-0.5">
                   {{ session.playerCount }} Spieler · {{ timeAgo(session.createdAt) }}
                 </div>
               </div>
               <button
-                class="shrink-0 rounded-lg p-2 text-stone-400 hover:text-blue-500 hover:bg-blue-50 transition-colors disabled:opacity-40"
+                class="shrink-0 rounded-lg p-2 text-neutral-400 hover:text-blue-500 hover:bg-blue-50 transition-colors disabled:opacity-40"
                 [title]="downloadState(session.sessionId) === 'done' ? 'Heruntergeladen ✓' : downloadState(session.sessionId) === 'error' ? 'Keine Bilder vorhanden' : 'Bilder herunterladen'"
                 [disabled]="downloadState(session.sessionId) === 'loading'"
                 (click)="downloadSessionAssets(session.sessionId, session.sessionCode, $event)"
@@ -81,7 +81,7 @@
                 }
               </button>
               <button
-                class="shrink-0 rounded-lg p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                class="shrink-0 rounded-lg p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                 title="Session löschen"
                 (click)="deleteSession(session.sessionId, $event)"
               >

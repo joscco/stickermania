@@ -1,4 +1,4 @@
-<div class="h-screen flex flex-col bg-stone-100 select-none">
+<div class="h-screen flex flex-col bg-neutral-100 select-none">
   <!-- Header -->
   <div class="bg-linear-to-r from-violet-600 to-fuchsia-500 text-white px-4 py-2.5 flex items-center justify-between shrink-0">
     <div>
@@ -20,11 +20,11 @@
     <!-- LEFT: Sticker catalog list -->
     <div class="w-52 shrink-0 bg-white border-r border-black/10 overflow-y-auto">
       <div class="p-2">
-        <h2 class="text-xs font-semibold text-stone-500 mb-2 px-1">Sticker-Katalog</h2>
+        <h2 class="text-xs font-semibold text-neutral-500 mb-2 px-1">Sticker-Katalog</h2>
         <div class="space-y-0.5">
           @for (sticker of persistence.catalog(); track sticker.id) {
             <button
-              class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs transition-all hover:bg-stone-50"
+              class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs transition-all hover:bg-neutral-50"
               [class.bg-violet-50]="persistence.selectedSticker()?.id === sticker.id"
               [class.ring-1]="persistence.selectedSticker()?.id === sticker.id"
               [class.ring-violet-300]="persistence.selectedSticker()?.id === sticker.id"
@@ -36,7 +36,7 @@
                 class="w-8 h-8 shrink-0"
               />
               <div class="flex-1 min-w-0">
-                <div class="font-medium text-stone-700 truncate">{{ sticker.id }}</div>
+                <div class="font-medium text-neutral-700 truncate">{{ sticker.id }}</div>
               </div>
               @if (persistence.hasSavedHitbox(sticker)) {
                 <div class="w-2 h-2 bg-green-400 rounded-full shrink-0" title="Hat Hitbox"></div>
@@ -52,8 +52,8 @@
       @if (persistence.selectedSticker()) {
         <!-- Toolbar -->
         <div class="shrink-0 bg-white border-b border-black/10 px-4 py-2 flex items-center gap-2 flex-wrap">
-          <span class="text-sm font-semibold text-stone-700">{{ persistence.selectedSticker()!.id }}</span>
-          <span class="text-xs text-stone-400">{{ poly.polygon().length }} Punkte</span>
+          <span class="text-sm font-semibold text-neutral-700">{{ persistence.selectedSticker()!.id }}</span>
+          <span class="text-xs text-neutral-400">{{ poly.polygon().length }} Punkte</span>
 
           <div class="h-5 w-px bg-black/10 mx-1"></div>
 
@@ -66,29 +66,29 @@
           </button>
 
           <button
-            class="px-3 py-1.5 bg-stone-100 text-stone-600 rounded-lg font-medium text-xs hover:bg-stone-200 active:scale-95 transition-all disabled:opacity-30"
+            class="px-3 py-1.5 bg-neutral-100 text-neutral-600 rounded-lg font-medium text-xs hover:bg-neutral-200 active:scale-95 transition-all disabled:opacity-30"
             [disabled]="poly.polygon().length === 0"
             (click)="poly.clear()"
           >Löschen</button>
 
           <div class="h-5 w-px bg-black/10 mx-1"></div>
 
-          <label class="text-xs text-stone-500">Toleranz:</label>
+          <label class="text-xs text-neutral-500">Toleranz:</label>
           <input type="range" [min]="0.005" [max]="0.08" [step]="0.005"
             [ngModel]="tolerance()" (ngModelChange)="tolerance.set($event)"
             class="w-16 accent-violet-500" />
-          <span class="text-xs text-stone-400 w-6">{{ tolerance() }}</span>
+          <span class="text-xs text-neutral-400 w-6">{{ tolerance() }}</span>
 
-          <label class="text-xs text-stone-500 ml-1">Alpha:</label>
+          <label class="text-xs text-neutral-500 ml-1">Alpha:</label>
           <input type="range" [min]="1" [max]="128" [step]="1"
             [ngModel]="alphaThreshold()" (ngModelChange)="alphaThreshold.set($event)"
             class="w-16 accent-violet-500" />
-          <span class="text-xs text-stone-400 w-6">{{ alphaThreshold() }}</span>
+          <span class="text-xs text-neutral-400 w-6">{{ alphaThreshold() }}</span>
 
           <div class="flex-1"></div>
 
           @if (persistence.saving()) {
-            <span class="text-xs text-stone-400">Speichert...</span>
+            <span class="text-xs text-neutral-400">Speichert...</span>
           }
           @if (persistence.saveStatus()) {
             <span class="text-xs">{{ persistence.saveStatus() }}</span>

@@ -10,9 +10,9 @@ export type ContextMenuAction =
     | 'group' | 'ungroup'
     | 'toggleStretch' | 'duplicate';
 
-const BTN       = 'flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-left text-stone-700 hover:bg-stone-100 active:bg-stone-200 transition-colors pointer-events-auto text-xs';
-const BTN_ACTIVE = BTN + ' bg-stone-100 text-stone-900';
-const BTN_DISABLED = 'flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-left text-stone-300 cursor-default pointer-events-auto text-xs';
+const BTN       = 'flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-left text-neutral-700 hover:bg-neutral-100 active:bg-neutral-200 transition-colors pointer-events-auto text-xs';
+const BTN_ACTIVE = BTN + ' bg-neutral-100 text-neutral-900';
+const BTN_DISABLED = 'flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-left text-neutral-300 cursor-default pointer-events-auto text-xs';
 
 @Component({
     selector: 'app-sticker-context-menu',
@@ -25,7 +25,7 @@ export class StickerContextMenuComponent implements AfterViewChecked {
     protected readonly BTN        = BTN;
     protected readonly BTN_ACTIVE = BTN_ACTIVE;
     protected readonly BTN_DISABLED = BTN_DISABLED;
-    protected readonly BTN_DELETE = BTN + ' text-stone-800';
+    protected readonly BTN_DELETE = BTN + ' text-neutral-800';
 
     readonly visible     = input<boolean>(false);
     readonly anchorX     = input<number>(0);

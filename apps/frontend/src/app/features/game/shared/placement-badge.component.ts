@@ -32,18 +32,18 @@ export class PlacementBadgeComponent {
 
     public readonly textClass = computed(() => {
         switch (this.placement()) {
-            case 1: return 'text-lg font-bold text-stone-900 mt-1';
-            case 2: return 'text-lg font-bold text-stone-700 mt-1';
-            case 3: return 'text-lg font-bold text-stone-600 mt-1';
-            default: return 'text-sm text-stone-500 mt-1';
+            case 1: return 'text-lg font-bold text-neutral-900 mt-1';
+            case 2: return 'text-lg font-bold text-neutral-700 mt-1';
+            case 3: return 'text-lg font-bold text-neutral-600 mt-1';
+            default: return 'text-sm text-neutral-500 mt-1';
         }
     });
 
     public readonly iconColorClass = computed(() => {
         switch (this.placement()) {
             case 1: return 'text-black';
-            case 2: return 'text-stone-600';
-            case 3: return 'text-stone-500';
+            case 2: return 'text-neutral-600';
+            case 3: return 'text-neutral-500';
             default: return '';
         }
     });
