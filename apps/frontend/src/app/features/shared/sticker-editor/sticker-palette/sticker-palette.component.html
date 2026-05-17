@@ -6,7 +6,7 @@
     <button
       #prevBtn
       class="shrink-0 w-12 self-stretch flex items-center justify-center rounded-xl text-white"
-      [class.bg-neutral-300]="canPrev()"
+      [class.bg-neutral-500]="canPrev()"
       [class.cursor-default]="!canPrev()"
       [disabled]="!canPrev()"
       (click)="prevPage()"
@@ -54,7 +54,7 @@
     <button
       #nextBtn
       class="shrink-0 w-12 self-stretch flex items-center justify-center rounded-xl text-white"
-      [class.bg-neutral-300]="canNext()"
+      [class.bg-neutral-500]="canNext()"
       [class.cursor-default]="!canNext()"
       [disabled]="!canNext()"
       (click)="nextPage()"
