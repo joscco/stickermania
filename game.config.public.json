@@ -116,7 +116,8 @@
             "home-keyhole",
             "home-grid",
             "home-key",
-            "home-lightbulb"
+            "home-lightbulb",
+            "home-house"
           ]
         },
         {
@@ -157,6 +158,183 @@
             "mouths-smiling",
             "mouths-open",
             "mouths-showing-tongue"
+          ]
+        },
+        {
+          "id": "pack_hands",
+          "name": "Hands",
+          "iconId": "pack-icon-hands",
+          "unlockedAtStart": false,
+          "stickers": [
+            "hands-point",
+            "hands-stop"
+          ]
+        },
+        {
+          "id": "pack_noses",
+          "name": "Noses",
+          "iconId": "pack-icon-noses",
+          "unlockedAtStart": false,
+          "stickers": [
+            "noses-cut",
+            "noses-round",
+            "noses-thick"
+          ]
+        },
+        {
+          "id": "pack_jewelry",
+          "name": "Jewelry",
+          "iconId": "pack-icon-jewelry",
+          "unlockedAtStart": false,
+          "stickers": [
+            "jewelry-diamond-0",
+            "jewelry-diamond-1",
+            "jewelry-diamond-2",
+            "jewelry-necklace"
+          ]
+        },
+        {
+          "id": "pack_sparks",
+          "name": "Glitter & Sparkles",
+          "iconId": "pack-icon-sparks",
+          "unlockedAtStart": false,
+          "stickers": [
+            "sparks-heart",
+            "sparks-round",
+            "sparks-spark",
+            "sparks-star"
+          ]
+        },
+        {
+          "id": "pack_hats",
+          "name": "Hats",
+          "iconId": "pack-icon-hats",
+          "unlockedAtStart": false,
+          "stickers": [
+            "hats-cap",
+            "hats-cowboy",
+            "hats-crown",
+            "hats-party",
+            "hats-top"
+          ]
+        },
+        {
+          "id": "pack_beards",
+          "name": "Beards",
+          "iconId": "pack-icon-beards",
+          "unlockedAtStart": false,
+          "stickers": [
+            "beards-moustache",
+            "beards-dali",
+            "beards-hitler",
+            "beards-small",
+            "beards-santa",
+            "beards-zorro"
+          ]
+        },
+        {
+          "id": "pack_fruits",
+          "name": "Fruits",
+          "iconId": "pack-icon-fruits",
+          "unlockedAtStart": false,
+          "stickers": [
+            "fruits-apple",
+            "fruits-banana",
+            "fruits-lemon",
+            "fruits-pear",
+            "fruits-strawberry"
+          ]
+        },
+        {
+          "id": "pack_glasses",
+          "name": "Glasses",
+          "iconId": "pack-icon-glasses",
+          "unlockedAtStart": false,
+          "stickers": [
+            "glasses-round",
+            "glasses-cool",
+            "glasses-sun"
+          ]
+        },
+        {
+          "id": "pack_nature",
+          "name": "Plants & Nature",
+          "iconId": "pack-icon-nature",
+          "unlockedAtStart": false,
+          "stickers": [
+            "nature-leaf-1",
+            "nature-leaf-2",
+            "nature-leaf-inner"
+          ]
+        },
+        {
+          "id": "pack_frames",
+          "name": "Frames",
+          "iconId": "pack-icon-frames",
+          "unlockedAtStart": false,
+          "stickers": [
+            "frames-stamp",
+            "frames-flower"
+          ]
+        },
+        {
+          "id": "pack_japan",
+          "name": "Japan",
+          "iconId": "pack-icon-food",
+          "unlockedAtStart": false,
+          "stickers": [
+            "japan-kamaboko",
+            "japan-noodles",
+            "japan-shiba-butt",
+            "japan-no",
+            "japan-ma",
+            "japan-he"
+          ]
+        },
+        {
+          "id": "pack_kitchen",
+          "name": "Kitchen",
+          "iconId": "pack-icon-kitchen",
+          "unlockedAtStart": false,
+          "stickers": [
+            "kitchen-bowl",
+            "kitchen-glass",
+            "kitchen-fork",
+            "kitchen-pan"
+          ]
+        },
+        {
+          "id": "pack_animals",
+          "name": "Animal Parts",
+          "iconId": "pack-icon-animals",
+          "unlockedAtStart": false,
+          "stickers": [
+            "animals-pig-nose",
+            "animals-pig-tail",
+            "animals-rabbit-face",
+            "animals-dog-face"
+          ]
+        },
+        {
+          "id": "pack_medicine",
+          "name": "Medical",
+          "iconId": "pack-icon-medicine",
+          "unlockedAtStart": false,
+          "stickers": [
+            "medicine-cross",
+            "medicine-pill",
+            "medicine-bandaid",
+            "medicine-toothpaste"
+          ]
+        },
+        {
+          "id": "pack_food",
+          "name": "Food",
+          "iconId": "pack-icon-food",
+          "unlockedAtStart": false,
+          "stickers": [
+            "food-sausage",
+            "food-cheese"
           ]
         }
       ]
