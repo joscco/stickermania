@@ -131,7 +131,8 @@
             "lines-curve",
             "lines-ring",
             "lines-corner",
-            "lines-spiral"
+            "lines-spiral",
+            "lines-wavy"
           ]
         },
         {
