@@ -14,8 +14,6 @@ export class BoardHeaderComponent {
     readonly vm = input.required<BoardHeaderViewModel>();
     readonly timerEndsAt = input<number>(0);
     readonly timerTotalSec = input<number>(0);
-    readonly musicPlaying = input(false);
     readonly backToLobby = output<void>();
     readonly openSettings = output<void>();
-    readonly toggleMusic = output<void>();
 }

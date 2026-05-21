@@ -1,0 +1,36 @@
+@if (currentView() !== "player") {
+  <div class="fixed top-3 right-3 z-50 flex items-center gap-2">
+    @if (showMusicTooltip()) {
+      <div
+        class="bg-neutral-800 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap animate-pulse pointer-events-none"
+      >
+        Ein bisschen musikalische Untermalung?
+      </div>
+    }
+    <button
+      class="w-9 h-9 flex items-center justify-center rounded-lg border border-black/10 bg-white/70 p-1.5 text-neutral-400 hover:text-neutral-600 hover:bg-white transition-colors shadow-sm"
+      (click)="onMusicToggle()"
+      [title]="musicPlaying() ? 'Musik aus' : 'Musik an'"
+    >
+      <app-svg [name]="musicPlaying() ? 'icon-music' : 'icon-no-music'" w="18"/>
+    </button>
+  </div>
+}
+
+@switch (currentView()) {
+  @case ("board") {
+    @if (boardAuthChecked()) {
+      <app-board />
+    } @else {
+      <div class="min-h-dvh flex items-center justify-center">
+        <div class="h-10 w-10 animate-spin rounded-full border-4 border-neutral-300 border-t-neutral-600"></div>
+      </div>
+    }
+  }
+  @case ("player") {
+    <app-player />
+  }
+  @default {
+    <app-landing />
+  }
+}

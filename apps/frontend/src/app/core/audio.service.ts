@@ -1,13 +1,13 @@
 import {Injectable, signal} from '@angular/core';
 
 const MUSIC_SRC = 'audio/music/board-loop.mp3';
-const SFX_CLICK = 'audio/sfx/click.mp3';
-const SFX_ACTION = 'audio/sfx/action.mp3';
-const SFX_START = 'audio/sfx/start.mp3';
-const SFX_SUCCESS = 'audio/sfx/success.mp3';
-const SFX_DELETE = 'audio/sfx/delete.mp3';
+const SFX_CLICK = 'audio/sfx/click.ogg';
+const SFX_ACTION = 'audio/sfx/action.ogg';
+const SFX_START = 'audio/sfx/start.ogg';
+const SFX_DELETE = 'audio/sfx/delete.ogg';
+const SFX_SETTLE = 'audio/sfx/settle.ogg';
 
-const SFX_PATHS = [SFX_CLICK, SFX_ACTION, SFX_START, SFX_SUCCESS, SFX_DELETE];
+const SFX_PATHS = [SFX_CLICK, SFX_ACTION, SFX_START, SFX_DELETE, SFX_SETTLE];
 
 @Injectable({providedIn: 'root'})
 export class AudioService {
@@ -66,15 +66,21 @@ export class AudioService {
 
   // ── Background music (HTML5 Audio for looping) ───────────
 
+  private readonly TARGET_VOLUME = 0.25;
+  private readonly FADE_MS = 1200;
+  private fadeInterval: ReturnType<typeof setInterval> | null = null;
+
   public musicStart(): void {
     if (this.musicAudio) {
       return;
     }
+    this.clearFade();
     this.musicAudio = new Audio(MUSIC_SRC);
     this.musicAudio.loop = true;
-    this.musicAudio.volume = 0.25;
+    this.musicAudio.volume = 0;
     this.musicAudio.play().then(() => {
       this.musicPlaying.set(true);
+      this.fadeIn();
     }).catch(err => {
       console.warn('Audio: music autoplay blocked (click the music button to start)', err.message);
       this.musicAudio?.pause();
@@ -83,6 +89,7 @@ export class AudioService {
   }
 
   public musicStop(): void {
+    this.clearFade();
     if (this.musicAudio) {
       this.musicAudio.pause();
       this.musicAudio.src = '';
@@ -90,6 +97,30 @@ export class AudioService {
       this.musicAudio = null;
     }
     this.musicPlaying.set(false);
+  }
+
+  private fadeIn(): void {
+    this.clearFade();
+    const audio = this.musicAudio;
+    if (!audio) return;
+    const stepMs = 30;
+    const steps = this.FADE_MS / stepMs;
+    const increment = this.TARGET_VOLUME / steps;
+    this.fadeInterval = setInterval(() => {
+      if (!audio || audio.volume >= this.TARGET_VOLUME) {
+        this.clearFade();
+        if (audio) audio.volume = this.TARGET_VOLUME;
+        return;
+      }
+      audio.volume = Math.min(audio.volume + increment, this.TARGET_VOLUME);
+    }, stepMs);
+  }
+
+  private clearFade(): void {
+    if (this.fadeInterval !== null) {
+      clearInterval(this.fadeInterval);
+      this.fadeInterval = null;
+    }
   }
 
   public musicToggle(): void {
@@ -105,6 +136,6 @@ export class AudioService {
   public playClick(): void   { this.playBuffer(SFX_CLICK, 0.35); }
   public playAction(): void  { this.playBuffer(SFX_ACTION, 0.4); }
   public playStart(): void   { this.playBuffer(SFX_START, 0.45); }
-  public playSettle(): void  { this.playBuffer(SFX_CLICK, 0.2); }
+  public playSettle(): void  { this.playBuffer(SFX_SETTLE, 0.2); }
   public playDelete(): void  { this.playBuffer(SFX_DELETE, 0.25); }
 }

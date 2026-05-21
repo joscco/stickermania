@@ -1,16 +1,15 @@
 @if (box()) {
   @let boundingBox = box()!;
-  @let pad = padding()!;
   @let centerX = boundingBox.x + boundingBox.w / 2;
   @let centerY = boundingBox.y + boundingBox.h / 2;
   @let rad = rotation() * Math.PI / 180;
   @let mode = activeMode();
 
   <!-- Selection rectangle -->
-  @let tl = rotatePt(boundingBox.x - pad, boundingBox.y - pad, centerX, centerY, rad);
-  @let tr = rotatePt(boundingBox.x + boundingBox.w + pad, boundingBox.y - pad, centerX, centerY, rad);
-  @let br = rotatePt(boundingBox.x + boundingBox.w + pad, boundingBox.y + boundingBox.h + pad, centerX, centerY, rad);
-  @let bl = rotatePt(boundingBox.x - pad, boundingBox.y + boundingBox.h + pad, centerX, centerY, rad);
+  @let tl = rotatePt(boundingBox.x, boundingBox.y, centerX, centerY, rad);
+  @let tr = rotatePt(boundingBox.x + boundingBox.w, boundingBox.y, centerX, centerY, rad);
+  @let br = rotatePt(boundingBox.x + boundingBox.w, boundingBox.y + boundingBox.h, centerX, centerY, rad);
+  @let bl = rotatePt(boundingBox.x, boundingBox.y + boundingBox.h, centerX, centerY, rad);
   <svg class="absolute inset-0 w-full h-full pointer-events-none overflow-visible" style="z-index:8000;">
     <polygon [attr.points]="svgRect(tl,tr,br,bl)" fill="none" stroke="#374151" stroke-width="2" stroke-dasharray="6 3"/>
   </svg>
@@ -23,7 +22,7 @@
   </div>
 
   <!-- NW: Rotate handle -->
-  @let nw = rotatePt(boundingBox.x - pad, boundingBox.y - pad, centerX, centerY, rad);
+  @let nw = rotatePt(boundingBox.x, boundingBox.y, centerX, centerY, rad);
   <div
     class="absolute flex items-center justify-center w-10 h-10 rounded-full border-2 shadow select-none touch-none -translate-1/2 bg-white border-neutral-700"
     [style.left.px]="nw.x" [style.top.px]="nw.y"
@@ -33,7 +32,7 @@
   </div>
 
   <!-- NE: Context-menu button -->
-  @let ne = rotatePt(boundingBox.x + boundingBox.w + pad, boundingBox.y - pad, centerX, centerY, rad);
+  @let ne = rotatePt(boundingBox.x + boundingBox.w, boundingBox.y, centerX, centerY, rad);
   <div
     class="absolute flex items-center justify-center w-10 h-10 rounded-full border-2 shadow select-none touch-none cursor-pointer -translate-1/2 bg-white border-neutral-700"
     [style.left.px]="ne.x" [style.top.px]="ne.y"
@@ -44,7 +43,7 @@
   </div>
 
   <!-- SE: Scale handle -->
-  @let scale = rotatePt(boundingBox.x + boundingBox.w + pad, boundingBox.y + boundingBox.h + pad, centerX, centerY, rad);
+  @let scale = rotatePt(boundingBox.x + boundingBox.w, boundingBox.y + boundingBox.h, centerX, centerY, rad);
   <div
     class="absolute flex items-center justify-center w-10 h-10 rounded-full border-2 shadow select-none touch-none -translate-1/2 bg-white border-neutral-700"
     [style.left.px]="scale.x" [style.top.px]="scale.y"
@@ -57,7 +56,7 @@
   @if (stretchModeVisible()) {
     @for (side of sides(); track side.id) {
       <div
-        class="absolute w-11 h-11 flex items-center justify-center bg-neutral-800 border-2 border-neutral-900 rounded-full shadow select-none touch-none -translate-1/2"
+        class="absolute w-8 h-8 flex items-center justify-center bg-yellow-400 border-2 border-yellow-600 rounded-full shadow select-none touch-none -translate-1/2"
         [style.left.px]="side.x" [style.top.px]="side.y"
         [style.cursor]="side.cursor"
         style="z-index:8100; pointer-events:auto;"
@@ -67,7 +66,7 @@
     }
     <div
       class="absolute pointer-events-none text-xs font-semibold text-neutral-700 bg-neutral-100 border border-neutral-300 rounded px-1.5 py-0.5"
-      [style.left.px]="boundingBox.x" [style.top.px]="boundingBox.y - pad - 44"
+      [style.left.px]="boundingBox.x" [style.top.px]="boundingBox.y - 44"
       style="z-index:8200;">Verformen
     </div>
   }

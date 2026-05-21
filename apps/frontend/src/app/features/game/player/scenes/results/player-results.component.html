@@ -54,9 +54,9 @@
 
 <!-- Footer -->
 @if (canReadyToAdvance()) {
-  <div class="shrink-0 border-t border-black/10 bg-white px-4 py-3">
+  <div class="shrink-0 border-t border-black/10 px-4 py-3">
     <button
-      class="w-full bg-black text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
+      class="w-full max-w-lg bg-black text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
       (click)="readyToAdvance.emit()"
     >Nächste Runde starten</button>
   </div>

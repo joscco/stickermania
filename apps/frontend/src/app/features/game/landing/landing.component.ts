@@ -40,14 +40,6 @@ export class LandingComponent implements OnInit {
   ) {}
 
   public ngOnInit(): void {
-    const routeCode = this.route.snapshot.paramMap.get("sessionCode");
-    if (routeCode) {
-      const normalized = this.normalizeSessionCode(routeCode);
-      this.setCodeFromString(normalized);
-      void this.verifyAndNavigateToPlayer(normalized);
-      return;
-    }
-
     const error = this.route.snapshot.queryParamMap.get("error");
     if (error === "invalid-session") {
       this.triggerSessionCodeShake();
@@ -57,6 +49,14 @@ export class LandingComponent implements OnInit {
         queryParamsHandling: "merge",
         replaceUrl: true,
       });
+    }
+
+    const sessionParam = this.route.snapshot.queryParamMap.get("session");
+    if (sessionParam) {
+      const normalized = this.normalizeSessionCode(sessionParam);
+      this.setCodeFromString(normalized);
+      void this.verifyAndNavigateToPlayer(normalized);
+      return;
     }
 
     void this.checkBoardAuth();
@@ -143,7 +143,7 @@ export class LandingComponent implements OnInit {
 
   public async goToBoard(): Promise<void> {
     if (this.boardAlreadyAuthed) {
-      void this.router.navigate(["/board"]);
+      void this.router.navigate([], {queryParams: {view: "board"}});
       return;
     }
     this.boardPassword.set("");
@@ -157,7 +157,7 @@ export class LandingComponent implements OnInit {
         this.http.post("/api/auth/board-login", {password: this.boardPassword()}),
       );
       this.showPasswordDialog.set(false);
-      void this.router.navigate(["/board"]);
+      void this.router.navigate([], {queryParams: {view: "board"}});
     } catch {
       this.triggerPasswordShake();
     } finally {
@@ -201,7 +201,7 @@ export class LandingComponent implements OnInit {
       const resolved = await this.apiService.resolveSessionByCode(normalized);
       const resolvedCode = this.normalizeSessionCode(resolved.sessionCode ?? normalized);
       this.setCodeFromString(resolvedCode);
-      void this.router.navigate(["/player"], {queryParams: {session: resolvedCode}});
+      void this.router.navigate([], {queryParams: {view: "player", session: resolvedCode}});
     } catch {
       this.triggerSessionCodeShake();
     } finally {

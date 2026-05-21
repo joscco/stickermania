@@ -24,10 +24,8 @@
         @for (sticker of pageStickers(); track sticker.id) {
           <div
             data-thumb
-            class="relative shrink-0 w-16 h-16 rounded-xl border-2 flex items-center justify-center select-none touch-none checkerboard-sm"
-            [class.border-yellow-300]="canAddMore()"
+            class="relative shrink-0 w-16 h-16 drop-shadow-md rounded-xl flex items-center justify-center select-none touch-none checkerboard-sm"
             [class.shadow-sm]="canAddMore()"
-            [class.border-neutral-200]="!canAddMore()"
             [class.opacity-40]="!canAddMore()"
             [class.cursor-grab]="canAddMore()"
             [class.cursor-not-allowed]="!canAddMore()"

@@ -48,8 +48,6 @@ export class BoardComponent implements OnInit, OnDestroy {
 
   public readonly gameState = computed(() => this.screenData.gameState());
 
-  public readonly musicPlaying;
-
   private sessionId: string | null = null;
   private routeSubscription: Subscription | null = null;
   private unsubscribeWs: (() => void) | null = null;
@@ -62,22 +60,17 @@ export class BoardComponent implements OnInit, OnDestroy {
     public readonly worldStore: WorldStore,
     public readonly screenData: BoardScreenDataService,
     public readonly audio: AudioService,
-  ) {
-    this.musicPlaying = audio.musicPlaying;
-  }
+  ) {}
 
   public ngOnInit(): void {
-    // Start music once when entering the board area (no-op if already playing)
-    this.audio.musicStart();
-
     if (this.catalogForcedPhase()) {
       this.isBoardReady.set(true);
       this.isBootstrapping.set(false);
       return;
     }
 
-    this.routeSubscription = this.route.paramMap.subscribe(async (paramMap) => {
-      const routeSessionCode = paramMap.get("sessionCode");
+    this.routeSubscription = this.route.queryParamMap.subscribe(async (params) => {
+      const routeSessionCode = params.get("session");
 
       this.cleanupBoardRuntime();
 
@@ -105,12 +98,12 @@ export class BoardComponent implements OnInit, OnDestroy {
   }
 
   public async onSessionSelected(sessionCode: string): Promise<void> {
-    await this.router.navigate(["/board", sessionCode]);
+    await this.router.navigate([], {queryParams: {view: "board", session: sessionCode}});
   }
 
   public async backToLobby(): Promise<void> {
     this.cleanupBoardRuntime();
-    await this.router.navigate(["/board"]);
+    await this.router.navigate([], {queryParams: {view: "board"}});
   }
 
   public resetSession(): void {
@@ -148,7 +141,7 @@ export class BoardComponent implements OnInit, OnDestroy {
     try {
       await this.apiService.deleteSession(this.sessionId);
       this.cleanupBoardRuntime();
-      await this.router.navigate(["/board"]);
+      await this.router.navigate([], {queryParams: {view: "board"}});
     } catch {
       console.error("Error while deleting session", this.sessionId);
     }
@@ -164,7 +157,7 @@ export class BoardComponent implements OnInit, OnDestroy {
       this.sessionId = resolvedSession.sessionId;
       this.sessionCode.set(resolvedSession.sessionCode);
 
-      const playerPageUrl = `${window.location.origin}/player?session=${encodeURIComponent(resolvedSession.sessionCode)}`;
+      const playerPageUrl = `${window.location.origin}/?view=player&session=${encodeURIComponent(resolvedSession.sessionCode)}`;
       this.playerUrl.set(playerPageUrl);
       this.playerQrDataUrl.set(await QRCode.toDataURL(playerPageUrl, {margin: 1, scale: 6}));
 

@@ -20,14 +20,6 @@
         [totalDurationSec]="timerTotalSec()"
       />
     </div>
-    @if (vm().hasSession) {
-      <button
-        class="w-8 h-8 flex items-center justify-center rounded-lg border border-black/10 bg-white p-1.5 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50 transition-colors"
-        (click)="toggleMusic.emit()"
-        [title]="musicPlaying() ? 'Musik aus' : 'Musik an'"
-      >
-        <app-svg [name]="musicPlaying() ? 'icon-music' : 'icon-no-music'" w="18"/>
-      </button>
-    }
+
   </div>
 </div>

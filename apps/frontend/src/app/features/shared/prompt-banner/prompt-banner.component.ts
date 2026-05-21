@@ -23,8 +23,8 @@ const LINE_HEIGHT = 1.15;
 const FONT_LO = 0.25;
 
 // ── Subtitle ───────────────────────────────────────────────
-const SUBTITLE_FONT_MIN = 0.4;
-const SUBTITLE_FONT_MAX = 0.75;
+const SUBTITLE_FONT_MIN = 0.75;
+const SUBTITLE_FONT_MAX = 1;
 const SUBTITLE_WIDTH_FACTOR = 600;
 const SUBTITLE_LINE_HEIGHT_FACTOR = 1.4;
 

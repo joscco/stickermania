@@ -6,7 +6,6 @@ import {AnimOnInitDirective, AnimGroupDirective, AnimPresenceDirective} from '..
 import {PageRootDirective} from '../../shared/animations/page-root.directive';
 import {PageTransitionService} from '../../shared/animations/page-transition.service';
 import {SvgComponent} from '../../shared/svg/svg.component';
-import {AudioService} from '../../../core/audio.service';
 
 @Component({
   selector: "app-board-lobby",
@@ -31,7 +30,6 @@ export class BoardLobbyComponent implements OnInit {
   public constructor(
     private readonly api: ApiService,
     private readonly transitions: PageTransitionService,
-    public readonly audio: AudioService,
   ) {}
 
   public async ngOnInit(): Promise<void> {

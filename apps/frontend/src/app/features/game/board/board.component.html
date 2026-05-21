@@ -16,10 +16,8 @@
         [vm]="screenData.headerVm()"
         [timerEndsAt]="screenData.currentTimerEndsAt()"
         [timerTotalSec]="screenData.currentTimerTotalSec()"
-        [musicPlaying]="musicPlaying()"
         (backToLobby)="backToLobby()"
         (openSettings)="screenData.toggleSetupDrawer()"
-        (toggleMusic)="audio.musicToggle()"
       />
 
       <div class="flex-1 min-h-0 relative">

@@ -105,7 +105,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     const sessionCode = this.reconnectService.resolveSessionCode(this.route);
 
     if (!sessionCode) {
-      await this.router.navigate(["/"]);
+      await this.router.navigate([], {queryParams: {view: "landing"}});
       return;
     }
 
@@ -137,8 +137,8 @@ export class PlayerComponent implements OnInit, OnDestroy {
       this.wsService.disconnect();
       this.reconnectService.clear();
       setTimeout(() => {
-        void this.router.navigate(["/"], {
-          queryParams: {error: "invalid-session"},
+        void this.router.navigate([], {
+          queryParams: {view: "landing", error: "invalid-session"},
           replaceUrl: true,
         });
       }, 2500);
@@ -161,11 +161,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   public onAvatarSubmitted(dataUrl: string): void {
     this.wsService.send({ type: "submit-avatar", avatarDataUrl: dataUrl });
-    this.sessionStore.clearTask();
-    this.screenData.isEditingAvatar.set(false);
-  }
-
-  public onAvatarSkipped(): void {
     this.sessionStore.clearTask();
     this.screenData.isEditingAvatar.set(false);
   }

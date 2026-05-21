@@ -16,7 +16,6 @@ export class LobbyAvatarComponent {
   public readonly playerName = input.required<string>();
   public readonly initialAvatarImage = input<string | null>(null);
   public readonly avatarSubmitted = output<string>();
-  public readonly skipped = output<void>();
 
   public drawMode = signal<"big" | "small" | "erase">("big");
 
@@ -47,10 +46,5 @@ export class LobbyAvatarComponent {
   protected selectEraser() {
     this.audio.playClick();
     this.drawMode.set("erase");
-  }
-
-  protected skip(): void {
-    this.audio.playClick();
-    this.skipped.emit();
   }
 }

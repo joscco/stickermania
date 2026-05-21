@@ -96,7 +96,7 @@ export class PlayerMessageHandler {
     if (isFatal) {
       this.wsService.disconnect();
       this.reconnectService.clear();
-      setTimeout(() => this.router.navigate(["/"]), 2000);
+      setTimeout(() => this.router.navigate([], {queryParams: {view: "landing", error: "invalid-session"}}), 2000);
     }
   }
 }

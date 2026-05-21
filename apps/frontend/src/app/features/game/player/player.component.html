@@ -28,7 +28,6 @@
           [playerName]="sessionStore.playerName()"
           [initialAvatarImage]="screenData.existingAvatarImage()"
           (avatarSubmitted)="onAvatarSubmitted($event)"
-          (skipped)="onAvatarSkipped()"
         />
       }
       @case (PlayerScreen.LOBBY_WAITING) {
