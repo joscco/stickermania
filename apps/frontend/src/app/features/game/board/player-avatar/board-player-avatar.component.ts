@@ -33,26 +33,7 @@ export class BoardPlayerAvatarComponent {
   public readonly player = input.required<SessionPlayer>();
   public readonly status = input<PlayerAvatarStatus>("idle");
 
-  public readonly sizeClasses = "w-24 h-24 rounded-2xl border-4 text-4xl";
-
-  public readonly borderClass = computed(() => {
-    switch (this.status()) {
-      case "submitted":
-        return "border-neutral-700";
-      case "drawing":
-        return "border-neutral-500";
-      case "skipped":
-        return "border-neutral-300";
-      case "offline":
-        return "border-neutral-300";
-      case "connected":
-        return "border-neutral-700";
-      case "podium":
-        return "border-black";
-      default:
-        return "border-neutral-200";
-    }
-  });
+  public readonly sizeClasses = "w-24 h-24 rounded-2xl text-4xl";
 
   public readonly dimmed = computed(() =>
     this.status() === "idle" || this.status() === "skipped" || this.status() === "offline"

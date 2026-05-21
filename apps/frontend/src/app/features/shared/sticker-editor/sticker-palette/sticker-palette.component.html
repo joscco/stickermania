@@ -1,4 +1,4 @@
-<div class="px-2 py-2 min-h-0">
+<div class="px-3 py-2 min-h-0">
 
   <div class="flex items-center gap-1">
 
@@ -12,7 +12,7 @@
       (click)="prevPage()"
       (pointerdown)="$event.stopPropagation()"
     >
-      <app-svg name="icon-palette-prev-md" w="40"/>
+      <app-svg name="icon-palette-prev-md" w="35"/>
     </button>
 
     <!-- Sticker row — GSAP handles animation, no CSS transitions needed -->
@@ -24,7 +24,7 @@
         @for (sticker of pageStickers(); track sticker.id) {
           <div
             data-thumb
-            class="relative shrink-0 w-16 h-16 drop-shadow-md rounded-xl flex items-center justify-center select-none touch-none checkerboard-sm"
+            class="relative shrink-0 w-14 h-14 rounded-xl flex items-center justify-center select-none touch-none checkerboard-sm"
             [class.shadow-sm]="canAddMore()"
             [class.opacity-40]="!canAddMore()"
             [class.cursor-grab]="canAddMore()"
@@ -33,7 +33,7 @@
           >
             @if (sticker.packId && packIconLookup().get(sticker.packId); as iconId) {
               <span
-                class="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-yellow-400 grid place-items-center pointer-events-none">
+                class="absolute -top-2 -left-2 w-5 h-5 rounded-full bg-yellow-400 grid place-items-center pointer-events-none">
                 <app-svg [name]="iconId" w="15"/>
               </span>
             }
@@ -58,16 +58,16 @@
       (click)="nextPage()"
       (pointerdown)="$event.stopPropagation()"
     >
-      <app-svg name="icon-palette-next-md" w="40"/>
+      <app-svg name="icon-palette-next-md" w="35"/>
     </button>
 
   </div>
 
   <!-- Page dots -->
-  <div class="flex justify-center gap-1.5 mt-1.5 h-2">
+  <div class="flex justify-center gap-1.5 mt-1.5">
     @for (i of range(pageCount()); track i) {
       <div
-        class="rounded-full transition-all duration-200 w-1.5 h-1.5"
+        class="rounded-full transition-all duration-200 w-1 h-1"
         [class.bg-neutral-700]="currentPage() === i"
         [class.scale-125]="currentPage() === i"
         [class.bg-neutral-300]="currentPage() !== i"

@@ -8,9 +8,8 @@
 
   <!-- My placement -->
   @if (myPlacement(); as placement) {
-    <div animOnInit="medal" [animDelay]="0.15" class="flex flex-col items-center justify-center">
-      <app-placement-badge [placement]="placement"/>
-      <app-stars-display [count]="myVoteCount()"/>
+    <div animOnInit="medal" [animDelay]="0.15" class="flex items-center justify-center">
+      <app-placement-badge [placement]="placement" [count]="myVoteCount()"/>
     </div>
   } @else {
     <app-player-status-screen

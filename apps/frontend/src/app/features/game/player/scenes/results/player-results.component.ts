@@ -6,13 +6,12 @@ import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.di
 import {PromptBannerComponent} from '../../../../shared/prompt-banner/prompt-banner.component';
 import {PlayerStatusScreenComponent} from '../player-status-screen.component';
 import {PlacementBadgeComponent} from '../../../shared/placement-badge.component';
-import {StarsDisplayComponent} from '../../../shared/stars-display.component';
 import {PlayerWinnerChoicesComponent} from '../winner-choices/player-winner-choices.component';
 
 @Component({
     selector: "app-player-results",
     standalone: true,
-    imports: [CommonModule, AnimOnInitDirective, PlayerStatusScreenComponent, PromptBannerComponent, PlacementBadgeComponent, StarsDisplayComponent, PlayerWinnerChoicesComponent],
+  imports: [CommonModule, AnimOnInitDirective, PlayerStatusScreenComponent, PromptBannerComponent, PlacementBadgeComponent, PlayerWinnerChoicesComponent],
     templateUrl: "./player-results.component.html",
     host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })

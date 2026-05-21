@@ -20,7 +20,7 @@
               [status]="'podium'"
             />
             @if (slot.placement === 1) {
-              <app-svg name="crown" w="60" color="black" class="absolute -top-10 left-1/2 -translate-x-1/2"/>
+              <app-svg name="crown" w="60" color="black" class="absolute -top-9 left-1/2 -translate-x-1/2"/>
             }
           </div>
           <!-- Snapshot image -->
@@ -59,9 +59,9 @@
                  [class.bg-black]="promptChosen()" [class.text-white]="promptChosen()"
                  [class.bg-neutral-100]="!promptChosen()" [class.text-neutral-600]="!promptChosen()">
               @if (promptChosen()) {
-                <app-svg name="icon-checkmark-md" w="40"/>
+                <app-svg name="icon-checkmark-md" w="30"/>
               } @else {
-                <app-svg name="icon-star-md" w="40"/>
+                <app-svg name="icon-first" w="30"/>
               }
             </div>
             <span class="text-xs text-neutral-500">Prompt</span>
@@ -71,9 +71,9 @@
                  [class.bg-black]="packUnlocked()" [class.text-white]="packUnlocked()"
                  [class.bg-neutral-100]="!packUnlocked()" [class.text-neutral-600]="!packUnlocked()">
               @if (packUnlocked()) {
-                <app-svg name="icon-checkmark-md" w="40"/>
+                <app-svg name="icon-checkmark-md" w="30"/>
               } @else {
-                <app-svg name="icon-trophy-md" w="40"/>
+                <app-svg name="icon-second" w="30"/>
               }
             </div>
             <span class="text-xs text-neutral-500">Pack</span>
@@ -83,9 +83,9 @@
                  [class.bg-black]="guaranteedChosen()" [class.text-white]="guaranteedChosen()"
                  [class.bg-neutral-100]="!guaranteedChosen()" [class.text-neutral-600]="!guaranteedChosen()">
               @if (guaranteedChosen()) {
-                <app-svg name="icon-checkmark-md" w="40"/>
+                <app-svg name="icon-checkmark-md" w="30"/>
               } @else {
-                <app-svg name="icon-star-md" w="40"/>
+                <app-svg name="icon-third" w="30"/>
               }
             </div>
             <span class="text-xs text-neutral-500">Garantiert</span>

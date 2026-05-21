@@ -4,29 +4,29 @@
     <div class="w-8 h-8 rounded-full grid place-items-center text-sm shadow-sm transition-colors duration-200"
          [class.bg-black]="hasChosenPrompt()"
          [class.text-white]="hasChosenPrompt()"
-         [class.bg-neutral-200]="!hasChosenPrompt()"
+         [class.bg-neutral-100]="!hasChosenPrompt()"
          [class.text-neutral-600]="!hasChosenPrompt()">
       @if (hasChosenPrompt()) {
         <app-svg name="icon-checkmark-sm" [w]="20"/>
       } @else {
-        <app-svg name="icon-star-sm" [w]="20"/>
+        <app-svg name="icon-first" [w]="20"/>
       }
     </div>
     @if (hasLockedPacks()) {
       <div class="w-8 h-8 rounded-full grid place-items-center text-sm shadow-sm transition-colors duration-200"
            [class.bg-black]="hasUnlockedPack()"
            [class.text-white]="hasUnlockedPack()"
-           [class.bg-neutral-200]="!hasUnlockedPack()"
+           [class.bg-neutral-100]="!hasUnlockedPack()"
            [class.text-neutral-600]="!hasUnlockedPack()">
         @if (hasUnlockedPack()) {
           <app-svg name="icon-checkmark-sm" [w]="20"/>
         } @else {
-          <app-svg name="icon-trophy-sm" [w]="20"/>
+          <app-svg name="icon-second" [w]="20"/>
         }
       </div>
     }
-    <div class="w-8 h-8 rounded-full bg-neutral-200 text-neutral-600 grid place-items-center text-sm shadow-sm">
-      <app-svg name="icon-star-sm" [w]="20"/>
+    <div class="w-8 h-8 rounded-full bg-neutral-100 text-neutral-600 grid place-items-center text-sm shadow-sm">
+      <app-svg name="icon-third" [w]="20"/>
     </div>
   </div>
 
@@ -34,7 +34,7 @@
     @case ('prompt') {
       <div animOnInit="choice" [animDelay]="0.25" class="flex flex-col items-center">
         <h3 class="text-sm font-semibold text-neutral-700 mb-3">Wähle den nächsten Prompt:</h3>
-        <div class="space-y-2 flex flex-col items-center w-full">
+        <div class="space-y-2 flex flex-col items-center w-full max-w-md">
           @for (prompt of promptChoices(); track prompt) {
             <app-choice-button
               [id]="prompt"
@@ -48,7 +48,7 @@
     @case ('unlock') {
       <div animOnInit="choice" [animDelay]="0.25" class="flex flex-col items-center">
         <h3 class="text-sm font-semibold text-neutral-700 mb-3">Schalte ein Sticker-Pack frei:</h3>
-        <div class="space-y-2 flex flex-col items-center w-full">
+        <div class="space-y-2 flex flex-col items-center w-full max-w-md">
           @for (pack of packUnlockChoices(); track pack.id) {
             <app-choice-button
               [id]="pack.id"
@@ -63,7 +63,7 @@
     @case ('guaranteed') {
       <div animOnInit="choice" [animDelay]="0.25" class="flex flex-col items-center">
         <h3 class="text-sm font-semibold text-neutral-700 mb-3">Dieses Pack soll auf jeden Fall dabei sein:</h3>
-        <div class="space-y-2 flex flex-col items-center w-full">
+        <div class="space-y-2 flex flex-col items-center w-full max-w-md">
           @for (pack of guaranteedPackChoices(); track pack.id) {
             <app-choice-button
               [id]="pack.id"

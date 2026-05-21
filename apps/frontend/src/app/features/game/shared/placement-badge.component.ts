@@ -1,16 +1,18 @@
 import {Component, computed, input} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {SvgComponent} from '../../shared/svg/svg.component';
+import {StarsDisplayComponent} from './stars-display.component';
 
 @Component({
     selector: 'app-placement-badge',
     standalone: true,
-    imports: [CommonModule, SvgComponent],
+  imports: [CommonModule, SvgComponent, StarsDisplayComponent],
     templateUrl: './placement-badge.component.html',
-    host: {class: 'text-center py-4'},
+    host: {class: 'flex flex-col items-center justify-center text-center py-2'},
 })
 export class PlacementBadgeComponent {
     public readonly placement = input.required<number>();
+    public readonly count = input.required<number>();
 
     public readonly medalIcon = computed(() => {
         switch (this.placement()) {

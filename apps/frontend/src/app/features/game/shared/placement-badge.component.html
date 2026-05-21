@@ -1,7 +1,9 @@
-@if (medalIcon(); as icon) {
-  <app-svg [name]="icon" [w]="70" class="mx-auto" [class]="iconColorClass()"/>
+<app-stars-display [count]="count()"/>
+<div class="flex items-center justify-center">
+  @if (medalIcon(); as icon) {
+    <app-svg [name]="icon" [w]="70" class="mx-auto" [class]="iconColorClass()"/>
+  }
   <p [class]="textClass()">{{ label() }}</p>
-} @else {
-  <div class="text-4xl font-bold text-neutral-600">{{ placement() }}.</div>
-  <p [class]="textClass()">Platz {{ placement() }}</p>
-}
+</div>
+
+

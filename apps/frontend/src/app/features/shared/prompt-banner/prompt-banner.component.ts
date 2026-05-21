@@ -7,7 +7,7 @@ import {SvgComponent} from '../svg/svg.component';
 import {AnimOnInitDirective, type AnimType} from '../animations/anim-on-init.directive';
 
 // ── Banner layout ──────────────────────────────────────────
-const BANNER_HEIGHT = 100;
+const BANNER_HEIGHT = 85;
 const BORDER_TOP_BOTTOM = 16;
 const BORDER_SIDE = 40;
 const CONTENT_PAD_X = 20;
