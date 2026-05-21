@@ -11,7 +11,7 @@
   @let br = rotatePt(boundingBox.x + boundingBox.w, boundingBox.y + boundingBox.h, centerX, centerY, rad);
   @let bl = rotatePt(boundingBox.x, boundingBox.y + boundingBox.h, centerX, centerY, rad);
   <svg class="absolute inset-0 w-full h-full pointer-events-none overflow-visible" style="z-index:8000;">
-    <polygon [attr.points]="svgRect(tl,tr,br,bl)" fill="none" stroke="#374151" stroke-width="2" stroke-dasharray="6 3"/>
+    <polygon [attr.points]="svgRect(tl,tr,br,bl)" fill="none" [attr.stroke]="YELLOW" stroke-width="2" stroke-dasharray="6 3"/>
   </svg>
 
   <!-- Center: move icon -->
