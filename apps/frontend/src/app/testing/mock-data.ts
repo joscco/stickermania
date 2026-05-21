@@ -165,6 +165,7 @@ export function makeGameState(
     handSize: 8,
     maxStickersOnCanvas: 12,
     votesPerPlayer: 3,
+    sharedHand: false,
     phaseState,
     roundDurationSec: 300,
     votingDurationSec: 120,

@@ -16,6 +16,28 @@
 
   <p animOnInit="opacity" class="text-xl text-neutral-500">{{ connectedPlayers().length }} Spieler verbunden</p>
 
+  <!-- Shared hand toggle -->
+  <button
+    animOnInit="opacity"
+    class="flex items-center gap-3 px-4 py-2 rounded-xl border text-sm transition-colors"
+    [class.bg-neutral-100]="!sharedHand()"
+    [class.border-neutral-300]="!sharedHand()"
+    [class.text-neutral-500]="!sharedHand()"
+    [class.bg-yellow-50]="sharedHand()"
+    [class.border-yellow-300]="sharedHand()"
+    [class.text-yellow-700]="sharedHand()"
+    (click)="toggleSharedHand.emit()"
+  >
+    <span class="w-5 h-5 rounded border-2 flex items-center justify-center text-xs font-bold"
+          [class.border-neutral-400]="!sharedHand()"
+          [class.text-neutral-400]="!sharedHand()"
+          [class.border-yellow-500]="sharedHand()"
+          [class.bg-yellow-400]="sharedHand()"
+          [class.text-white]="sharedHand()"
+    >{{ sharedHand() ? '✓' : '' }}</span>
+    Gleiche Sticker für alle Spieler
+  </button>
+
   <!-- Start button -->
   <button
     animOnInit="opacity"

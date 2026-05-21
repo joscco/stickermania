@@ -4,7 +4,7 @@ import type {GameConfig, SessionState, StickerCollageGameState, StickerCollageSe
 import type {GameActionResult, GameEngine} from "../gameModeEngine.js";
 import {buildCatalog, buildPacks, dealHand} from "./stickerCatalog.js";
 import {transitionToNextRound, transitionToResults, transitionToVoting, shouldSkipVoting} from "./roundManager.js";
-import {advanceToNextRound, boardAdvancesToNextRound, castVote, dealHandToPlayer, endBuildingPhaseEarly, endVotingPhaseEarly, markPlayerDoneVoting, skipRound, startGame, submitCollage, winnerPicksGuaranteedPack, winnerPicksPrompt, winnerUnlocksPack,} from "./actionHandlers.js";
+import {advanceToNextRound, boardAdvancesToNextRound, castVote, dealHandToPlayer, endBuildingPhaseEarly, endVotingPhaseEarly, markPlayerDoneVoting, setSharedHand, skipRound, startGame, submitCollage, winnerPicksGuaranteedPack, winnerPicksPrompt, winnerUnlocksPack,} from "./actionHandlers.js";
 
 /**
  * Merge hitbox polygon data from hitbox-data.json into the sticker catalog built from config.
@@ -48,6 +48,7 @@ export class StickerCollageEngine implements GameEngine {
             handSize: this.config.stickerCollage.handSize,
             maxStickersOnCanvas: this.config.stickerCollage.maxStickersOnCanvas,
             votesPerPlayer: this.config.stickerCollage.votesPerPlayer,
+            sharedHand: false,
             phaseState: {phase: "LOBBY"},
             roundDurationSec: this.config.stickerCollage.roundDurationSec,
             votingDurationSec: this.config.stickerCollage.votingDurationSec,
@@ -68,14 +69,21 @@ export class StickerCollageEngine implements GameEngine {
             gameState.roundParticipantIds.push(args.player.id);
 
             if (gameState.phaseState.phase === "BUILDING") {
-                const hand = dealHand(
-                    gameState.stickerCatalog,
-                    this.config.stickerCollage,
-                    gameState.unlockedPackIds,
-                    gameState.guaranteedPackId,
-                    gameState.stickerPacks,
-                );
-                gameState.phaseState.playerHands[args.player.id] = hand;
+                if (gameState.sharedHand) {
+                    const firstHand = Object.values(gameState.phaseState.playerHands)[0];
+                    if (firstHand) {
+                        gameState.phaseState.playerHands[args.player.id] = {stickerIds: [...firstHand.stickerIds]};
+                    }
+                } else {
+                    const hand = dealHand(
+                        gameState.stickerCatalog,
+                        this.config.stickerCollage,
+                        gameState.unlockedPackIds,
+                        gameState.guaranteedPackId,
+                        gameState.stickerPacks,
+                    );
+                    gameState.phaseState.playerHands[args.player.id] = hand;
+                }
             }
 
             return {stateChanged: true, emittedEvents: []};
@@ -123,6 +131,7 @@ export class StickerCollageEngine implements GameEngine {
             case "done-voting":          return markPlayerDoneVoting(state, playerId);
             case "ready-to-advance":     return advanceToNextRound(state, playerId, this.config, now);
             case "start-game":           return startGame(state, this.config, now);
+            case "set-shared-hand":      return setSharedHand(state, action.shared);
             case "end-round-early":      return endBuildingPhaseEarly(state, this.config, now);
             case "end-voting-early":     return endVotingPhaseEarly(state, this.config, now);
             case "pick-prompt":          return winnerPicksPrompt(state, playerId, action.prompt);

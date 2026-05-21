@@ -51,6 +51,23 @@ export function startGame(
     };
 }
 
+// ─── Session settings ───────────────────────────────────────────
+
+/**
+ * "set-shared-hand": toggle whether all players receive the same sticker hand.
+ * Can only be called from the board in LOBBY phase.
+ */
+export function setSharedHand(
+    state: SessionState,
+    shared: boolean,
+): HandlerResult {
+    if (state.gameState.phaseState.phase !== "LOBBY") {
+        return noChange;
+    }
+    state.gameState.sharedHand = shared;
+    return {stateChanged: true, events: []};
+}
+
 // ─── BUILDING ───────────────────────────────────────────────────
 
 /**
@@ -70,7 +87,17 @@ export function dealHandToPlayer(
         return noChange;
     }
 
-    const hand = dealHand(gameState.stickerCatalog, config.stickerCollage, gameState.unlockedPackIds, gameState.guaranteedPackId, gameState.stickerPacks);
+    let hand;
+    if (gameState.sharedHand) {
+        const firstHand = Object.values(buildingPhase.playerHands)[0];
+        if (firstHand) {
+            hand = {stickerIds: [...firstHand.stickerIds]};
+        } else {
+            hand = dealHand(gameState.stickerCatalog, config.stickerCollage, gameState.unlockedPackIds, gameState.guaranteedPackId, gameState.stickerPacks);
+        }
+    } else {
+        hand = dealHand(gameState.stickerCatalog, config.stickerCollage, gameState.unlockedPackIds, gameState.guaranteedPackId, gameState.stickerPacks);
+    }
     buildingPhase.playerHands[playerId] = hand;
 
     if (!gameState.roundParticipantIds.includes(playerId)) {

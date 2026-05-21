@@ -43,14 +43,27 @@ export function transitionToBuilding(
     }
 
     const playerHands: Record<string, {stickerIds: string[]}> = {};
-    for (const playerId of gameState.roundParticipantIds) {
-        playerHands[playerId] = dealHand(
+    if (gameState.sharedHand && gameState.roundParticipantIds.length > 0) {
+        const sharedHand = dealHand(
             gameState.stickerCatalog,
             config,
             gameState.unlockedPackIds,
             gameState.guaranteedPackId,
             gameState.stickerPacks,
         );
+        for (const playerId of gameState.roundParticipantIds) {
+            playerHands[playerId] = {stickerIds: [...sharedHand.stickerIds]};
+        }
+    } else {
+        for (const playerId of gameState.roundParticipantIds) {
+            playerHands[playerId] = dealHand(
+                gameState.stickerCatalog,
+                config,
+                gameState.unlockedPackIds,
+                gameState.guaranteedPackId,
+                gameState.stickerPacks,
+            );
+        }
     }
 
     gameState.phaseState = {

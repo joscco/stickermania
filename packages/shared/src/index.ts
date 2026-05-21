@@ -257,6 +257,7 @@ export interface StickerCollageGameState {
     handSize: number;
     maxStickersOnCanvas: number;
     votesPerPlayer: number;
+    sharedHand: boolean;
     phaseState: StickerCollagePhaseState;
     roundDurationSec: number;
     votingDurationSec: number;
@@ -271,6 +272,7 @@ export type StickerCollageClientAction =
     | { type: "done-voting" }
     | { type: "ready-to-advance" }
     | { type: "start-game" }
+    | { type: "set-shared-hand"; shared: boolean }
     | { type: "end-round-early" }
     | { type: "end-voting-early" }
     | { type: "pick-prompt"; prompt: string }
