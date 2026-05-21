@@ -73,7 +73,7 @@
       "packs": [
         {
           "id": "pack_shapes",
-          "name": "Shapes",
+          "name": "Formen",
           "iconId": "pack-icon-shapes",
           "unlockedAtStart": true,
           "stickers": [
@@ -97,7 +97,7 @@
         },
         {
           "id": "pack_circles",
-          "name": "Circles",
+          "name": "Kreise",
           "iconId": "pack-icon-circles",
           "unlockedAtStart": false,
           "stickers": [
@@ -109,7 +109,7 @@
         },
         {
           "id": "pack_home",
-          "name": "Home",
+          "name": "Zuhause",
           "iconId": "pack-icon-home",
           "unlockedAtStart": false,
           "stickers": [
@@ -122,7 +122,7 @@
         },
         {
           "id": "pack_lines",
-          "name": "Lines",
+          "name": "Linien",
           "iconId": "pack-icon-lines",
           "unlockedAtStart": false,
           "stickers": [
@@ -137,7 +137,7 @@
         },
         {
           "id": "pack_eyes",
-          "name": "Eyes",
+          "name": "Augen",
           "iconId": "pack-icon-eyes",
           "unlockedAtStart": false,
           "stickers": [
@@ -150,7 +150,7 @@
         },
         {
           "id": "pack_mouths",
-          "name": "Mouths",
+          "name": "Münder",
           "iconId": "pack-icon-mouths",
           "unlockedAtStart": false,
           "stickers": [
@@ -163,7 +163,7 @@
         },
         {
           "id": "pack_hands",
-          "name": "Hands",
+          "name": "Hände",
           "iconId": "pack-icon-hands",
           "unlockedAtStart": false,
           "stickers": [
@@ -173,7 +173,7 @@
         },
         {
           "id": "pack_noses",
-          "name": "Noses",
+          "name": "Nasen",
           "iconId": "pack-icon-noses",
           "unlockedAtStart": false,
           "stickers": [
@@ -184,7 +184,7 @@
         },
         {
           "id": "pack_jewelry",
-          "name": "Jewelry",
+          "name": "Schmuck",
           "iconId": "pack-icon-jewelry",
           "unlockedAtStart": false,
           "stickers": [
@@ -196,7 +196,7 @@
         },
         {
           "id": "pack_sparks",
-          "name": "Glitter & Sparkles",
+          "name": "Glitzer & Sternchen",
           "iconId": "pack-icon-sparks",
           "unlockedAtStart": false,
           "stickers": [
@@ -208,7 +208,7 @@
         },
         {
           "id": "pack_hats",
-          "name": "Hats",
+          "name": "Hüte",
           "iconId": "pack-icon-hats",
           "unlockedAtStart": false,
           "stickers": [
@@ -221,7 +221,7 @@
         },
         {
           "id": "pack_beards",
-          "name": "Beards",
+          "name": "Bärte",
           "iconId": "pack-icon-beards",
           "unlockedAtStart": false,
           "stickers": [
@@ -235,7 +235,7 @@
         },
         {
           "id": "pack_fruits",
-          "name": "Fruits",
+          "name": "Früchte",
           "iconId": "pack-icon-fruits",
           "unlockedAtStart": false,
           "stickers": [
@@ -248,7 +248,7 @@
         },
         {
           "id": "pack_glasses",
-          "name": "Glasses",
+          "name": "Brillen",
           "iconId": "pack-icon-glasses",
           "unlockedAtStart": false,
           "stickers": [
@@ -259,7 +259,7 @@
         },
         {
           "id": "pack_nature",
-          "name": "Plants & Nature",
+          "name": "Natur",
           "iconId": "pack-icon-nature",
           "unlockedAtStart": false,
           "stickers": [
@@ -270,7 +270,7 @@
         },
         {
           "id": "pack_frames",
-          "name": "Frames",
+          "name": "Rahmen",
           "iconId": "pack-icon-frames",
           "unlockedAtStart": false,
           "stickers": [
@@ -294,7 +294,7 @@
         },
         {
           "id": "pack_kitchen",
-          "name": "Kitchen",
+          "name": "Küche",
           "iconId": "pack-icon-kitchen",
           "unlockedAtStart": false,
           "stickers": [
@@ -306,7 +306,7 @@
         },
         {
           "id": "pack_animals",
-          "name": "Animal Parts",
+          "name": "Tiere",
           "iconId": "pack-icon-animals",
           "unlockedAtStart": false,
           "stickers": [
@@ -318,7 +318,7 @@
         },
         {
           "id": "pack_medicine",
-          "name": "Medical",
+          "name": "Medizin",
           "iconId": "pack-icon-medicine",
           "unlockedAtStart": false,
           "stickers": [
@@ -330,7 +330,7 @@
         },
         {
           "id": "pack_food",
-          "name": "Food",
+          "name": "Essen",
           "iconId": "pack-icon-food",
           "unlockedAtStart": false,
           "stickers": [
