@@ -140,14 +140,14 @@ canvas,
 .lobby-pattern-bg {
   background-color: #3a3a3a;
   background-image: url('/assets/png/pattern_1.png');
-  background-size: 240px 240px;
+  background-size: 800px 800px;
   animation: board-pattern-drift 40s linear infinite;
 }
 
 .board-pattern-bg {
   background-color: #e3e3e3;
   background-image: url('/assets/png/pattern_2.png');
-  background-size: 240px 240px;
+  background-size: 800px 800px;
   animation: board-pattern-drift 40s linear infinite;
 }
 
