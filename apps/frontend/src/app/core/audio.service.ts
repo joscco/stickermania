@@ -19,6 +19,7 @@ export class AudioService {
 
   private ctx: AudioContext | null = null;
   private readonly buffers = new Map<string, AudioBuffer>();
+  private readonly activeSources = new Map<string, AudioBufferSourceNode>();
 
   private getCtx(): AudioContext {
     if (!this.ctx) {
@@ -55,12 +56,23 @@ export class AudioService {
       this.ctx?.resume();
       return;
     }
+    // Stop any previously playing instance of this same sound
+    const prev = this.activeSources.get(src);
+    if (prev) {
+      try { prev.stop(); } catch { /* already stopped */ }
+    }
     const source = this.ctx.createBufferSource();
     const gain = this.ctx.createGain();
     gain.gain.value = volume;
     source.buffer = buffer;
     source.connect(gain);
     gain.connect(this.ctx.destination);
+    source.onended = () => {
+      if (this.activeSources.get(src) === source) {
+        this.activeSources.delete(src);
+      }
+    };
+    this.activeSources.set(src, source);
     source.start(0);
   }
 
