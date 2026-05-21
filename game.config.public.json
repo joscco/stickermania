@@ -280,7 +280,7 @@
         {
           "id": "pack_japan",
           "name": "Japan",
-          "iconId": "pack-icon-food",
+          "iconId": "pack-icon-japan",
           "unlockedAtStart": false,
           "stickers": [
             "japan-kamaboko",
