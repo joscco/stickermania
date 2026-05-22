@@ -183,7 +183,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
   public endVotingEarlyWithSound(): void { this.audio.playClick(); this.stickerService.endVotingEarly(); }
   public pickPromptWithSound(prompt: string): void { this.audio.playClick(); this.stickerService.pickPrompt(prompt); }
   public unlockPackWithSound(packId: string): void { this.audio.playClick(); this.stickerService.unlockPack(packId); }
-  public pickGuaranteedPackWithSound(packId: string): void { this.audio.playClick(); this.stickerService.pickGuaranteedPack(packId); }
   public readyToAdvanceWithSound(): void { this.audio.playAction(); this.stickerService.readyToAdvance(); }
 
   private async uploadSnapshot(imageDataUrl: string): Promise<void> {

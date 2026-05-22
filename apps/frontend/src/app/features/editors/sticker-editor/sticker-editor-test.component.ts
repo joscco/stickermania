@@ -1,4 +1,4 @@
-import {Component, signal, ViewChild, OnInit} from "@angular/core";
+import {Component, signal, ViewChild, OnInit, computed} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import {RouterModule} from "@angular/router";
 import {HttpClient} from "@angular/common/http";
@@ -18,6 +18,9 @@ export class StickerEditorTestComponent implements OnInit {
     public readonly maxStickers = 20;
     public readonly testCatalog = signal<StickerDefinition[]>([]);
     public readonly testPacks = signal<StickerPack[]>([]);
+
+    public readonly allPackIds = computed(() =>
+        this.testPacks().map(p => p.id));
 
     constructor(private readonly http: HttpClient) {}
 

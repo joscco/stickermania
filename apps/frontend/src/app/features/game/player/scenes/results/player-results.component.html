@@ -28,10 +28,8 @@
       [hasUnlockedPack]="hasUnlockedPack()"
       [promptChoices]="promptChoices()"
       [packUnlockChoices]="packUnlockChoices()"
-      [guaranteedPackChoices]="guaranteedPackChoices()"
       (pickPrompt)="pickPrompt.emit($event)"
       (unlockPack)="unlockPack.emit($event)"
-      (pickGuaranteedPack)="pickGuaranteedPack.emit($event)"
     />
   } @else if (isWinner() && winnerChoicesDone()) {
     <app-player-status-screen

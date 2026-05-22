@@ -1,8 +1,8 @@
-import type {StickerCollage, StickerDefinition, StickerHand, StickerPack, SessionPlayer} from '@birthday/shared';
+import type {StickerCollage, StickerDefinition, StickerPack, SessionPlayer} from '@birthday/shared';
 
 export type VotingVariant = 'active' | 'done' | 'all-done';
 
-export type WinnerStep = 'prompt' | 'unlock' | 'guaranteed' | null;
+export type WinnerStep = 'prompt' | 'unlock' | null;
 
 export interface VotingViewModel {
   variant: VotingVariant;
@@ -18,9 +18,10 @@ export interface VotingViewModel {
 export interface BuildingViewModel {
   roundIndex: number;
   prompt: string;
-  myHand: StickerHand | null;
+  unlockedStickers: StickerDefinition[];
   stickerCatalog: StickerDefinition[];
   stickerPacks: StickerPack[];
+  unlockedPackIds: string[];
   maxStickersOnCanvas: number;
 }
 
@@ -57,7 +58,6 @@ export interface ResultsViewModel {
   hasUnlockedPack: boolean;
   promptChoices: string[];
   packUnlockChoices: StickerPack[];
-  guaranteedPackChoices: StickerPack[];
   winnerId: string | null;
   winnerName: string;
   canReadyToAdvance: boolean;

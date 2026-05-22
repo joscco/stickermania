@@ -41,8 +41,6 @@ export class BoardComponent implements OnInit, OnDestroy {
   public readonly isBootstrapping = signal<boolean>(true);
   public readonly bootErrorText = signal<string | null>(null);
   public readonly sessionCode = signal<string | null>(null);
-  public readonly sharedHand = signal<boolean>(false);
-
   public readonly phase = computed(() =>
     this.catalogForcedPhase() ?? this.screenData.basePhase()
   );
@@ -197,16 +195,6 @@ export class BoardComponent implements OnInit, OnDestroy {
   private handleMessage(message: ServerToClientMessage): void {
     if (message.type === "session-state") {
       this.worldStore.setSessionState(message.state);
-      const gs = this.worldStore.stickerCollageGameState();
-      if (gs) {
-        this.sharedHand.set(!!(gs as any).sharedHand);
-      }
     }
-  }
-
-  public toggleSharedHand(): void {
-    const next = !this.sharedHand();
-    this.sharedHand.set(next);
-    this.wsService.send({type: "game-action", action: {type: "set-shared-hand", shared: next}});
   }
 }

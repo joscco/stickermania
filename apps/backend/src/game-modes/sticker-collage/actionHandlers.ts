@@ -1,6 +1,5 @@
 import crypto from "node:crypto";
 import type {GameConfig, SessionState, StickerCollage, StickerCollageBuildingState, StickerCollageGameState, StickerCollageResultsState, StickerCollageServerEvent, StickerCollageVotingState, StickerPlacement,} from "@birthday/shared";
-import {dealHand} from "./stickerCatalog.js";
 import {shouldSkipVoting, transitionToBuilding, transitionToNextRound, transitionToResults, transitionToVoting} from "./roundManager.js";
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -51,61 +50,7 @@ export function startGame(
     };
 }
 
-// ─── Session settings ───────────────────────────────────────────
-
-/**
- * "set-shared-hand": toggle whether all players receive the same sticker hand.
- * Can only be called from the board in LOBBY phase.
- */
-export function setSharedHand(
-    state: SessionState,
-    shared: boolean,
-): HandlerResult {
-    if (state.gameState.phaseState.phase !== "LOBBY") {
-        return noChange;
-    }
-    state.gameState.sharedHand = shared;
-    return {stateChanged: true, events: []};
-}
-
 // ─── BUILDING ───────────────────────────────────────────────────
-
-/**
- * "request-hand": deal a sticker hand to the requesting player.
- */
-export function dealHandToPlayer(
-    state: SessionState,
-    playerId: string,
-    config: GameConfig,
-): HandlerResult {
-    const {gameState} = state;
-    const buildingPhase = asBuildingPhase(gameState);
-    if (!buildingPhase) {
-        return noChange;
-    }
-    if (buildingPhase.playerHands[playerId]) {
-        return noChange;
-    }
-
-    let hand;
-    if (gameState.sharedHand) {
-        const firstHand = Object.values(buildingPhase.playerHands)[0];
-        if (firstHand) {
-            hand = {stickerIds: [...firstHand.stickerIds]};
-        } else {
-            hand = dealHand(gameState.stickerCatalog, config.stickerCollage, gameState.unlockedPackIds, gameState.guaranteedPackId, gameState.stickerPacks);
-        }
-    } else {
-        hand = dealHand(gameState.stickerCatalog, config.stickerCollage, gameState.unlockedPackIds, gameState.guaranteedPackId, gameState.stickerPacks);
-    }
-    buildingPhase.playerHands[playerId] = hand;
-
-    if (!gameState.roundParticipantIds.includes(playerId)) {
-        gameState.roundParticipantIds.push(playerId);
-    }
-
-    return {stateChanged: true, events: [{type: "hand-dealt", targetPlayerId: playerId, hand}]};
-}
 
 /**
  * "submit-collage": save a player's collage for the current round.
@@ -123,15 +68,6 @@ export function submitCollage(
         return noChange;
     }
 
-    const hand = buildingPhase.playerHands[playerId];
-    if (!hand) {
-        return noChange;
-    }
-
-    const handSet = new Set(hand.stickerIds);
-    if (placements.some(placement => !handSet.has(placement.stickerId))) {
-        return noChange;
-    }
     if (placements.length > config.stickerCollage.maxStickersOnCanvas) {
         return noChange;
     }
@@ -314,6 +250,7 @@ export function winnerPicksPrompt(
 
 /**
  * "unlock-pack": winner unlocks a new sticker pack.
+ * This is the final winner choice — marks choices as done.
  */
 export function winnerUnlocksPack(
     state: SessionState,
@@ -334,34 +271,10 @@ export function winnerUnlocksPack(
 
     gameState.unlockedPackIds.push(packId);
     resultsPhase.lastUnlockedPackId = packId;
-
-    const pack = gameState.stickerPacks.find(p => p.id === packId);
-    return {stateChanged: true, events: [{type: "pack-unlocked", packId, packName: pack?.name ?? packId}]};
-}
-
-/**
- * "pick-guaranteed-pack": winner picks which pack is guaranteed in next round's hands.
- * This also marks all winner choices as done.
- */
-export function winnerPicksGuaranteedPack(
-    state: SessionState,
-    playerId: string,
-    packId: string,
-): HandlerResult {
-    const {gameState} = state;
-    const resultsPhase = asResultsPhase(gameState);
-    if (!resultsPhase || resultsPhase.winnerId !== playerId) {
-        return noChange;
-    }
-    if (!gameState.unlockedPackIds.includes(packId)) {
-        return noChange;
-    }
-
-    gameState.guaranteedPackId = packId;
     resultsPhase.winnerChoicesDone = true;
 
     const pack = gameState.stickerPacks.find(p => p.id === packId);
-    return {stateChanged: true, events: [{type: "guaranteed-pack-chosen", packId, packName: pack?.name ?? packId}]};
+    return {stateChanged: true, events: [{type: "pack-unlocked", packId, packName: pack?.name ?? packId}]};
 }
 
 /**

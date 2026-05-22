@@ -19,7 +19,6 @@ export interface StickerCollageGameConfig {
     roundDurationSec: number;
     votingDurationSec: number;
     resultsDurationSec: number;
-    handSize: number;
     maxStickersOnCanvas: number;
     votesPerPlayer: number;
     prompts: string[];
@@ -72,7 +71,6 @@ export function parseGameConfig(raw: unknown): GameConfig {
             roundDurationSec: typeof sc["roundDurationSec"] === "number" ? sc["roundDurationSec"] : 600,
             votingDurationSec: typeof sc["votingDurationSec"] === "number" ? sc["votingDurationSec"] : 120,
             resultsDurationSec: typeof sc["resultsDurationSec"] === "number" ? sc["resultsDurationSec"] : 60,
-            handSize: typeof sc["handSize"] === "number" ? sc["handSize"] : 8,
             maxStickersOnCanvas: typeof sc["maxStickersOnCanvas"] === "number" ? sc["maxStickersOnCanvas"] : 12,
             votesPerPlayer: typeof sc["votesPerPlayer"] === "number" ? sc["votesPerPlayer"] : 3,
             prompts: Array.isArray(sc["prompts"]) ? sc["prompts"] as string[] : ["Bau ein Monster", "Mach eine Geburtstagstorte"],
@@ -175,10 +173,6 @@ export interface StickerPlacement {
     groupId?: string;
 }
 
-export interface StickerHand {
-    stickerIds: string[];
-}
-
 export interface StickerCollage {
     id: string;
     playerId: string;
@@ -204,7 +198,6 @@ export interface StickerCollageLobbyState {
 export interface StickerCollageBuildingState {
     phase: "BUILDING";
     roundEndsAt: number;
-    playerHands: Record<string, StickerHand>;
     skippedPlayerIds: string[];
 }
 
@@ -224,7 +217,6 @@ export interface StickerCollageResultsState {
     tiedWinnerIds: string[];
     promptChoices: string[];
     packUnlockChoices: string[];
-    guaranteedPackChoices: string[];
     lastUnlockedPackId: string | null;
     winnerChoicesDone: boolean;
     readyToAdvanceIds: string[];
@@ -250,14 +242,11 @@ export interface StickerCollageGameState {
     stickerCatalog: StickerDefinition[];
     stickerPacks: StickerPack[];
     unlockedPackIds: string[];
-    guaranteedPackId: string | null;
     submissions: Record<number, StickerCollage[]>;
     promptHistory: Record<number, string>;
     roundParticipantIds: string[];
-    handSize: number;
     maxStickersOnCanvas: number;
     votesPerPlayer: number;
-    sharedHand: boolean;
     phaseState: StickerCollagePhaseState;
     roundDurationSec: number;
     votingDurationSec: number;
@@ -265,23 +254,19 @@ export interface StickerCollageGameState {
 }
 
 export type StickerCollageClientAction =
-    | { type: "request-hand" }
     | { type: "submit-collage"; placements: StickerPlacement[] }
     | { type: "skip-round" }
     | { type: "cast-vote"; collageId: string }
     | { type: "done-voting" }
     | { type: "ready-to-advance" }
     | { type: "start-game" }
-    | { type: "set-shared-hand"; shared: boolean }
     | { type: "end-round-early" }
     | { type: "end-voting-early" }
     | { type: "pick-prompt"; prompt: string }
     | { type: "unlock-pack"; packId: string }
-    | { type: "pick-guaranteed-pack"; packId: string }
     | { type: "advance-from-results" };
 
 export type StickerCollageServerEvent =
-    | { type: "hand-dealt"; targetPlayerId: string; hand: StickerHand }
     | { type: "game-started" }
     | { type: "round-started"; roundIndex: number; prompt: string; endsAt: number }
     | { type: "collage-submitted"; playerId: string; collageId: string }
@@ -291,7 +276,6 @@ export type StickerCollageServerEvent =
     | { type: "results-ready"; winnerId: string | null; results: StickerCollageVoteResult[] }
     | { type: "pack-unlocked"; packId: string; packName: string }
     | { type: "prompt-chosen"; prompt: string }
-    | { type: "guaranteed-pack-chosen"; packId: string; packName: string }
     | { type: "round-ended"; roundIndex: number; results: StickerCollageVoteResult[] };
 
 export type GameClientEnvelope = {

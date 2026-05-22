@@ -1,5 +1,5 @@
 import type {StickerPlacement} from "@birthday/shared";
-import {applyPinchToBaseline, centroid, clampGroupScaleFactor, distance, isPointerOutsideRect, isPositionOutsideCanvas, pinchAngle, pinchDistance, pinchMidpoint, pointInRotatedRect,} from '../geometry-helpers';
+import {applyPinchToBaseline, centroid, clampGroupScaleFactor, distance, isPointerOutsideRect, isPositionOutsideCanvas, pinchAngle, pinchDistance, pinchMidpoint} from '../geometry-helpers';
 import {LassoHandler} from './lasso-handler';
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -36,7 +36,6 @@ export type GestureCallbacks = {
     onPointerUpCommit?: (ids: Set<string>) => void;
     onMoveActiveChanged?: (active: boolean) => void;
     onDoubleTap?: (ids: string[]) => void;
-    getSelectionBounds?: () => { box: { x: number; y: number; w: number; h: number }; rotation: number } | null;
 };
 
 // ── Main class ─────────────────────────────────────────────────────
@@ -121,28 +120,19 @@ export class StickerGestureHandler {
         const localY = clientY - rect.top;
         const hitId = this.hitTest(clientX, clientY);
 
-        if (this.hasSelection()) {
-            const selBounds = this.cb.getSelectionBounds?.();
-            const inBounds = selBounds
-                ? pointInRotatedRect(localX, localY, selBounds.box, selBounds.rotation, 8)
-                : false;
-
-            if (inBounds) {
-                this.startMove(localX, localY);
-            } else if (!hitId) {
-                this.selectedInstanceId = null;
-                this.lassoSelection = new Set();
-                this.cb.onSelectedChanged(null);
-                this.cb.onLassoSelectionChanged(new Set());
-                this.lasso.start(localX, localY);
+        if (hitId) {
+            if (!this.hasSelection()) {
+                this.selectAndMove(hitId, localX, localY);
             } else if (!this.isSelected(hitId)) {
                 this.selectAndMove(hitId, localX, localY);
             } else {
                 this.startMove(localX, localY);
             }
-        } else if (hitId) {
-            this.selectAndMove(hitId, localX, localY);
         } else {
+            this.selectedInstanceId = null;
+            this.lassoSelection = new Set();
+            this.cb.onSelectedChanged(null);
+            this.cb.onLassoSelectionChanged(new Set());
             this.lasso.start(localX, localY);
         }
     }
@@ -214,7 +204,6 @@ export class StickerGestureHandler {
                     this.cb.onMoveActiveChanged?.(false);
                     this.cb.onSelectedChanged(null);
                     this.cb.onLassoSelectionChanged(new Set());
-                    this.cb.onDragNearEdge?.(false);
                     this.cb.onStickerDraggedOff(ids[0], ids);
                     return;
                 }

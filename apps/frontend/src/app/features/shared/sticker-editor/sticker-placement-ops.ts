@@ -1,7 +1,6 @@
 import type {StickerPlacement} from '@birthday/shared';
-import type {BoundingBox} from './types';
-import {centroid, clamp, degToRad, rotatedBoundingBox, rotateVec, clampGroupScaleFactor, MIN_SCALE, MAX_SCALE} from './geometry-helpers';
 import {SelectionInfo} from './types';
+import {centroid, clamp, clampGroupScaleFactor, degToRad, MAX_SCALE, MIN_SCALE, rotatedBoundingBox, rotateVec} from './geometry-helpers';
 
 /**
  * Pure functions for transforming StickerPlacement arrays.
@@ -36,7 +35,7 @@ export function swapZ(placements: StickerPlacement[], ids: string[], direction: 
         if (!neighbor) return placements;
         return placements.map(p => {
             if (groupSet.has(p.instanceId)) return {...p, zIndex: p.zIndex + (neighbor.zIndex - maxGroupZ) + inside.length};
-            if (p.instanceId === neighbor.instanceId) return {...p, zIndex: p.zIndex - inside.length};
+            if (p.instanceId === neighbor.instanceId) return {...p, zIndex: Math.max(1, p.zIndex - inside.length)};
             return p;
         });
     } else {
@@ -44,8 +43,8 @@ export function swapZ(placements: StickerPlacement[], ids: string[], direction: 
         const neighbor  = [...outside].reverse().find(p => p.zIndex < minGroupZ);
         if (!neighbor) return placements;
         return placements.map(p => {
-            if (groupSet.has(p.instanceId)) return {...p, zIndex: p.zIndex - (minGroupZ - neighbor.zIndex) - inside.length};
-            if (p.instanceId === neighbor.instanceId) return {...p, zIndex: p.zIndex + inside.length};
+            if (groupSet.has(p.instanceId)) return {...p, zIndex: Math.max(1, p.zIndex - (minGroupZ - neighbor.zIndex) - inside.length)};
+            if (p.instanceId === neighbor.instanceId) return {...p, zIndex: Math.max(1, p.zIndex + inside.length)};
             return p;
         });
     }
@@ -62,7 +61,8 @@ export function moveToEdge(placements: StickerPlacement[], ids: string[], edge: 
     return placements.map(p => {
         const i = inside.findIndex(q => q.instanceId === p.instanceId);
         if (i < 0) return p;
-        return {...p, zIndex: edge === 'front' ? refZ + i + 1 : refZ - inside.length + i};
+        const z = edge === 'front' ? refZ + i + 1 : refZ - inside.length + i;
+        return {...p, zIndex: Math.max(1, z)};
     });
 }
 
@@ -121,76 +121,6 @@ export function applyGroupTransform(
             ...(mirrorAxis === 'v' ? {flipY: !p.flipY} : {}),
         };
     });
-}
-
-// ── Corner / stretch / rotation handle math ───────────────────────────────────
-
-export function applyCornerScale(
-    placements: StickerPlacement[],
-    ids: string[],
-    dx: number,
-    dy: number,
-    boundingBoxSize: {width: number; height: number} | null,
-    getRenderedSize: (id: string) => {width: number; height: number},
-): StickerPlacement[] {
-    const signX  = 1;
-    const signY = 1
-    // Project the mouse delta onto the diagonal direction of the corner.
-    // The corner sits at half-width / half-height from center, so we compute
-    // the ratio so the corner tracks the mouse 1:1.
-    const delta  = (dx * signX + dy * signY) / 2;
-
-    if (ids.length !== 1) {
-        if (!boundingBoxSize || boundingBoxSize.width < 1 || boundingBoxSize.height < 1) return placements;
-        // half-diagonal of the bounding box
-        const halfDiag = Math.max(boundingBoxSize.width, boundingBoxSize.height) / 2;
-        const factor = (halfDiag + delta) / halfDiag;
-        return applyGroupTransform(placements, ids, 0, clamp(factor, 0.05, 6), null);
-    }
-
-    const id = ids[0];
-    const p  = placements.find(s => s.instanceId === id);
-    if (!p) return placements;
-    const {width, height} = getRenderedSize(id);
-    // Current half-size of the rendered sticker
-    const halfSize = Math.max(width, height) * p.scale / 2;
-    if (halfSize < 1) return placements;
-    const newScale = clamp(p.scale * (halfSize + delta) / halfSize, MIN_SCALE, MAX_SCALE);
-    return placements.map(pl => pl.instanceId === id ? {...pl, scale: newScale} : pl);
-}
-
-export function applyRotationDelta(
-    placements: StickerPlacement[],
-    ids: string[],
-    angleDeg: number,
-): StickerPlacement[] {
-    if (ids.length === 1) return rotateSingle(placements, ids[0], angleDeg);
-    return applyGroupTransform(placements, ids, angleDeg, 1, null);
-}
-
-export function applyStretchHandle(
-    placements: StickerPlacement[],
-    id: string,
-    handle: 'n' | 's' | 'e' | 'w',
-    dx: number,
-    dy: number,
-    getRenderedSize: (id: string) => {width: number; height: number},
-): StickerPlacement[] {
-    const p = placements.find(s => s.instanceId === id);
-    if (!p) return placements;
-    const pp = p as any;
-    const {width, height} = getRenderedSize(id);
-    let newScaleX = pp.scaleX ?? 1;
-    let newScaleY = pp.scaleY ?? 1;
-    // The handle sits at half-width/half-height from center.
-    // To make the handle track the mouse 1:1, use ratio: (halfSize + delta) / halfSize
-    const halfW = width * p.scale * newScaleX / 2;
-    const halfH = height * p.scale * newScaleY / 2;
-    if (handle === 'e' && halfW > 0) newScaleX = Math.max(0.1, newScaleX * (halfW + dx) / halfW);
-    if (handle === 'w' && halfW > 0) newScaleX = Math.max(0.1, newScaleX * (halfW - dx) / halfW);
-    if (handle === 's' && halfH > 0) newScaleY = Math.max(0.1, newScaleY * (halfH + dy) / halfH);
-    if (handle === 'n' && halfH > 0) newScaleY = Math.max(0.1, newScaleY * (halfH - dy) / halfH);
-    return placements.map(pl => pl.instanceId === id ? {...pl, scaleX: newScaleX, scaleY: newScaleY} : pl);
 }
 
 // ── Grouping ─────────────────────────────────────────────────────────────────

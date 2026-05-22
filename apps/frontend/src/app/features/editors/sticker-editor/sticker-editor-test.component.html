@@ -14,9 +14,9 @@
   <app-sticker-editor
     #editor
     class="flex-1 min-h-0 max-w-full"
-    [paletteStickers]="testCatalog()"
     [stickerCatalog]="testCatalog()"
     [stickerPacks]="testPacks()"
+    [unlockedPackIds]="allPackIds()"
     [maxStickers]="maxStickers"
   />
 </div>

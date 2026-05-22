@@ -78,18 +78,6 @@
             </div>
             <span class="text-xs text-neutral-500">Pack</span>
           </div>
-          <div class="flex flex-col items-center gap-1" [class.opacity-30]="guaranteedChosen()">
-            <div class="w-10 h-10 rounded-full grid place-items-center text-lg shadow-sm transition-colors"
-                 [class.bg-black]="guaranteedChosen()" [class.text-white]="guaranteedChosen()"
-                 [class.bg-neutral-100]="!guaranteedChosen()" [class.text-neutral-600]="!guaranteedChosen()">
-              @if (guaranteedChosen()) {
-                <app-svg name="icon-checkmark-md" w="30"/>
-              } @else {
-                <app-svg name="icon-third" w="30"/>
-              }
-            </div>
-            <span class="text-xs text-neutral-500">Garantiert</span>
-          </div>
         </div>
       </div>
     } @else if (winnerChoicesDone()) {

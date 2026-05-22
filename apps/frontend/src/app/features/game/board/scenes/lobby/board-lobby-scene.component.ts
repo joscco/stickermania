@@ -12,7 +12,5 @@ import {BoardPlayerAvatarComponent} from '../../player-avatar/board-player-avata
 })
 export class BoardLobbySceneComponent {
   public readonly connectedPlayers = input<SessionPlayer[]>([]);
-  public readonly sharedHand = input<boolean>(false);
   public readonly startGame = output<void>();
-  public readonly toggleSharedHand = output<void>();
 }

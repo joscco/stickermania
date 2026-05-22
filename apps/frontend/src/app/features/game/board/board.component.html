@@ -32,9 +32,7 @@
               @case ("LOBBY") {
                 <app-board-lobby-scene
                   [connectedPlayers]="screenData.connectedPlayers()"
-                  [sharedHand]="sharedHand()"
                   (startGame)="startGame()"
-                  (toggleSharedHand)="toggleSharedHand()"
                 />
               }
               @case ("BUILDING") {

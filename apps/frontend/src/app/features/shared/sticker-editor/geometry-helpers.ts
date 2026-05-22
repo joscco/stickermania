@@ -81,28 +81,6 @@ export function pointInPoly(
     return inside;
 }
 
-/**
- * Returns true if the canvas-local point (px, py) lies inside a rotated rectangle.
- * The rectangle is axis-aligned before rotation; rotation is around the box center.
- * `padding` expands the box on all sides.
- */
-export function pointInRotatedRect(
-    px: number, py: number,
-    box: { x: number; y: number; w: number; h: number },
-    rotationDeg: number,
-    padding = 0,
-): boolean {
-    const cx = box.x + box.w / 2;
-    const cy = box.y + box.h / 2;
-    const rad = -degToRad(rotationDeg);
-    const cos = Math.cos(rad), sin = Math.sin(rad);
-    const dx = px - cx, dy = py - cy;
-    // Rotate the point into box-local frame
-    const lx = dx * cos - dy * sin;
-    const ly = dx * sin + dy * cos;
-    return Math.abs(lx) <= box.w / 2 + padding && Math.abs(ly) <= box.h / 2 + padding;
-}
-
 // ── Canvas / pointer helpers ──────────────────────────────────────────────────
 
 /**

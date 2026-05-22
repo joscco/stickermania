@@ -14,6 +14,5 @@ export enum PlayerScreen {
     RESULTS             = 'results',
     WINNER_PROMPT       = 'winner-prompt',
     WINNER_UNLOCK       = 'winner-unlock',
-    WINNER_GUARANTEED   = 'winner-guaranteed',
     NEXT_ROUND          = 'next-round',
 }

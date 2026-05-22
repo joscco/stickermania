@@ -40,9 +40,9 @@
         <app-player-building
           [roundIndex]="screenData.buildingVm().roundIndex"
           [prompt]="screenData.buildingVm().prompt"
-          [myHand]="screenData.buildingVm().myHand"
           [stickerCatalog]="screenData.buildingVm().stickerCatalog"
           [stickerPacks]="screenData.buildingVm().stickerPacks"
+          [unlockedPackIds]="screenData.buildingVm().unlockedPackIds"
           [maxStickersOnCanvas]="screenData.buildingVm().maxStickersOnCanvas"
           (skipRound)="skipRoundWithSound()"
           (submitCollage)="submitCollageWithSound($event)"
@@ -105,13 +105,11 @@
           [hasUnlockedPack]="screenData.resultsVm().hasUnlockedPack"
           [promptChoices]="screenData.resultsVm().promptChoices"
           [packUnlockChoices]="screenData.resultsVm().packUnlockChoices"
-          [guaranteedPackChoices]="screenData.resultsVm().guaranteedPackChoices"
           [winnerId]="screenData.resultsVm().winnerId"
           [winnerName]="screenData.resultsVm().winnerName"
           [canReadyToAdvance]="screenData.resultsVm().canReadyToAdvance"
           (pickPrompt)="pickPromptWithSound($event)"
           (unlockPack)="unlockPackWithSound($event)"
-          (pickGuaranteedPack)="pickGuaranteedPackWithSound($event)"
           (readyToAdvance)="readyToAdvanceWithSound()"
         />
       }
@@ -123,10 +121,8 @@
           [hasUnlockedPack]="screenData.resultsVm().hasUnlockedPack"
           [promptChoices]="screenData.resultsVm().promptChoices"
           [packUnlockChoices]="screenData.resultsVm().packUnlockChoices"
-          [guaranteedPackChoices]="screenData.resultsVm().guaranteedPackChoices"
           (pickPrompt)="pickPromptWithSound($event)"
           (unlockPack)="unlockPackWithSound($event)"
-          (pickGuaranteedPack)="pickGuaranteedPackWithSound($event)"
         />
       }
       @case (PlayerScreen.WINNER_UNLOCK) {
@@ -137,24 +133,8 @@
           [hasUnlockedPack]="screenData.resultsVm().hasUnlockedPack"
           [promptChoices]="screenData.resultsVm().promptChoices"
           [packUnlockChoices]="screenData.resultsVm().packUnlockChoices"
-          [guaranteedPackChoices]="screenData.resultsVm().guaranteedPackChoices"
           (pickPrompt)="pickPromptWithSound($event)"
           (unlockPack)="unlockPackWithSound($event)"
-          (pickGuaranteedPack)="pickGuaranteedPackWithSound($event)"
-        />
-      }
-      @case (PlayerScreen.WINNER_GUARANTEED) {
-        <app-player-winner-choices
-          [currentWinnerStep]="'guaranteed'"
-          [hasChosenPrompt]="screenData.resultsVm().hasChosenPrompt"
-          [hasLockedPacks]="screenData.resultsVm().hasLockedPacks"
-          [hasUnlockedPack]="screenData.resultsVm().hasUnlockedPack"
-          [promptChoices]="screenData.resultsVm().promptChoices"
-          [packUnlockChoices]="screenData.resultsVm().packUnlockChoices"
-          [guaranteedPackChoices]="screenData.resultsVm().guaranteedPackChoices"
-          (pickPrompt)="pickPromptWithSound($event)"
-          (unlockPack)="unlockPackWithSound($event)"
-          (pickGuaranteedPack)="pickGuaranteedPackWithSound($event)"
         />
       }
       @case (PlayerScreen.NEXT_ROUND) {

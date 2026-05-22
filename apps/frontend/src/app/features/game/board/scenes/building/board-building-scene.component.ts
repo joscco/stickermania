@@ -39,34 +39,23 @@ export class BoardBuildingSceneComponent {
         return ms!.stickerPacks.find(p => p.id === lastId) ?? null;
     });
 
-    public readonly guaranteedPack = computed<StickerPack | null>(() => {
-        const ms = this.gameState();
-        if (!ms?.guaranteedPackId) return null;
-        return ms.stickerPacks.find(p => p.id === ms.guaranteedPackId) ?? null;
-    });
-
     public readonly submissionCount = computed(() => {
         const ms = this.gameState();
         if (!ms) return 0;
         return (ms.submissions[ms.currentRoundIndex] ?? []).length;
     });
 
-    public playerStatus(playerId: string): PlayerAvatarStatus {
-        if (this.isOffline(playerId))    return "offline";
-        if (this.hasSubmitted(playerId)) return "submitted";
-        if (this.isDrawing(playerId))    return "drawing";
-        if (this.buildingPs?.skippedPlayerIds.includes(playerId)) return "skipped";
-        return "idle";
-    }
-
-    private isOffline(playerId: string): boolean {
-        return !(this.players()[playerId]?.connected ?? false);
-    }
+    public readonly playerStatus = (playerId: string): PlayerAvatarStatus => {
+        if (!this.players()[playerId]?.connected) return 'offline';
+        if (this.hasSubmitted(playerId)) return 'submitted';
+        if (this.buildingPs?.skippedPlayerIds.includes(playerId)) return 'skipped';
+        return 'drawing';
+    };
 
     private isDrawing(playerId: string): boolean {
         const ps = this.buildingPs;
         if (!ps) return false;
-        return !!ps.playerHands[playerId] && !this.hasSubmitted(playerId);
+        return !this.hasSubmitted(playerId);
     }
 
     private hasSubmitted(playerId: string): boolean {

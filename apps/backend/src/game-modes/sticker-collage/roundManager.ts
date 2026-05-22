@@ -2,7 +2,6 @@ import type {
     SessionState, StickerCollageGameState, StickerCollageGameConfig, StickerCollage,
     StickerCollageVoteResult, StickerCollageResultsState,
 } from "@birthday/shared";
-import {dealHand} from "./stickerCatalog.js";
 
 function pickRandom<T>(arr: T[], count: number): T[] {
     return [...arr].sort(() => Math.random() - 0.5).slice(0, count);
@@ -17,10 +16,6 @@ function pickUnusedPrompt(config: StickerCollageGameConfig, gameState: StickerCo
 
 // ─── Phase transitions ──────────────────────────────────────────
 
-/**
- * LOBBY / RESULTS → BUILDING: start the next round.
- * If chosenPrompt is provided (winner chose it), use it; otherwise pick from config.
- */
 export function transitionToBuilding(
     state: SessionState,
     config: StickerCollageGameConfig,
@@ -42,34 +37,9 @@ export function transitionToBuilding(
         gameState.submissions[gameState.currentRoundIndex] = [];
     }
 
-    const playerHands: Record<string, {stickerIds: string[]}> = {};
-    if (gameState.sharedHand && gameState.roundParticipantIds.length > 0) {
-        const sharedHand = dealHand(
-            gameState.stickerCatalog,
-            config,
-            gameState.unlockedPackIds,
-            gameState.guaranteedPackId,
-            gameState.stickerPacks,
-        );
-        for (const playerId of gameState.roundParticipantIds) {
-            playerHands[playerId] = {stickerIds: [...sharedHand.stickerIds]};
-        }
-    } else {
-        for (const playerId of gameState.roundParticipantIds) {
-            playerHands[playerId] = dealHand(
-                gameState.stickerCatalog,
-                config,
-                gameState.unlockedPackIds,
-                gameState.guaranteedPackId,
-                gameState.stickerPacks,
-            );
-        }
-    }
-
     gameState.phaseState = {
         phase: "BUILDING",
         roundEndsAt: now + config.roundDurationSec * 1000,
-        playerHands,
         skippedPlayerIds: [],
     };
 }
@@ -176,7 +146,7 @@ function buildWinnerChoices(
     gameState: StickerCollageGameState,
     config: StickerCollageGameConfig,
     winnerId: string | null,
-): Pick<StickerCollageResultsState, "promptChoices" | "packUnlockChoices" | "guaranteedPackChoices" | "lastUnlockedPackId" | "winnerChoicesDone"> {
+): Pick<StickerCollageResultsState, "promptChoices" | "packUnlockChoices" | "lastUnlockedPackId" | "winnerChoicesDone"> {
     const usedPrompts = new Set(Object.values(gameState.promptHistory));
     const unusedPrompts = config.prompts.filter(prompt => !usedPrompts.has(prompt));
     const promptPool = unusedPrompts.length >= config.promptChoiceCount ? unusedPrompts : config.prompts;
@@ -184,14 +154,14 @@ function buildWinnerChoices(
 
     const lockedPacks = gameState.stickerPacks.filter(pack => !gameState.unlockedPackIds.includes(pack.id));
     const packUnlockChoices = pickRandom(lockedPacks, config.packUnlockChoiceCount).map(pack => pack.id);
-    const guaranteedPackChoices = [...gameState.unlockedPackIds];
+
+    const hasLockedPacks = lockedPacks.length > 0;
 
     return {
         promptChoices,
         packUnlockChoices,
-        guaranteedPackChoices,
         lastUnlockedPackId: null,
-        winnerChoicesDone: !winnerId,
+        winnerChoicesDone: !winnerId || !hasLockedPacks,
     };
 }
 

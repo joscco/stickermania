@@ -8,27 +8,28 @@ import {
   ElementRef,
   AfterViewInit,
   OnDestroy,
-  inject,
 } from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {StickerDefinition, StickerPlacement, StickerPack} from "@birthday/shared";
 import {StickerCanvasComponent} from "./sticker-canvas/sticker-canvas.component";
-import {StickerDragStartEvent, StickerPaletteComponent} from "./sticker-palette/sticker-palette.component";
 import {AnimOnInitDirective} from "../animations/anim-on-init.directive";
+import {SvgComponent} from "../svg/svg.component";
+import {StickerPickerComponent} from "./sticker-picker/sticker-picker.component";
 import {PaletteDragSession} from "./palette-drag-session";
+import type {StickerDragStartEvent} from "./sticker-picker/sticker-picker.component";
 
 @Component({
   selector: "app-sticker-editor",
   standalone: true,
-  imports: [CommonModule, StickerCanvasComponent, StickerPaletteComponent, AnimOnInitDirective],
+  imports: [CommonModule, StickerCanvasComponent, StickerPickerComponent, SvgComponent, AnimOnInitDirective],
   templateUrl: "./sticker-editor.component.html",
   host: {"class": "flex flex-col"},
 })
 export class StickerEditorComponent implements AfterViewInit, OnDestroy {
 
-  readonly paletteStickers = input<StickerDefinition[]>([]);
   readonly stickerCatalog = input<StickerDefinition[]>([]);
   readonly stickerPacks = input<StickerPack[]>([]);
+  readonly unlockedPackIds = input<string[]>([]);
   readonly maxStickers = input<number>(12);
 
   readonly placementsChanged = output<StickerPlacement[]>();
@@ -44,10 +45,13 @@ export class StickerEditorComponent implements AfterViewInit, OnDestroy {
   });
   readonly canAddMore = computed(() => this.placements().length < this.maxStickers());
 
+  readonly showPicker = signal(false);
+  readonly pickerClosing = signal(false);
+
   readonly canvasSizePx = signal(400);
   private resizeObserver?: ResizeObserver;
-
   private dragSession: PaletteDragSession | null = null;
+  private closeTimer: ReturnType<typeof setTimeout> | null = null;
 
   ngAfterViewInit(): void {
     let prevSize = this.canvasSizePx();
@@ -72,21 +76,43 @@ export class StickerEditorComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
+    if (this.closeTimer) clearTimeout(this.closeTimer);
   }
 
-  onStickerDragFromPaletteStarted(event: StickerDragStartEvent): void {
+  onPickerClose(): void {
+    if (this.closeTimer) return;
+    this.pickerClosing.set(true);
+    this.closeTimer = setTimeout(() => {
+    if (this.closeTimer) {
+      clearTimeout(this.closeTimer);
+      this.closeTimer = null;
+    }
+    this.showPicker.set(false);
+    this.pickerClosing.set(false);
+      this.pickerClosing.set(false);
+      this.closeTimer = null;
+    }, 280);
+  }
+
+  onStickerDragStarted(event: StickerDragStartEvent): void {
     if (!this.canAddMore()) return;
 
     const canvasEl = this.stickerCanvas?.canvasNativeElement;
     if (!canvasEl) return;
 
+    this.showPicker.set(false);
+
     const rect = canvasEl.getBoundingClientRect();
     const instanceId = this.stickerCanvas.generateInstanceId();
+
+    const cx = rect.width / 2 + (Math.random() - 0.5) * 20;
+    const cy = rect.height / 2 + (Math.random() - 0.5) * 20;
+
     const placement: StickerPlacement = {
       instanceId,
       stickerId: event.stickerId,
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
+      x: cx,
+      y: cy,
       rotation: 0,
       scale: 1,
       zIndex: 9500,
@@ -97,7 +123,7 @@ export class StickerEditorComponent implements AfterViewInit, OnDestroy {
     this.dragSession?.abort();
 
     this.stickerCanvas.paletteDragInProgress.set(true);
-    this.stickerCanvas.stickerWouldBeDeleted.set(true);
+    this.stickerCanvas.stickerWouldBeDeleted.set(false);
     this.stickerCanvas.selectedInstanceId.set(instanceId);
     this.stickerCanvas.lassoSelection.set(new Set());
 
@@ -105,13 +131,18 @@ export class StickerEditorComponent implements AfterViewInit, OnDestroy {
       canvasEl,
       canvas: this.stickerCanvas,
       setPendingPlacement: (p) => this.pendingDropPlacement.set(p),
-      onDrop: (id, outside, finalPlacement) => this.finalizeDrop(id, outside, finalPlacement),
+      onDrop: (id, outside, finalPlacement) => this.finalizeDrop(id, outside, finalPlacement, event),
     });
 
     this.dragSession.start(event, placement);
   }
 
-  private finalizeDrop(instanceId: string, outside: boolean, finalPlacement: StickerPlacement): void {
+  private finalizeDrop(
+    instanceId: string,
+    outside: boolean,
+    finalPlacement: StickerPlacement,
+    _dragEvent: StickerDragStartEvent,
+  ): void {
     if (outside) {
       this.stickerCanvas.selectedInstanceId.set(null);
       this.stickerCanvas.lassoSelection.set(new Set());

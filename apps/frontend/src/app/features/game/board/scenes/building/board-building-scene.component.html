@@ -7,17 +7,11 @@
   />
 
   <!-- Round info: newly unlocked pack + guaranteed pack -->
-  @if (lastUnlockedPack() || guaranteedPack()) {
+  @if (lastUnlockedPack()) {
     <div animOnInit="opacity" [animDelay]="0.1" class="flex justify-center gap-6 mt-4 px-4">
       @if (lastUnlockedPack(); as pack) {
         <div class="bg-neutral-100 border border-neutral-300 rounded-xl px-4 py-2 text-center">
           <div class="text-xs text-neutral-500 font-semibold uppercase tracking-wider">Neu freigeschaltet</div>
-          <div class="text-lg font-bold text-neutral-800">{{ pack.name }}</div>
-        </div>
-      }
-      @if (guaranteedPack(); as pack) {
-        <div class="bg-neutral-100 border border-neutral-300 rounded-xl px-4 py-2 text-center">
-          <div class="text-xs text-neutral-500 font-semibold uppercase tracking-wider">Auf jeden Fall dabei</div>
           <div class="text-lg font-bold text-neutral-800">{{ pack.name }}</div>
         </div>
       }

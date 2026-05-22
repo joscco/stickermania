@@ -9,30 +9,28 @@ import {StickerGestureHandler} from './sticker-gesture-handler';
 import type {GestureCallbacks} from './sticker-gesture-handler';
 import {renderCanvasToDataUrl} from './sticker-canvas-renderer.util';
 import {installCanvasInputListeners} from './sticker-canvas-input';
-import {StickerContextMenuComponent, type ContextMenuAction} from '../sticker-context-menu/sticker-context-menu.component';
 import type {BoundingBox, SelectionInfo} from '../types';
 import * as ops from '../sticker-placement-ops';
-import {HandleDragEvent, StickerSelectionOverlayComponent} from '../sticker-selection-overlay/sticker-selection-overlay.component';
 import {AnimOnInitDirective, AnimPresenceDirective} from '../../animations/anim-on-init.directive';
 import {SvgComponent} from '../../svg/svg.component';
 import {getSpriteViewBox, preloadSprite} from '../sprite-url.util';
 import {AudioService} from '../../../../core/audio.service';
 import {StickerItemComponent, type StickerAnimState} from './sticker-item/sticker-item.component';
+import {StickerActionBarComponent, type ActionBarAction} from '../sticker-action-bar/sticker-action-bar.component';
 
 @Component({
   selector: 'app-sticker-canvas',
   standalone: true,
   imports: [
     CommonModule,
-    StickerSelectionOverlayComponent,
-    StickerContextMenuComponent,
+    StickerActionBarComponent,
     AnimOnInitDirective,
     AnimPresenceDirective,
     StickerItemComponent,
     SvgComponent,
   ],
   templateUrl: './sticker-canvas.component.html',
-  host: {style: 'display: block; width: 100%; height: 100%;'},
+  host: {class: 'block w-full h-full'},
 })
 export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
@@ -62,8 +60,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   readonly selectedInstanceId = signal<string | null>(null);
   readonly lassoSelection = signal<Set<string>>(new Set());
-  readonly stretchMode = signal<boolean>(false);
-  readonly menuVisible = signal<boolean>(false);
   readonly isMoveActive = signal<boolean>(false);
   readonly multiSelectionRotation = signal<number>(0);
 
@@ -78,10 +74,17 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     return id ? [id] : [];
   });
 
+  // ── Action bar visibility ──────────────────────────────────────
+
+  readonly actionBarVisible = computed(() =>
+    this.hasSelection() && !this.isMoveActive() && !this.stickerWouldBeDeleted() && !this.paletteDragInProgress());
+
   // ── Drag / visual flags ───────────────────────────────────────
 
   readonly paletteDragInProgress = signal(false);
   readonly stickerWouldBeDeleted = signal(false);
+  private suppressDoubleTap = signal(false);
+  private suppressTimer: ReturnType<typeof setTimeout> | null = null;
 
   // ── Layout / sizing ───────────────────────────────────────────
 
@@ -101,14 +104,21 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   readonly boundingBox = computed<BoundingBox | null>(() =>
     this.selectionInfo()?.box ?? null);
 
-  readonly overlayVisible = computed(() =>
-    this.hasSelection() && !this.stickerWouldBeDeleted() && !this.paletteDragInProgress());
+  readonly selectionCenterX = computed(() => {
+    const ids = this.selectionIds();
+    if (!ids.length) return 0;
+    const selected = this.stickers().filter(p => ids.includes(p.instanceId));
+    if (!selected.length) return 0;
+    return selected.reduce((s, p) => s + p.x, 0) / selected.length;
+  });
 
-  readonly menuAnchorX = computed(() =>
-    (this.selectionInfo()?.corners.tr.x ?? 0) + 14);
-
-  readonly menuAnchorY = computed(() =>
-    (this.selectionInfo()?.corners.tr.y ?? 0) - 8);
+  readonly selectionCenterY = computed(() => {
+    const ids = this.selectionIds();
+    if (!ids.length) return 0;
+    const selected = this.stickers().filter(p => ids.includes(p.instanceId));
+    if (!selected.length) return 0;
+    return selected.reduce((s, p) => s + p.y, 0) / selected.length;
+  });
 
   // ── Lasso path (svg overlay) ──────────────────────────────────
 
@@ -116,7 +126,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   readonly lassoPoints = computed(() =>
     this.lassoPath()?.map(p => `${p.x},${p.y}`).join(' '));
 
-  // ── Context-menu capability flags ─────────────────────────────
+  // ── Action-bar capability flags ────────────────────────────────
 
   readonly canGroup = computed(() => {
     const ids = this.selectionIds();
@@ -133,15 +143,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   readonly canDuplicate = computed(() =>
     this.selectionIds().length > 0
     && (this.committedCount() + this.selectionIds().length) <= this.maxStickers());
-
-  readonly isGroupSelection = computed(() => {
-    const ids = this.selectionIds();
-    if (ids.length < 2) return false;
-    const all = this.stickers();
-    const gid = all.find(p => p.instanceId === ids[0])?.groupId;
-    return !!gid && ids.every(id =>
-      all.find(p => p.instanceId === id)?.groupId === gid);
-  });
 
   // ── Internals ─────────────────────────────────────────────────
 
@@ -223,7 +224,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       this.buildGestureCallbacks(),
     );
 
-    // Track canvas pixel dimensions (used by empty-state hint & context menu).
     this.resizeObserver = new ResizeObserver(([e]) => {
       this.canvasW.set(e.contentRect.width);
       this.canvasH.set(e.contentRect.height);
@@ -234,14 +234,12 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       this.canvasArea.nativeElement,
       this.gesture,
       () => {
-        this.menuVisible.set(false);
         this.gesture.syncState(
           this.stickers(), this.selectedInstanceId(), this.lassoSelection());
       },
       () => this.paletteDragInProgress(),
     );
 
-    // Click outside canvas → clear selection.
     const onOutside = (ev: PointerEvent) => {
       if (!this.hasSelection()) return;
       if (this.canvasArea.nativeElement.contains(ev.target as Node)) return;
@@ -257,6 +255,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     this.removeListeners?.();
     this.removeOutsideListener?.();
     this.resizeObserver?.disconnect();
+    if (this.suppressTimer) clearTimeout(this.suppressTimer);
   }
 
   // ── Gesture handler callbacks ─────────────────────────────────
@@ -281,8 +280,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       },
 
       onSelectedChanged: id => {
-        this.stretchMode.set(false);
-        this.menuVisible.set(false);
         if (id) {
           this.clearSelection();
           this.selectedInstanceId.set(id);
@@ -292,17 +289,20 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       },
 
       onStickerDraggedOff: (_id, allIds) => {
-        this.stickerWouldBeDeleted.set(false);
         const removed = new Set(allIds);
-        this.scheduleRemoval(allIds, () =>
+        this.scheduleRemoval(allIds, () => {
+          this.stickerWouldBeDeleted.set(false);
           this.placementsChanged.emit(
-            this.stickers().filter(p => !removed.has(p.instanceId))));
+            this.stickers().filter(p => !removed.has(p.instanceId)));
+        });
       },
 
       onDragNearEdge: near => this.stickerWouldBeDeleted.set(near),
       onMoveActiveChanged: active => this.isMoveActive.set(active),
-      onDoubleTap: ids => this.flipSelectionH(ids),
-      getSelectionBounds: () => this.selectionInfo(),
+      onDoubleTap: ids => {
+        if (this.suppressDoubleTap()) return;
+        this.flipSelectionH(ids);
+      },
       onPointerUpCommit: ids =>
         ids.forEach(id => this.setAnimState(id, 'settling')),
     };
@@ -320,59 +320,53 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     return ops.generateInstanceId();
   }
 
-  // ── Context menu ──────────────────────────────────────────────
+  // ── Action bar ─────────────────────────────────────────────────
 
-  onMenuToggle(): void {
-    this.menuVisible.set(!this.menuVisible());
-  }
-
-  onContextMenuAction(action: ContextMenuAction): void {
-    this.menuVisible.set(false);
+  onActionBarAction(action: ActionBarAction): void {
+    this.suppressDoubleTap.set(true);
+    if (this.suppressTimer) clearTimeout(this.suppressTimer);
+    this.suppressTimer = setTimeout(() => {
+      this.suppressDoubleTap.set(false);
+      this.suppressTimer = null;
+    }, 400);
     const ids = this.selectionIds();
-    (this.contextMenuHandlers[action] ?? (() => {}))(ids);
+    (this.actionBarHandlers[action] ?? (() => {}))(ids);
   }
 
-  private readonly contextMenuHandlers: Record<ContextMenuAction, (ids: string[]) => void> = {
+  private readonly actionBarHandlers: Record<ActionBarAction, (ids: string[]) => void> = {
     'delete':       () => { this.removeSelected(); },
     'flipH':        ids => { this.flipSelectionH(ids); },
+    'rotateLeft':   ids => { this.rotateSelection(ids, -15); },
+    'rotateRight':  ids => { this.rotateSelection(ids, 15); },
+    'zoomIn':       ids => { this.zoomSelection(ids, 1.15); },
+    'zoomOut':      ids => { this.zoomSelection(ids, 1 / 1.15); },
     'zForward':     ids => { this.placementsChanged.emit(ops.swapZ(this.stickers(), ids, +1)); },
     'zBackward':    ids => { this.placementsChanged.emit(ops.swapZ(this.stickers(), ids, -1)); },
     'zFront':       ids => { this.placementsChanged.emit(ops.moveToEdge(this.stickers(), ids, 'front')); },
     'zBack':        ids => { this.placementsChanged.emit(ops.moveToEdge(this.stickers(), ids, 'back')); },
     'group':        ids => { this.commitGroup(ops.groupPlacements(this.stickers(), ids), ids); },
     'ungroup':      ids => { this.commitGroup(ops.ungroupPlacements(this.stickers(), ids), ids); },
-    'toggleStretch': () => { this.stretchMode.set(!this.stretchMode()); },
     'duplicate':    () => { this.doDuplicate(); },
   };
 
-  // ── Selection overlay handles ─────────────────────────────────
-
-  onHandleDrag(ev: HandleDragEvent): void {
-    const ids = this.selectionIds();
+  private rotateSelection(ids: string[], degrees: number): void {
     if (!ids.length) return;
-
-    if (ev.handle === 'rotate') {
-      this.placementsChanged.emit(ops.applyRotationDelta(this.stickers(), ids, ev.dx));
-      if (this.isMultiSelection() && !this.isGroupSelection()) {
-        this.multiSelectionRotation.update(r => r + ev.dx);
-      }
-    } else if (ev.handle === 'n' || ev.handle === 's' || ev.handle === 'e' || ev.handle === 'w') {
-      if (ids.length === 1) {
-        this.placementsChanged.emit(
-          ops.applyStretchHandle(this.stickers(), ids[0], ev.handle,
-            ev.dx, ev.dy, id => this.getRenderedSize(id)));
-      }
+    if (ids.length === 1) {
+      this.placementsChanged.emit(ops.rotateSingle(this.stickers(), ids[0], degrees));
     } else {
-      const bb = this.boundingBox();
-      this.placementsChanged.emit(ops.applyCornerScale(
-        this.stickers(), ids, ev.dx, ev.dy,
-        bb ? {width: bb.w, height: bb.h} : null,
-        id => this.getRenderedSize(id)));
+      this.placementsChanged.emit(ops.applyGroupTransform(this.stickers(), ids, degrees, 1, null));
     }
+    ids.forEach(id => this.setAnimState(id, 'settling'));
+  }
 
-    if (ev.done && ids.length > 0) {
-      ids.forEach(id => this.setAnimState(id, 'settling'));
+  private zoomSelection(ids: string[], factor: number): void {
+    if (!ids.length) return;
+    if (ids.length === 1) {
+      this.placementsChanged.emit(ops.scaleSingle(this.stickers(), ids[0], factor));
+    } else {
+      this.placementsChanged.emit(ops.applyGroupTransform(this.stickers(), ids, 0, factor, null));
     }
+    ids.forEach(id => this.setAnimState(id, 'settling'));
   }
 
   // ── Placement mutations ───────────────────────────────────────
@@ -466,7 +460,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     this.lassoSelection.set(new Set());
     this.stickerWouldBeDeleted.set(false);
     this.multiSelectionRotation.set(0);
-    this.menuVisible.set(false);
   }
 
   private getRenderedSize(instanceId: string): { width: number; height: number } {

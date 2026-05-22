@@ -3,7 +3,6 @@ import type {
   StickerCollageGameState,
   StickerCollage,
   StickerPack,
-  StickerHand,
   StickerCollageBuildingState,
   StickerCollageVotingState,
   StickerCollageResultsState,
@@ -86,11 +85,6 @@ export class MockStickerPlayerService {
   readonly stickerCatalog = computed(() => this.gameState()?.stickerCatalog ?? []);
   readonly votesPerPlayer = computed(() => this.gameState()?.votesPerPlayer ?? 3);
   readonly maxStickersOnCanvas = computed(() => this.gameState()?.maxStickersOnCanvas ?? 12);
-  readonly myHand = computed<StickerHand | null>(() => {
-    const playerId = this.sessionStore.playerId();
-    if (!playerId) return null;
-    return this.buildingState()?.playerHands[playerId] ?? null;
-  });
   readonly hasSubmittedThisRound = computed(() => {
     const playerId = this.sessionStore.playerId();
     const ms = this.gameState();
@@ -158,12 +152,6 @@ export class MockStickerPlayerService {
     if (!ms || !ps) return [];
     return ps.packUnlockChoices.map(id => ms.stickerPacks.find(p => p.id === id)).filter((p): p is StickerPack => !!p);
   });
-  readonly guaranteedPackChoices = computed<StickerPack[]>(() => {
-    const ms = this.gameState();
-    const ps = this.resultsState();
-    if (!ms || !ps) return [];
-    return ps.guaranteedPackChoices.map(id => ms.stickerPacks.find(p => p.id === id)).filter((p): p is StickerPack => !!p);
-  });
   readonly winnerChoicesDone = computed(() => this.resultsState()?.winnerChoicesDone ?? false);
   readonly hasChosenPrompt = computed(() => {
     const ms = this.gameState();
@@ -175,8 +163,6 @@ export class MockStickerPlayerService {
   readonly stickerPacks = computed(() => this.gameState()?.stickerPacks ?? []);
   readonly unlockedPackIds = computed(() => this.gameState()?.unlockedPackIds ?? []);
   readonly lastUnlockedPackId = computed(() => this.resultsState()?.lastUnlockedPackId ?? null);
-  readonly guaranteedPackId = computed(() => this.gameState()?.guaranteedPackId ?? null);
-
   requestHand() {}
   submitCollage(_placements: any[]) {}
   skipRound() {}
@@ -188,7 +174,7 @@ export class MockStickerPlayerService {
   endVotingEarly() {}
   pickPrompt(_prompt: string) {}
   unlockPack(_packId: string) {}
-  pickGuaranteedPack(_packId: string) {}
+
 }
 
 import {WorldStore} from '../core/world.store';
@@ -289,8 +275,6 @@ export function getMockResultsVm(worldStore: MockWorldStore, sessionStore: MockG
       currentWinnerStep = 'prompt';
     } else if (hasChosenPrompt && !hasUnlockedPack && packUnlockChoices.length > 0) {
       currentWinnerStep = 'unlock';
-    } else if (hasChosenPrompt && (hasUnlockedPack || !hasLockedPacks) && stickerService.guaranteedPackChoices().length > 0) {
-      currentWinnerStep = 'guaranteed';
     }
   }
 
@@ -308,7 +292,6 @@ export function getMockResultsVm(worldStore: MockWorldStore, sessionStore: MockG
     hasUnlockedPack,
     promptChoices,
     packUnlockChoices,
-    guaranteedPackChoices: stickerService.guaranteedPackChoices(),
     winnerId,
     winnerName: winnerId ? (worldStore.players()[winnerId]?.name ?? 'Der Gewinner') : '',
     canReadyToAdvance: stickerService.canReadyToAdvance(),

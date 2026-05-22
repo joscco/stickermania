@@ -6,12 +6,12 @@
     class="w-full px-4"
   />
 
-  @if (myHand()) {
+  @if (stickerCatalog().length > 0) {
     <app-sticker-editor
       #editor
-      [paletteStickers]="handStickers()"
       [stickerCatalog]="stickerCatalog()"
       [stickerPacks]="stickerPacks()"
+      [unlockedPackIds]="unlockedPackIds()"
       [maxStickers]="maxStickersOnCanvas()"
       class="flex-1 min-h-0 w-full"
     />

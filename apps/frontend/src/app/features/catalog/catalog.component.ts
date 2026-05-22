@@ -93,7 +93,6 @@ export class CatalogComponent {
     if (screen.startsWith('board-')) return null;
     if (screen === 'winner-prompt') return PlayerScreen.WINNER_PROMPT;
     if (screen === 'winner-unlock') return PlayerScreen.WINNER_UNLOCK;
-    if (screen === 'winner-guaranteed') return PlayerScreen.WINNER_GUARANTEED;
     return screen as PlayerScreen;
   });
 

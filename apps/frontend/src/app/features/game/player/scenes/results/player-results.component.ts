@@ -27,13 +27,11 @@ export class PlayerResultsComponent {
     public readonly hasUnlockedPack = input<boolean>(false);
     public readonly promptChoices = input<string[]>([]);
     public readonly packUnlockChoices = input<StickerPack[]>([]);
-    public readonly guaranteedPackChoices = input<StickerPack[]>([]);
     public readonly winnerId = input<string | null>(null);
     public readonly winnerName = input<string>('');
     public readonly canReadyToAdvance = input<boolean>(false);
 
     public readonly pickPrompt = output<string>();
     public readonly unlockPack = output<string>();
-    public readonly pickGuaranteedPack = output<string>();
     public readonly readyToAdvance = output<void>();
 }

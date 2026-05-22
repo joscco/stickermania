@@ -12,7 +12,6 @@ import type {
   StickerCollageResultsState,
   StickerCollageNextRoundSetupState,
   StickerCollageVoteResult,
-  StickerHand,
 } from '@birthday/shared';
 
 export const MOCK_STICKER_IDS = [
@@ -80,10 +79,6 @@ export const MOCK_SUBMISSIONS: StickerCollage[] = [
   { id: 'col-3', playerId: 'player-3', roundIndex: 0, placements: MOCK_PLACEMENTS_3, submittedAt: Date.now() },
 ];
 
-export const MOCK_PLAYER_HAND: StickerHand = {
-  stickerIds: MOCK_STICKER_IDS.slice(0, 8),
-};
-
 const MOCK_VOTE_RESULTS: StickerCollageVoteResult[] = [
   { collageId: 'col-1', playerId: 'player-1', voteCount: 2, placement: 1 },
   { collageId: 'col-2', playerId: 'player-2', voteCount: 1, placement: 2 },
@@ -98,17 +93,10 @@ export function lobbyPhase(): StickerCollageLobbyState {
 
 export function buildingPhase(opts?: {
   skippedPlayerIds?: string[];
-  playerHands?: Record<string, StickerHand>;
 }): StickerCollageBuildingState {
-  const allHands: Record<string, StickerHand> = {
-    'player-1': { ...MOCK_PLAYER_HAND },
-    'player-2': { ...MOCK_PLAYER_HAND },
-    'player-3': { ...MOCK_PLAYER_HAND },
-  };
   return {
     phase: 'BUILDING',
     roundEndsAt: Date.now() + 300_000,
-    playerHands: opts?.playerHands ?? allHands,
     skippedPlayerIds: opts?.skippedPlayerIds ?? [],
   };
 }
@@ -133,7 +121,6 @@ export function resultsPhase(): StickerCollageResultsState {
     winnerId: 'player-1',
     promptChoices: ['Das gruseligste Tier', 'Mein Traumfrühstück', 'Ein Roboter im Urlaub'],
     packUnlockChoices: ['pack_shapes', 'pack_home', 'pack_lines'],
-    guaranteedPackChoices: ['pack_shapes', 'pack_home', 'pack_lines'],
     lastUnlockedPackId: null,
     winnerChoicesDone: false,
     tiedWinnerIds: [],
@@ -158,14 +145,11 @@ export function makeGameState(
     stickerCatalog: MOCK_CATALOG,
     stickerPacks: [MOCK_SHAPES_PACK, MOCK_HOME_PACK, MOCK_LINES_PACK],
     unlockedPackIds: ['pack_shapes'],
-    guaranteedPackId: null,
     submissions: {},
     promptHistory: { 0: 'Das schönste Geburtstagsmonster' },
     roundParticipantIds: ['player-1', 'player-2', 'player-3'],
-    handSize: 8,
     maxStickersOnCanvas: 12,
     votesPerPlayer: 3,
-    sharedHand: false,
     phaseState,
     roundDurationSec: 300,
     votingDurationSec: 120,

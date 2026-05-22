@@ -21,7 +21,7 @@ export type StickerAnimState = 'entering' | 'settling' | 'idle' | 'removing';
   standalone: true,
   imports: [StickerImgComponent],
   templateUrl: './sticker-item.component.html',
-  host: {style: 'display: contents;'},
+  host: {class: 'contents'},
 })
 export class StickerItemComponent implements OnInit {
   readonly instanceId = input.required<string>();

@@ -1,5 +1,5 @@
 import type {StickerPlacement} from "@birthday/shared";
-import type {StickerDragStartEvent} from "./sticker-palette/sticker-palette.component";
+import type {StickerDragStartEvent} from "./sticker-picker/sticker-picker.component";
 import type {StickerCanvasComponent} from "./sticker-canvas/sticker-canvas.component";
 import {
     isPointerOutsideRect,

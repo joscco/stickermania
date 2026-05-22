@@ -116,9 +116,10 @@ export class PlayerScreenDataService {
     public readonly buildingVm = computed<BuildingViewModel>(() => ({
         roundIndex: this.stickerService.currentRoundIndex(),
         prompt: this.stickerService.currentPrompt(),
-        myHand: this.stickerService.myHand() ?? null,
+        unlockedStickers: this.stickerService.unlockedStickers(),
         stickerCatalog: this.stickerService.stickerCatalog(),
         stickerPacks: this.stickerService.stickerPacks(),
+        unlockedPackIds: this.stickerService.unlockedPackIds(),
         maxStickersOnCanvas: this.stickerService.maxStickersOnCanvas(),
     }));
 
@@ -156,7 +157,6 @@ export class PlayerScreenDataService {
         const isWinner = stickerService.isWinner();
         const winnerChoicesDone = stickerService.winnerChoicesDone();
         const hasChosenPrompt = stickerService.hasChosenPrompt();
-        const hasLockedPacks = stickerService.hasLockedPacks();
         const hasUnlockedPack = stickerService.hasUnlockedPack();
         const promptChoices = stickerService.promptChoices();
         const packUnlockChoices = stickerService.packUnlockChoices();
@@ -167,8 +167,6 @@ export class PlayerScreenDataService {
                 currentWinnerStep = 'prompt';
             } else if (hasChosenPrompt && !hasUnlockedPack && packUnlockChoices.length > 0) {
                 currentWinnerStep = 'unlock';
-            } else if (hasChosenPrompt && (hasUnlockedPack || !hasLockedPacks) && stickerService.guaranteedPackChoices().length > 0) {
-                currentWinnerStep = 'guaranteed';
             }
         }
 
@@ -182,11 +180,10 @@ const winnerId = stickerService.winnerId();
             winnerChoicesDone,
             currentWinnerStep,
             hasChosenPrompt,
-            hasLockedPacks,
+            hasLockedPacks: packUnlockChoices.length > 0,
             hasUnlockedPack,
             promptChoices,
             packUnlockChoices,
-            guaranteedPackChoices: stickerService.guaranteedPackChoices(),
             winnerId,
             winnerName: winnerId ? (this.worldStore.players()[winnerId]?.name ?? 'Der Gewinner') : '',
             canReadyToAdvance: stickerService.canReadyToAdvance(),

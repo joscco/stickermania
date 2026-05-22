@@ -76,37 +76,35 @@ export class BoardResultsSceneComponent implements AfterViewInit, OnDestroy {
         return ps?.phase === "RESULTS" ? ps : null;
     }
 
-    public readonly topResults = computed<StickerCollageVoteResult[]>(() => {
-        const results = this.resultsPs?.lastVoteResults ?? [];
-        const seen = new Set<number>();
-        const top: StickerCollageVoteResult[] = [];
-        for (const r of results) {
-            if (!seen.has(r.placement)) {
-                seen.add(r.placement);
-                top.push(r);
-            }
-            if (seen.size >= 3) break;
-        }
-        return top;
-    });
-
     public readonly podiumSlots = computed<PodiumSlot[]>(() => {
-        const results = this.topResults();
         const allResults = this.resultsPs?.lastVoteResults ?? [];
-        const config: Record<number, Omit<PodiumSlot, 'placement' | 'result' | 'isTied'>> = {
+        if (!allResults.length) return [];
+
+        const medalConfig: Record<number, Omit<PodiumSlot, 'placement' | 'result' | 'isTied'>> = {
             1: {medalIcon: 'icon-medal-gold-lg', medalW: 65, imgSizeClass: 'w-28 sm:w-36 md:w-44', borderClass: 'border-yellow-400', shadowClass: 'shadow-xl', barColorClass: 'bg-yellow-400', barHeightClass: 'h-8', starSize: 16, starColor: 'text-amber-500', camW: 60},
             2: {medalIcon: 'icon-medal-silver-lg', medalW: 60, imgSizeClass: 'w-24 sm:w-32 md:w-36', borderClass: 'border-neutral-400', shadowClass: 'shadow-lg', barColorClass: 'bg-neutral-300', barHeightClass: 'h-5', starSize: 14, starColor: 'text-neutral-400', camW: 50},
             3: {medalIcon: 'icon-medal-bronze-lg', medalW: 55, imgSizeClass: 'w-24 sm:w-32 md:w-36', borderClass: 'border-amber-700', shadowClass: 'shadow-lg', barColorClass: 'bg-amber-700', barHeightClass: 'h-3', starSize: 14, starColor: 'text-neutral-400', camW: 50},
         };
-        const displayOrder = [1, 0, 2];
-        return displayOrder
-            .map(i => {
-                const result = results[i];
-                if (!result) return null;
-                const tiedCount = allResults.filter(r => r.placement === result.placement && r.playerId !== result.playerId).length;
-                return {placement: result.placement, result, isTied: tiedCount > 0, ...config[result.placement <= 3 ? result.placement : 3]};
-            })
-            .filter((s): s is PodiumSlot => s !== null);
+
+        const grouped = new Map<number, StickerCollageVoteResult[]>();
+        for (const r of allResults) {
+            if (!grouped.has(r.placement)) grouped.set(r.placement, []);
+            grouped.get(r.placement)!.push(r);
+        }
+
+        const slots: PodiumSlot[] = [];
+        const placements = [...grouped.keys()].sort((a, b) => a - b);
+        for (const placement of placements) {
+            if (slots.length >= 5) break;
+            const results = grouped.get(placement)!;
+            const isTied = results.length > 1;
+            const cfg = medalConfig[placement] ?? medalConfig[3];
+            for (const result of results) {
+                if (slots.length >= 5) break;
+                slots.push({placement, result, isTied, ...cfg});
+            }
+        }
+        return slots;
     });
 
     public readonly winnerId = computed(() => this.resultsPs?.winnerId ?? null);
@@ -119,8 +117,6 @@ export class BoardResultsSceneComponent implements AfterViewInit, OnDestroy {
     });
 
     public readonly packUnlocked = computed(() => !!(this.resultsPs?.lastUnlockedPackId));
-
-    public readonly guaranteedChosen = computed(() => this.resultsPs?.winnerChoicesDone ?? false);
 
     public readonly readyToAdvanceCount = computed(() => this.resultsPs?.readyToAdvanceIds.length ?? 0);
 
