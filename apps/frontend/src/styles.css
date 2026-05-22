@@ -141,18 +141,18 @@ canvas,
   background-color: #3a3a3a;
   background-image: url('/assets/png/pattern_1.png');
   background-size: 800px 800px;
-  animation: board-pattern-drift 40s linear infinite;
+  animation: board-pattern-drift 60s linear infinite;
 }
 
 .board-pattern-bg {
   background-color: #e3e3e3;
   background-image: url('/assets/png/pattern_2.png');
   background-size: 800px 800px;
-  animation: board-pattern-drift 40s linear infinite;
+  animation: board-pattern-drift 60s linear infinite;
 }
 
 @keyframes board-pattern-drift {
   0%   { background-position: 0 0; }
-  100% { background-position: 240px 240px; }
+  100% { background-position: 800px 800px; }
 }
 
