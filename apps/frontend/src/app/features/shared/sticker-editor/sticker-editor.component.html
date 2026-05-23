@@ -34,40 +34,7 @@
       />
     }
   </div>
-
-
 </div>
-
-<!-- Toolbar below canvas: counter + clear + add -->
-<div class="flex items-center justify-center gap-4 px-4 pb-4 shrink-0">
-  <button
-    class="w-12 h-12 rounded-xl bg-yellow-400 flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30"
-    title="Alle Sticker entfernen"
-    [disabled]="placements().length === 0"
-    (click)="clearPlacements()"
-  >
-    <app-svg name="icon-editor-clear-all-sm" w="30"/>
-  </button>
-
-  <span class="text-xs text-neutral-400 tabular-nums"
-        [class.text-red-400]="!canAddMore()"
-  >{{ placements().length }}/{{ maxStickers() }}</span>
-
-  <button
-    class="w-12 h-12 rounded-xl text-black flex items-center justify-center shadow active:scale-90 transition-all duration-200 disabled:opacity-40"
-    [class.bg-yellow-400]="!showPicker()"
-    [class.bg-neutral-300]="showPicker()"
-    [disabled]="!canAddMore() && !showPicker()"
-    (click)="showPicker() ? onPickerClose() : showPicker.set(true)"
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" class="w-8 h-8 transition-transform duration-300"
-         [class.rotate-45]="showPicker()">
-      <rect x="4" y="20" width="40" height="8" rx="4" fill="currentColor"/>
-      <rect x="20" y="4" width="8" height="40" rx="4" fill="currentColor"/>
-    </svg>
-  </button>
-</div>
-
 
 
 

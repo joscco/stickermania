@@ -13,7 +13,6 @@ import {CommonModule} from "@angular/common";
 import type {StickerDefinition, StickerPlacement, StickerPack} from "@birthday/shared";
 import {StickerCanvasComponent} from "./sticker-canvas/sticker-canvas.component";
 import {AnimOnInitDirective} from "../animations/anim-on-init.directive";
-import {SvgComponent} from "../svg/svg.component";
 import {StickerPickerComponent} from "./sticker-picker/sticker-picker.component";
 import {PaletteDragSession} from "./palette-drag-session";
 import type {StickerDragStartEvent} from "./sticker-picker/sticker-picker.component";
@@ -21,7 +20,7 @@ import type {StickerDragStartEvent} from "./sticker-picker/sticker-picker.compon
 @Component({
   selector: "app-sticker-editor",
   standalone: true,
-  imports: [CommonModule, StickerCanvasComponent, StickerPickerComponent, SvgComponent, AnimOnInitDirective],
+  imports: [CommonModule, StickerCanvasComponent, StickerPickerComponent, AnimOnInitDirective],
   templateUrl: "./sticker-editor.component.html",
   host: {"class": "flex flex-col"},
 })
