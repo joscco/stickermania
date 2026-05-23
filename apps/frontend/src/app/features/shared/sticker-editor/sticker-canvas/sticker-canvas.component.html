@@ -29,7 +29,7 @@
        all around the same pivot point (p.x, p.y).
        The inner .sticker-anim-wrap handles entry/exit CSS keyframe animations
        so they don't conflict with the outer inline transform. -->
-  @for (sticker of stickers(); track sticker.instanceId) {
+  @for (sticker of stickersOnCanvas(); track sticker.instanceId) {
     <div
       class="absolute select-none w-max origin-top-left"
       [style.left.px]="stickerLeft(sticker)"

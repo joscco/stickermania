@@ -13,7 +13,7 @@
     <app-sticker-canvas
       #stickerCanvas
       class="block w-full h-full"
-      [stickers]="allPlacements()"
+      [stickersOnCanvas]="allPlacements()"
       [stickerCatalog]="stickerCatalog()"
       [maxStickers]="maxStickers()"
       (placementsChanged)="onPlacementsChanged($event)"
