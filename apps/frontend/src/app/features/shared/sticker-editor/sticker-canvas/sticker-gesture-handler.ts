@@ -72,8 +72,8 @@ export class StickerGestureHandler {
             else if (!this.isSelected(hitId)) this.selectAndMove(hitId, clientX - rect.left, clientY - rect.top);
             else this.startMove(clientX - rect.left, clientY - rect.top);
         } else {
-            this.sel.selectedInstanceId.set(null);
-            this.sel.lassoSelection.set(new Set());
+            this.sel?.selectedInstanceId.set(null);
+            this.sel?.lassoSelection.set(new Set());
             this.cb.onSelectedChanged(null);
             this.cb.onLassoSelectionChanged(new Set());
             this.lasso.start(clientX - rect.left, clientY - rect.top);
@@ -117,8 +117,8 @@ export class StickerGestureHandler {
                 });
                 if (this.isPointerOrCentroidNotOnCanvas(clientX, clientY, rect, fp) && this.hasSelection()) {
                     const ids = this.currentSelectionIds();
-                    this.sel.selectedInstanceId.set(null);
-                    this.sel.lassoSelection.set(new Set());
+                    this.sel?.selectedInstanceId.set(null);
+                    this.sel?.lassoSelection.set(new Set());
                     this.moveActive = false; this.moveBaselines = [];
                     this.cb.onMoveActiveChanged?.(false);
                     this.cb.onSelectedChanged(null);
@@ -149,11 +149,11 @@ export class StickerGestureHandler {
         }
     }
 
-    private hasSelection(): boolean { return this.sel.hasSelection(); }
-    private isSelected(id: string): boolean { return this.sel.isSelected(id); }
+    private hasSelection(): boolean { return this.sel?.hasSelection() ?? false; }
+    private isSelected(id: string): boolean { return this.sel?.isSelected(id) ?? false; }
 
     private currentSelectionIds(): string[] {
-        return this.sel.selectionIds();
+        return this.sel?.selectionIds() ?? [];
     }
 
     private selectedStickers(): StickerPlacement[] {
@@ -168,8 +168,8 @@ export class StickerGestureHandler {
 
     private selectAndMove(hitId: string, localX: number, localY: number): void {
         const ids = this.resolveHit(hitId);
-        if (ids.length > 1) { this.sel.lassoSelection.set(new Set(ids)); this.sel.selectedInstanceId.set(null); this.cb.onLassoSelectionChanged(new Set(ids)); }
-        else { this.sel.selectedInstanceId.set(hitId); this.sel.lassoSelection.set(new Set()); this.cb.onSelectedChanged(hitId); this.cb.onLassoSelectionChanged(new Set()); }
+        if (ids.length > 1) { this.sel?.lassoSelection.set(new Set(ids)); this.sel?.selectedInstanceId.set(null); this.cb.onLassoSelectionChanged(new Set(ids)); }
+        else { this.sel?.selectedInstanceId.set(hitId); this.sel?.lassoSelection.set(new Set()); this.cb.onSelectedChanged(hitId); this.cb.onLassoSelectionChanged(new Set()); }
         this.startMove(localX, localY);
     }
 

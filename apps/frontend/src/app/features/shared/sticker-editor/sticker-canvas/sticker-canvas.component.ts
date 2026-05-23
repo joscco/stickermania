@@ -463,7 +463,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   stickerLeft(p: StickerPlacement): number {
     const def = this.catalogMap.get(p.stickerId);
     const ob = def?.overlayBounds;
-    if (!ob) return p.x;
+    if (!ob) {
+      return p.x;
+    }
     return p.x - ob.x * this.stickerSizeFor(p).width;
   }
 
