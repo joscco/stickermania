@@ -28,7 +28,6 @@ export class StickerItemComponent implements OnInit {
   readonly imageUrl = input.required<string>();
   readonly width = input.required<number>();
   readonly height = input.required<number>();
-  readonly hitboxPoints = input<string>('');
   readonly lassoSelected = input<boolean>(false);
   /** Current animation state — driven by the parent canvas. */
   readonly animState = input<StickerAnimState>('idle');

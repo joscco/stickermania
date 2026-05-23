@@ -98,14 +98,22 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   readonly overlayBox = computed<BoundingBox | null>(() => {
     const ids = this.selectionState.selectionIds();
-    if (ids.length !== 1) {
-      return null;
+    if (ids.length === 0) return null;
+    const stickers = this.stickersOnCanvas().filter(s => ids.includes(s.instanceId));
+    if (!stickers.length) return null;
+
+    const boxes = stickers
+      .map(s => stickerTransformer.overlayBox(s, this.catalogMap.get(s.stickerId), this.stickerSizePx()))
+      .filter((b): b is BoundingBox => !!b);
+    if (!boxes.length) return null;
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const b of boxes) {
+      if (b.x < minX) minX = b.x; if (b.y < minY) minY = b.y;
+      if (b.x + b.w > maxX) maxX = b.x + b.w;
+      if (b.y + b.h > maxY) maxY = b.y + b.h;
     }
-    const p = this.stickersOnCanvas().find(s => s.instanceId === ids[0]);
-    if (!p) {
-      return null;
-    }
-    return stickerTransformer.overlayBox(p, this.catalogMap.get(p.stickerId), this.stickerSizePx());
+    return {x: minX, y: minY, w: maxX - minX, h: maxY - minY};
   });
 
   readonly canUngroup = computed(() =>

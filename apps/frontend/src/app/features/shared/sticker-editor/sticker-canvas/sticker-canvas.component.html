@@ -38,13 +38,13 @@
       [style.transform-origin]="getStickerAnchor(sticker)"
       [style.z-index]="sticker.zIndex"
       [attr.data-instance-id]="sticker.instanceId"
+      [style.filter]="isSelected(sticker.instanceId) ? 'drop-shadow(0 0 20px oklch(85.2% 0.199 91.936))' : 'none'"
     >
       <app-sticker-item
         [instanceId]="sticker.instanceId"
         [imageUrl]="getStickerUrl(sticker.stickerId)"
         [width]="getStickerWidth(sticker.stickerId)"
         [height]="stickerSizePx()"
-        [hitboxPoints]="isSelected(sticker.instanceId) ? getHitboxSvgPoints(sticker.stickerId) : ''"
         [lassoSelected]="isLassoSelected(sticker.instanceId)"
         [animState]="getStickerAnimState(sticker.instanceId)"
         (removed)="onStickerAnimRemoved(sticker.instanceId)"
