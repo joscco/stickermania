@@ -5,14 +5,6 @@
         <img src="assets/svg/logo.svg" alt="Stickermania" class="h-6 w-auto shrink-0"/>
       </div>
 
-      <!-- Countdown bar — animates in/out -->
-      <div class="flex-1 px-2" [animPresence]="timerEndsAt() > 0" animPresenceType="opacity">
-        <app-countdown-bar
-          [endsAt]="timerEndsAt()"
-          [totalDurationSec]="timerTotalSec()"
-        />
-      </div>
-
       <div class="flex items-center justify-center gap-2 shrink-0">
         @if (vm().showEditControls) {
           <button

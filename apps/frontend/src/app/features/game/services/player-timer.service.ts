@@ -60,9 +60,9 @@ export class PlayerTimerService {
           this.percentLeft.set(100);
         }
 
-        if (s <= 10 && s > 0) this.notification.set("⚡ Gleich ist die Zeit vorbei!");
-        else if (s === 60) this.notification.set("⏰ Noch eine Minute!");
-        else if (s === 120) this.notification.set("⏳ Noch zwei Minuten!");
+        if (s <= 10 && s > 0) this.notification.set("Gleich ist die Zeit vorbei!");
+        else if (s === 60) this.notification.set("Noch eine Minute!");
+        else if (s === 120) this.notification.set("Noch zwei Minuten!");
         else this.notification.set("");
       };
 

@@ -1,37 +1,29 @@
 <div class="h-full overflow-hidden board-pattern-bg text-neutral-900 overscroll-none flex flex-col no-select relative"
      style="padding-bottom: env(safe-area-inset-bottom);">
 
-  <!-- Yellow timer fill from bottom -->
-  <!-- Yellow timer fill from bottom with wave -->
-  <div class="absolute inset-x-0 bottom-0 pointer-events-none z-0 overflow-hidden"
+  <!-- Yellow timer fill from bottom with animated wave -->
+  <div class="absolute inset-x-0 bottom-0 pointer-events-none z-0 overflow-hidden transition-[height] duration-700 ease-linear"
        [style.height.%]="screenData.timerPercentElapsed()">
-    <div class="absolute inset-0 bg-yellow-400/20"></div>
-    <svg class="absolute top-0 left-0 w-full h-6 -translate-y-1/2" viewBox="0 0 1200 24" preserveAspectRatio="none">
-      <path d="M0,12 C150,24 300,0 450,12 C600,24 750,0 900,12 C1050,24 1200,12 1200,12 L1200,24 L0,24 Z"
-            fill="#facc15" opacity="0.6"/>
-      <path d="M0,12 C150,-4 300,24 450,12 C600,0 750,24 900,12 C1050,0 1200,16 1200,12 L1200,24 L0,24 Z"
-            fill="#facc15" opacity="0.5" style="animation: wave-drift 3s ease-in-out infinite alternate"/>
-    </svg>
+    <div class="absolute top-2 inset-0 bg-yellow-400"></div>
+    <div class="absolute top-0 left-0 w-[200%] h-6 -translate-y-1/2 timer-wave">
+      <svg class="w-full h-full" viewBox="0 0 2400 24" preserveAspectRatio="none">
+        <path d="M0,12 C100,24 200,0 300,12 C400,24 500,0 600,12 C700,24 800,0 900,12 C1000,24 1100,0 1200,12 C1300,24 1400,0 1500,12 C1600,24 1700,0 1800,12 C1900,24 2000,0 2100,12 C2200,24 2300,0 2400,12 L2400,24 L0,24 Z"
+              fill="oklch(85.2% 0.199 91.936)"/>
+      </svg>
+    </div>
   </div>
 
-  <style>
-    @keyframes wave-drift {
-      from { transform: translateX(0); }
-      to { transform: translateX(-50px); }
-    }
-  </style>
-
-  <!-- Notification toast -->
-    <div [animPresence]="!!screenData.timerNotification()" class="absolute top-20 left-4 right-4 z-40 pointer-events-none flex justify-center">
-      <div class="bg-white text-black px-5 py-2.5 rounded-2xl text-base font-bold shadow-lg animate-bounce">
+  <!-- Timer notification pill -->
+  @if (screenData.timerNotification()) {
+    <div class="absolute top-4 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+      <div class="bg-black/70 text-yellow-300 px-4 py-1 rounded-full text-xs font-semibold">
         {{ screenData.timerNotification() }}
       </div>
     </div>
+  }
 
   <app-player-header
     [vm]="screenData.headerVm()"
-    [timerEndsAt]="screenData.timerEndsAt()"
-    [timerTotalSec]="screenData.timerTotalSec()"
     (editName)="startEditName()"
     (editAvatar)="startEditAvatar()"
   />

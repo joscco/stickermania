@@ -156,3 +156,11 @@ canvas,
   100% { background-position: 800px 800px; }
 }
 
+@keyframes timer-wave {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.timer-wave {
+  animation: timer-wave 4s linear infinite;
+}
+
