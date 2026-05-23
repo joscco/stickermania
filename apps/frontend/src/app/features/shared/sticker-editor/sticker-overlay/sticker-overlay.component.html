@@ -1,6 +1,4 @@
 @if (visible() && box(); as b) {
-  <div class="absolute w-2 h-2 bg-red-600" [style.left.px]="b.x + b.w / 2" [style.top.px]="b.y + b.h / 2">
-  </div>
   <div class="absolute pointer-events-none"
        [style.left.px]="b.x + b.w / 2" [style.top.px]="b.y + b.h / 2"
        [style.transform]="'rotate(' + rotation() + 'deg)'">

@@ -57,39 +57,42 @@ export class StickerActionBarComponent implements AfterViewChecked {
   ngAfterViewChecked(): void {
     if (!this.visible() || !this.box() || !this.barRef) return;
     const el = this.barRef.nativeElement as HTMLElement;
-    const bw = el.offsetWidth || 200;
-    const bh = el.offsetHeight || 44;
+    const barW = el.offsetWidth || 200;
+    const barH = el.offsetHeight || 44;
     const box = this.box()!;
-    const pad = this.spacing();
     const cxIn = this.centerX();
     const cyIn = this.centerY();
 
-    const sameCenter = Math.abs(cxIn - this.lastCenterX) < 1 && Math.abs(cyIn - this.lastCenterY) < 1;
-    const sameBoxY = Math.abs(box.y - this.lastBoxY) < 1;
-    const sameRotation = Math.abs(this.stickerRotation() - this.lastRotation) < 0.5;
-    if (sameCenter && sameBoxY && sameRotation) return;
-    this.lastCenterX = cxIn;
-    this.lastCenterY = cyIn;
-    this.lastBoxY = box.y;
-    this.lastRotation = this.stickerRotation();
+    // ── Skip if nothing changed ──
+    if (Math.abs(cxIn - this.lastCenterX) < 1
+      && Math.abs(cyIn - this.lastCenterY) < 1
+      && Math.abs(box.y - this.lastBoxY) < 1
+      && Math.abs(this.stickerRotation() - this.lastRotation) < 0.5) return;
+    this.lastCenterX = cxIn; this.lastCenterY = cyIn;
+    this.lastBoxY = box.y; this.lastRotation = this.stickerRotation();
 
-    let cx = cxIn - bw / 2;
+    // ── Parameters ──
+    const edgePad = 4;                                        // min distance to canvas edge
+    const rad = this.stickerRotation() * Math.PI / 180;
+    const hw = box.w / 2, hh = box.h / 2;
+    const s = Math.sin(rad), c = Math.cos(rad);
+    const corners = [
+      -hh * c - hw * s, -hh * c + hw * s,
+       hh * c - hw * s,  hh * c + hw * s,
+    ];
+    const topmost = Math.min(...corners);
+    const extraGap = Math.max(0, -hh - topmost);
+    const gap = this.spacing() + extraGap;
 
-    const maxY = this.canvasH() - bh - pad;
-    const aboveY = box.y - bh - pad;
-    const belowY = box.y + box.h + pad;
-
-    let cy: number;
-    if (aboveY >= pad && aboveY <= maxY) {
-      cy = aboveY;
-    } else if (belowY >= pad && belowY <= maxY) {
-      cy = belowY;
-    } else {
-      cy = aboveY;
+    // ── Position ──
+    let cx = cxIn - barW / 2;
+    let cy = box.y - barH - gap;                              // prefer above box
+    if (cy < edgePad) {
+      cy = box.y + box.h + gap               // fallback: below box
     }
 
-    cx = Math.max(pad, Math.min(cx, this.canvasW() - bw - pad));
-    cy = Math.max(pad, Math.min(cy, maxY));
+    cx = Math.max(edgePad, Math.min(cx, this.canvasW() - barW - edgePad));
+    cy = Math.max(edgePad, Math.min(cy, this.canvasH() - barH - edgePad));
 
     this.clampedX.set(cx);
     this.clampedY.set(cy);

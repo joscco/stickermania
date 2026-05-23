@@ -64,8 +64,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   readonly actionBarVisible = computed(() =>
     this.selectionState.hasSelection() && !this.selectionState.isMoveActive()
-    && !this.selectionState.dragNearEdge() && !this.paletteDragInProgress()
-    && !this.isRotating());
+    && !this.selectionState.dragNearEdge() && !this.paletteDragInProgress());
 
   readonly overlayVisible = computed(() =>
     this.selectionState.hasSelection() && !this.selectionState.isMoveActive()
@@ -95,23 +94,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       return 0;
     }
     return this.stickersOnCanvas().find(s => s.instanceId === ids[0])?.rotation ?? 0;
-  });
-
-  // Debug anchor
-  readonly anchorStickerX = computed(() => {
-    const ids = this.selectionState.selectionIds();
-    if (ids.length !== 1) {
-      return 0;
-    }
-    return this.stickersOnCanvas().find(s => s.instanceId === ids[0])?.x ?? 0;
-  });
-
-  readonly anchorStickerY = computed(() => {
-    const ids = this.selectionState.selectionIds();
-    if (ids.length !== 1) {
-      return 0;
-    }
-    return this.stickersOnCanvas().find(s => s.instanceId === ids[0])?.y ?? 0;
   });
 
   readonly overlayBox = computed<BoundingBox | null>(() => {
