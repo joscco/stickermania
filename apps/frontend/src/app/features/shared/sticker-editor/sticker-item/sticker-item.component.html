@@ -6,16 +6,4 @@
     [style.width.px]="width()"
     [style.height.px]="height()"
   />
-  @if (hitboxPoints()) {
-    <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1 1">
-      <polygon
-        [attr.points]="hitboxPoints()"
-        stroke="oklch(85.2% 0.199 91.936)"
-        fill="none"
-        vector-effect="non-scaling-stroke"
-        stroke-width="2"
-        stroke-linejoin="round"
-      />
-    </svg>
-  }
 </div>

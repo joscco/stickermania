@@ -52,6 +52,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   readonly selectionState = new CanvasSelectionState();
   readonly paletteDragInProgress = signal(false);
+  private isRotating = signal(false);
   readonly stickerWouldBeDeleted = computed(() => this.selectionState.dragNearEdge());
   readonly canvasW = signal(400);
   readonly canvasH = signal(400);
@@ -63,7 +64,8 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   readonly actionBarVisible = computed(() =>
     this.selectionState.hasSelection() && !this.selectionState.isMoveActive()
-    && !this.selectionState.dragNearEdge() && !this.paletteDragInProgress());
+    && !this.selectionState.dragNearEdge() && !this.paletteDragInProgress()
+    && !this.isRotating());
 
   readonly overlayVisible = computed(() =>
     this.selectionState.hasSelection() && !this.selectionState.isMoveActive()
@@ -145,6 +147,8 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   private resizeObserver: ResizeObserver | null = null;
   private suppressDoubleTap = signal(false);
   private suppressTimer: ReturnType<typeof setTimeout> | null = null;
+  private _lastRotateX = 0;
+  private _lastRotateY = 0;
 
   // ── Animation state ───────────────────────────────────────────
 
@@ -301,13 +305,36 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     const ids = this.selectionState.selectionIds();
     if (!ids.length) return;
 
-    if (ev.type === 'rotate') {
-      this.commit(ops.applyRotationDelta(this.stickersOnCanvas(), ids, ev.dx * 0.5));
-    } else if (ev.type === 'n' || ev.type === 's' || ev.type === 'e' || ev.type === 'w') {
-      if (ids.length === 1) {
-        this.commit(ops.applyStretchHandle(this.stickersOnCanvas(), ids[0], ev.type as 'n' | 's' | 'e' | 'w', ev.dx, ev.dy, (id: string) => this.getRenderedSize(id)));
+    const type = ev.type as string;
+    if (type === 'rotate') {
+      if (ev.done) {
+        this.isRotating.set(false);
+        this._lastRotateX = 0;
+        this._lastRotateY = 0;
+      } else {
+        this.isRotating.set(true);
+        const box = this.overlayBox();
+        if (box && ids.length) {
+          const rect = this.canvasArea.nativeElement.getBoundingClientRect();
+          const cx = rect.left + box.x + box.w / 2;
+          const cy = rect.top + box.y + box.h / 2;
+          if (this._lastRotateX === 0 && this._lastRotateY === 0) {
+            this._lastRotateX = ev.clientX;
+            this._lastRotateY = ev.clientY;
+          } else {
+            const pa = Math.atan2(this._lastRotateY - cy, this._lastRotateX - cx);
+            const ca = Math.atan2(ev.clientY - cy, ev.clientX - cx);
+            this._lastRotateX = ev.clientX;
+            this._lastRotateY = ev.clientY;
+            this.commit(ops.applyRotationDelta(this.stickersOnCanvas(), ids, (ca - pa) * 180 / Math.PI));
+          }
+        }
       }
-    } else if (ev.type === 'scale') {
+    } else if (type === 'n' || type === 's' || type === 'e' || type === 'w') {
+      if (ids.length === 1) {
+        this.commit(ops.applyStretchHandle(this.stickersOnCanvas(), ids[0], type as 'n' | 's' | 'e' | 'w', ev.dx, ev.dy, (id: string) => this.getRenderedSize(id)));
+      }
+    } else if (type === 'scale') {
       const box = this.overlayBox();
       if (box && ids.length === 1 && box.w > 0 && box.h > 0) {
         const half = Math.max(box.w, box.h) / 2;
@@ -316,7 +343,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       }
     }
 
-    if (ev.done && ev.type !== 'rotate') ids.forEach(id => this.setAnimState(id, 'settling'));
+    if (ev.done && type !== 'rotate') ids.forEach(id => this.setAnimState(id, 'settling'));
   }
 
   private resetSelection(ids: string[]): void {
