@@ -123,6 +123,67 @@ export function applyGroupTransform(
     });
 }
 
+// ── Corner scale / rotation handle math ─────────────────────────────────────
+
+export function applyCornerScale(
+    placements: StickerPlacement[],
+    ids: string[],
+    dx: number,
+    dy: number,
+    boundingBoxSize: {width: number; height: number} | null,
+    getRenderedSize: (id: string) => {width: number; height: number},
+): StickerPlacement[] {
+    const delta = (dx + dy) / 2;
+
+    if (ids.length !== 1) {
+        if (!boundingBoxSize || boundingBoxSize.width < 1 || boundingBoxSize.height < 1) return placements;
+        const halfDiag = Math.max(boundingBoxSize.width, boundingBoxSize.height) / 2;
+        const factor = (halfDiag + delta) / halfDiag;
+        return applyGroupTransform(placements, ids, 0, clamp(factor, 0.05, 6), null);
+    }
+
+    const id = ids[0];
+    const p = placements.find(s => s.instanceId === id);
+    if (!p) return placements;
+    const {width, height} = getRenderedSize(id);
+    const halfSize = Math.max(width, height) * p.scale / 2;
+    if (halfSize < 1) return placements;
+    const newScale = clamp(p.scale * (halfSize + delta) / halfSize, MIN_SCALE, MAX_SCALE);
+    return placements.map(pl => pl.instanceId === id ? {...pl, scale: newScale} : pl);
+}
+
+export function applyRotationDelta(
+    placements: StickerPlacement[],
+    ids: string[],
+    angleDeg: number,
+): StickerPlacement[] {
+    if (ids.length === 1) return rotateSingle(placements, ids[0], angleDeg);
+    return applyGroupTransform(placements, ids, angleDeg, 1, null);
+}
+
+export function applyStretchHandle(
+    placements: StickerPlacement[],
+    id: string,
+    handle: 'n' | 's' | 'e' | 'w',
+    dx: number,
+    dy: number,
+    getRenderedSize: (id: string) => {width: number; height: number},
+): StickerPlacement[] {
+    const p = placements.find(s => s.instanceId === id);
+    if (!p) return placements;
+    const pp = p as any;
+    const {width, height} = getRenderedSize(id);
+    let newScaleX = pp.scaleX ?? 1;
+    let newScaleY = pp.scaleY ?? 1;
+    const halfW = width * p.scale * newScaleX / 2;
+    const halfH = height * p.scale * newScaleY / 2;
+    if (handle === 'e' && halfW > 0) newScaleX = Math.max(0.1, newScaleX * (halfW + dx) / halfW);
+    if (handle === 'w' && halfW > 0) newScaleX = Math.max(0.1, newScaleX * (halfW - dx) / halfW);
+    if (handle === 's' && halfH > 0) newScaleY = Math.max(0.1, newScaleY * (halfH + dy) / halfH);
+    if (handle === 'n' && halfH > 0) newScaleY = Math.max(0.1, newScaleY * (halfH - dy) / halfH);
+    return placements.map(pl => pl.instanceId === id ? {...pl, scaleX: newScaleX, scaleY: newScaleY} : pl);
+}
+
 // ── Grouping ─────────────────────────────────────────────────────────────────
 
 export function groupPlacements(placements: StickerPlacement[], ids: string[]): StickerPlacement[] {

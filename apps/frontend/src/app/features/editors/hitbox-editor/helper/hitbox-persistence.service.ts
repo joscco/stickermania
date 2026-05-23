@@ -21,6 +21,9 @@ export class HitboxPersistenceService {
     /** Currently selected sticker */
     public readonly selectedSticker = signal<StickerDefinition | null>(null);
 
+    /** Overlay bounds for the current sticker */
+    public readonly overlayBounds = signal<{x: number; y: number; w: number; h: number} | null>(null);
+
     /** UI feedback signals */
     public readonly saving = signal(false);
     public readonly saveStatus = signal<string>("");
@@ -35,6 +38,14 @@ export class HitboxPersistenceService {
         effect(() => {
             const pts = this.polygonEdit.polygon();
             if (pts.length >= 3) {
+                this.saveRequest$.next();
+            }
+        });
+
+        // Watch overlay bounds for changes → debounced auto-save
+        effect(() => {
+            const ob = this.overlayBounds();
+            if (ob) {
                 this.saveRequest$.next();
             }
         });
@@ -80,6 +91,7 @@ export class HitboxPersistenceService {
         await this.flushSave();
         this.selectedSticker.set(sticker);
         this.polygonEdit.load(sticker.hitboxPolygon ? [...sticker.hitboxPolygon] : []);
+        this.overlayBounds.set((sticker as any).overlayBounds ?? null);
     }
 
     // ── Persistence ─────────────────────────────────────────
@@ -94,15 +106,17 @@ export class HitboxPersistenceService {
         this.saving.set(true);
         this.saveStatus.set("");
         try {
+            const body: any = {polygon: pts};
+            const ob = this.overlayBounds();
+            if (ob) body.overlayBounds = ob;
             await firstValueFrom(
-                this.http.put(`/api/hitbox-data/${encodeURIComponent(sticker.id)}`, {polygon: pts}),
+                this.http.put(`/api/hitbox-data/${encodeURIComponent(sticker.id)}`, body),
             );
-            // Update catalog entry so the sidebar shows the green dot
             const current = this.catalog();
             const idx = current.findIndex(s => s.id === sticker.id);
             if (idx >= 0) {
                 const updated = [...current];
-                updated[idx] = {...updated[idx], hitboxPolygon: pts};
+                updated[idx] = {...updated[idx], hitboxPolygon: pts, overlayBounds: ob ?? undefined};
                 this.catalog.set(updated);
             }
             this.saveStatus.set("✅");

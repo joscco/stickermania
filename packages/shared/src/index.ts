@@ -151,6 +151,12 @@ export interface StickerDefinition {
      * If absent, the full bounding rectangle is used for hit-testing.
      */
     hitboxPolygon?: Array<{ x: number; y: number }>;
+    /**
+     * Optional overlay bounds for the selection box.
+     * {x, y} = center position, {w, h} = size, all normalized 0–1.
+     * Falls back to the hitbox polygon extent if absent.
+     */
+    overlayBounds?: { x: number; y: number; w: number; h: number };
 }
 
 export interface StickerPlacement {

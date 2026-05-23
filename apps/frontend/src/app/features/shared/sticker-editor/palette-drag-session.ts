@@ -101,9 +101,9 @@ export class PaletteDragSession {
             const outside = isOutside(ev.clientX, ev.clientY, r);
             if (wasOutside && !outside) wasInsideCanvas = true;
             wasOutside = outside;
-            this.canvas.stickerWouldBeDeleted.set(!wasInsideCanvas || outside);
+            this.canvas.selectionState.dragNearEdge.set(!wasInsideCanvas || outside);
             update();
-            this.canvas.isMoveActive.set(true);
+            this.canvas.selectionState.isMoveActive.set(true);
         };
 
         const onPointerUp = (ev: PointerEvent) => {
@@ -126,8 +126,8 @@ export class PaletteDragSession {
             const outside = isPointerOutsideRect(ev.clientX, ev.clientY, r)
                 || isPositionOutsideCanvas(x, y, r);
 
-            this.canvas.isMoveActive.set(false);
-            this.canvas.stickerWouldBeDeleted.set(false);
+            this.canvas.selectionState.isMoveActive.set(false);
+            this.canvas.selectionState.dragNearEdge.set(false);
             this.setPendingPlacement(null);
             cleanup();
 
@@ -140,8 +140,8 @@ export class PaletteDragSession {
             window.removeEventListener('pointerup', onPointerUp);
             window.removeEventListener('pointercancel', onPointerUp);
             this.setPendingPlacement(null);
-            this.canvas.isMoveActive.set(false);
-            this.canvas.stickerWouldBeDeleted.set(false);
+            this.canvas.selectionState.isMoveActive.set(false);
+            this.canvas.selectionState.dragNearEdge.set(false);
             this.canvas.paletteDragInProgress.set(false);
             this.cleanupFn = null;
         };

@@ -95,10 +95,14 @@ export class StickerEditorComponent implements AfterViewInit, OnDestroy {
   }
 
   onStickerDragStarted(event: StickerDragStartEvent): void {
-    if (!this.canAddMore()) return;
+    if (!this.canAddMore()) {
+      return;
+    }
 
     const canvasEl = this.stickerCanvas?.canvasNativeElement;
-    if (!canvasEl) return;
+    if (!canvasEl) {
+      return;
+    }
 
     this.showPicker.set(false);
 
@@ -123,9 +127,9 @@ export class StickerEditorComponent implements AfterViewInit, OnDestroy {
     this.dragSession?.abort();
 
     this.stickerCanvas.paletteDragInProgress.set(true);
-    this.stickerCanvas.stickerWouldBeDeleted.set(false);
-    this.stickerCanvas.selectedInstanceId.set(instanceId);
-    this.stickerCanvas.lassoSelection.set(new Set());
+    this.stickerCanvas.selectionState.dragNearEdge.set(false);
+    this.stickerCanvas.selectionState.selectedInstanceId.set(instanceId);
+    this.stickerCanvas.selectionState.lassoSelection.set(new Set());
 
     this.dragSession = new PaletteDragSession({
       canvasEl,
@@ -144,8 +148,8 @@ export class StickerEditorComponent implements AfterViewInit, OnDestroy {
     _dragEvent: StickerDragStartEvent,
   ): void {
     if (outside) {
-      this.stickerCanvas.selectedInstanceId.set(null);
-      this.stickerCanvas.lassoSelection.set(new Set());
+      this.stickerCanvas.selectionState.selectedInstanceId.set(null);
+      this.stickerCanvas.selectionState.lassoSelection.set(new Set());
       this.stickerCanvas.scheduleRemoval([instanceId], () => {});
     } else {
       const existing = this.placements();
@@ -156,7 +160,7 @@ export class StickerEditorComponent implements AfterViewInit, OnDestroy {
       const updated = [...existing, committed];
       this.placements.set(updated);
       this.placementsChanged.emit(updated);
-      this.stickerCanvas.selectedInstanceId.set(instanceId);
+      this.stickerCanvas.selectionState.selectedInstanceId.set(instanceId);
       this.stickerCanvas.setAnimState(instanceId, 'settling');
     }
   }

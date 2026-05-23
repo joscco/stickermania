@@ -17,26 +17,21 @@ import {getSpriteViewBox, preloadSprite} from '../sprite-url.util';
 import {AudioService} from '../../../../core/audio.service';
 import {StickerItemComponent, type StickerAnimState} from './sticker-item/sticker-item.component';
 import {StickerActionBarComponent, type ActionBarAction} from '../sticker-action-bar/sticker-action-bar.component';
+import {StickerOverlayComponent, type OverlayHandleEvent} from '../sticker-overlay/sticker-overlay.component';
+import {CanvasSelectionState} from './canvas-selection.state';
 
 @Component({
   selector: 'app-sticker-canvas',
   standalone: true,
   imports: [
-    CommonModule,
-    StickerActionBarComponent,
-    AnimOnInitDirective,
-    AnimPresenceDirective,
-    StickerItemComponent,
-    SvgComponent,
+    CommonModule, StickerActionBarComponent,
+    AnimOnInitDirective, AnimPresenceDirective,
+    StickerItemComponent, SvgComponent, StickerOverlayComponent,
   ],
   templateUrl: './sticker-canvas.component.html',
   host: {class: 'block w-full h-full'},
 })
 export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
-
-  // ── Inputs / Outputs ──────────────────────────────────────────
-
-  readonly stickerSizePx = computed(() => Math.round(this.canvasW() / 2));
 
   readonly stickers = input<StickerPlacement[]>([]);
   readonly stickerCatalog = input<StickerDefinition[]>([]);
@@ -46,90 +41,43 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   readonly stickerRemoved = output<string>();
   readonly clearAll = output<void>();
 
-  readonly committedCount = computed(() =>
-    this.stickers().length - (this.paletteDragInProgress() ? 1 : 0));
-  readonly canAddMore = computed(() => this.committedCount() < this.maxStickers());
-
   @ViewChild('canvasArea') private canvasArea!: ElementRef<HTMLDivElement>;
-
   get canvasNativeElement(): HTMLDivElement | null {
     return this.canvasArea?.nativeElement ?? null;
   }
 
-  // ── Selection state ───────────────────────────────────────────
+  // ── State ─────────────────────────────────────────────────────
 
-  readonly selectedInstanceId = signal<string | null>(null);
-  readonly lassoSelection = signal<Set<string>>(new Set());
-  readonly isMoveActive = signal<boolean>(false);
-  readonly multiSelectionRotation = signal<number>(0);
-
-  readonly hasSelection = computed(() =>
-    !!this.selectedInstanceId() || this.lassoSelection().size > 0);
-  readonly isMultiSelection = computed(() =>
-    this.lassoSelection().size > 1);
-  readonly selectionIds = computed<string[]>(() => {
-    const ls = this.lassoSelection();
-    if (ls.size > 0) return [...ls];
-    const id = this.selectedInstanceId();
-    return id ? [id] : [];
-  });
-
-  // ── Action bar visibility ──────────────────────────────────────
-
-  readonly actionBarVisible = computed(() =>
-    this.hasSelection() && !this.isMoveActive() && !this.stickerWouldBeDeleted() && !this.paletteDragInProgress());
-
-  // ── Drag / visual flags ───────────────────────────────────────
-
+  readonly selectionState = new CanvasSelectionState();
   readonly paletteDragInProgress = signal(false);
-  readonly stickerWouldBeDeleted = signal(false);
-  private suppressDoubleTap = signal(false);
-  private suppressTimer: ReturnType<typeof setTimeout> | null = null;
-
-  // ── Layout / sizing ───────────────────────────────────────────
-
+  readonly stickerWouldBeDeleted = computed(() => this.selectionState.dragNearEdge());
   readonly canvasW = signal(400);
   readonly canvasH = signal(400);
+  readonly actionBarSpacing = 20;
 
-  // ── Selection geometry (derived) ──────────────────────────────
+  readonly stickerSizePx = computed(() => Math.round(this.canvasW() / 2));
+  readonly committedCount = computed(() =>
+    this.stickers().length - (this.paletteDragInProgress() ? 1 : 0));
+
+  readonly actionBarVisible = computed(() =>
+    this.selectionState.hasSelection() && !this.selectionState.isMoveActive()
+    && !this.selectionState.dragNearEdge() && !this.paletteDragInProgress());
+
+  readonly overlayVisible = computed(() =>
+    this.selectionState.hasSelection() && !this.selectionState.isMoveActive()
+    && !this.selectionState.dragNearEdge() && !this.paletteDragInProgress()
+    && !!this.overlayBox());
+
+  readonly selectionCenterX = this.selectionCenter('x');
+  readonly selectionCenterY = this.selectionCenter('y');
 
   readonly selectionInfo = computed<SelectionInfo | null>(() =>
     ops.computeSelectionInfo(
-      this.stickers(),
-      this.selectionIds(),
-      id => this.getRenderedSize(id),
-      this.multiSelectionRotation(),
-    ));
-
-  readonly boundingBox = computed<BoundingBox | null>(() =>
-    this.selectionInfo()?.box ?? null);
-
-  readonly selectionCenterX = computed(() => {
-    const ids = this.selectionIds();
-    if (!ids.length) return 0;
-    const selected = this.stickers().filter(p => ids.includes(p.instanceId));
-    if (!selected.length) return 0;
-    return selected.reduce((s, p) => s + p.x, 0) / selected.length;
-  });
-
-  readonly selectionCenterY = computed(() => {
-    const ids = this.selectionIds();
-    if (!ids.length) return 0;
-    const selected = this.stickers().filter(p => ids.includes(p.instanceId));
-    if (!selected.length) return 0;
-    return selected.reduce((s, p) => s + p.y, 0) / selected.length;
-  });
-
-  // ── Lasso path (svg overlay) ──────────────────────────────────
-
-  readonly lassoPath = signal<{ x: number; y: number }[] | null>(null);
-  readonly lassoPoints = computed(() =>
-    this.lassoPath()?.map(p => `${p.x},${p.y}`).join(' '));
-
-  // ── Action-bar capability flags ────────────────────────────────
+      this.stickers(), this.selectionState.selectionIds(),
+      id => this.getRenderedSize(id), this.selectionState.multiSelectionRotation()));
 
   readonly canGroup = computed(() => {
-    const ids = this.selectionIds();
+    const ids = this.selectionState.selectionIds();
     if (ids.length < 2) return false;
     const all = this.stickers();
     const first = all.find(p => p.instanceId === ids[0]);
@@ -137,12 +85,59 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       || ids.some(id => all.find(p => p.instanceId === id)?.groupId !== first.groupId);
   });
 
+  readonly overlayRotation = computed(() => {
+    const ids = this.sel.selectionIds();
+    if (ids.length !== 1) return 0;
+    return this.stickers().find(s => s.instanceId === ids[0])?.rotation ?? 0;
+  });
+
+  readonly overlayBox = computed<BoundingBox | null>(() => {
+    const ids = this.selectionState.selectionIds();
+    if (ids.length !== 1) return null;
+
+    const pid = ids[0];
+    const p = this.stickers().find(s => s.instanceId === pid);
+    if (!p) return null;
+
+    const def = this.catalogMap.get(p.stickerId);
+    const ob = def?.overlayBounds;
+    const size = this.getRenderedSize(pid);
+    const sx = (p.flipX ? -1 : 1) * p.scale * ((p as any).scaleX ?? 1);
+    const sy = (p.flipY ? -1 : 1) * p.scale * ((p as any).scaleY ?? 1);
+
+    let ow: number, oh: number;
+    if (ob) {
+      ow = Math.max(40, Math.abs(ob.w * size.width * sx));
+      oh = Math.max(40, Math.abs(ob.h * size.height * sy));
+      const ox = p.x + (ob.x - 0.5) * size.width * sx;
+      const oy = p.y + (ob.y - 0.5) * size.height * sy;
+      return {x: ox - ow / 2, y: oy - oh / 2, w: ow, h: oh};
+    }
+
+    const polygon = def?.hitboxPolygon;
+    if (!polygon || polygon.length < 3) return null;
+
+    let minPX = Infinity, minPY = Infinity, maxPX = -Infinity, maxPY = -Infinity;
+    for (const pt of polygon) {
+      if (pt.x < minPX) minPX = pt.x; if (pt.x > maxPX) maxPX = pt.x;
+      if (pt.y < minPY) minPY = pt.y; if (pt.y > maxPY) maxPY = pt.y;
+    }
+
+    ow = Math.max(40, Math.abs((maxPX - minPX) * size.width * sx));
+    oh = Math.max(40, Math.abs((maxPY - minPY) * size.height * sy));
+    return {x: p.x - ow / 2, y: p.y - oh / 2, w: ow, h: oh};
+  });
+
   readonly canUngroup = computed(() =>
-    this.stickers().some(p => this.selectionIds().includes(p.instanceId) && !!p.groupId));
+    this.stickers().some(p => this.selectionState.selectionIds().includes(p.instanceId) && !!p.groupId));
 
   readonly canDuplicate = computed(() =>
-    this.selectionIds().length > 0
-    && (this.committedCount() + this.selectionIds().length) <= this.maxStickers());
+    this.selectionState.selectionIds().length > 0
+    && (this.committedCount() + this.selectionState.selectionIds().length) <= this.maxStickers());
+
+  readonly lassoPath = signal<{x: number; y: number}[] | null>(null);
+  readonly lassoPoints = computed(() =>
+    this.lassoPath()?.map(p => `${p.x},${p.y}`).join(' '));
 
   // ── Internals ─────────────────────────────────────────────────
 
@@ -152,6 +147,8 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   private removeListeners: (() => void) | null = null;
   private removeOutsideListener: (() => void) | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private suppressDoubleTap = signal(false);
+  private suppressTimer: ReturnType<typeof setTimeout> | null = null;
 
   // ── Animation state ───────────────────────────────────────────
 
@@ -164,17 +161,11 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   setAnimState(id: string, state: StickerAnimState): void {
     this.animStates.update(m => new Map(m).set(id, state));
-    if (state === 'settling') {
-      this.audio.playSettle();
-    }
+    if (state === 'settling') this.audio.playSettle();
   }
 
   clearAnimState(id: string): void {
-    this.animStates.update(m => {
-      const n = new Map(m);
-      n.delete(id);
-      return n;
-    });
+    this.animStates.update(m => { const n = new Map(m); n.delete(id); return n; });
   }
 
   scheduleRemoval(ids: string[], done: () => void): void {
@@ -182,10 +173,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     this.audio.playDelete();
     let pending = ids.length;
     const onOne = () => { if (--pending === 0) done(); };
-    ids.forEach(id => {
-      this.pendingRemovals.set(id, onOne);
-      this.setAnimState(id, 'removing');
-    });
+    ids.forEach(id => { this.pendingRemovals.set(id, onOne); this.setAnimState(id, 'removing'); });
   }
 
   onStickerAnimRemoved(id: string): void {
@@ -195,7 +183,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     cb?.();
   }
 
-  // ── Constructor effects ───────────────────────────────────────
+  // ── Lifecycle ─────────────────────────────────────────────────
 
   constructor() {
     effect(() => {
@@ -203,24 +191,17 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       for (const s of this.stickerCatalog()) this.catalogMap.set(s.id, s);
     });
     effect(() => {
-      this.gesture?.syncState(
-        this.stickers(), this.selectedInstanceId(), this.lassoSelection());
+      this.gesture?.syncState(this.stickers(), this.selectionState);
     });
   }
-
-  // ── Lifecycle ─────────────────────────────────────────────────
 
   ngAfterViewInit(): void {
     preloadSprite();
     this.gesture = new StickerGestureHandler(
       () => this.canvasArea.nativeElement.getBoundingClientRect(),
       (cx, cy) => hitTestOnCanvas(
-        cx, cy,
-        this.canvasArea.nativeElement.getBoundingClientRect(),
-        this.stickers(),
-        id => this.getRenderedSize(id),
-        this.catalogMap,
-      ),
+        cx, cy, this.canvasArea.nativeElement.getBoundingClientRect(),
+        this.stickers(), id => this.getRenderedSize(id), this.catalogMap),
       this.buildGestureCallbacks(),
     );
 
@@ -231,20 +212,17 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     this.resizeObserver.observe(this.canvasArea.nativeElement);
 
     this.removeListeners = installCanvasInputListeners(
-      this.canvasArea.nativeElement,
-      this.gesture,
-      () => {
-        this.gesture.syncState(
-          this.stickers(), this.selectedInstanceId(), this.lassoSelection());
-      },
+      this.canvasArea.nativeElement, this.gesture,
+      () => this.gesture.syncState(this.stickers(), this.selectionState),
       () => this.paletteDragInProgress(),
     );
 
     const onOutside = (ev: PointerEvent) => {
-      if (!this.hasSelection()) return;
+      if (!this.selectionState.hasSelection()) return;
       if (this.canvasArea.nativeElement.contains(ev.target as Node)) return;
       if (this.paletteDragInProgress()) return;
-      this.clearSelection();
+      this.selectionState.clear();
+      this.selectionState.dragNearEdge.set(false);
     };
     document.addEventListener('pointerdown', onOutside, {capture: true});
     this.removeOutsideListener = () =>
@@ -263,48 +241,32 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   private buildGestureCallbacks(): GestureCallbacks {
     return {
       onPlacementsChanged: p => this.placementsChanged.emit(p),
-
       onLassoPathChanged: path => this.lassoPath.set(path),
-
       onLassoSelectionChanged: ids => {
-        this.multiSelectionRotation.set(0);
-        if (ids.size === 0) {
-          this.lassoSelection.set(new Set());
-        } else if (ids.size === 1) {
-          this.selectedInstanceId.set([...ids][0]);
-          this.lassoSelection.set(new Set());
-        } else {
-          this.lassoSelection.set(ids);
-          this.selectedInstanceId.set(null);
-        }
+        this.selectionState.multiSelectionRotation.set(0);
+        if (ids.size === 0)           this.selectionState.lassoSelection.set(new Set());
+        else if (ids.size === 1)      { this.selectionState.selectedInstanceId.set([...ids][0]); this.selectionState.lassoSelection.set(new Set()); }
+        else                          { this.selectionState.lassoSelection.set(ids); this.selectionState.selectedInstanceId.set(null); }
       },
-
       onSelectedChanged: id => {
-        if (id) {
-          this.clearSelection();
-          this.selectedInstanceId.set(id);
-        } else {
-          this.clearSelection();
-        }
+        this.selectionState.clear();
+        if (id) this.selectionState.selectedInstanceId.set(id);
       },
-
       onStickerDraggedOff: (_id, allIds) => {
         const removed = new Set(allIds);
         this.scheduleRemoval(allIds, () => {
-          this.stickerWouldBeDeleted.set(false);
+          this.selectionState.dragNearEdge.set(false);
           this.placementsChanged.emit(
             this.stickers().filter(p => !removed.has(p.instanceId)));
         });
       },
-
-      onDragNearEdge: near => this.stickerWouldBeDeleted.set(near),
-      onMoveActiveChanged: active => this.isMoveActive.set(active),
+      onDragNearEdge: near => this.selectionState.dragNearEdge.set(near),
+      onMoveActiveChanged: active => this.selectionState.isMoveActive.set(active),
       onDoubleTap: ids => {
         if (this.suppressDoubleTap()) return;
         this.flipSelectionH(ids);
       },
-      onPointerUpCommit: ids =>
-        ids.forEach(id => this.setAnimState(id, 'settling')),
+      onPointerUpCommit: ids => ids.forEach(id => this.setAnimState(id, 'settling')),
     };
   }
 
@@ -316,11 +278,40 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       id => this.getStickerUrl(id), this.stickerSizePx());
   }
 
-  generateInstanceId(): string {
-    return ops.generateInstanceId();
-  }
+  generateInstanceId(): string { return ops.generateInstanceId(); }
 
   // ── Action bar ─────────────────────────────────────────────────
+
+  onOverlayHandle(ev: OverlayHandleEvent): void {
+    const ids = this.selectionState.selectionIds();
+    if (!ids.length) return;
+
+    if (ev.type === 'rotate') {
+      this.commit(ops.applyRotationDelta(this.stickers(), ids, ev.dx * 0.5));
+    } else if (ev.type === 'n' || ev.type === 's' || ev.type === 'e' || ev.type === 'w') {
+      if (ids.length === 1) {
+        this.commit(ops.applyStretchHandle(this.stickers(), ids[0], ev.type as 'n'|'s'|'e'|'w', ev.dx, ev.dy, (id: string) => this.getRenderedSize(id)));
+      }
+    } else if (ev.type === 'scale') {
+      const box = this.overlayBox();
+      if (box && ids.length === 1 && box.w > 0 && box.h > 0) {
+        const half = Math.max(box.w, box.h) / 2;
+        const factor = (half + (ev.dx + ev.dy) / 2) / half;
+        this.commit(ops.scaleSingle(this.stickers(), ids[0], factor));
+      }
+    }
+
+    if (ev.done && ev.type !== 'rotate') ids.forEach(id => this.setAnimState(id, 'settling'));
+  }
+
+  private resetSelection(ids: string[]): void {
+    if (!ids.length) return;
+    this.commit(this.stickers().map(p =>
+      ids.includes(p.instanceId)
+        ? {...p, scale: 1, rotation: 0, scaleX: undefined, scaleY: undefined, flipX: false, flipY: false}
+        : p));
+    ids.forEach(id => this.setAnimState(id, 'settling'));
+  }
 
   onActionBarAction(action: ActionBarAction): void {
     this.suppressDoubleTap.set(true);
@@ -329,79 +320,81 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       this.suppressDoubleTap.set(false);
       this.suppressTimer = null;
     }, 400);
-    const ids = this.selectionIds();
-    (this.actionBarHandlers[action] ?? (() => {}))(ids);
+    const ids = this.selectionState.selectionIds();
+    this.handleAction(action, ids);
   }
 
-  private readonly actionBarHandlers: Record<ActionBarAction, (ids: string[]) => void> = {
-    'delete':       () => { this.removeSelected(); },
-    'flipH':        ids => { this.flipSelectionH(ids); },
-    'rotateLeft':   ids => { this.rotateSelection(ids, -15); },
-    'rotateRight':  ids => { this.rotateSelection(ids, 15); },
-    'zoomIn':       ids => { this.zoomSelection(ids, 1.15); },
-    'zoomOut':      ids => { this.zoomSelection(ids, 1 / 1.15); },
-    'zForward':     ids => { this.placementsChanged.emit(ops.swapZ(this.stickers(), ids, +1)); },
-    'zBackward':    ids => { this.placementsChanged.emit(ops.swapZ(this.stickers(), ids, -1)); },
-    'zFront':       ids => { this.placementsChanged.emit(ops.moveToEdge(this.stickers(), ids, 'front')); },
-    'zBack':        ids => { this.placementsChanged.emit(ops.moveToEdge(this.stickers(), ids, 'back')); },
-    'group':        ids => { this.commitGroup(ops.groupPlacements(this.stickers(), ids), ids); },
-    'ungroup':      ids => { this.commitGroup(ops.ungroupPlacements(this.stickers(), ids), ids); },
-    'duplicate':    () => { this.doDuplicate(); },
-  };
-
-  private rotateSelection(ids: string[], degrees: number): void {
-    if (!ids.length) return;
-    if (ids.length === 1) {
-      this.placementsChanged.emit(ops.rotateSingle(this.stickers(), ids[0], degrees));
-    } else {
-      this.placementsChanged.emit(ops.applyGroupTransform(this.stickers(), ids, degrees, 1, null));
+  private handleAction(action: ActionBarAction, ids: string[]): void {
+    switch (action) {
+      case 'delete':    this.removeSelected(); break;
+      case 'flipH':     this.flipSelectionH(ids); break;
+      case 'zForward':  this.commit(ops.swapZ(this.stickers(), ids, +1)); break;
+      case 'zBackward': this.commit(ops.swapZ(this.stickers(), ids, -1)); break;
+      case 'zFront':    this.commit(ops.moveToEdge(this.stickers(), ids, 'front')); break;
+      case 'zBack':     this.commit(ops.moveToEdge(this.stickers(), ids, 'back')); break;
+      case 'group':     this.commitGroup(ops.groupPlacements(this.stickers(), ids), ids); break;
+      case 'ungroup':   this.commitGroup(ops.ungroupPlacements(this.stickers(), ids), ids); break;
+      case 'duplicate': this.doDuplicate(); break;
+      case 'reset':     this.resetSelection(ids); break;
     }
-    ids.forEach(id => this.setAnimState(id, 'settling'));
   }
 
-  private zoomSelection(ids: string[], factor: number): void {
-    if (!ids.length) return;
-    if (ids.length === 1) {
-      this.placementsChanged.emit(ops.scaleSingle(this.stickers(), ids[0], factor));
-    } else {
-      this.placementsChanged.emit(ops.applyGroupTransform(this.stickers(), ids, 0, factor, null));
-    }
-    ids.forEach(id => this.setAnimState(id, 'settling'));
+  private commit(updated: StickerPlacement[]): void {
+    this.placementsChanged.emit(updated);
   }
 
   // ── Placement mutations ───────────────────────────────────────
 
   removeSelected(): void {
-    const ls = this.lassoSelection();
-    const ids = ls.size > 0
-      ? [...ls]
-      : (this.selectedInstanceId() ? [this.selectedInstanceId()!] : []);
+    const ids = this.selectionState.selectionIds();
     if (!ids.length) return;
-    this.clearSelection();
+    const isLasso = this.selectionState.isMultiSelection();
+    this.selectionState.clear();
     const removed = new Set(ids);
     this.scheduleRemoval(ids, () => {
       const updated = this.stickers().filter(p => !removed.has(p.instanceId));
-      if (ls.size > 0) {
-        this.placementsChanged.emit(updated);
-      } else {
-        this.stickerRemoved.emit(ids[0]);
-      }
+      isLasso ? this.placementsChanged.emit(updated) : this.stickerRemoved.emit(ids[0]);
     });
+  }
+
+  private flipSelectionH(ids: string[]): void {
+    if (!ids.length) return;
+    this.commit(ids.length === 1
+      ? ops.mirrorSingle(this.stickers(), ids[0], 'h')
+      : ops.applyGroupTransform(this.stickers(), ids, 0, 1, 'h'));
+    ids.forEach(id => this.setAnimState(id, 'settling'));
+  }
+
+  private commitGroup(updated: StickerPlacement[], ids: string[]): void {
+    this.commit(updated);
+    this.selectionState.lassoSelection.set(new Set(ids));
+    this.selectionState.selectedInstanceId.set(null);
+  }
+
+  private doDuplicate(): void {
+    if (!this.canDuplicate()) return;
+    const {updated, newIds} = ops.duplicatePlacements(
+      this.stickers(), this.selectionState.selectionIds(), this.maxStickers());
+    newIds.forEach(id => this.setAnimState(id, 'entering'));
+    this.commit(updated);
+    if (newIds.length === 1) {
+      this.selectionState.selectedInstanceId.set(newIds[0]);
+    } else {
+      this.selectionState.selectedInstanceId.set(null);
+      this.selectionState.lassoSelection.set(new Set(newIds));
+    }
   }
 
   // ── Template helpers ──────────────────────────────────────────
 
-  getStickerUrl(stickerId: string): string {
-    return this.catalogMap.get(stickerId)?.imageUrl ?? '';
-  }
+  getStickerUrl(stickerId: string): string { return this.catalogMap.get(stickerId)?.imageUrl ?? ''; }
 
   getStickerWidth(stickerId: string): number {
     const def = this.catalogMap.get(stickerId);
     if (!def) return this.stickerSizePx();
     const vb = getSpriteViewBox(def.imageUrl);
     return vb && vb.height > 0
-      ? Math.round(this.stickerSizePx() * vb.width / vb.height)
-      : this.stickerSizePx();
+      ? Math.round(this.stickerSizePx() * vb.width / vb.height) : this.stickerSizePx();
   }
 
   getHitboxSvgPoints(stickerId: string): string {
@@ -409,73 +402,76 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     return hp && hp.length >= 3 ? hp.map(p => `${p.x},${p.y}`).join(' ') : '';
   }
 
-  isSelected(id: string): boolean {
-    return this.selectedInstanceId() === id || this.lassoSelection().has(id);
-  }
-
-  isLassoSelected(id: string): boolean {
-    return this.lassoSelection().has(id);
-  }
-
   getStickerTransform(p: StickerPlacement): string {
     const sx = (p.flipX ? -1 : 1) * p.scale * ((p as any).scaleX ?? 1);
     const sy = (p.flipY ? -1 : 1) * p.scale * ((p as any).scaleY ?? 1);
+    const def = this.catalogMap.get(p.stickerId);
+    const ob = def?.overlayBounds;
+    if (ob) {
+      const size = this.getRenderedSize(p.instanceId);
+      const ax = ob.x * size.width;
+      const ay = ob.y * size.height;
+      return `rotate(${p.rotation}deg) scale(${sx}, ${sy}) translate(${-ax}px, ${-ay}px)`;
+    }
     return `rotate(${p.rotation}deg) scale(${sx}, ${sy}) translate(-50%, -50%)`;
   }
 
+  getStickerAnchor(p: StickerPlacement): string {
+    const stickerDef = this.catalogMap.get(p.stickerId);
+    const overlayBounds = stickerDef?.overlayBounds;
+    if (!overlayBounds) {
+      return '0 0';
+    }
+    const size = this.getRenderedSize(p.instanceId);
+    const ax = overlayBounds.x * size.width / 2;
+    const ay = overlayBounds.y * size.height / 2;
+    return `${ax}px ${ay}px`;
+  }
+
+  stickerLeft(p: StickerPlacement): number {
+    const stickerDef = this.catalogMap.get(p.stickerId);
+    const overlayBounds = stickerDef?.overlayBounds;
+    if (!overlayBounds) {
+      return p.x;
+    }
+    const size = this.getRenderedSize(p.instanceId);
+    return p.x - overlayBounds.x * size.width;
+  }
+
+  stickerTop(p: StickerPlacement): number {
+    const def = this.catalogMap.get(p.stickerId);
+    const ob = def?.overlayBounds;
+    if (!ob) return p.y;
+    const size = this.getRenderedSize(p.instanceId);
+    return p.y - ob.y * size.height;
+  }
+
+  isSelected(id: string): boolean { return this.selectionState.isSelected(id); }
+  isLassoSelected(id: string): boolean { return this.selectionState.isLassoSelected(id); }
+
   // ── Private helpers ───────────────────────────────────────────
 
-  private flipSelectionH(ids: string[]): void {
-    if (!ids.length) return;
-    this.placementsChanged.emit(
-      ids.length === 1
-        ? ops.mirrorSingle(this.stickers(), ids[0], 'h')
-        : ops.applyGroupTransform(this.stickers(), ids, 0, 1, 'h'));
-    ids.forEach(id => this.setAnimState(id, 'settling'));
-  }
-
-  private commitGroup(updated: StickerPlacement[], ids: string[]): void {
-    this.placementsChanged.emit(updated);
-    this.lassoSelection.set(new Set(ids));
-    this.selectedInstanceId.set(null);
-  }
-
-  private doDuplicate(): void {
-    if (!this.canDuplicate()) return;
-    const {updated, newIds} = ops.duplicatePlacements(
-      this.stickers(), this.selectionIds(), this.maxStickers());
-    newIds.forEach(id => this.setAnimState(id, 'entering'));
-    this.placementsChanged.emit(updated);
-    if (newIds.length === 1) {
-      this.selectedInstanceId.set(newIds[0]);
-      this.lassoSelection.set(new Set());
-    } else {
-      this.selectedInstanceId.set(null);
-      this.lassoSelection.set(new Set(newIds));
-    }
-  }
-
-  private clearSelection(): void {
-    this.selectedInstanceId.set(null);
-    this.lassoSelection.set(new Set());
-    this.stickerWouldBeDeleted.set(false);
-    this.multiSelectionRotation.set(0);
-  }
-
-  private getRenderedSize(instanceId: string): { width: number; height: number } {
-    const placement = this.stickers().find(p => p.instanceId === instanceId);
-    if (placement) {
-      const def = this.catalogMap.get(placement.stickerId);
-      if (def) {
-        const vb = getSpriteViewBox(def.imageUrl);
-        if (vb && vb.height > 0) {
-          return {
-            width: Math.round(this.stickerSizePx() * vb.width / vb.height),
-            height: this.stickerSizePx(),
-          };
-        }
+  private selectionCenter(axis: 'x' | 'y') {
+    return computed(() => {
+      const ids = this.selectionState.selectionIds();
+      if (!ids.length) {
+        return 0;
       }
-    }
-    return {width: this.stickerSizePx(), height: this.stickerSizePx()};
+      const selectedSticker = this.stickers().filter(p => ids.includes(p.instanceId));
+      if (!selectedSticker.length) {
+        return 0;
+      }
+      return selectedSticker.reduce((s, p) => s + p[axis], 0) / selectedSticker.length;
+    });
+  }
+
+  private getRenderedSize(instanceId: string): {width: number; height: number} {
+    const p = this.stickers().find(s => s.instanceId === instanceId);
+    if (!p) return {width: this.stickerSizePx(), height: this.stickerSizePx()};
+    const def = this.catalogMap.get(p.stickerId);
+    if (!def) return {width: this.stickerSizePx(), height: this.stickerSizePx()};
+    const vb = getSpriteViewBox(def.imageUrl);
+    if (!vb || vb.height <= 0) return {width: this.stickerSizePx(), height: this.stickerSizePx()};
+    return {width: Math.round(this.stickerSizePx() * vb.width / vb.height), height: this.stickerSizePx()};
   }
 }

@@ -92,14 +92,23 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
         return this.poly.polygon().map(p => `${p.x * w + px},${p.y * h + py}`).join(" ");
     });
 
-    /**
-     * Resolved URL for the editor canvas <img> — needed for naturalWidth/Height.
-     * For sprite: URLs this is a blob: URL; for plain paths returned as-is.
-     */
     public readonly resolvedDisplayUrl = signal<string>('');
     private _currentDisplayBlob: string | null = null;
 
-    private resizeObserver: ResizeObserver | null = null;
+    /** Overlay bounds in pixel coordinates */
+    public readonly overlayPixel = computed(() => {
+        const ob = this.persistence.overlayBounds();
+        if (!ob) return null;
+        const w = this.fittedWidth();
+        const h = this.fittedHeight();
+        const px = this.edgePaddingX();
+        const py = this.edgePaddingY();
+        const x = (ob.x - ob.w / 2) * w + px;
+        const y = (ob.y - ob.h / 2) * h + py;
+        const pw = ob.w * w;
+        const ph = ob.h * h;
+        return {x, y, w: pw, h: ph};
+    });
 
     constructor(
         public readonly poly: PolygonEditService,
@@ -107,7 +116,7 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
         public readonly interaction: EditorInteractionHandler,
     ) {}
 
-    // ── Lifecycle ─────────────────────────────────────────────
+    private resizeObserver: ResizeObserver | null = null;
 
     async ngOnInit(): Promise<void> {
         await this.persistence.loadCatalog();
@@ -130,10 +139,70 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
         this.persistence.destroy();
     }
 
+    // ── Overlay bounds editing ──────────────────────────────
+
+    /** Edit mode: 'hitbox' = polygon editing, 'overlay' = overlay bounds */
+    public readonly editMode = signal<'hitbox' | 'overlay'>('hitbox');
+
+    private overlayDrag: {handle: string; startX: number; startY: number; startBounds: {x: number; y: number; w: number; h: number}} | null = null;
+
+    public onOverlayMouseDown(event: MouseEvent, handle: string): void {
+        event.stopPropagation();
+        event.preventDefault();
+        const ob = this.persistence.overlayBounds();
+        if (!ob) return;
+        this.overlayDrag = {handle, startX: event.clientX, startY: event.clientY, startBounds: {...ob}};
+
+        const fw = this.fittedWidth();
+        const fh = this.fittedHeight();
+
+        const onMove = (me: MouseEvent) => {
+            if (!this.overlayDrag) return;
+            const dx = (me.clientX - this.overlayDrag.startX) / fw;
+            const dy = (me.clientY - this.overlayDrag.startY) / fh;
+            const sb = this.overlayDrag.startBounds;
+
+            const left = sb.x - sb.w / 2;
+            const right = sb.x + sb.w / 2;
+            const top = sb.y - sb.h / 2;
+            const bottom = sb.y + sb.h / 2;
+
+            let nLeft = left, nRight = right, nTop = top, nBottom = bottom;
+
+            if (handle === 'tl') { nLeft = left + dx; nTop = top + dy; }
+            else if (handle === 'tr') { nRight = right + dx; nTop = top + dy; }
+            else if (handle === 'bl') { nLeft = left + dx; nBottom = bottom + dy; }
+            else if (handle === 'br') { nRight = right + dx; nBottom = bottom + dy; }
+
+            const nx = (nLeft + nRight) / 2;
+            const ny = (nTop + nBottom) / 2;
+            const nw = Math.max(0.02, nRight - nLeft);
+            const nh = Math.max(0.02, nBottom - nTop);
+
+            this.persistence.overlayBounds.set({x: nx, y: ny, w: nw, h: nh});
+        };
+
+        const onUp = () => {
+            this.overlayDrag = null;
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        };
+
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+    }
+
     // ── Template callbacks ───────────────────────────────────
 
+    private defaultOverlayBounds(): {x: number; y: number; w: number; h: number} {
+        return {x: 0.5, y: 0.5, w: 1, h: 1};
+    }
+
     public async selectSticker(sticker: import('@birthday/shared').StickerDefinition): Promise<void> {
-        this.persistence.selectSticker(sticker);
+        await this.persistence.selectSticker(sticker);
+        if (!this.persistence.overlayBounds()) {
+            this.persistence.overlayBounds.set(this.defaultOverlayBounds());
+        }
         // Reset dimensions while loading
         this.imgNatWidth.set(1);
         this.imgNatHeight.set(1);
@@ -182,6 +251,7 @@ export class HitboxEditorComponent implements OnInit, AfterViewInit, OnDestroy {
 
     @HostListener("window:keydown", ["$event"])
     onKeyDown(event: KeyboardEvent): void {
+        if (this.editMode() !== 'hitbox') return;
         if (this.interaction.onKeyDown(event)) {
             event.preventDefault();
         }

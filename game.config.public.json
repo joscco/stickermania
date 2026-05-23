@@ -71,6 +71,68 @@
     "catalog": {
       "packs": [
         {
+          "id": "pack_eyes",
+          "name": "Augen",
+          "iconId": "pack-icon-eyes",
+          "unlockedAtStart": false,
+          "stickers": [
+            "eyes-unnerved",
+            "eyes-open",
+            "eyes-mii",
+            "eyes-dot-lashes",
+            "eyes-closed"
+          ]
+        },
+
+        {
+          "id": "pack_glasses",
+          "name": "Brillen",
+          "iconId": "pack-icon-glasses",
+          "unlockedAtStart": false,
+          "stickers": [
+            "glasses-round",
+            "glasses-cool",
+            "glasses-sun"
+          ]
+        },
+        {
+          "id": "pack_beards",
+          "name": "Bärte",
+          "iconId": "pack-icon-beards",
+          "unlockedAtStart": false,
+          "stickers": [
+            "beards-moustache",
+            "beards-dali",
+            "beards-hitler",
+            "beards-small",
+            "beards-santa",
+            "beards-zorro"
+          ]
+        },
+        {
+          "id": "pack_food",
+          "name": "Essen",
+          "iconId": "pack-icon-food",
+          "unlockedAtStart": false,
+          "stickers": [
+            "food-sausage",
+            "food-cheese"
+          ]
+        },
+        {
+          "id": "pack_fruits",
+          "name": "Früchte",
+          "iconId": "pack-icon-fruits",
+          "unlockedAtStart": false,
+          "stickers": [
+            "fruits-apple",
+            "fruits-banana",
+            "fruits-lemon",
+            "fruits-pear",
+            "fruits-strawberry"
+          ]
+        },
+        {
           "id": "pack_shapes",
           "name": "Formen",
           "iconId": "pack-icon-shapes",
@@ -95,107 +157,8 @@
           ]
         },
         {
-          "id": "pack_circles",
-          "name": "Kreise",
-          "iconId": "pack-icon-circles",
-          "unlockedAtStart": false,
-          "stickers": [
-            "circles-circle",
-            "circles-circle-filled",
-            "circles-half-circle",
-            "circles-quarter-circle"
-          ]
-        },
-        {
-          "id": "pack_home",
-          "name": "Zuhause",
-          "iconId": "pack-icon-home",
-          "unlockedAtStart": false,
-          "stickers": [
-            "home-keyhole",
-            "home-grid",
-            "home-key",
-            "home-lightbulb",
-            "home-house"
-          ]
-        },
-        {
-          "id": "pack_lines",
-          "name": "Linien",
-          "iconId": "pack-icon-lines",
-          "unlockedAtStart": false,
-          "stickers": [
-            "lines-thin",
-            "lines-fat",
-            "lines-curve",
-            "lines-ring",
-            "lines-corner",
-            "lines-spiral",
-            "lines-wavy"
-          ]
-        },
-        {
-          "id": "pack_eyes",
-          "name": "Augen",
-          "iconId": "pack-icon-eyes",
-          "unlockedAtStart": false,
-          "stickers": [
-            "eyes-unnerved",
-            "eyes-open",
-            "eyes-mii",
-            "eyes-dot-lashes",
-            "eyes-closed"
-          ]
-        },
-        {
-          "id": "pack_mouths",
-          "name": "Münder",
-          "iconId": "pack-icon-mouths",
-          "unlockedAtStart": false,
-          "stickers": [
-            "mouths-lips",
-            "mouths-teeth",
-            "mouths-smiling",
-            "mouths-open",
-            "mouths-showing-tongue"
-          ]
-        },
-        {
-          "id": "pack_hands",
-          "name": "Hände",
-          "iconId": "pack-icon-hands",
-          "unlockedAtStart": false,
-          "stickers": [
-            "hands-point",
-            "hands-stop"
-          ]
-        },
-        {
-          "id": "pack_noses",
-          "name": "Nasen",
-          "iconId": "pack-icon-noses",
-          "unlockedAtStart": false,
-          "stickers": [
-            "noses-cut",
-            "noses-round",
-            "noses-thick"
-          ]
-        },
-        {
-          "id": "pack_jewelry",
-          "name": "Schmuck",
-          "iconId": "pack-icon-jewelry",
-          "unlockedAtStart": false,
-          "stickers": [
-            "jewelry-diamond-0",
-            "jewelry-diamond-1",
-            "jewelry-diamond-2",
-            "jewelry-necklace"
-          ]
-        },
-        {
           "id": "pack_sparks",
-          "name": "Glitzer & Sternchen",
+          "name": "Glitzer",
           "iconId": "pack-icon-sparks",
           "unlockedAtStart": false,
           "stickers": [
@@ -219,41 +182,77 @@
           ]
         },
         {
-          "id": "pack_beards",
-          "name": "Bärte",
-          "iconId": "pack-icon-beards",
+          "id": "pack_hands",
+          "name": "Hände",
+          "iconId": "pack-icon-hands",
           "unlockedAtStart": false,
           "stickers": [
-            "beards-moustache",
-            "beards-dali",
-            "beards-hitler",
-            "beards-small",
-            "beards-santa",
-            "beards-zorro"
+            "hands-point",
+            "hands-stop"
           ]
         },
         {
-          "id": "pack_fruits",
-          "name": "Früchte",
-          "iconId": "pack-icon-fruits",
+          "id": "pack_circles",
+          "name": "Kreise",
+          "iconId": "pack-icon-circles",
           "unlockedAtStart": false,
           "stickers": [
-            "fruits-apple",
-            "fruits-banana",
-            "fruits-lemon",
-            "fruits-pear",
-            "fruits-strawberry"
+            "circles-circle",
+            "circles-circle-filled",
+            "circles-half-circle",
+            "circles-quarter-circle"
           ]
         },
         {
-          "id": "pack_glasses",
-          "name": "Brillen",
-          "iconId": "pack-icon-glasses",
+          "id": "pack_lines",
+          "name": "Linien",
+          "iconId": "pack-icon-lines",
           "unlockedAtStart": false,
           "stickers": [
-            "glasses-round",
-            "glasses-cool",
-            "glasses-sun"
+            "lines-thin",
+            "lines-fat",
+            "lines-curve",
+            "lines-ring",
+            "lines-corner",
+            "lines-spiral",
+            "lines-wavy"
+          ]
+        },
+
+        {
+          "id": "pack_mouths",
+          "name": "Münder",
+          "iconId": "pack-icon-mouths",
+          "unlockedAtStart": false,
+          "stickers": [
+            "mouths-lips",
+            "mouths-teeth",
+            "mouths-smiling",
+            "mouths-open",
+            "mouths-showing-tongue"
+          ]
+        },
+        {
+          "id": "pack_noses",
+          "name": "Nasen",
+          "iconId": "pack-icon-noses",
+          "unlockedAtStart": false,
+          "stickers": [
+            "noses-cut",
+            "noses-round",
+            "noses-thick"
+          ]
+        },
+        {
+          "id": "pack_jewelry",
+          "name": "Schmuck",
+          "iconId": "pack-icon-jewelry",
+          "unlockedAtStart": false,
+          "stickers": [
+            "jewelry-diamond-0",
+            "jewelry-diamond-1",
+            "jewelry-diamond-2",
+            "jewelry-necklace"
           ]
         },
         {
@@ -327,14 +326,18 @@
             "medicine-toothpaste"
           ]
         },
+
         {
-          "id": "pack_food",
-          "name": "Essen",
-          "iconId": "pack-icon-food",
+          "id": "pack_home",
+          "name": "Zuhause",
+          "iconId": "pack-icon-home",
           "unlockedAtStart": false,
           "stickers": [
-            "food-sausage",
-            "food-cheese"
+            "home-keyhole",
+            "home-grid",
+            "home-key",
+            "home-lightbulb",
+            "home-house"
           ]
         }
       ]

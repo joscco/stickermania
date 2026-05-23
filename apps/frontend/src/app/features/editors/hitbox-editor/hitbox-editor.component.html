@@ -58,6 +58,25 @@
           <div class="h-5 w-px bg-black/10 mx-1"></div>
 
           <button
+            class="px-3 py-1.5 rounded-lg font-medium text-xs active:scale-95 transition-all"
+            [class.bg-violet-600]="editMode() === 'hitbox'"
+            [class.text-white]="editMode() === 'hitbox'"
+            [class.bg-neutral-100]="editMode() !== 'hitbox'"
+            [class.text-neutral-600]="editMode() !== 'hitbox'"
+            (click)="editMode.set('hitbox')"
+          >Hitbox</button>
+          <button
+            class="px-3 py-1.5 rounded-lg font-medium text-xs active:scale-95 transition-all"
+            [class.bg-blue-600]="editMode() === 'overlay'"
+            [class.text-white]="editMode() === 'overlay'"
+            [class.bg-neutral-100]="editMode() !== 'overlay'"
+            [class.text-neutral-600]="editMode() !== 'overlay'"
+            (click)="editMode.set('overlay')"
+          >Overlay</button>
+
+          <div class="h-5 w-px bg-black/10 mx-1"></div>
+
+          <button
             class="px-3 py-1.5 bg-violet-600 text-white rounded-lg font-medium text-xs hover:bg-violet-700 active:scale-95 transition-all disabled:opacity-50"
             [disabled]="autoDetecting()"
             (click)="runAutoDetect()"
@@ -100,14 +119,15 @@
           #editorArea
           class="flex-1 min-h-0 relative bg-stone-50 overflow-hidden flex items-center justify-center"
         >
-          <div
-            class="relative cursor-crosshair"
+           <div
+            class="relative"
+            [class.cursor-crosshair]="editMode() === 'hitbox'"
             [style.width.px]="wrapperWidth()"
             [style.height.px]="wrapperHeight()"
-            (mousedown)="interaction.onMouseDown($event)"
-            (mousemove)="interaction.onMouseMove($event)"
-            (mouseup)="interaction.onMouseUp()"
-            (mouseleave)="interaction.onMouseUp()"
+            (mousedown)="editMode() === 'hitbox' && interaction.onMouseDown($event)"
+            (mousemove)="editMode() === 'hitbox' && interaction.onMouseMove($event)"
+            (mouseup)="editMode() === 'hitbox' && interaction.onMouseUp()"
+            (mouseleave)="editMode() === 'hitbox' && interaction.onMouseUp()"
           >
             <!-- Sticker image — uses resolved URL (blob for sprite:, path for png) -->
             <img
@@ -123,56 +143,75 @@
               (load)="onImageLoaded($event)"
             />
 
-            <!-- SVG overlay -->
+            <!-- Overlay bounds (separate interactive layer above the SVG) -->
+            @if (overlayPixel(); as r) {
+              <div class="absolute pointer-events-none" [style.left.px]="r.x" [style.top.px]="r.y" [style.width.px]="r.w" [style.height.px]="r.h">
+                <div class="absolute inset-0 border-2 border-dashed border-blue-500 rounded-sm pointer-events-none"></div>
+                @if (editMode() === 'overlay') {
+                  <div class="absolute -top-2 -left-2 w-4 h-4 bg-white border-2 border-blue-500 rounded cursor-nwse-resize pointer-events-auto"
+                       (mousedown)="onOverlayMouseDown($event, 'tl')"></div>
+                  <div class="absolute -top-2 -right-2 w-4 h-4 bg-white border-2 border-blue-500 rounded cursor-nesw-resize pointer-events-auto"
+                       (mousedown)="onOverlayMouseDown($event, 'tr')"></div>
+                  <div class="absolute -bottom-2 -left-2 w-4 h-4 bg-white border-2 border-blue-500 rounded cursor-nesw-resize pointer-events-auto"
+                       (mousedown)="onOverlayMouseDown($event, 'bl')"></div>
+                  <div class="absolute -bottom-2 -right-2 w-4 h-4 bg-white border-2 border-blue-500 rounded cursor-nwse-resize pointer-events-auto"
+                       (mousedown)="onOverlayMouseDown($event, 'br')"></div>
+                }
+              </div>
+            }
+
+            <!-- SVG overlay for polygon (pointer-events-none so clicks pass through to wrapper) -->
             <svg
               class="absolute inset-0 w-full h-full pointer-events-none"
               [attr.viewBox]="'0 0 ' + wrapperWidth() + ' ' + wrapperHeight()"
             >
-              @if (poly.polygon().length >= 3) {
-                <polygon
-                  [attr.points]="svgPixelPoints()"
-                  fill="rgba(168, 85, 247, 0.12)"
-                  stroke="rgba(168, 85, 247, 0.7)"
-                  stroke-width="2"
-                  stroke-linejoin="round"
-                />
-              }
-
-              @if (poly.polygon().length === 2) {
-                <line
-                  [attr.x1]="poly.polygon()[0].x * fittedWidth() + edgePaddingX()"
-                  [attr.y1]="poly.polygon()[0].y * fittedHeight() + edgePaddingY()"
-                  [attr.x2]="poly.polygon()[1].x * fittedWidth() + edgePaddingX()"
-                  [attr.y2]="poly.polygon()[1].y * fittedHeight() + edgePaddingY()"
-                  stroke="rgba(168, 85, 247, 0.7)" stroke-width="2"
-                />
-              }
-
-              @if (poly.polygon().length >= 2) {
-                @for (pt of poly.polygon(); track $index) {
-                  <circle
-                    [attr.cx]="(pt.x + poly.polygon()[($index + 1) % poly.polygon().length].x) / 2 * fittedWidth() + edgePaddingX()"
-                    [attr.cy]="(pt.y + poly.polygon()[($index + 1) % poly.polygon().length].y) / 2 * fittedHeight() + edgePaddingY()"
-                    r="5"
-                    fill="rgba(168, 85, 247, 0.35)"
+              @if (editMode() === 'hitbox') {
+                @if (poly.polygon().length >= 3) {
+                  <polygon
+                    [attr.points]="svgPixelPoints()"
+                    fill="rgba(168, 85, 247, 0.12)"
+                    stroke="rgba(168, 85, 247, 0.7)"
+                    stroke-width="2"
+                    stroke-linejoin="round"
                   />
                 }
-              }
 
-              @for (pt of poly.polygon(); track $index) {
-                <circle
-                  [attr.cx]="pt.x * fittedWidth() + edgePaddingX()"
-                  [attr.cy]="pt.y * fittedHeight() + edgePaddingY()"
-                  [attr.r]="poly.selectedVertex() === $index ? 10 : 8"
-                  [attr.fill]="poly.selectedVertex() === $index ? '#ef4444' : ($index === 0 ? '#22c55e' : '#a855f7')"
-                  stroke="white" stroke-width="2"
-                />
-                <text
-                  [attr.x]="pt.x * fittedWidth() + edgePaddingX()"
-                  [attr.y]="pt.y * fittedHeight() + edgePaddingY()"
-                  text-anchor="middle" dominant-baseline="central"
-                  fill="white" font-size="9" font-weight="bold"
-                >{{ $index }}</text>
+                @if (poly.polygon().length === 2) {
+                  <line
+                    [attr.x1]="poly.polygon()[0].x * fittedWidth() + edgePaddingX()"
+                    [attr.y1]="poly.polygon()[0].y * fittedHeight() + edgePaddingY()"
+                    [attr.x2]="poly.polygon()[1].x * fittedWidth() + edgePaddingX()"
+                    [attr.y2]="poly.polygon()[1].y * fittedHeight() + edgePaddingY()"
+                    stroke="rgba(168, 85, 247, 0.7)" stroke-width="2"
+                  />
+                }
+
+                @if (poly.polygon().length >= 2) {
+                  @for (pt of poly.polygon(); track $index) {
+                    <circle
+                      [attr.cx]="(pt.x + poly.polygon()[($index + 1) % poly.polygon().length].x) / 2 * fittedWidth() + edgePaddingX()"
+                      [attr.cy]="(pt.y + poly.polygon()[($index + 1) % poly.polygon().length].y) / 2 * fittedHeight() + edgePaddingY()"
+                      r="5"
+                      fill="rgba(168, 85, 247, 0.35)"
+                    />
+                  }
+                }
+
+                @for (pt of poly.polygon(); track $index) {
+                  <circle
+                    [attr.cx]="pt.x * fittedWidth() + edgePaddingX()"
+                    [attr.cy]="pt.y * fittedHeight() + edgePaddingY()"
+                    [attr.r]="poly.selectedVertex() === $index ? 10 : 8"
+                    [attr.fill]="poly.selectedVertex() === $index ? '#ef4444' : ($index === 0 ? '#22c55e' : '#a855f7')"
+                    stroke="white" stroke-width="2"
+                  />
+                  <text
+                    [attr.x]="pt.x * fittedWidth() + edgePaddingX()"
+                    [attr.y]="pt.y * fittedHeight() + edgePaddingY()"
+                    text-anchor="middle" dominant-baseline="central"
+                    fill="white" font-size="9" font-weight="bold"
+                  >{{ $index }}</text>
+                }
               }
             </svg>
           </div>

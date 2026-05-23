@@ -5,29 +5,40 @@ import type {StickerDefinition} from "@birthday/shared";
 import type {BackendConfig} from "../config.js";
 import {buildCatalog, buildPacks} from "../game-modes/sticker-collage/stickerCatalog.js";
 
-/**
- * Editor-only API routes.
- * These are used by the hitbox editor and sticker editor test page.
- * Registered in both "party" and "dev" modes.
- */
+type HitboxEntry = {
+    polygon: Array<{x: number; y: number}>;
+    overlayBounds?: {x: number; y: number; w: number; h: number};
+};
+
 export async function registerEditorApiRoutes(
     app: FastifyInstance,
     backendConfig: BackendConfig,
 ): Promise<void> {
 
-    // ─── Hitbox data ────────────────────────────────────────────
-
     const hitboxDataPath = path.resolve(backendConfig.dataRoot, "..", "hitbox-data.json");
 
-    function loadHitboxData(): Record<string, Array<{x: number; y: number}>> {
+    function loadHitboxData(): Record<string, HitboxEntry> {
         try {
-            return JSON.parse(fs.readFileSync(hitboxDataPath, "utf-8"));
+            const raw = JSON.parse(fs.readFileSync(hitboxDataPath, "utf-8"));
+            const result: Record<string, HitboxEntry> = {};
+            for (const [id, value] of Object.entries(raw)) {
+                if (Array.isArray(value)) {
+                    result[id] = {polygon: value as HitboxEntry['polygon']};
+                } else if (typeof value === 'object' && value !== null) {
+                    const v = value as any;
+                    result[id] = {
+                        polygon: Array.isArray(v.polygon) ? v.polygon : [],
+                        overlayBounds: v.overlayBounds ?? undefined,
+                    };
+                }
+            }
+            return result;
         } catch {
             return {};
         }
     }
 
-    function saveHitboxData(data: Record<string, Array<{x: number; y: number}>>): void {
+    function saveHitboxData(data: Record<string, HitboxEntry>): void {
         fs.writeFileSync(hitboxDataPath, JSON.stringify(data, null, 2), "utf-8");
     }
 
@@ -35,24 +46,32 @@ export async function registerEditorApiRoutes(
         return loadHitboxData();
     });
 
-    app.put<{Params: {stickerId: string}; Body: {polygon: Array<{x: number; y: number}>}}>(
+    app.put<{Params: {stickerId: string}; Body: {polygon?: Array<{x: number; y: number}>; overlayBounds?: {x: number; y: number; w: number; h: number} | null}}>(
         "/api/hitbox-data/:stickerId",
         async (request, reply) => {
             const stickerId = request.params.stickerId;
-            const polygon = request.body?.polygon;
-            if (!Array.isArray(polygon)) {
-                return reply.status(400).send({message: "polygon must be an array"});
-            }
+            const body = request.body ?? {};
+            const polygon = body.polygon;
+            const overlayBounds = body.overlayBounds;
 
             const data = loadHitboxData();
-            if (polygon.length < 3) {
+
+            if (!Array.isArray(polygon) || polygon.length < 3) {
                 delete data[stickerId];
-            } else {
-                data[stickerId] = polygon.map(p => ({
+                saveHitboxData(data);
+                return {ok: true, stickerId, cleared: true};
+            }
+
+            const entry: HitboxEntry = {
+                polygon: polygon.map(p => ({
                     x: Math.round((p.x ?? 0) * 100) / 100,
                     y: Math.round((p.y ?? 0) * 100) / 100,
-                }));
+                })),
+            };
+            if (overlayBounds && overlayBounds.w > 0) {
+                entry.overlayBounds = overlayBounds;
             }
+            data[stickerId] = entry;
             saveHitboxData(data);
             return {ok: true, stickerId, pointCount: polygon.length};
         },
@@ -65,15 +84,17 @@ export async function registerEditorApiRoutes(
         return {ok: true};
     });
 
-    // ─── Sticker catalog ────────────────────────────────────────
-
     app.get("/api/sticker-catalog", async () => {
         const hitboxData = loadHitboxData();
         const catalog = buildCatalog(backendConfig.gameConfig.stickerCollage.catalog);
         return catalog.map((sticker): StickerDefinition => {
-            const polygon = hitboxData[sticker.id];
-            if (polygon && Array.isArray(polygon) && polygon.length >= 3) {
-                return {...sticker, hitboxPolygon: polygon};
+            const entry = hitboxData[sticker.id];
+            if (entry?.polygon && entry.polygon.length >= 3) {
+                return {
+                    ...sticker,
+                    hitboxPolygon: entry.polygon,
+                    overlayBounds: entry.overlayBounds,
+                };
             }
             return sticker;
         });
@@ -83,4 +104,3 @@ export async function registerEditorApiRoutes(
         return buildPacks(backendConfig.gameConfig.stickerCollage.catalog);
     });
 }
-

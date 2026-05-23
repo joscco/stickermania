@@ -10,7 +10,7 @@ import {advanceToNextRound, boardAdvancesToNextRound, castVote, endBuildingPhase
  * Merge hitbox polygon data from hitbox-data.json into the sticker catalog built from config.
  */
 function buildCatalogWithHitboxes(config: GameConfig): StickerDefinition[] {
-    let hitboxData: Record<string, Array<{x: number; y: number}>> = {};
+    let hitboxData: Record<string, any> = {};
     try {
         const hitboxPath = path.resolve(process.cwd(), "hitbox-data.json");
         hitboxData = JSON.parse(fs.readFileSync(hitboxPath, "utf-8"));
@@ -19,9 +19,21 @@ function buildCatalogWithHitboxes(config: GameConfig): StickerDefinition[] {
     }
 
     return buildCatalog(config.stickerCollage.catalog).map(sticker => {
-        const polygon = hitboxData[sticker.id];
-        if (polygon && Array.isArray(polygon) && polygon.length >= 3) {
-            return {...sticker, hitboxPolygon: polygon};
+        const raw = hitboxData[sticker.id];
+        if (!raw) return sticker;
+
+        let polygon: Array<{x: number; y: number}> | undefined;
+        let overlayBounds: {x: number; y: number; w: number; h: number} | undefined;
+
+        if (Array.isArray(raw)) {
+            polygon = raw;
+        } else if (typeof raw === 'object') {
+            polygon = raw.polygon;
+            overlayBounds = raw.overlayBounds;
+        }
+
+        if (polygon && polygon.length >= 3) {
+            return {...sticker, hitboxPolygon: polygon, overlayBounds};
         }
         return sticker;
     });

@@ -5,11 +5,9 @@ import type {BoundingBox} from '../types';
 
 export type ActionBarAction =
   | 'delete' | 'flipH'
-  | 'rotateLeft' | 'rotateRight'
-  | 'zoomIn' | 'zoomOut'
   | 'zForward' | 'zBackward' | 'zFront' | 'zBack'
   | 'group' | 'ungroup'
-  | 'duplicate';
+  | 'duplicate' | 'reset';
 
 @Component({
   selector: 'app-sticker-action-bar',
@@ -30,6 +28,8 @@ export class StickerActionBarComponent implements AfterViewChecked {
   readonly canGroup = input<boolean>(false);
   readonly canUngroup = input<boolean>(false);
   readonly canDuplicate = input<boolean>(true);
+  readonly spacing = input<number>(8);
+  readonly stickerRotation = input<number>(0);
 
   readonly action = output<ActionBarAction>();
 
@@ -40,12 +40,16 @@ export class StickerActionBarComponent implements AfterViewChecked {
 
   private lastCenterX = -1;
   private lastCenterY = -1;
+  private lastBoxY = -1;
+  private lastRotation = 999;
 
   constructor() {
     effect(() => {
       if (this.visible()) {
         this.lastCenterX = -1;
         this.lastCenterY = -1;
+        this.lastBoxY = -1;
+        this.lastRotation = 999;
       }
     });
   }
@@ -56,13 +60,18 @@ export class StickerActionBarComponent implements AfterViewChecked {
     const bw = el.offsetWidth || 200;
     const bh = el.offsetHeight || 44;
     const box = this.box()!;
-    const pad = 8;
+    const pad = this.spacing();
     const cxIn = this.centerX();
     const cyIn = this.centerY();
 
-    if (Math.abs(cxIn - this.lastCenterX) < 1 && Math.abs(cyIn - this.lastCenterY) < 1) return;
+    const sameCenter = Math.abs(cxIn - this.lastCenterX) < 1 && Math.abs(cyIn - this.lastCenterY) < 1;
+    const sameBoxY = Math.abs(box.y - this.lastBoxY) < 1;
+    const sameRotation = Math.abs(this.stickerRotation() - this.lastRotation) < 0.5;
+    if (sameCenter && sameBoxY && sameRotation) return;
     this.lastCenterX = cxIn;
     this.lastCenterY = cyIn;
+    this.lastBoxY = box.y;
+    this.lastRotation = this.stickerRotation();
 
     let cx = cxIn - bw / 2;
 
