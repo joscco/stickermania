@@ -8,10 +8,17 @@ function pickRandom<T>(arr: T[], count: number): T[] {
 }
 
 function pickUnusedPrompt(config: StickerCollageGameConfig, gameState: StickerCollageGameState): string {
-    const usedPrompts = new Set(Object.values(gameState.promptHistory));
-    const unusedPrompts = config.prompts.filter(prompt => !usedPrompts.has(prompt));
+    const usedTexts = new Set(Object.values(gameState.promptHistory));
+    const unusedPrompts = config.prompts.filter(p => !usedTexts.has(p.text));
     const pool = unusedPrompts.length > 0 ? unusedPrompts : config.prompts;
-    return pickRandom(pool, 1)[0] ?? config.prompts[0];
+    return pickRandom(pool, 1)[0]?.text ?? config.prompts[0]?.text ?? "";
+}
+
+function setPrompt(gameState: StickerCollageGameState, config: StickerCollageGameConfig, promptText: string): void {
+    gameState.currentPrompt = promptText;
+    gameState.promptHistory[gameState.currentRoundIndex] = promptText;
+    const pc = config.prompts.find(p => p.text === promptText);
+    gameState.currentRecommendedPackIds = pc?.recommendedPackIds ?? [];
 }
 
 // ─── Phase transitions ──────────────────────────────────────────
@@ -26,8 +33,7 @@ export function transitionToBuilding(
 
     gameState.currentRoundIndex += 1;
     gameState.roundStartedAt = now;
-    gameState.currentPrompt = chosenPrompt ?? pickUnusedPrompt(config, gameState);
-    gameState.promptHistory[gameState.currentRoundIndex] = gameState.currentPrompt;
+    setPrompt(gameState, config, chosenPrompt ?? pickUnusedPrompt(config, gameState));
 
     gameState.roundParticipantIds = Object.values(state.players)
         .filter(player => player.connected)
@@ -147,10 +153,10 @@ function buildWinnerChoices(
     config: StickerCollageGameConfig,
     winnerId: string | null,
 ): Pick<StickerCollageResultsState, "promptChoices" | "packUnlockChoices" | "lastUnlockedPackId" | "winnerChoicesDone"> {
-    const usedPrompts = new Set(Object.values(gameState.promptHistory));
-    const unusedPrompts = config.prompts.filter(prompt => !usedPrompts.has(prompt));
+    const usedTexts = new Set(Object.values(gameState.promptHistory));
+    const unusedPrompts = config.prompts.filter(p => !usedTexts.has(p.text));
     const promptPool = unusedPrompts.length >= config.promptChoiceCount ? unusedPrompts : config.prompts;
-    const promptChoices = pickRandom(promptPool, config.promptChoiceCount);
+    const promptChoices = pickRandom(promptPool, config.promptChoiceCount).map(p => p.text);
 
     const lockedPacks = gameState.stickerPacks.filter(pack => !gameState.unlockedPackIds.includes(pack.id));
     const packUnlockChoices = pickRandom(lockedPacks, config.packUnlockChoiceCount).map(pack => pack.id);

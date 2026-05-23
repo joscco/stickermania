@@ -90,6 +90,8 @@ export class PlayerScreenDataService {
 
     readonly timerEndsAt = computed(() => this.timerService.endsAt());
     readonly timerTotalSec = computed(() => this.timerService.totalDurationSec());
+    readonly timerPercentElapsed = computed(() => this.timerService.percentElapsed());
+    readonly timerNotification = computed(() => this.timerService.notification());
 
     public readonly votingVm = computed<VotingViewModel>(() => {
         const gameState = this.stickerService.gameState();
@@ -120,6 +122,7 @@ export class PlayerScreenDataService {
         stickerCatalog: this.stickerService.stickerCatalog(),
         stickerPacks: this.stickerService.stickerPacks(),
         unlockedPackIds: this.stickerService.unlockedPackIds(),
+        recommendedPackIds: this.stickerService.currentRecommendedPackIds(),
         maxStickersOnCanvas: this.stickerService.maxStickersOnCanvas(),
     }));
 

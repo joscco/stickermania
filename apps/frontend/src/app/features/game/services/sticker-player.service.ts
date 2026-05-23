@@ -36,6 +36,7 @@ export class StickerPlayerService {
   // ─── General state ───────────────────────────────────────────
 
   public readonly currentPrompt = computed(() => this.gameState()?.currentPrompt ?? "");
+  public readonly currentRecommendedPackIds = computed(() => this.gameState()?.currentRecommendedPackIds ?? []);
   public readonly currentRoundIndex = computed(() => this.gameState()?.currentRoundIndex ?? 0);
   public readonly phase = computed(() => this.gameState()?.phaseState.phase ?? "LOBBY");
   public readonly stickerCatalog = computed(() => this.gameState()?.stickerCatalog ?? []);

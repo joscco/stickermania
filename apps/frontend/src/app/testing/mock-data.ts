@@ -96,7 +96,7 @@ export function buildingPhase(opts?: {
 }): StickerCollageBuildingState {
   return {
     phase: 'BUILDING',
-    roundEndsAt: Date.now() + 300_000,
+    roundEndsAt: Date.now() + 60_000,
     skippedPlayerIds: opts?.skippedPlayerIds ?? [],
   };
 }
@@ -141,6 +141,7 @@ export function makeGameState(
   const base: StickerCollageGameState = {
     currentRoundIndex: 0,
     currentPrompt: 'Das schönste Geburtstagsmonster',
+    currentRecommendedPackIds: [],
     roundStartedAt: Date.now() - 60_000,
     stickerCatalog: MOCK_CATALOG,
     stickerPacks: [MOCK_SHAPES_PACK, MOCK_HOME_PACK, MOCK_LINES_PACK],
@@ -151,7 +152,7 @@ export function makeGameState(
     maxStickersOnCanvas: 12,
     votesPerPlayer: 3,
     phaseState,
-    roundDurationSec: 300,
+    roundDurationSec: 60,
     votingDurationSec: 120,
     resultsDurationSec: 60,
   };

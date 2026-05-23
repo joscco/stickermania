@@ -12,12 +12,16 @@
       [stickerCatalog]="stickerCatalog()"
       [stickerPacks]="stickerPacks()"
       [unlockedPackIds]="unlockedPackIds()"
+      [recommendedPackIds]="recommendedPackIds()"
       [maxStickers]="maxStickersOnCanvas()"
       class="flex-1 min-h-0 w-full"
     />
 
     <!-- Footer: toolbar + submit -->
     <div animOnInit="opacity" class="w-full max-w-lg px-4 pb-4 flex items-center justify-center gap-3">
+      <button class="bg-yellow-400 text-black py-2 px-4 rounded-xl font-semibold active:scale-95 transition-transform"
+              (click)="skipRound.emit()">Überspringen</button>
+      
       <button class="w-11 h-11 rounded-xl bg-yellow-400 flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30"
               title="Alle Sticker entfernen"
               [disabled]="placements.length === 0"
@@ -42,10 +46,6 @@
         </svg>
       </button>
 
-      <div class="w-px h-8 bg-neutral-200"></div>
-
-      <button class="bg-yellow-400 text-black py-2 px-4 rounded-xl font-semibold active:scale-95 transition-transform"
-              (click)="skipRound.emit()">Überspringen</button>
       <button class="bg-black text-white py-2 px-4 rounded-xl font-semibold active:scale-95 transition-transform disabled:opacity-40"
               [disabled]="placements.length === 0"
               (click)="onSubmit()">Einreichen</button>

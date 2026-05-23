@@ -9,8 +9,10 @@ export class PlayerTimerService {
 
   public readonly timeLeft = signal<string>("");
   public readonly percentLeft = signal(100);
+  public readonly percentElapsed = computed(() => 100 - this.percentLeft());
 
   public readonly remainingSec = signal(0);
+  public readonly notification = signal<string>("");
   public readonly endsAt = computed(() => {
     const ps = this.worldStore.stickerCollageGameState()?.phaseState;
     if (!ps) return 0;
@@ -57,6 +59,11 @@ export class PlayerTimerService {
         } else {
           this.percentLeft.set(100);
         }
+
+        if (s <= 10 && s > 0) this.notification.set("⚡ Gleich ist die Zeit vorbei!");
+        else if (s === 60) this.notification.set("⏰ Noch eine Minute!");
+        else if (s === 120) this.notification.set("⏳ Noch zwei Minuten!");
+        else this.notification.set("");
       };
 
       tick();

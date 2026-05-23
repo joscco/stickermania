@@ -26,8 +26,9 @@
       <app-sticker-picker
         [stickerCatalog]="stickerCatalog()"
         [stickerPacks]="stickerPacks()"
-        [unlockedPackIds]="unlockedPackIds()"
-        [canAddMore]="canAddMore()"
+    [unlockedPackIds]="unlockedPackIds()"
+    [recommendedPackIds]="recommendedPackIds()"
+    [canAddMore]="canAddMore()"
         [closing]="pickerClosing()"
         (stickerDragStarted)="onStickerDragStarted($event)"
         (close)="onPickerClose()"

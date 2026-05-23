@@ -49,6 +49,7 @@ export class StickerCollageEngine implements GameEngine {
         return {
             currentRoundIndex: 0,
             currentPrompt: "",
+            currentRecommendedPackIds: [],
             roundStartedAt: null,
             stickerCatalog: buildCatalogWithHitboxes(this.config),
             stickerPacks: packs,

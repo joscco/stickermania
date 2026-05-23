@@ -28,6 +28,7 @@ export class StickerPickerComponent implements AfterViewInit {
   readonly stickerPacks = input<StickerPack[]>([]);
   readonly unlockedPackIds = input<string[]>([]);
   readonly canAddMore = input<boolean>(true);
+  readonly recommendedPackIds = input<string[]>([]);
   readonly closing = input(false);
 
   readonly stickerDragStarted = output<StickerDragStartEvent>();

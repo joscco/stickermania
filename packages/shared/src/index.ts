@@ -19,10 +19,15 @@ export interface StickerCollageGameConfig {
     resultsDurationSec: number;
     maxStickersOnCanvas: number;
     votesPerPlayer: number;
-    prompts: string[];
+    prompts: PromptConfig[];
     promptChoiceCount: number;
     packUnlockChoiceCount: number;
     catalog: StickerCatalogConfig;
+}
+
+export interface PromptConfig {
+    text: string;
+    recommendedPackIds?: string[];
 }
 
 export interface GameConfig {
@@ -57,6 +62,20 @@ function parseCatalogConfig(raw: unknown): StickerCatalogConfig {
     return {packs};
 }
 
+function parsePrompts(raw: unknown): PromptConfig[] {
+    if (!Array.isArray(raw)) return [{text: "Bau ein Monster"}, {text: "Mach eine Geburtstagstorte"}];
+    return raw.map((p: any) => {
+        if (typeof p === "string") return {text: p};
+        if (typeof p === "object" && p !== null && typeof p.text === "string") {
+            return {
+                text: p.text,
+                recommendedPackIds: Array.isArray(p.recommendedPackIds) ? p.recommendedPackIds : undefined,
+            };
+        }
+        return {text: String(p)};
+    });
+}
+
 export function parseGameConfig(raw: unknown): GameConfig {
     const r = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
     const sc = parseSubObject(r, "stickerCollage");
@@ -71,7 +90,7 @@ export function parseGameConfig(raw: unknown): GameConfig {
             resultsDurationSec: typeof sc["resultsDurationSec"] === "number" ? sc["resultsDurationSec"] : 60,
             maxStickersOnCanvas: typeof sc["maxStickersOnCanvas"] === "number" ? sc["maxStickersOnCanvas"] : 12,
             votesPerPlayer: typeof sc["votesPerPlayer"] === "number" ? sc["votesPerPlayer"] : 3,
-            prompts: Array.isArray(sc["prompts"]) ? sc["prompts"] as string[] : ["Bau ein Monster", "Mach eine Geburtstagstorte"],
+            prompts: parsePrompts(sc["prompts"]),
             promptChoiceCount: typeof sc["promptChoiceCount"] === "number" ? sc["promptChoiceCount"] : 3,
             packUnlockChoiceCount: typeof sc["packUnlockChoiceCount"] === "number" ? sc["packUnlockChoiceCount"] : 3,
             catalog: parseCatalogConfig(sc["catalog"] ?? null),
@@ -242,6 +261,7 @@ export type StickerCollagePhaseState =
 export interface StickerCollageGameState {
     currentRoundIndex: number;
     currentPrompt: string;
+    currentRecommendedPackIds: string[];
     roundStartedAt: number | null;
     stickerCatalog: StickerDefinition[];
     stickerPacks: StickerPack[];

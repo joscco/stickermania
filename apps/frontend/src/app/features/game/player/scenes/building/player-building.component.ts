@@ -24,6 +24,7 @@ export class PlayerBuildingComponent {
     public readonly stickerCatalog = input<StickerDefinition[]>([]);
     public readonly stickerPacks = input<StickerPack[]>([]);
     public readonly unlockedPackIds = input<string[]>([]);
+    public readonly recommendedPackIds = input<string[]>([]);
     public readonly maxStickersOnCanvas = input<number>(12);
 
     public readonly skipRound = output<void>();

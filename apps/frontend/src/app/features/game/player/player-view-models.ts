@@ -22,6 +22,7 @@ export interface BuildingViewModel {
   stickerCatalog: StickerDefinition[];
   stickerPacks: StickerPack[];
   unlockedPackIds: string[];
+  recommendedPackIds: string[];
   maxStickersOnCanvas: number;
 }
 

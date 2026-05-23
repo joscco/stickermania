@@ -29,6 +29,7 @@ export class StickerEditorComponent implements AfterViewInit, OnDestroy {
   readonly stickerCatalog = input<StickerDefinition[]>([]);
   readonly stickerPacks = input<StickerPack[]>([]);
   readonly unlockedPackIds = input<string[]>([]);
+  readonly recommendedPackIds = input<string[]>([]);
   readonly maxStickers = input<number>(12);
 
   readonly placementsChanged = output<StickerPlacement[]>();
