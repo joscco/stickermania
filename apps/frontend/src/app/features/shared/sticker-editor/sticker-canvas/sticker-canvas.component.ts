@@ -436,19 +436,33 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   getStickerTransform(p: StickerPlacement): string {
-    return stickerTransformer.stickerTransform(p, this.catalogMap.get(p.stickerId), this.stickerSizePx());
+    return stickerTransformer.stickerTransform(p);
+  }
+
+  private stickerSizeFor(p: StickerPlacement) {
+    return this.getRenderedSize(p.instanceId);
   }
 
   getStickerAnchor(p: StickerPlacement): string {
-    return stickerTransformer.stickerAnchor(p, this.catalogMap.get(p.stickerId), this.stickerSizePx());
+    const def = this.catalogMap.get(p.stickerId);
+    const ob = def?.overlayBounds;
+    if (!ob) return '50% 50%';
+    const s = this.stickerSizeFor(p);
+    return `${(ob.x * s.width)}px ${(ob.y * s.height)}px`;
   }
 
   stickerLeft(p: StickerPlacement): number {
-    return stickerTransformer.stickerLeft(p, this.catalogMap.get(p.stickerId), this.stickerSizePx());
+    const def = this.catalogMap.get(p.stickerId);
+    const ob = def?.overlayBounds;
+    if (!ob) return p.x;
+    return p.x - ob.x * this.stickerSizeFor(p).width;
   }
 
   stickerTop(p: StickerPlacement): number {
-    return stickerTransformer.stickerTop(p, this.catalogMap.get(p.stickerId), this.stickerSizePx());
+    const def = this.catalogMap.get(p.stickerId);
+    const ob = def?.overlayBounds;
+    if (!ob) return p.y;
+    return p.y - ob.y * this.stickerSizeFor(p).height;
   }
 
   private getRenderedSize(instanceId: string): { width: number; height: number } {
