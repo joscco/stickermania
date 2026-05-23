@@ -4,9 +4,9 @@ import type {StickerPack} from "@birthday/shared";
 import type {WinnerStep} from '../../player-view-models';
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {PromptBannerComponent} from '../../../../shared/prompt-banner/prompt-banner.component';
-import {PlayerStatusScreenComponent} from '../player-status-screen.component';
-import {PlacementBadgeComponent} from '../../../shared/placement-badge.component';
 import {PlayerWinnerChoicesComponent} from '../winner-choices/player-winner-choices.component';
+import {PlayerStatusScreenComponent} from '../../player-status-screen/player-status-screen.component';
+import PlacementBadgeComponent from '../../../shared/placement-badge/placement-badge.component';
 
 @Component({
     selector: "app-player-results",

@@ -1,7 +1,5 @@
 import {Component, computed, input, OnDestroy, OnInit, signal, inject} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
-import {LobbyAvatarComponent} from './lobby/lobby-avatar.component';
-import {LobbyNameComponent} from './lobby/lobby-name.component';
 import {PlayerConnectingComponent} from './scenes/connecting/player-connecting.component';
 import {PlayerReconnectingComponent} from './scenes/reconnecting/player-reconnecting.component';
 import {PlayerDisconnectedComponent} from './scenes/disconnected/player-disconnected.component';
@@ -14,7 +12,6 @@ import {PlayerVotingDoneComponent} from './scenes/voting/player-voting-done.comp
 import {PlayerResultsComponent} from './scenes/results/player-results.component';
 import {PlayerNextRoundComponent} from './scenes/next-round/player-next-round.component';
 import {PlayerWinnerChoicesComponent} from './scenes/winner-choices/player-winner-choices.component';
-import {PlayerHeaderComponent} from './player-header.component';
 import {PlayerScreenDataService} from './player-screen-data.service';
 import {StickerPlayerService} from '../services/sticker-player.service';
 import {PlayerTimerService} from '../services/player-timer.service';
@@ -26,6 +23,9 @@ import {WorldStore} from '../../../core/world.store';
 import {ReconnectService} from '../../../core/reconnect.service';
 import {AudioService} from '../../../core/audio.service';
 import {PlayerScreen} from './player-screen.enum';
+import {LobbyNameComponent} from './scenes/lobby-name/lobby-name.component';
+import {LobbyAvatarComponent} from './scenes/lobby-avatar/lobby-avatar.component';
+import {PlayerHeaderComponent} from './player-header/player-header.component';
 
 
 @Component({

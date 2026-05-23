@@ -11,7 +11,7 @@ import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.di
 import {BoardPlayerAvatarComponent} from '../../player-avatar/board-player-avatar.component';
 import {SvgComponent} from '../../../../shared/svg/svg.component';
 import {PromptBannerComponent} from '../../../../shared/prompt-banner/prompt-banner.component';
-import {StarsDisplayComponent} from '../../../shared/stars-display.component';
+import {StarsDisplayComponent} from '../../../shared/stars-display/stars-display.component';
 
 /** Approximate ideal pixel height needed to show the podium at scale 1 (3 columns with trophies). */
 const PODIUM_IDEAL_H = 420;

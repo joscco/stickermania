@@ -1,6 +1,6 @@
 import {Component, input} from "@angular/core";
-import {PlayerStatusScreenComponent} from '../player-status-screen.component';
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
+import {PlayerStatusScreenComponent} from '../../player-status-screen/player-status-screen.component';
 
 @Component({
     selector: "app-player-next-round",

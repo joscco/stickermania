@@ -68,11 +68,11 @@
     </svg>
   }
 
-  <!-- Debug: anchor point (red) = transform-origin in canvas space -->
-  @if (overlayBox() && sel.hasSelection() && sel.selectionIds().length === 1) {
+  <!-- Debug: sticker anchor (red) -->
+  @if (overlayBox() && selectionState.hasSelection() && selectionState.selectionIds().length === 1) {
     <div class="absolute pointer-events-none z-[10000]"
-         [style.left.px]="sel.selectionIds()[0] ? (stickers().find(s => s.instanceId === sel.selectionIds()[0])?.x ?? 0) : 0"
-         [style.top.px]="sel.selectionIds()[0] ? (stickers().find(s => s.instanceId === sel.selectionIds()[0])?.y ?? 0) : 0">
+         [style.left.px]="anchorStickerX()"
+         [style.top.px]="anchorStickerY()">
       <svg width="14" height="14" viewBox="-7 -7 14 14" class="overflow-visible">
         <circle cx="0" cy="0" r="4" fill="#ef4444" stroke="white" stroke-width="1.5"/>
       </svg>

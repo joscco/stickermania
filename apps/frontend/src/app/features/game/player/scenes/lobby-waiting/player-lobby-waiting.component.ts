@@ -2,8 +2,8 @@ import {Component, input, output} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {SessionPlayer} from "@birthday/shared";
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
-import {PlayerStatusScreenComponent} from '../player-status-screen.component';
 import {BoardPlayerAvatarComponent} from '../../../board/player-avatar/board-player-avatar.component';
+import {PlayerStatusScreenComponent} from '../../player-status-screen/player-status-screen.component';
 
 @Component({
     selector: "app-player-lobby-waiting",

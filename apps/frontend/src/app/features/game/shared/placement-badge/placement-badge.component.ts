@@ -1,7 +1,7 @@
 import {Component, computed, input} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {SvgComponent} from '../../shared/svg/svg.component';
-import {StarsDisplayComponent} from './stars-display.component';
+import {SvgComponent} from '../../../shared/svg/svg.component';
+import {StarsDisplayComponent} from '../stars-display/stars-display.component';
 
 @Component({
     selector: 'app-placement-badge',
@@ -10,7 +10,7 @@ import {StarsDisplayComponent} from './stars-display.component';
     templateUrl: './placement-badge.component.html',
     host: {class: 'flex flex-col items-center justify-center text-center py-2'},
 })
-export class PlacementBadgeComponent {
+class PlacementBadgeComponent {
     public readonly placement = input.required<number>();
     public readonly count = input.required<number>();
 
@@ -50,3 +50,5 @@ export class PlacementBadgeComponent {
         }
     });
 }
+
+export default PlacementBadgeComponent

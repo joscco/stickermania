@@ -1,6 +1,6 @@
 import {Component, input, output} from "@angular/core";
 import {CommonModule} from "@angular/common";
-import {SvgComponent} from "../../shared/svg/svg.component";
+import {SvgComponent} from "../../../shared/svg/svg.component";
 
 @Component({
     selector: "app-choice-button",

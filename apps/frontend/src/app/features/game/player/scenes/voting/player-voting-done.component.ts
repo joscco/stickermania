@@ -1,7 +1,7 @@
 import {Component, input, output} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {SessionPlayer} from "@birthday/shared";
-import {PlayerStatusScreenComponent} from '../player-status-screen.component';
+import {PlayerStatusScreenComponent} from '../../player-status-screen/player-status-screen.component';
 import {BoardPlayerAvatarComponent} from '../../../board/player-avatar/board-player-avatar.component';
 
 @Component({

@@ -4,7 +4,7 @@ import type {StickerPack} from "@birthday/shared";
 import type {WinnerStep} from '../../player-view-models';
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {SvgComponent} from '../../../../shared/svg/svg.component';
-import {ChoiceButtonComponent} from '../../../shared/choice-button.component';
+import {ChoiceButtonComponent} from '../../../shared/choice-button/choice-button.component';
 
 @Component({
     selector: "app-player-winner-choices",

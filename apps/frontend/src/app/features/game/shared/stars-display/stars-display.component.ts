@@ -1,11 +1,11 @@
-import {Component, computed, input} from '@angular/core';
+import {Component, input} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {SvgComponent} from '../../shared/svg/svg.component';
+import {SvgComponent} from '../../../shared/svg/svg.component';
 
 @Component({
     selector: 'app-stars-display',
     standalone: true,
-    imports: [CommonModule, SvgComponent],
+  imports: [CommonModule, SvgComponent, SvgComponent],
     templateUrl: './stars-display.component.html',
     host: {class: 'h-12 flex items-center justify-center gap-1'},
 })

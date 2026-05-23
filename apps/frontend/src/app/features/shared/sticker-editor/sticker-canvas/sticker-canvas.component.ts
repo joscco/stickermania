@@ -13,11 +13,12 @@ import type {BoundingBox, SelectionInfo} from '../types';
 import * as ops from '../sticker-placement-ops';
 import {AnimOnInitDirective, AnimPresenceDirective} from '../../animations/anim-on-init.directive';
 import {SvgComponent} from '../../svg/svg.component';
-import {getSpriteViewBox, preloadSprite} from '../sprite-url.util';
+import {preloadSprite} from '../sprite-url.util';
 import {AudioService} from '../../../../core/audio.service';
-import {StickerItemComponent, type StickerAnimState} from './sticker-item/sticker-item.component';
-import {StickerActionBarComponent, type ActionBarAction} from '../sticker-action-bar/sticker-action-bar.component';
-import {StickerOverlayComponent, type OverlayHandleEvent} from '../sticker-overlay/sticker-overlay.component';
+import {StickerItemComponent, type StickerAnimState} from '../sticker-item/sticker-item.component';
+import * as stickerTransformer from './sticker-transform.util';
+import {OverlayHandleEvent, StickerOverlayComponent} from '../sticker-overlay/sticker-overlay.component';
+import {ActionBarAction, StickerActionBarComponent} from '../sticker-action-bar/sticker-action-bar.component';
 import {CanvasSelectionState} from './canvas-selection.state';
 
 @Component({
@@ -42,6 +43,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   readonly clearAll = output<void>();
 
   @ViewChild('canvasArea') private canvasArea!: ElementRef<HTMLDivElement>;
+
   get canvasNativeElement(): HTMLDivElement | null {
     return this.canvasArea?.nativeElement ?? null;
   }
@@ -86,46 +88,35 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   });
 
   readonly overlayRotation = computed(() => {
-    const ids = this.sel.selectionIds();
-    if (ids.length !== 1) return 0;
+    const ids = this.selectionState.selectionIds();
+    if (ids.length !== 1) {
+      return 0;
+    }
     return this.stickers().find(s => s.instanceId === ids[0])?.rotation ?? 0;
+  });
+
+  // Debug anchor
+  readonly anchorStickerX = computed(() => {
+    const ids = this.selectionState.selectionIds();
+    if (ids.length !== 1) {
+      return 0;
+    }
+    return this.stickers().find(s => s.instanceId === ids[0])?.x ?? 0;
+  });
+  readonly anchorStickerY = computed(() => {
+    const ids = this.selectionState.selectionIds();
+    if (ids.length !== 1) {
+      return 0;
+    }
+    return this.stickers().find(s => s.instanceId === ids[0])?.y ?? 0;
   });
 
   readonly overlayBox = computed<BoundingBox | null>(() => {
     const ids = this.selectionState.selectionIds();
     if (ids.length !== 1) return null;
-
-    const pid = ids[0];
-    const p = this.stickers().find(s => s.instanceId === pid);
+    const p = this.stickers().find(s => s.instanceId === ids[0]);
     if (!p) return null;
-
-    const def = this.catalogMap.get(p.stickerId);
-    const ob = def?.overlayBounds;
-    const size = this.getRenderedSize(pid);
-    const sx = (p.flipX ? -1 : 1) * p.scale * ((p as any).scaleX ?? 1);
-    const sy = (p.flipY ? -1 : 1) * p.scale * ((p as any).scaleY ?? 1);
-
-    let ow: number, oh: number;
-    if (ob) {
-      ow = Math.max(40, Math.abs(ob.w * size.width * sx));
-      oh = Math.max(40, Math.abs(ob.h * size.height * sy));
-      const ox = p.x + (ob.x - 0.5) * size.width * sx;
-      const oy = p.y + (ob.y - 0.5) * size.height * sy;
-      return {x: ox - ow / 2, y: oy - oh / 2, w: ow, h: oh};
-    }
-
-    const polygon = def?.hitboxPolygon;
-    if (!polygon || polygon.length < 3) return null;
-
-    let minPX = Infinity, minPY = Infinity, maxPX = -Infinity, maxPY = -Infinity;
-    for (const pt of polygon) {
-      if (pt.x < minPX) minPX = pt.x; if (pt.x > maxPX) maxPX = pt.x;
-      if (pt.y < minPY) minPY = pt.y; if (pt.y > maxPY) maxPY = pt.y;
-    }
-
-    ow = Math.max(40, Math.abs((maxPX - minPX) * size.width * sx));
-    oh = Math.max(40, Math.abs((maxPY - minPY) * size.height * sy));
-    return {x: p.x - ow / 2, y: p.y - oh / 2, w: ow, h: oh};
+    return stickerTransformer.overlayBox(p, this.catalogMap.get(p.stickerId), this.stickerSizePx());
   });
 
   readonly canUngroup = computed(() =>
@@ -135,7 +126,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     this.selectionState.selectionIds().length > 0
     && (this.committedCount() + this.selectionState.selectionIds().length) <= this.maxStickers());
 
-  readonly lassoPath = signal<{x: number; y: number}[] | null>(null);
+  readonly lassoPath = signal<{ x: number; y: number }[] | null>(null);
   readonly lassoPoints = computed(() =>
     this.lassoPath()?.map(p => `${p.x},${p.y}`).join(' '));
 
@@ -165,15 +156,27 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   clearAnimState(id: string): void {
-    this.animStates.update(m => { const n = new Map(m); n.delete(id); return n; });
+    this.animStates.update(m => {
+      const n = new Map(m);
+      n.delete(id);
+      return n;
+    });
   }
 
   scheduleRemoval(ids: string[], done: () => void): void {
-    if (!ids.length) { done(); return; }
+    if (!ids.length) {
+      done();
+      return;
+    }
     this.audio.playDelete();
     let pending = ids.length;
-    const onOne = () => { if (--pending === 0) done(); };
-    ids.forEach(id => { this.pendingRemovals.set(id, onOne); this.setAnimState(id, 'removing'); });
+    const onOne = () => {
+      if (--pending === 0) done();
+    };
+    ids.forEach(id => {
+      this.pendingRemovals.set(id, onOne);
+      this.setAnimState(id, 'removing');
+    });
   }
 
   onStickerAnimRemoved(id: string): void {
@@ -244,9 +247,14 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       onLassoPathChanged: path => this.lassoPath.set(path),
       onLassoSelectionChanged: ids => {
         this.selectionState.multiSelectionRotation.set(0);
-        if (ids.size === 0)           this.selectionState.lassoSelection.set(new Set());
-        else if (ids.size === 1)      { this.selectionState.selectedInstanceId.set([...ids][0]); this.selectionState.lassoSelection.set(new Set()); }
-        else                          { this.selectionState.lassoSelection.set(ids); this.selectionState.selectedInstanceId.set(null); }
+        if (ids.size === 0) this.selectionState.lassoSelection.set(new Set());
+        else if (ids.size === 1) {
+          this.selectionState.selectedInstanceId.set([...ids][0]);
+          this.selectionState.lassoSelection.set(new Set());
+        } else {
+          this.selectionState.lassoSelection.set(ids);
+          this.selectionState.selectedInstanceId.set(null);
+        }
       },
       onSelectedChanged: id => {
         this.selectionState.clear();
@@ -278,7 +286,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       id => this.getStickerUrl(id), this.stickerSizePx());
   }
 
-  generateInstanceId(): string { return ops.generateInstanceId(); }
+  generateInstanceId(): string {
+    return ops.generateInstanceId();
+  }
 
   // ── Action bar ─────────────────────────────────────────────────
 
@@ -290,7 +300,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       this.commit(ops.applyRotationDelta(this.stickers(), ids, ev.dx * 0.5));
     } else if (ev.type === 'n' || ev.type === 's' || ev.type === 'e' || ev.type === 'w') {
       if (ids.length === 1) {
-        this.commit(ops.applyStretchHandle(this.stickers(), ids[0], ev.type as 'n'|'s'|'e'|'w', ev.dx, ev.dy, (id: string) => this.getRenderedSize(id)));
+        this.commit(ops.applyStretchHandle(this.stickers(), ids[0], ev.type as 'n' | 's' | 'e' | 'w', ev.dx, ev.dy, (id: string) => this.getRenderedSize(id)));
       }
     } else if (ev.type === 'scale') {
       const box = this.overlayBox();
@@ -326,16 +336,36 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   private handleAction(action: ActionBarAction, ids: string[]): void {
     switch (action) {
-      case 'delete':    this.removeSelected(); break;
-      case 'flipH':     this.flipSelectionH(ids); break;
-      case 'zForward':  this.commit(ops.swapZ(this.stickers(), ids, +1)); break;
-      case 'zBackward': this.commit(ops.swapZ(this.stickers(), ids, -1)); break;
-      case 'zFront':    this.commit(ops.moveToEdge(this.stickers(), ids, 'front')); break;
-      case 'zBack':     this.commit(ops.moveToEdge(this.stickers(), ids, 'back')); break;
-      case 'group':     this.commitGroup(ops.groupPlacements(this.stickers(), ids), ids); break;
-      case 'ungroup':   this.commitGroup(ops.ungroupPlacements(this.stickers(), ids), ids); break;
-      case 'duplicate': this.doDuplicate(); break;
-      case 'reset':     this.resetSelection(ids); break;
+      case 'delete':
+        this.removeSelected();
+        break;
+      case 'flipH':
+        this.flipSelectionH(ids);
+        break;
+      case 'zForward':
+        this.commit(ops.swapZ(this.stickers(), ids, +1));
+        break;
+      case 'zBackward':
+        this.commit(ops.swapZ(this.stickers(), ids, -1));
+        break;
+      case 'zFront':
+        this.commit(ops.moveToEdge(this.stickers(), ids, 'front'));
+        break;
+      case 'zBack':
+        this.commit(ops.moveToEdge(this.stickers(), ids, 'back'));
+        break;
+      case 'group':
+        this.commitGroup(ops.groupPlacements(this.stickers(), ids), ids);
+        break;
+      case 'ungroup':
+        this.commitGroup(ops.ungroupPlacements(this.stickers(), ids), ids);
+        break;
+      case 'duplicate':
+        this.doDuplicate();
+        break;
+      case 'reset':
+        this.resetSelection(ids);
+        break;
     }
   }
 
@@ -387,14 +417,12 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   // ── Template helpers ──────────────────────────────────────────
 
-  getStickerUrl(stickerId: string): string { return this.catalogMap.get(stickerId)?.imageUrl ?? ''; }
+  getStickerUrl(stickerId: string): string {
+    return this.catalogMap.get(stickerId)?.imageUrl ?? '';
+  }
 
   getStickerWidth(stickerId: string): number {
-    const def = this.catalogMap.get(stickerId);
-    if (!def) return this.stickerSizePx();
-    const vb = getSpriteViewBox(def.imageUrl);
-    return vb && vb.height > 0
-      ? Math.round(this.stickerSizePx() * vb.width / vb.height) : this.stickerSizePx();
+    return stickerTransformer.stickerRenderedSize({} as any, this.catalogMap.get(stickerId), this.stickerSizePx()).width;
   }
 
   getHitboxSvgPoints(stickerId: string): string {
@@ -403,51 +431,33 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   getStickerTransform(p: StickerPlacement): string {
-    const sx = (p.flipX ? -1 : 1) * p.scale * ((p as any).scaleX ?? 1);
-    const sy = (p.flipY ? -1 : 1) * p.scale * ((p as any).scaleY ?? 1);
-    const def = this.catalogMap.get(p.stickerId);
-    const ob = def?.overlayBounds;
-    if (ob) {
-      const size = this.getRenderedSize(p.instanceId);
-      const ax = ob.x * size.width;
-      const ay = ob.y * size.height;
-      return `rotate(${p.rotation}deg) scale(${sx}, ${sy}) translate(${-ax}px, ${-ay}px)`;
-    }
-    return `rotate(${p.rotation}deg) scale(${sx}, ${sy}) translate(-50%, -50%)`;
+    return stickerTransformer.stickerTransform(p, this.catalogMap.get(p.stickerId), this.stickerSizePx());
   }
 
   getStickerAnchor(p: StickerPlacement): string {
-    const stickerDef = this.catalogMap.get(p.stickerId);
-    const overlayBounds = stickerDef?.overlayBounds;
-    if (!overlayBounds) {
-      return '0 0';
-    }
-    const size = this.getRenderedSize(p.instanceId);
-    const ax = overlayBounds.x * size.width / 2;
-    const ay = overlayBounds.y * size.height / 2;
-    return `${ax}px ${ay}px`;
+    return stickerTransformer.stickerAnchor(p, this.catalogMap.get(p.stickerId), this.stickerSizePx());
   }
 
   stickerLeft(p: StickerPlacement): number {
-    const stickerDef = this.catalogMap.get(p.stickerId);
-    const overlayBounds = stickerDef?.overlayBounds;
-    if (!overlayBounds) {
-      return p.x;
-    }
-    const size = this.getRenderedSize(p.instanceId);
-    return p.x - overlayBounds.x * size.width;
+    return stickerTransformer.stickerLeft(p, this.catalogMap.get(p.stickerId), this.stickerSizePx());
   }
 
   stickerTop(p: StickerPlacement): number {
-    const def = this.catalogMap.get(p.stickerId);
-    const ob = def?.overlayBounds;
-    if (!ob) return p.y;
-    const size = this.getRenderedSize(p.instanceId);
-    return p.y - ob.y * size.height;
+    return stickerTransformer.stickerTop(p, this.catalogMap.get(p.stickerId), this.stickerSizePx());
   }
 
-  isSelected(id: string): boolean { return this.selectionState.isSelected(id); }
-  isLassoSelected(id: string): boolean { return this.selectionState.isLassoSelected(id); }
+  private getRenderedSize(instanceId: string): { width: number; height: number } {
+    const p = this.stickers().find(s => s.instanceId === instanceId);
+    return stickerTransformer.stickerRenderedSize(p ?? {} as any, p ? this.catalogMap.get(p.stickerId) : undefined, this.stickerSizePx());
+  }
+
+  isSelected(id: string): boolean {
+    return this.selectionState.isSelected(id);
+  }
+
+  isLassoSelected(id: string): boolean {
+    return this.selectionState.isLassoSelected(id);
+  }
 
   // ── Private helpers ───────────────────────────────────────────
 
@@ -465,13 +475,4 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  private getRenderedSize(instanceId: string): {width: number; height: number} {
-    const p = this.stickers().find(s => s.instanceId === instanceId);
-    if (!p) return {width: this.stickerSizePx(), height: this.stickerSizePx()};
-    const def = this.catalogMap.get(p.stickerId);
-    if (!def) return {width: this.stickerSizePx(), height: this.stickerSizePx()};
-    const vb = getSpriteViewBox(def.imageUrl);
-    if (!vb || vb.height <= 0) return {width: this.stickerSizePx(), height: this.stickerSizePx()};
-    return {width: Math.round(this.stickerSizePx() * vb.width / vb.height), height: this.stickerSizePx()};
-  }
 }

@@ -1,7 +1,7 @@
 import { Component, inject, output, signal } from "@angular/core";
-import {GameSessionStore} from '../../../../core/challenge.store';
-import {AnimOnInitDirective, AnimGroupDirective} from '../../../shared/animations/anim-on-init.directive';
-import {SvgComponent} from '../../../shared/svg/svg.component';
+import {AnimGroupDirective, AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
+import {SvgComponent} from '../../../../shared/svg/svg.component';
+import {GameSessionStore} from '../../../../../core/challenge.store';
 
 @Component({
   selector: "app-lobby-name",

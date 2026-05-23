@@ -2,12 +2,10 @@
 
 export interface StickerPackConfig {
     id: string;
-    /** Display name shown in the UI */
     name: string;
     /** Sprite symbol id for the pack icon, e.g. "pack-icon-shape" */
     iconId?: string;
     unlockedAtStart: boolean;
-    /** Sticker IDs belonging to this pack */
     stickers: string[];
 }
 

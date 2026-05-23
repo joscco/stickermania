@@ -2,13 +2,11 @@
  * Reusable canvas painting logic shared between avatar and draw canvases.
  */
 
-/** Canvas internal resolution — always square */
 export const CANVAS_RESOLUTION = 400;
 
 export class CanvasPainter {
   private isDrawing = false;
   private lastPoint: { x: number; y: number } | null = null;
-  /** The pointer id of the finger/stylus that started the current stroke. */
   private activePointerId: number | null = null;
 
   constructor(
@@ -33,9 +31,14 @@ export class CanvasPainter {
   /** Load an image (data-URL or http URL) onto the canvas as starting content. */
   public loadImage(src: string): void {
     const canvas = this.getCanvas();
-    if (!canvas) return;
+    if (!canvas) {
+      return;
+    }
+
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
 
     const img = new Image();
     img.crossOrigin = "anonymous";

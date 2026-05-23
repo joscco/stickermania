@@ -1,14 +1,14 @@
 import {Component, inject, input, output, signal, ViewChild} from "@angular/core";
-import {DrawingCanvasComponent} from '../../../shared/paint-canvas/drawing-canvas.component';
-import {AnimOnInitDirective, AnimGroupDirective} from '../../../shared/animations/anim-on-init.directive';
-import {SvgComponent} from '../../../shared/svg/svg.component';
-import {AudioService} from '../../../../core/audio.service';
+import {SvgComponent} from '../../../../shared/svg/svg.component';
+import {AnimGroupDirective, AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
+import {AudioService} from '../../../../../core/audio.service';
+import {DrawingCanvasComponent} from '../../../../shared/paint-canvas/drawing-canvas.component';
 
 
 @Component({
   selector: "app-lobby-avatar",
   standalone: true,
-  imports: [DrawingCanvasComponent, AnimOnInitDirective, AnimGroupDirective, SvgComponent],
+  imports: [DrawingCanvasComponent, AnimOnInitDirective, AnimGroupDirective, SvgComponent, SvgComponent, AnimOnInitDirective],
   templateUrl: './lobby-avatar.component.html',
   host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })

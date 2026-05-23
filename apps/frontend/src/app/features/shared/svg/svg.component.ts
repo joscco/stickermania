@@ -44,8 +44,8 @@ export class SvgComponent {
 
   constructor() {
     effect(() => {
-      const n = this.name();
-      const spriteId = n.startsWith('sprite:#') ? n.replace('sprite:#', '') : n;
+      const svgName = this.name();
+      const spriteId = svgName.startsWith('sprite:#') ? svgName.replace('sprite:#', '') : svgName;
       const vb = getSpriteViewBox(`sprite:#${spriteId}`);
       if (vb) {
         this.viewBox.set(`0 0 ${vb.width} ${vb.height}`);

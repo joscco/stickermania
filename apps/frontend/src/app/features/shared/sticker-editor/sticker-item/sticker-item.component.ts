@@ -3,7 +3,7 @@ import {
   ElementRef, ViewChild, OnInit, effect, untracked,
 } from '@angular/core';
 import gsap from 'gsap';
-import {StickerImgComponent} from '../../sticker-img/sticker-img.component';
+import {StickerImgComponent} from '../sticker-img/sticker-img.component';
 
 export type StickerAnimState = 'entering' | 'settling' | 'idle' | 'removing';
 

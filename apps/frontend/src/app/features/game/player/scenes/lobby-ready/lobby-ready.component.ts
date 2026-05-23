@@ -1,6 +1,6 @@
 import { Component, input } from "@angular/core";
-import {AnimOnInitDirective, AnimGroupDirective} from '../../../shared/animations/anim-on-init.directive';
-import {SvgComponent} from '../../../shared/svg/svg.component';
+import {AnimGroupDirective, AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
+import {SvgComponent} from '../../../../shared/svg/svg.component';
 
 @Component({
   selector: "app-lobby-ready",
