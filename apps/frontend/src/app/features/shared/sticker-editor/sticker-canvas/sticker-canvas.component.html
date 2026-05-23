@@ -4,6 +4,19 @@
   #canvasArea
   class="w-full h-full relative overflow-visible"
 >
+  <!-- SVG filter: yellow outline around alpha channel -->
+  <svg width="0" height="0" class="absolute">
+    <filter id="yellow-outline">
+      <feMorphology in="SourceAlpha" operator="dilate" radius="3" result="expanded"/>
+      <feFlood flood-color="#eab308" result="color"/>
+      <feComposite in="color" in2="expanded" operator="in" result="outline"/>
+      <feMerge>
+        <feMergeNode in="outline"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </svg>
+
   <!-- Editor frame background (faint) -->
   <div class="absolute inset-0 pointer-events-none"
        style="background-image: url('assets/svg/editor-frame.svg'); background-size: 100% 100%;"></div>
@@ -38,7 +51,7 @@
       [style.transform-origin]="getStickerAnchor(sticker)"
       [style.z-index]="sticker.zIndex"
       [attr.data-instance-id]="sticker.instanceId"
-      [style.filter]="isSelected(sticker.instanceId) ? 'drop-shadow(0 0 20px oklch(85.2% 0.199 91.936))' : 'none'"
+      [style.filter]="isSelected(sticker.instanceId) ? 'url(#yellow-outline)' : 'none'"
     >
       <app-sticker-item
         [instanceId]="sticker.instanceId"
