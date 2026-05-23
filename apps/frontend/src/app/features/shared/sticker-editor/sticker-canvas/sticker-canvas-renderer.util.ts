@@ -21,6 +21,9 @@ export async function renderCanvasToDataUrl(
   const ctx = offscreen.getContext("2d")!;
   ctx.scale(pixelScale, pixelScale);
 
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, size, size);
+
   const imageCache = await loadImages(stickers, getUrl, stickerPx);
 
   const sorted = [...stickers].sort((a, b) => a.zIndex - b.zIndex);
