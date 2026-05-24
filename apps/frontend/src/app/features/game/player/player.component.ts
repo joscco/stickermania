@@ -27,6 +27,7 @@ import {LobbyNameComponent} from './scenes/lobby-name/lobby-name.component';
 import {LobbyAvatarComponent} from './scenes/lobby-avatar/lobby-avatar.component';
 import {PlayerHeaderComponent} from './player-header/player-header.component';
 import {TimerFillComponent} from '../../shared/timer-fill/timer-fill.component';
+import {AnimPresenceDirective} from '../../shared/animations/anim-on-init.directive';
 
 
 @Component({
@@ -49,6 +50,7 @@ import {TimerFillComponent} from '../../shared/timer-fill/timer-fill.component';
     PlayerWinnerChoicesComponent,
     PlayerHeaderComponent,
     TimerFillComponent,
+    AnimPresenceDirective,
 
   ],
   providers: [

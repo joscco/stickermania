@@ -98,6 +98,7 @@ export class PlayerScreenDataService {
         return phase === 'BUILDING' || phase === 'VOTING';
     });
     readonly timerNotification = computed(() => this.timerService.notification());
+    readonly timerTimeUp = computed(() => this.timerService.timeUp());
 
     public readonly votingVm = computed<VotingViewModel>(() => {
         const gameState = this.stickerService.gameState();

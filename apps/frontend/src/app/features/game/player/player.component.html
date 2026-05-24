@@ -5,6 +5,14 @@
     <app-timer-fill [percent]="screenData.timerPercentElapsed()"/>
   }
 
+  <!-- Time's up -->
+  <div [animPresence]="screenData.timerTimeUp()"
+       class="absolute inset-0 z-50 flex items-center justify-center bg-white">
+    <div class="text-center">
+      <div class="text-5xl font-bold text-black mb-4">Zeit ist um!</div>
+    </div>
+  </div>
+
   <app-player-header
     [vm]="screenData.headerVm()"
     [timerPercent]="screenData.timerActive() ? screenData.timerPercentLeft() : 100"
