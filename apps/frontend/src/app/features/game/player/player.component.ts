@@ -26,6 +26,7 @@ import {PlayerScreen} from './player-screen.enum';
 import {LobbyNameComponent} from './scenes/lobby-name/lobby-name.component';
 import {LobbyAvatarComponent} from './scenes/lobby-avatar/lobby-avatar.component';
 import {PlayerHeaderComponent} from './player-header/player-header.component';
+import {TimerFillComponent} from '../../shared/timer-fill/timer-fill.component';
 
 
 @Component({
@@ -47,6 +48,7 @@ import {PlayerHeaderComponent} from './player-header/player-header.component';
     PlayerNextRoundComponent,
     PlayerWinnerChoicesComponent,
     PlayerHeaderComponent,
+    TimerFillComponent,
 
   ],
   providers: [
@@ -78,7 +80,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly reconnectService: ReconnectService,
     public readonly sessionStore: GameSessionStore,
-    public readonly worldStore: WorldStore,
     public readonly timer: PlayerTimerService,
     private readonly messageHandler: PlayerMessageHandler,
     public readonly stickerService: StickerPlayerService,

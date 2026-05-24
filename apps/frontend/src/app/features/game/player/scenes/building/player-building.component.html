@@ -8,7 +8,7 @@
         [text]="prompt()"
         [subtitle]="'Runde ' + roundIndex()"
         anim="banner"
-        class="w-full"
+        class="w-full px-1"
       />
     </div>
     <div class="absolute inset-x-0 transition-opacity duration-500"
@@ -17,7 +17,7 @@
       <app-prompt-banner
         [text]="timerNotification()"
         anim="banner"
-        class="w-full"
+        class="w-full px-1"
       />
     </div>
   </div>
@@ -33,42 +33,18 @@
       class="flex-1 min-h-0 w-full"
     />
 
-    <!-- Footer: toolbar + submit -->
-    <div animOnInit="opacity" class="w-full max-w-lg px-4 pb-4 flex items-center justify-center gap-3">
-      <button class="bg-white text-black py-2 px-4 rounded-xl font-semibold active:scale-95 transition-transform"
-              (click)="skipRound.emit()">Aussetzen</button>
-
-      <button class="w-11 h-11 rounded-xl bg-white flex items-center justify-center active:scale-90 transition-transform disabled:opacity-30"
-              title="Alle Sticker entfernen"
-              [disabled]="placements.length === 0"
-              (click)="editor.clearPlacements()">
-        <app-svg name="icon-editor-clear-all-sm" w="24"/>
-      </button>
-
-      <span class="text-xs text-white tabular-nums w-10 text-center"
-            [class.text-red-400]="editor.placements().length >= maxStickersOnCanvas()">
-        {{ editor.placements().length }}/{{ maxStickersOnCanvas() }}
-      </span>
-
-      <button class="w-11 h-11 rounded-xl flex items-center justify-center active:scale-90 transition-all duration-200 disabled:opacity-40"
-              [class.bg-white]="!editor.showPicker()"
-              [class.bg-black]="editor.showPicker()"
-              [class.text-black]="!editor.showPicker()"
-              [class.text-white]="editor.showPicker()"
-
-              [disabled]="editor.placements().length >= maxStickersOnCanvas() && !editor.showPicker()"
-              (click)="editor.showPicker() ? editor.onPickerClose() : editor.showPicker.set(true)">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" class="w-7 h-7 transition-transform duration-300"
-             [class.rotate-45]="editor.showPicker()">
-          <rect x="4" y="20" width="40" height="8" rx="4" fill="currentColor"/>
-          <rect x="20" y="4" width="8" height="40" rx="4" fill="currentColor"/>
-        </svg>
-      </button>
-
-      <button class="bg-black text-white py-2 px-4 rounded-xl font-semibold active:scale-95 transition-transform disabled:opacity-40"
-              [disabled]="placements.length === 0"
-              (click)="onSubmit()">Einreichen</button>
-    </div>
+    <app-sticker-editor-toolbar
+      animOnInit="opacity"
+      [placementCount]="editor.placements().length"
+      [maxStickers]="maxStickersOnCanvas()"
+      [canAddMore]="editor.placements().length < maxStickersOnCanvas()"
+      [showPicker]="editor.showPicker()"
+      [showGameButtons]="true"
+      (clearAll)="editor.clearPlacements()"
+      (togglePicker)="editor.showPicker() ? editor.onPickerClose() : editor.showPicker.set(true)"
+      (skip)="skipRound.emit()"
+      (submit)="onSubmit()"
+    />
   } @else {
     <div class="h-full flex items-center justify-center gap-2 text-neutral-400 text-base">
       <div class="w-4 h-4 border-2 border-neutral-200 border-t-neutral-400 rounded-full animate-spin"></div>

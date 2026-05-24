@@ -4,7 +4,7 @@ import type {StickerDefinition, StickerPlacement, StickerPack} from "@birthday/s
 import {AnimGroupDirective, AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {PromptBannerComponent} from '../../../../shared/prompt-banner/prompt-banner.component';
 import {StickerEditorComponent} from '../../../../shared/sticker-editor/sticker-editor.component';
-import {SvgComponent} from '../../../../shared/svg/svg.component';
+import {StickerEditorToolbarComponent} from '../../../../shared/sticker-editor/sticker-editor-toolbar/sticker-editor-toolbar.component';
 
 export interface SubmitCollageEvent {
     placements: StickerPlacement[];
@@ -14,7 +14,7 @@ export interface SubmitCollageEvent {
 @Component({
     selector: "app-player-building",
     standalone: true,
-  imports: [CommonModule, StickerEditorComponent, SvgComponent, AnimOnInitDirective, PromptBannerComponent, AnimGroupDirective],
+  imports: [CommonModule, StickerEditorComponent, StickerEditorToolbarComponent, AnimOnInitDirective, PromptBannerComponent, AnimGroupDirective],
     templateUrl: "./player-building.component.html",
     host: {"class": "h-full flex-1 flex flex-col"},
 })

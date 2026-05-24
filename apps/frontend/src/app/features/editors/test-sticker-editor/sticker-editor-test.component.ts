@@ -5,11 +5,12 @@ import {HttpClient} from "@angular/common/http";
 import type {StickerDefinition, StickerPack} from "@birthday/shared";
 import {firstValueFrom} from "rxjs";
 import {StickerEditorComponent} from '../../shared/sticker-editor/sticker-editor.component';
+import {StickerEditorToolbarComponent} from '../../shared/sticker-editor/sticker-editor-toolbar/sticker-editor-toolbar.component';
 
 @Component({
     selector: "app-sticker-editor-test",
     standalone: true,
-    imports: [CommonModule, RouterModule, StickerEditorComponent],
+    imports: [CommonModule, RouterModule, StickerEditorComponent, StickerEditorToolbarComponent],
     templateUrl: "./sticker-editor-test.component.html",
 })
 export class StickerEditorTestComponent implements OnInit {

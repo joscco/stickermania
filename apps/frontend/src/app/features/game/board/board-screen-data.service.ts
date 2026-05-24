@@ -28,7 +28,10 @@ export class BoardScreenDataService {
 
     readonly currentTimerTotalSec = signal(0);
 
+    private readonly _tick = signal(0);
+
     readonly timerPercentElapsed = computed(() => {
+        this._tick();
         const e = this.currentTimerEndsAt();
         const total = this.currentTimerTotalSec();
         if (!e || !total) return 0;
@@ -74,6 +77,8 @@ export class BoardScreenDataService {
                 this.currentTimerTotalSec.set(totalSec);
                 lastEndsAt = endsAt;
             }
+
+            this._tick.update(v => v + 1);
 
             const remaining = Math.max(0, endsAt - Date.now());
             const s = Math.ceil(remaining / 1000);

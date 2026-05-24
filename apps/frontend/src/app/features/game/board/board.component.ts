@@ -17,6 +17,7 @@ import {WebSocketService} from '../../../core/websocket.service';
 import {ApiService} from '../../../core/api.service';
 import {WorldStore} from '../../../core/world.store';
 import {AudioService} from '../../../core/audio.service';
+import {TimerFillComponent} from '../../shared/timer-fill/timer-fill.component';
 
 @Component({
   selector: "app-board",
@@ -26,7 +27,7 @@ import {AudioService} from '../../../core/audio.service';
     BoardLobbySceneComponent, BoardBuildingSceneComponent,
     BoardVotingSceneComponent, BoardResultsSceneComponent,
     BoardQrPanelComponent, BoardHeaderComponent,
-    AnimOnInitDirective,
+    AnimOnInitDirective, TimerFillComponent,
   ],
   providers: [BoardScreenDataService],
   templateUrl: "./board.component.html",

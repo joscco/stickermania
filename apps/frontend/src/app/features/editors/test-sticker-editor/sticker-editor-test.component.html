@@ -19,5 +19,14 @@
     [unlockedPackIds]="allPackIds()"
     [maxStickers]="maxStickers"
   />
+
+  <app-sticker-editor-toolbar
+    [placementCount]="editor.placements().length"
+    [maxStickers]="maxStickers"
+    [canAddMore]="editor.placements().length < maxStickers"
+    [showPicker]="editor.showPicker()"
+    (clearAll)="editor.clearPlacements()"
+    (togglePicker)="editor.showPicker() ? editor.onPickerClose() : editor.showPicker.set(true)"
+  />
 </div>
 
