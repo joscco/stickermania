@@ -13,17 +13,10 @@
     </div>
   </div>
 
-  <!-- Timer notification pill -->
-  @if (screenData.timerNotification()) {
-    <div class="absolute top-4 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
-      <div class="bg-black/70 text-yellow-300 px-4 py-1 rounded-full text-xs font-semibold">
-        {{ screenData.timerNotification() }}
-      </div>
-    </div>
-  }
-
   <app-player-header
     [vm]="screenData.headerVm()"
+    [timerPercent]="screenData.timerPercentLeft()"
+    [timeLeft]="screenData.timerTimeLeft()"
     (editName)="startEditName()"
     (editAvatar)="startEditAvatar()"
   />
@@ -63,6 +56,7 @@
           [stickerPacks]="screenData.buildingVm().stickerPacks"
           [unlockedPackIds]="screenData.buildingVm().unlockedPackIds"
           [recommendedPackIds]="screenData.buildingVm().recommendedPackIds"
+          [timerNotification]="screenData.timerNotification()"
           [maxStickersOnCanvas]="screenData.buildingVm().maxStickersOnCanvas"
           (skipRound)="skipRoundWithSound()"
           (submitCollage)="submitCollageWithSound($event)"

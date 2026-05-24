@@ -463,7 +463,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   getStickerAnchor(p: StickerPlacement): string {
     const def = this.catalogMap.get(p.stickerId);
     const ob = def?.overlayBounds;
-    if (!ob) return '50% 50%';
+    if (!ob) {
+      return '50% 50%';
+    }
     const s = this.stickerSizeFor(p);
     return `${(ob.x * s.width)}px ${(ob.y * s.height)}px`;
   }
@@ -472,7 +474,7 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     const def = this.catalogMap.get(p.stickerId);
     const ob = def?.overlayBounds;
     if (!ob) {
-      return p.x;
+      return p.x - 0.5 * this.stickerSizeFor(p).width;
     }
     return p.x - ob.x * this.stickerSizeFor(p).width;
   }
@@ -480,7 +482,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   stickerTop(p: StickerPlacement): number {
     const def = this.catalogMap.get(p.stickerId);
     const ob = def?.overlayBounds;
-    if (!ob) return p.y;
+    if (!ob) {
+      return p.y - 0.5 * this.stickerSizeFor(p).height;
+    }
     return p.y - ob.y * this.stickerSizeFor(p).height;
   }
 
