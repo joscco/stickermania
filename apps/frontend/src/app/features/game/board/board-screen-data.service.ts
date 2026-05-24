@@ -28,6 +28,16 @@ export class BoardScreenDataService {
 
     readonly currentTimerTotalSec = signal(0);
 
+    readonly timerPercentElapsed = computed(() => {
+        const e = this.currentTimerEndsAt();
+        const total = this.currentTimerTotalSec();
+        if (!e || !total) return 0;
+        const remaining = Math.max(0, e - Date.now());
+        return Math.min(100, Math.max(0, (1 - remaining / (total * 1000)) * 100));
+    });
+
+    readonly timerActive = computed(() => 'BUILDING,VOTING'.includes(this.basePhase()));
+
     private timerInterval: ReturnType<typeof setInterval> | null = null;
 
     readonly headerVm = computed<BoardHeaderViewModel>(() => ({

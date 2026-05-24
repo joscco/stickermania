@@ -5,14 +5,15 @@
         <img src="assets/svg/logo.svg" alt="Stickermania" class="h-6 w-auto shrink-0"/>
       </div>
 
-      <!-- Countdown -->
-      <div class="flex-1 flex items-center gap-2">
-        <div class="flex-1 h-4 bg-black/10 rounded overflow-hidden">
-          <div class="h-full bg-yellow-400 rounded transition-[width] duration-1000 ease-linear"
-               [style.width.%]="100 - timerPercent()"></div>
+      @if (timeLeft()) {
+        <div class="flex-1 flex items-center gap-2">
+          <div class="flex-1 h-4 bg-black/10 rounded overflow-hidden">
+            <div class="h-full bg-yellow-400 rounded transition-[width] duration-1000 ease-linear"
+                 [style.width.%]="100 - timerPercent()"></div>
+          </div>
+          <span class="text-xs font-mono text-black/60 w-10 text-right">{{ timeLeft() }}</span>
         </div>
-        <span class="text-xs font-mono text-black/60 w-10 text-right">{{ timeLeft() }}</span>
-      </div>
+      }
 
       <div class="flex items-center justify-center gap-2 shrink-0">
         @if (vm().showEditControls) {

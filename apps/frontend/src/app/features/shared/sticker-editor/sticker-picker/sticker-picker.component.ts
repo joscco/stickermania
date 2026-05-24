@@ -31,6 +31,16 @@ export class StickerPickerComponent implements AfterViewInit {
   readonly recommendedPackIds = input<string[]>([]);
   readonly closing = input(false);
 
+  readonly recommendedStickerIds = computed(() => {
+    const rp = new Set(this.recommendedPackIds());
+    if (rp.size === 0) return new Set<string>();
+    const ids = new Set<string>();
+    for (const pack of this.stickerPacks()) {
+      if (rp.has(pack.id)) for (const sid of pack.stickerIds) ids.add(sid);
+    }
+    return ids;
+  });
+
   readonly stickerDragStarted = output<StickerDragStartEvent>();
   readonly close = output<void>();
 

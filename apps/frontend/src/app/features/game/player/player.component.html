@@ -2,8 +2,9 @@
      style="padding-bottom: env(safe-area-inset-bottom);">
 
   <!-- Yellow timer fill from bottom with animated wave -->
-  <div class="absolute inset-x-0 bottom-0 pointer-events-none z-0 overflow-hidden transition-[height] duration-700 ease-linear"
-       [style.height.%]="screenData.timerPercentElapsed()">
+  @if (screenData.timerActive()) {
+    <div class="absolute inset-x-0 bottom-0 pointer-events-none z-0 overflow-hidden transition-[height] duration-700 ease-linear"
+         [style.height.%]="screenData.timerPercentElapsed()">
     <div class="absolute top-2 inset-0 bg-yellow-400"></div>
     <div class="absolute top-0 left-0 w-[200%] h-6 -translate-y-1/2 timer-wave">
       <svg class="w-full h-full" viewBox="0 0 2400 24" preserveAspectRatio="none">
@@ -12,11 +13,12 @@
       </svg>
     </div>
   </div>
+  }
 
   <app-player-header
     [vm]="screenData.headerVm()"
-    [timerPercent]="screenData.timerPercentLeft()"
-    [timeLeft]="screenData.timerTimeLeft()"
+    [timerPercent]="screenData.timerActive() ? screenData.timerPercentLeft() : 100"
+    [timeLeft]="screenData.timerActive() ? screenData.timerTimeLeft() : ''"
     (editName)="startEditName()"
     (editAvatar)="startEditAvatar()"
   />

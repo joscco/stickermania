@@ -1,4 +1,4 @@
-import {Component, computed, input, OnDestroy, OnInit, signal, inject} from "@angular/core";
+import {Component, computed, input, OnDestroy, OnInit, signal} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
 import {PlayerConnectingComponent} from './scenes/connecting/player-connecting.component';
 import {PlayerReconnectingComponent} from './scenes/reconnecting/player-reconnecting.component';
@@ -26,7 +26,6 @@ import {PlayerScreen} from './player-screen.enum';
 import {LobbyNameComponent} from './scenes/lobby-name/lobby-name.component';
 import {LobbyAvatarComponent} from './scenes/lobby-avatar/lobby-avatar.component';
 import {PlayerHeaderComponent} from './player-header/player-header.component';
-import {AnimPresenceDirective} from '../../shared/animations/anim-on-init.directive';
 
 
 @Component({
@@ -48,7 +47,7 @@ import {AnimPresenceDirective} from '../../shared/animations/anim-on-init.direct
     PlayerNextRoundComponent,
     PlayerWinnerChoicesComponent,
     PlayerHeaderComponent,
-    AnimPresenceDirective,
+
   ],
   providers: [
     PlayerMessageHandler,

@@ -93,6 +93,10 @@ export class PlayerScreenDataService {
     readonly timerPercentElapsed = computed(() => this.timerService.percentElapsed());
     readonly timerPercentLeft = computed(() => this.timerService.percentLeft());
     readonly timerTimeLeft = computed(() => this.timerService.timeLeft());
+    readonly timerActive = computed(() => {
+        const phase = this.stickerService.phase();
+        return phase === 'BUILDING' || phase === 'VOTING';
+    });
     readonly timerNotification = computed(() => this.timerService.notification());
 
     public readonly votingVm = computed<VotingViewModel>(() => {
