@@ -6,6 +6,7 @@ import {SvgComponent} from '../../svg/svg.component';
   standalone: true,
   imports: [SvgComponent],
   templateUrl: './sticker-editor-toolbar.component.html',
+  host: {class: 'block'},
 })
 export class StickerEditorToolbarComponent {
   readonly placementCount = input(0);

@@ -4,12 +4,11 @@ import gsap from 'gsap';
 @Component({
   selector: 'app-timer-notification',
   standalone: true,
+  host: {class: 'absolute inset-0 z-40 flex items-center justify-center pointer-events-none'},
   template: `
-    <div class="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
-      <div #el class="text-5xl font-black text-black invisible"
-           style="text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff;">
-        {{ displayText() }}
-      </div>
+    <div #el class="text-5xl font-black text-black invisible"
+         style="text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff;">
+      {{ displayText() }}
     </div>
   `,
 })
