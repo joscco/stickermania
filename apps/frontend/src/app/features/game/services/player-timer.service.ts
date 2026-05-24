@@ -65,7 +65,9 @@ export class PlayerTimerService {
         else if (s === 1 ) this.notification.set("1");
         else if (s === 2 ) this.notification.set("2");
         else if (s === 3 ) this.notification.set("3");
-        else if (s <= 10 && s > 5) this.notification.set("Gleich ist die Zeit vorbei!");
+        else if (s === 4 ) this.notification.set("4");
+        else if (s === 5 ) this.notification.set("5");
+        else if (s === 10 || s === 9) this.notification.set("Noch 10 Sekunden!");
         else if (s === 60) this.notification.set("Noch eine Minute!");
         else if (s === 120) this.notification.set("Noch zwei Minuten!");
         else this.notification.set("");

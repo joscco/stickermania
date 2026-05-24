@@ -88,8 +88,6 @@ export class PlayerScreenDataService {
         showEditControls: this.isNameSet() && this.hasAvatar(),
     }));
 
-    readonly timerEndsAt = computed(() => this.timerService.endsAt());
-    readonly timerTotalSec = computed(() => this.timerService.totalDurationSec());
     readonly timerPercentElapsed = computed(() => this.timerService.percentElapsed());
     readonly timerPercentLeft = computed(() => this.timerService.percentLeft());
     readonly timerTimeLeft = computed(() => this.timerService.timeLeft());

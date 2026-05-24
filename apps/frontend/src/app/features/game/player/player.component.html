@@ -5,9 +5,7 @@
     <app-timer-fill [percent]="screenData.timerPercentElapsed()"/>
   }
 
-  @if (screenData.showTimerNotifications()) {
-    <app-timer-notification [text]="screenData.timerNotification()"/>
-  }
+  <app-timer-notification [animPresence]="screenData.showTimerNotifications()" [text]="screenData.timerNotification()"/>
 
   <!-- Time's up -->
   <div [animPresence]="screenData.timerTimeUp()"
