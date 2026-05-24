@@ -5,6 +5,15 @@
     <app-timer-fill [percent]="screenData.timerPercentElapsed()"/>
   }
 
+    @if (screenData.timerNotification()) {
+      <div class="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
+        <div class="text-5xl font-black text-black animate-[pop-in_0.4s_ease-out]"
+             style="text-shadow: -4px -4px 0 #fff, 4px -4px 0 #fff, -4px 4px 0 #fff, 4px 4px 0 #fff;">
+          {{ screenData.timerNotification() }}
+        </div>
+      </div>
+    }
+
   <!-- Time's up -->
   <div [animPresence]="screenData.timerTimeUp()"
        class="absolute inset-0 z-50 flex items-center justify-center bg-white">
@@ -56,7 +65,6 @@
           [stickerPacks]="screenData.buildingVm().stickerPacks"
           [unlockedPackIds]="screenData.buildingVm().unlockedPackIds"
           [recommendedPackIds]="screenData.buildingVm().recommendedPackIds"
-          [timerNotification]="screenData.timerNotification()"
           [maxStickersOnCanvas]="screenData.buildingVm().maxStickersOnCanvas"
           (skipRound)="skipRoundWithSound()"
           (submitCollage)="submitCollageWithSound($event)"

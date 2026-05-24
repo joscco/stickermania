@@ -115,7 +115,7 @@ export function buildingPhase(opts?: {
 }): StickerCollageBuildingState {
   return {
     phase: 'BUILDING',
-    roundEndsAt: Date.now() + 60_000,
+    roundEndsAt: Date.now() + 20_000,
     skippedPlayerIds: opts?.skippedPlayerIds ?? [],
   };
 }
@@ -171,7 +171,7 @@ export function makeGameState(
     maxStickersOnCanvas: 12,
     votesPerPlayer: 3,
     phaseState,
-    roundDurationSec: 60,
+    roundDurationSec: 20,
     votingDurationSec: 120,
     resultsDurationSec: 60,
   };
