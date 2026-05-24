@@ -1,5 +1,5 @@
 <div animGroup="opacity" class="h-full flex flex-col items-center">
-  <div class="relative w-full px-4" style="height: 96px;">
+  <div class="relative w-full h-20 px-4 shrink-0">
     <div class="absolute inset-x-0 transition-opacity duration-500"
          [class.opacity-100]="!timerNotification()"
          [class.opacity-0]="!!timerNotification()"
@@ -44,6 +44,7 @@
       (togglePicker)="editor.showPicker() ? editor.onPickerClose() : editor.showPicker.set(true)"
       (skip)="skipRound.emit()"
       (submit)="onSubmit()"
+      class="pt-1"
     />
   } @else {
     <div class="h-full flex items-center justify-center gap-2 text-neutral-400 text-base">
