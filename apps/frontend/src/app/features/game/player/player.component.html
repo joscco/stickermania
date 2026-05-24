@@ -5,13 +5,8 @@
     <app-timer-fill [percent]="screenData.timerPercentElapsed()"/>
   }
 
-  @if (screenData.showTimerNotifications() && screenData.timerNotification(); as msg) {
-    <div class="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
-      <div class="text-5xl font-black text-black pop-in"
-           style="text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff;">
-        {{ msg }}
-      </div>
-    </div>
+  @if (screenData.showTimerNotifications()) {
+    <app-timer-notification [text]="screenData.timerNotification()"/>
   }
 
   <!-- Time's up -->
