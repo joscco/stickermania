@@ -161,7 +161,8 @@ canvas,
   to   { transform: translateX(-50%); }
 }
 .timer-wave {
-  animation: timer-wave 4s linear infinite;
+  background-image: url('/assets/svg/timer-wave.svg');
+  animation: timer-wave 10s linear infinite;
 }
 
 .yellow-outline {

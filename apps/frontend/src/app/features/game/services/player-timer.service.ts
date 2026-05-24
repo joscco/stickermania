@@ -11,7 +11,6 @@ export class PlayerTimerService {
   public readonly percentLeft = signal(100);
   public readonly percentElapsed = computed(() => 100 - this.percentLeft());
 
-  public readonly remainingSec = signal(0);
   public readonly notification = signal<string>("");
   public readonly timeUp = signal(false);
   public readonly endsAt = computed(() => {
@@ -63,7 +62,10 @@ export class PlayerTimerService {
         }
 
         if (s === 0) this.timeUp.set(true);
-        if (s <= 10 && s > 0) this.notification.set("Gleich ist die Zeit vorbei!");
+        else if (s === 1 ) this.notification.set("1");
+        else if (s === 2 ) this.notification.set("2");
+        else if (s === 3 ) this.notification.set("3");
+        else if (s <= 10 && s > 5) this.notification.set("Gleich ist die Zeit vorbei!");
         else if (s === 60) this.notification.set("Noch eine Minute!");
         else if (s === 120) this.notification.set("Noch zwei Minuten!");
         else this.notification.set("");
