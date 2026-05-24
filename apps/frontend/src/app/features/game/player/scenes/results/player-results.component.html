@@ -51,7 +51,7 @@
 
 <!-- Footer -->
 @if (canReadyToAdvance()) {
-  <div class="shrink-0 border-t border-black/10 px-4 py-3">
+  <div class="flex w-full shrink-0 items-center justify-center p-4 overflow-hidden">
     <button
       class="w-full max-w-lg bg-black text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
       (click)="readyToAdvance.emit()"
