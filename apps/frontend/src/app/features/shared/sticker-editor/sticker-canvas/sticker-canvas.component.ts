@@ -88,15 +88,22 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       || ids.some(id => all.find(p => p.instanceId === id)?.groupId !== first.groupId);
   });
 
+  private accumulatedRotateDeg = signal(0);
+
   readonly overlayRotation = computed(() => {
+    if (this.isRotating()) return this.accumulatedRotateDeg();
     const ids = this.selectionState.selectionIds();
-    if (ids.length !== 1) {
-      return 0;
+    if (ids.length === 1) {
+      return this.stickersOnCanvas().find(s => s.instanceId === ids[0])?.rotation ?? 0;
     }
-    return this.stickersOnCanvas().find(s => s.instanceId === ids[0])?.rotation ?? 0;
+    return this.selectionInfo()?.rotation ?? 0;
   });
 
+  private freezeOverlay = signal(false);
+  private frozenOverlayBox: BoundingBox | null = null;
+
   readonly overlayBox = computed<BoundingBox | null>(() => {
+    if (this.freezeOverlay()) return this.frozenOverlayBox;
     const ids = this.selectionState.selectionIds();
     if (ids.length === 0) return null;
     const stickers = this.stickersOnCanvas().filter(s => ids.includes(s.instanceId));
@@ -113,7 +120,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       if (b.x + b.w > maxX) maxX = b.x + b.w;
       if (b.y + b.h > maxY) maxY = b.y + b.h;
     }
-    return {x: minX, y: minY, w: maxX - minX, h: maxY - minY};
+    const box = {x: minX, y: minY, w: maxX - minX, h: maxY - minY};
+    this.frozenOverlayBox = box;
+    return box;
   });
 
   readonly canUngroup = computed(() =>
@@ -299,9 +308,12 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
     if (type === 'rotate') {
       if (ev.done) {
         this.isRotating.set(false);
+        this.freezeOverlay.set(false);
+        this.accumulatedRotateDeg.set(0);
         this._lastRotateX = 0;
         this._lastRotateY = 0;
       } else {
+        if (!this.freezeOverlay()) this.freezeOverlay.set(true);
         this.isRotating.set(true);
         const box = this.overlayBox();
         if (box && ids.length) {
@@ -316,7 +328,9 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
             const ca = Math.atan2(ev.clientY - cy, ev.clientX - cx);
             this._lastRotateX = ev.clientX;
             this._lastRotateY = ev.clientY;
-            this.commit(ops.applyRotationDelta(this.stickersOnCanvas(), ids, (ca - pa) * 180 / Math.PI));
+            const deg = (ca - pa) * 180 / Math.PI;
+            this.accumulatedRotateDeg.update(r => r + deg);
+            this.commit(ops.applyRotationDelta(this.stickersOnCanvas(), ids, deg));
           }
         }
       }
@@ -326,10 +340,14 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
       }
     } else if (type === 'scale') {
       const box = this.overlayBox();
-      if (box && ids.length === 1 && box.w > 0 && box.h > 0) {
+      if (box && box.w > 0 && box.h > 0) {
         const half = Math.max(box.w, box.h) / 2;
-        const factor = (half + (ev.dx + ev.dy) / 2) / half;
-        this.commit(ops.scaleSingle(this.stickersOnCanvas(), ids[0], factor));
+        const delta = (ev.dx + ev.dy) / 2;
+        if (ids.length === 1) {
+          this.commit(ops.scaleSingle(this.stickersOnCanvas(), ids[0], (half + delta) / half));
+        } else {
+          this.commit(ops.applyGroupTransform(this.stickersOnCanvas(), ids, 0, (half + delta) / half, null));
+        }
       }
     }
 
