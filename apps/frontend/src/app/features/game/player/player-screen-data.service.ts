@@ -97,8 +97,11 @@ export class PlayerScreenDataService {
         const phase = this.stickerService.phase();
         return phase === 'BUILDING' || phase === 'VOTING';
     });
+    readonly showTimerNotifications = computed(() => {
+        return this.timerActive() && !this.stickerService.hasSubmittedThisRound() && !this.stickerService.hasSkippedThisRound();
+    });
     readonly timerNotification = computed(() => this.timerService.notification());
-    readonly timerTimeUp = computed(() => this.timerService.timeUp());
+    readonly timerTimeUp = computed(() => this.timerService.timeUp() && this.showTimerNotifications());
 
     public readonly votingVm = computed<VotingViewModel>(() => {
         const gameState = this.stickerService.gameState();

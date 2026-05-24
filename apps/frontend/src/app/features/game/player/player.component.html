@@ -5,13 +5,14 @@
     <app-timer-fill [percent]="screenData.timerPercentElapsed()"/>
   }
 
-  <div [animPresence]="!!screenData.timerNotification()"
-       class="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
-    <div class="text-5xl font-black text-black pop-in"
-         style="text-shadow: -4px -4px 0 #fff, 4px -4px 0 #fff, -4px 4px 0 #fff, 4px 4px 0 #fff;">
-      {{ screenData.timerNotification() }}
+  @if (screenData.showTimerNotifications() && screenData.timerNotification(); as msg) {
+    <div class="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
+      <div class="text-5xl font-black text-black pop-in"
+           style="text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff;">
+        {{ msg }}
+      </div>
     </div>
-  </div>
+  }
 
   <!-- Time's up -->
   <div [animPresence]="screenData.timerTimeUp()"
