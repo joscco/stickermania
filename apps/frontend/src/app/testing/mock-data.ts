@@ -21,10 +21,29 @@ export const MOCK_STICKER_IDS = [
   'eyes-open', 'eyes-closed',
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const hitboxData: Record<string, any> = require('../../../../../hitbox-data.json');
+
+function getHitboxFor(id: string): StickerDefinition['hitboxPolygon'] {
+  const raw = (hitboxData as Record<string, any>)[id];
+  if (!raw) return undefined;
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'object' && Array.isArray(raw.polygon)) return raw.polygon;
+  return undefined;
+}
+
+function getOverlayFor(id: string): StickerDefinition['overlayBounds'] {
+  const raw = (hitboxData as Record<string, any>)[id];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  return raw.overlayBounds;
+}
+
 export const MOCK_CATALOG: StickerDefinition[] = MOCK_STICKER_IDS.map(id => ({
   id,
   imageUrl: `sprite:#sticker-${id}`,
   packId: 'pack_shapes',
+  hitboxPolygon: getHitboxFor(id),
+  overlayBounds: getOverlayFor(id),
 }));
 
 export const MOCK_SHAPES_PACK: StickerPack = {
