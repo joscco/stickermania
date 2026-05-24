@@ -28,6 +28,7 @@ export class PlayerTimerService {
     effect(() => {
       const e = this.endsAt();
       this.clearTimer();
+      this.timeUp.set(false);
 
       if (e <= 0) {
         this.timeLeft.set("");
@@ -80,5 +81,6 @@ export class PlayerTimerService {
       clearInterval(this.timerInterval);
       this.timerInterval = null;
     }
+    this.timeUp.set(false);
   }
 }

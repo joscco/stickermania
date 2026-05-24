@@ -164,3 +164,7 @@ canvas,
   animation: timer-wave 4s linear infinite;
 }
 
+.yellow-outline {
+  filter: url(#yellow-outline);
+}
+

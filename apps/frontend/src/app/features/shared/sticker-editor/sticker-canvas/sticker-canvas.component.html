@@ -51,7 +51,7 @@
       [style.transform-origin]="getStickerAnchor(sticker)"
       [style.z-index]="sticker.zIndex"
       [attr.data-instance-id]="sticker.instanceId"
-      [style.filter]="isSelected(sticker.instanceId) ? 'url(#yellow-outline)' : 'none'"
+      [class.yellow-outline]="isSelected(sticker.instanceId) || isLassoSelected(sticker.instanceId)"
     >
       <app-sticker-item
         [instanceId]="sticker.instanceId"
