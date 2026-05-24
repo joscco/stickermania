@@ -174,4 +174,7 @@ canvas,
   60%  { transform: scale(1.08); }
   100% { transform: scale(1); opacity: 1; }
 }
+.pop-in {
+  animation: pop-in 0.4s ease-out;
+}
 
