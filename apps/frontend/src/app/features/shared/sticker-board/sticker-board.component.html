@@ -7,13 +7,20 @@
 >
   @if (stickerName()) {
     <div
-      data-sticker
-      class="absolute w-16 h-16 -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing"
+      class="absolute"
       [style.left.%]="position().x"
       [style.top.%]="position().y"
-      (pointerdown)="onStickerPointerDown($event)"
+      style="transform: translate(-50%, -50%);"
     >
-      <app-svg [name]="stickerName()" w="64" h="64" />
+      <div #sticker class="w-16 h-16">
+        <div
+          data-sticker
+          class="w-full h-full cursor-grab active:cursor-grabbing"
+          (pointerdown)="onStickerPointerDown($event)"
+        >
+          <app-svg [name]="stickerName()" w="64" h="64" />
+        </div>
+      </div>
     </div>
   }
 </div>

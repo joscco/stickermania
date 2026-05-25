@@ -1,5 +1,6 @@
 import {Component, input, output, signal, viewChild, ElementRef, AfterViewInit, OnDestroy} from "@angular/core";
 import {CommonModule} from "@angular/common";
+import gsap from "gsap";
 import {SvgComponent} from "../svg/svg.component";
 
 /**
@@ -8,6 +9,11 @@ import {SvgComponent} from "../svg/svg.component";
  * - One sticker at a time
  * - Drag to position (x, y in %)
  * - No rotation, no scale, no multi-select, no z-order, no grouping
+ *
+ * Animations (GSAP):
+ *   entering  → scale+bounce pop in when the sticker first appears
+ *   settling  → spring bounce after dropping (pointer up)
+ *   idle       → no animation running
  */
 
 @Component({
@@ -37,6 +43,9 @@ export class StickerBoardComponent implements AfterViewInit, OnDestroy {
   readonly isDragging = signal(false);
 
   private readonly boardEl = viewChild<ElementRef<HTMLElement>>("board");
+  private readonly stickerEl = viewChild<ElementRef<HTMLElement>>("sticker");
+
+  private animState: 'entering' | 'settling' | 'idle' = 'idle';
 
   private boundPointerMove = (e: PointerEvent) => this.onPointerMove(e);
   private boundPointerUp = () => this.onPointerUp();
@@ -46,6 +55,7 @@ export class StickerBoardComponent implements AfterViewInit, OnDestroy {
     if (init) this.position.set(init);
     document.addEventListener("pointermove", this.boundPointerMove);
     document.addEventListener("pointerup", this.boundPointerUp);
+    this.runEnteringAnimation();
   }
 
   ngOnDestroy(): void {
@@ -60,6 +70,7 @@ export class StickerBoardComponent implements AfterViewInit, OnDestroy {
     if ((e.target as HTMLElement).closest("[data-sticker]")) return;
     // Otherwise place sticker at click position
     this.updatePositionFromEvent(e);
+    this.runSettlingAnimation();
     this.positionChanged.emit(this.position());
   }
 
@@ -78,6 +89,7 @@ export class StickerBoardComponent implements AfterViewInit, OnDestroy {
   private onPointerUp(): void {
     if (!this.isDragging()) return;
     this.isDragging.set(false);
+    this.runSettlingAnimation();
     this.positionChanged.emit(this.position());
   }
 
@@ -91,6 +103,44 @@ export class StickerBoardComponent implements AfterViewInit, OnDestroy {
       x: Math.max(2, Math.min(98, x)),
       y: Math.max(2, Math.min(98, y)),
     });
+  }
+
+  private runEnteringAnimation(): void {
+    const el = this.stickerEl()?.nativeElement;
+    if (!el) return;
+    this.animState = 'entering';
+    gsap.set(el, {scale: 0.5, opacity: 0});
+    gsap.to(el, {
+      scale: 1,
+      opacity: 1,
+      duration: 0.2,
+      ease: 'back.out(3)',
+      clearProps: 'opacity',
+      onComplete: () => {
+        this.animState = 'idle';
+      },
+    });
+  }
+
+  private runSettlingAnimation(): void {
+    const el = this.stickerEl()?.nativeElement;
+    if (!el) return;
+    if (this.animState === 'entering') return;
+    this.animState = 'settling';
+    gsap.fromTo(el,
+      {scaleX: 1.03, scaleY: 0.98},
+      {
+        scaleX: 1,
+        scaleY: 1,
+        duration: 0.35,
+        ease: 'back.out(3)',
+        transformOrigin: '50% 50%',
+        clearProps: 'transform',
+        onComplete: () => {
+          this.animState = 'idle';
+        },
+      },
+    );
   }
 
   onConfirm(): void {
