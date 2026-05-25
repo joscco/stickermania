@@ -6,11 +6,20 @@
        (pointerdown)="$event.preventDefault()"
        (pointermove)="$event.preventDefault()">
     @if (baseImageUrl()) {
-      <img [src]="baseImageUrl()"
-           [class]="'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 object-contain'"
-           [style.width]="canvasSizePercent"
-           [style.height]="canvasSizePercent"
-           style="z-index: 0; pointer-events: none;" draggable="false" />
+      @if (isBgSprite()) {
+        <svg class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+             [style.width]="canvasSizePercent"
+             [style.height]="canvasSizePercent"
+             style="z-index: 0;">
+          <use [attr.href]="'#' + bgSpriteId()" width="100%" height="100%" />
+        </svg>
+      } @else {
+        <img [src]="baseImageUrl()"
+             [class]="'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 object-contain'"
+             [style.width]="canvasSizePercent"
+             [style.height]="canvasSizePercent"
+             style="z-index: 0; pointer-events: none;" draggable="false" />
+      }
     }
     <app-svg name="draw-frame" class="absolute inset-0 w-full h-full pointer-events-none z-20"/>
     <canvas #drawCanvas style="touch-action: none;"

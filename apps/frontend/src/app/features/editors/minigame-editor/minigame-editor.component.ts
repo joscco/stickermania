@@ -8,6 +8,8 @@ import {MinigameChoiceComponent} from "../../shared/minigame-choice/minigame-cho
 import {MinigameNumberComponent} from "../../shared/minigame-number/minigame-number.component";
 import {MinigameTimerComponent} from "../../shared/minigame-timer/minigame-timer.component";
 import {MinigameShapeSplitComponent} from "../../shared/minigame-shape-split/minigame-shape-split.component";
+import {MinigameTextAnswerComponent} from "../../shared/minigame-text-answer/minigame-text-answer.component";
+import {MinigameThesisComponent} from "../../shared/minigame-thesis/minigame-thesis.component";
 
 interface SpriteEntry {id: string; spriteRef: string}
 interface TaskItem {_index?: number; type: string; title: string; durationSec: number; [key: string]: any}
@@ -25,6 +27,7 @@ const DEFAULT_POLYGON: PointItem[] = [
     StickerBoardComponent, DrawingCanvasBgComponent,
     MinigameChoiceComponent, MinigameNumberComponent, MinigameTimerComponent,
     MinigameShapeSplitComponent,
+    MinigameTextAnswerComponent, MinigameThesisComponent,
   ],
   templateUrl: "./minigame-editor.component.html",
   host: {"class": "h-dvh flex flex-col bg-neutral-50"},
@@ -65,6 +68,7 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
   readonly newStickerSvg = signal("");
   readonly backgroundSvg = signal("");
   readonly goal = signal("");
+  readonly voteQuestion = signal("");
   readonly targetSec = signal(5);
   readonly numberMin = signal(1);
   readonly numberMax = signal(100);
@@ -135,6 +139,7 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
     );
     this.backgroundSvg.set(task['backgroundSvg'] ?? "");
     this.goal.set(task['goal'] ?? "");
+    this.voteQuestion.set(task['voteQuestion'] ?? "");
     this.polygon.set(
       Array.isArray(task['polygon']) && task['polygon'].length > 0
         ? task['polygon']
@@ -157,6 +162,7 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
     this.newStickerSvg.set("");
     this.backgroundSvg.set("");
     this.goal.set("");
+    this.voteQuestion.set("");
     this.polygon.set(DEFAULT_POLYGON);
     this.targetSec.set(5);
     this.numberMin.set(1);
@@ -253,6 +259,9 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
     }
     if (this.selectedType() === "sticker-place" || this.selectedType() === "drawing" || this.selectedType() === "shape-split") {
       if (this.backgroundSvg()) task['backgroundSvg'] = this.backgroundSvg();
+    }
+    if (this.selectedType() === "text-answer") {
+      task['voteQuestion'] = this.voteQuestion();
     }
     if (this.selectedType() === "timer-stop") task['targetSec'] = this.targetSec();
     if (this.selectedType() === "number") {

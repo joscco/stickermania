@@ -392,13 +392,31 @@ export interface ShapeSplitTask {
   targetFraction: number;
 }
 
+export interface TextAnswerTask {
+  id: string;
+  type: "text-answer";
+  title: string;
+  durationSec: number;
+  /** Round 2 voting question shown when comparing two answers */
+  voteQuestion: string;
+}
+
+export interface ThesisTask {
+  id: string;
+  type: "thesis";
+  title: string;
+  durationSec: number;
+}
+
 export type MinigameTask =
   | StickerPlaceTask
   | DrawingTask
   | ChoiceTask
   | NumberTask
   | TimerStopTask
-  | ShapeSplitTask;
+  | ShapeSplitTask
+  | TextAnswerTask
+  | ThesisTask;
 
 // ── Config ──────────────────────────────────────────────────────
 
@@ -472,6 +490,13 @@ function parseTask(raw: unknown): MinigameTask | null {
         : [{x: 20, y: 20}, {x: 180, y: 20}, {x: 180, y: 180}, {x: 20, y: 180}],
       targetFraction: typeof t["targetFraction"] === "number" ? Math.max(0, Math.min(1, t["targetFraction"])) : 0.5,
     };
+    case "text-answer": return {
+      id, type: "text-answer", title, durationSec: dur,
+      voteQuestion: typeof t["voteQuestion"] === "string" ? t["voteQuestion"] : "",
+    };
+    case "thesis": return {
+      id, type: "thesis", title, durationSec: dur,
+    };
     default: return null;
   }
 }
@@ -528,13 +553,32 @@ export interface ShapeSplitSubmission {
   submittedAt: number;
 }
 
+export interface TextAnswerSubmission {
+  type: "text-answer";
+  playerId: string;
+  roundIndex: number;
+  answer: string;
+  submittedAt: number;
+}
+
+export interface ThesisSubmission {
+  type: "thesis";
+  playerId: string;
+  roundIndex: number;
+  agreed: boolean;
+  estimatedPercent: number;
+  submittedAt: number;
+}
+
 export type MinigameSubmission =
   | StickerPlaceSubmission
   | DrawingSubmission
   | ChoiceSubmission
   | NumberSubmission
   | TimerStopSubmission
-  | ShapeSplitSubmission;
+  | ShapeSplitSubmission
+  | TextAnswerSubmission
+  | ThesisSubmission;
 
 // ── Client Actions ──────────────────────────────────────────────
 
@@ -545,6 +589,8 @@ export type MinigameClientAction =
   | { type: "submit-number"; value: number }
   | { type: "submit-timer"; elapsedSec: number }
   | { type: "submit-shape-split"; cutLine: {a: {x: number; y: number}; b: {x: number; y: number}}; areaFraction: number }
+  | { type: "submit-text-answer"; answer: string }
+  | { type: "submit-thesis"; agreed: boolean; estimatedPercent: number }
   | { type: "skip-round" }
   | { type: "cast-vote"; submissionId: string }
   | { type: "done-voting" }

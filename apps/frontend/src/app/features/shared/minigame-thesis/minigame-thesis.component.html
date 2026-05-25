@@ -1,0 +1,34 @@
+<div class="text-center w-full max-w-xs">
+  @if (title()) {
+    <div class="text-lg font-bold text-neutral-800 mb-4">{{ title() }}</div>
+  }
+  <div class="text-xs text-neutral-400 mb-1">Deine Meinung</div>
+  <div class="flex gap-3 mb-6">
+    <button (click)="agree()"
+      [class]="'flex-1 py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 border-2 ' + (agreed() === true ? 'bg-green-500 border-green-600 text-white' : 'bg-white border-neutral-200 text-neutral-700')">
+      👍 Stimme zu
+    </button>
+    <button (click)="disagree()"
+      [class]="'flex-1 py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 border-2 ' + (agreed() === false ? 'bg-red-500 border-red-600 text-white' : 'bg-white border-neutral-200 text-neutral-700')">
+      👎 Stimme nicht zu
+    </button>
+  </div>
+</div>
+
+<div class="w-full max-w-xs space-y-2">
+  <div class="text-center text-xs text-neutral-500">
+    Was schätzt du: Wie viel % stimmen zu?
+  </div>
+  <div class="flex items-center gap-3">
+    <span class="text-xs font-mono text-neutral-400 w-8 text-right">0%</span>
+    <input type="range" min="0" max="100" [value]="estimatedPercent()"
+      (input)="estimatedPercent.set(+($any($event.target).value))"
+      class="flex-1 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-black" />
+    <span class="text-sm font-mono font-bold w-10">{{ estimatedPercent() }}%</span>
+  </div>
+</div>
+
+<button (click)="submit()" [disabled]="agreed() === null"
+  class="bg-black text-white py-2.5 px-6 rounded-xl font-semibold shadow active:scale-95 transition-transform disabled:opacity-40">
+  Absenden
+</button>

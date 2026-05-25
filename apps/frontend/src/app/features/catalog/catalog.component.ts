@@ -41,6 +41,8 @@ type ScreenKey =
   | 'building-number'
   | 'building-timer'
   | 'building-shape-split'
+  | 'building-text-answer'
+  | 'building-thesis'
   | 'building-submitted'
   | 'building-skipped'
   | 'voting'
@@ -139,6 +141,8 @@ export class CatalogComponent {
     {key: 'building-number', label: 'Building: Number', group: 'Minigame'},
     {key: 'building-timer', label: 'Building: Timer', group: 'Minigame'},
     {key: 'building-shape-split', label: 'Building: Shape Split', group: 'Minigame'},
+    {key: 'building-text-answer', label: 'Building: Text Answer', group: 'Minigame'},
+    {key: 'building-thesis', label: 'Building: Thesis', group: 'Minigame'},
     {key: 'building-submitted', label: 'Building (submitted)', group: 'Player'},
     {key: 'building-skipped', label: 'Building (skipped)', group: 'Player'},
     {key: 'voting', label: 'Voting', group: 'Player'},
@@ -225,6 +229,8 @@ export class CatalogComponent {
       'building-number': {phase: 'building', task: 'number'},
       'building-timer': {phase: 'building', task: 'timer'},
       'building-shape-split': {phase: 'building', task: 'shapeSplit'},
+      'building-text-answer': {phase: 'building', task: 'textAnswer'},
+      'building-thesis': {phase: 'building', task: 'thesis'},
       'building-submitted': {phase: 'building-submitted'},
       'building-skipped': {phase: 'building-skipped'},
       'voting': {phase: 'voting'},

@@ -8,7 +8,7 @@
         "sticker-shapes-heart",
         "sticker-jewelry-diamond-0"
       ],
-      "backgroundSvg": "sprite:#sticker-shapes-diamond-filled"
+      "backgroundSvg": "sprite:#sticker-home-key"
     },
     {
       "type": "number",
@@ -73,6 +73,17 @@
           "label": "Gorgonzola"
         }
       ]
+    },
+    {
+      "type": "text-answer",
+      "title": "Nenne ein Gericht vom Italiener",
+      "durationSec": 45,
+      "voteQuestion": "Welches Gericht hat die meisten Kalorien?"
+    },
+    {
+      "type": "thesis",
+      "title": "Ananas ist ein legitimer Pizza-Belag.",
+      "durationSec": 45
     }
   ]
 }

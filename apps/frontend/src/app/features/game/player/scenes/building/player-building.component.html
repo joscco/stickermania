@@ -83,6 +83,28 @@
         <button (click)="skipRound.emit()" class="w-full bg-neutral-200 text-neutral-700 py-2.5 rounded-xl font-semibold active:scale-95 transition-transform">Uberspringen</button>
       </div>
     }
+    @case ('text-answer') {
+      <div class="flex-1 flex flex-col items-center justify-center w-full">
+        <app-minigame-text-answer
+          [voteQuestion]="$any(task())?.['voteQuestion'] ?? ''"
+          (submitted)="onSubmitTextAnswer($event)"
+        />
+      </div>
+      <div class="shrink-0 px-4 py-3 w-full">
+        <button (click)="skipRound.emit()" class="w-full bg-neutral-200 text-neutral-700 py-2.5 rounded-xl font-semibold active:scale-95 transition-transform">Uberspringen</button>
+      </div>
+    }
+    @case ('thesis') {
+      <div class="flex-1 flex flex-col items-center justify-center w-full">
+        <app-minigame-thesis
+          [title]="$any(task())?.['title'] ?? ''"
+          (submitted)="onSubmitThesis($event)"
+        />
+      </div>
+      <div class="shrink-0 px-4 py-3 w-full">
+        <button (click)="skipRound.emit()" class="w-full bg-neutral-200 text-neutral-700 py-2.5 rounded-xl font-semibold active:scale-95 transition-transform">Uberspringen</button>
+      </div>
+    }
     @default {
       <div class="flex-1 flex items-center justify-center text-neutral-400 text-sm">
         <p>Kein Minigame konfiguriert</p>

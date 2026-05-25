@@ -179,6 +179,25 @@ export function submitMinigame(
                 submittedAt: now,
             };
             break;
+        case "submit-text-answer":
+            submission = {
+                type: "text-answer",
+                playerId,
+                roundIndex: currentRoundIndex,
+                answer: action.answer,
+                submittedAt: now,
+            };
+            break;
+        case "submit-thesis":
+            submission = {
+                type: "thesis",
+                playerId,
+                roundIndex: currentRoundIndex,
+                agreed: action.agreed,
+                estimatedPercent: action.estimatedPercent,
+                submittedAt: now,
+            };
+            break;
         default:
             return noChange;
     }
@@ -205,6 +224,17 @@ export function submitMinigame(
         const pct = Math.round(areaFraction * 100);
         snapshotUrl = `data:image/svg+xml,${encodeURIComponent(
             `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#f5f5f5"/><line x1="${cutLine.a.x}" y1="${cutLine.a.y}" x2="${cutLine.b.x}" y2="${cutLine.b.y}" stroke="black" stroke-width="2"/><text x="100" y="110" text-anchor="middle" font-size="20" font-family="sans-serif">${pct}%</text></svg>`
+        )}`;
+    } else if (submission.type === "text-answer") {
+        const safe = submission.answer.replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 40);
+        snapshotUrl = `data:image/svg+xml,${encodeURIComponent(
+            `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80"><rect width="200" height="80" fill="#f5f5f5"/><text x="100" y="45" text-anchor="middle" font-size="14" font-family="sans-serif" fill="black">${safe}</text></svg>`
+        )}`;
+    } else if (submission.type === "thesis") {
+        const agreed = submission.agreed ? '✓ Zustimmung' : '✗ Ablehnung';
+        const pct = `${submission.estimatedPercent}%`;
+        snapshotUrl = `data:image/svg+xml,${encodeURIComponent(
+            `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80"><rect width="200" height="80" fill="#f5f5f5"/><text x="100" y="35" text-anchor="middle" font-size="14" font-family="sans-serif" fill="black">${agreed}</text><text x="100" y="55" text-anchor="middle" font-size="12" font-family="sans-serif" fill="#666">Schätzung: ${pct}</text></svg>`
         )}`;
     }
 

@@ -202,6 +202,8 @@ export const MOCK_TASKS: Record<string, MinigameTask> = {
   number: {id: 'mock-number', type: 'number', title: 'Wie viele Kinder?', durationSec: 30, min: 0, max: 10, default: 2} as NumberTask,
   timer: {id: 'mock-timer', type: 'timer-stop', title: 'Stoppe bei 5 Sekunden!', durationSec: 30, targetSec: 5} as TimerStopTask,
   shapeSplit: {id: 'mock-split', type: 'shape-split', title: 'Teile die Fläche 50:50!', durationSec: 45, polygon: [], targetFraction: 0.5} as ShapeSplitTask,
+  textAnswer: {id: 'mock-text', type: 'text-answer', title: 'Nenne ein Gericht vom Italiener!', durationSec: 30, voteQuestion: 'Welches Gericht hat mehr Kalorien?'} as import("@birthday/shared").TextAnswerTask,
+  thesis: {id: 'mock-thesis', type: 'thesis', title: 'Ananas auf Pizza ist legitim', durationSec: 30} as import("@birthday/shared").ThesisTask,
 };
 
 export function provideMockState(phase: MockPhase, taskKey?: keyof typeof MOCK_TASKS) {

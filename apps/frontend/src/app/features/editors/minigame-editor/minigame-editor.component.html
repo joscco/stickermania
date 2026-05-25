@@ -63,6 +63,8 @@
           <option value="number">Number</option>
           <option value="timer-stop">Timer Stop</option>
           <option value="shape-split">Shape Split</option>
+          <option value="text-answer">Text Answer</option>
+          <option value="thesis">Thesis</option>
         </select>
       </div>
 
@@ -243,6 +245,15 @@
         </div>
       }
 
+      <!-- ═══ Text Answer: vote question ═══ -->
+      @if (selectedType() === 'text-answer') {
+        <div class="space-y-1">
+          <label class="text-sm font-semibold text-neutral-700">Abstimmungsfrage (Runde 2)</label>
+          <input type="text" [value]="voteQuestion()" (input)="voteQuestion.set(($any($event.target).value))"
+            class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" placeholder="z.B. Welches Gericht hat mehr Kalorien?" />
+        </div>
+      }
+
       <!-- JSON Preview -->
       <div class="border-t border-neutral-200 pt-3">
         <label class="text-sm font-semibold text-neutral-700 mb-1 block">Task JSON Vorschau</label>
@@ -306,6 +317,20 @@
                   [targetLabel]="targetLabel($any(previewTask())?.['targetFraction'] ?? 0.5)"
                   [backgroundSvg]="$any(previewTask())?.['backgroundSvg'] ?? null"
                 />
+              }
+              @case ('text-answer') {
+                <div class="flex items-center justify-center h-full">
+                  <app-minigame-text-answer
+                    [voteQuestion]="$any(previewTask())?.['voteQuestion'] ?? ''"
+                  />
+                </div>
+              }
+              @case ('thesis') {
+                <div class="flex items-center justify-center h-full">
+                  <app-minigame-thesis
+                    [title]="$any(previewTask())?.['title'] ?? ''"
+                  />
+                </div>
               }
             }
           </div>

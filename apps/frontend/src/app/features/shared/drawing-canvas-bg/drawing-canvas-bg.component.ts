@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, input, OnDestroy, output, signal, viewChild} from "@angular/core";
+import {AfterViewInit, Component, ElementRef, input, OnDestroy, output, signal, viewChild, computed} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import {CanvasPainter, CANVAS_RESOLUTION} from "../paint-canvas/canvas-painter";
 import {SvgComponent} from '../svg/svg.component';
@@ -22,6 +22,8 @@ export class DrawingCanvasBgComponent implements AfterViewInit, OnDestroy {
   readonly wrapperRef = viewChild<ElementRef<HTMLElement>>("wrapper");
 
   readonly canvasSizePercent = `${((CANVAS_SIZE / FRAME_SIZE) * 100).toFixed(3)}%`;
+  readonly isBgSprite = computed(() => (this.baseImageUrl() ?? '').startsWith('sprite:#'));
+  readonly bgSpriteId = computed(() => (this.baseImageUrl() ?? '').replace('sprite:#', ''));
   drawMode = signal<"big" | "small" | "erase">("big");
 
   public readonly painter = new CanvasPainter(
