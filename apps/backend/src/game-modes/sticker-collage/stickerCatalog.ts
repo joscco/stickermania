@@ -34,19 +34,4 @@ export function buildPacks(config: StickerCatalogConfig): StickerPack[] {
     }));
 }
 
-// ── Re-export helpers that are still used downstream ──────────────────────────
-
-export function getAvailableStickerIds(
-    packs: StickerPack[],
-    unlockedPackIds: string[],
-): Set<string> {
-    const ids = new Set<string>();
-    for (const pack of packs) {
-        if (unlockedPackIds.includes(pack.id)) {
-            for (const sid of pack.stickerIds) ids.add(sid);
-        }
-    }
-    return ids;
-}
-
 

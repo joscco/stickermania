@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import type {GameConfig, SessionState, StickerCollage, StickerCollageBuildingState, StickerCollageGameState, StickerCollageResultsState, StickerCollageServerEvent, StickerCollageVotingState, StickerPlacement, MinigameClientAction, MinigameSubmission,} from "@birthday/shared";
+import type {GameConfig, SessionState, StickerCollage, StickerCollageBuildingState, StickerCollageGameState, StickerCollageResultsState, StickerCollageServerEvent, StickerCollageVotingState, StickerPlacement, MinigameClientAction, MinigameSubmission, MinigameConfig,} from "@birthday/shared";
 import {shouldSkipVoting, transitionToBuilding, transitionToNextRound, transitionToResults, transitionToVoting} from "./roundManager.js";
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -27,13 +27,14 @@ function asResultsPhase(gameState: StickerCollageGameState): StickerCollageResul
 export function startGame(
     state: SessionState,
     config: GameConfig,
+    minigameConfig: MinigameConfig,
     now: number,
 ): HandlerResult {
     if (state.gameState.phaseState.phase !== "LOBBY") {
         return noChange;
     }
 
-    transitionToBuilding(state, config.stickerCollage, now);
+    transitionToBuilding(state, config.stickerCollage, minigameConfig, now);
 
     const {gameState} = state;
     const buildingPhase = gameState.phaseState;
@@ -402,6 +403,7 @@ export function advanceToNextRound(
     state: SessionState,
     playerId: string,
     config: GameConfig,
+    minigameConfig: MinigameConfig,
     now: number,
 ): HandlerResult {
     const resultsPhase = asResultsPhase(state.gameState);
@@ -419,7 +421,7 @@ export function advanceToNextRound(
     }
 
     resultsPhase.readyToAdvanceIds.push(playerId);
-    transitionToNextRound(state, config.stickerCollage, now);
+    transitionToNextRound(state, config.stickerCollage, minigameConfig, now);
 
     const {gameState} = state;
     const {phaseState} = gameState;
@@ -439,6 +441,7 @@ export function advanceToNextRound(
 export function boardAdvancesToNextRound(
     state: SessionState,
     config: GameConfig,
+    minigameConfig: MinigameConfig,
     now: number,
 ): HandlerResult {
     if (!asResultsPhase(state.gameState)) {
@@ -451,7 +454,7 @@ export function boardAdvancesToNextRound(
         return {stateChanged: true, events: []};
     }
 
-    transitionToNextRound(state, config.stickerCollage, now);
+    transitionToNextRound(state, config.stickerCollage, minigameConfig, now);
 
     const {gameState} = state;
     const {phaseState} = gameState;

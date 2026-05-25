@@ -1,6 +1,6 @@
 import type {
     SessionState, StickerCollageGameState, StickerCollageGameConfig, StickerCollage,
-    StickerCollageVoteResult, StickerCollageResultsState,
+    StickerCollageVoteResult, StickerCollageResultsState, MinigameConfig,
 } from "@birthday/shared";
 
 function pickRandom<T>(arr: T[], count: number): T[] {
@@ -23,14 +23,15 @@ function setPrompt(gameState: StickerCollageGameState, config: StickerCollageGam
 
 // ─── Phase transitions ──────────────────────────────────────────
 
-function pickRandomTask(config: StickerCollageGameConfig): import("@birthday/shared").MinigameTask | null {
-    if (config.tasks.length === 0) return null;
-    return config.tasks[Math.floor(Math.random() * config.tasks.length)] ?? null;
+function pickRandomTask(minigameConfig: MinigameConfig): import("@birthday/shared").MinigameTask | null {
+    if (minigameConfig.tasks.length === 0) return null;
+    return minigameConfig.tasks[Math.floor(Math.random() * minigameConfig.tasks.length)] ?? null;
 }
 
 export function transitionToBuilding(
     state: SessionState,
     config: StickerCollageGameConfig,
+    minigameConfig: MinigameConfig,
     now: number,
     chosenPrompt?: string,
 ): void {
@@ -40,7 +41,7 @@ export function transitionToBuilding(
     gameState.roundStartedAt = now;
     setPrompt(gameState, config, chosenPrompt ?? pickUnusedPrompt(config, gameState));
 
-    const task = pickRandomTask(config);
+    const task = pickRandomTask(minigameConfig);
     gameState.currentTask = task;
 
     gameState.roundParticipantIds = Object.values(state.players)
@@ -189,6 +190,7 @@ function buildWinnerChoices(
 export function transitionToNextRound(
     state: SessionState,
     config: StickerCollageGameConfig,
+    minigameConfig: MinigameConfig,
     now: number,
 ): void {
     const {gameState} = state;
@@ -203,5 +205,5 @@ export function transitionToNextRound(
         ?? promptChoices[0]
         ?? pickUnusedPrompt(config, gameState);
 
-    transitionToBuilding(state, config, now, nextPrompt);
+    transitionToBuilding(state, config, minigameConfig, now, nextPrompt);
 }

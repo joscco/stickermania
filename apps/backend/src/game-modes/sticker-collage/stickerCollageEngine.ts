@@ -121,13 +121,13 @@ export class StickerCollageEngine implements GameEngine {
             case "skip-round":           return skipRound(state, playerId);
             case "cast-vote":            return castVote(state, playerId, "collageId" in action ? action.collageId : (action as any).submissionId ?? "", this.config);
             case "done-voting":          return markPlayerDoneVoting(state, playerId);
-            case "ready-to-advance":     return advanceToNextRound(state, playerId, this.config, now);
-            case "start-game":           return startGame(state, this.config, now);
+            case "ready-to-advance":     return advanceToNextRound(state, playerId, this.config, this.config.minigame, now);
+            case "start-game":           return startGame(state, this.config, this.config.minigame, now);
             case "end-round-early":      return endBuildingPhaseEarly(state, this.config, now);
             case "end-voting-early":     return endVotingPhaseEarly(state, this.config, now);
             case "pick-prompt":          return winnerPicksPrompt(state, playerId, action.prompt);
             case "unlock-pack":          return winnerUnlocksPack(state, playerId, action.packId);
-            case "advance-from-results": return boardAdvancesToNextRound(state, this.config, now);
+            case "advance-from-results": return boardAdvancesToNextRound(state, this.config, this.config.minigame, now);
             case "submit-sticker-place":
             case "submit-drawing":
             case "submit-choice":
@@ -207,7 +207,7 @@ export class StickerCollageEngine implements GameEngine {
                 gameState.phaseState = {phase: "LOBBY"};
                 return {stateChanged: true, emittedEvents: []};
             }
-            transitionToNextRound(sessionState, this.config.stickerCollage, now);
+            transitionToNextRound(sessionState, this.config.stickerCollage, this.config.minigame, now);
             const newPhase = gameState.phaseState;
             if (newPhase.phase !== "BUILDING") {
                 return {stateChanged: false, emittedEvents: []};

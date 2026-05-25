@@ -1,31 +1,11 @@
-import {Component, signal, computed, inject} from "@angular/core";
+import {Component, signal, computed, inject, OnInit} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import {HttpClient} from "@angular/common/http";
+import {firstValueFrom} from "rxjs";
 
 interface Point {x: number; y: number}
+interface SpriteEntry {id: string; spriteRef: string}
 
-const SVG_BACKGROUNDS = [
-  {id: "", label: "Kein Hintergrund"},
-  {id: "sprite:#sticker-shapes-heart", label: "Herz"},
-  {id: "sprite:#sticker-shapes-star", label: "Stern"},
-  {id: "sprite:#sticker-shapes-diamond", label: "Diamant"},
-  {id: "sprite:#sticker-shapes-egg", label: "Ei"},
-  {id: "sprite:#sticker-shapes-cloud", label: "Wolke"},
-  {id: "sprite:#sticker-shapes-moon", label: "Mond"},
-  {id: "sprite:#sticker-shapes-flower", label: "Blume"},
-  {id: "sprite:#sticker-shapes-hexagon", label: "Sechseck"},
-  {id: "sprite:#sticker-shapes-wobble", label: "Wobble"},
-  {id: "sprite:#sticker-shapes-teardrop", label: "Träne"},
-  {id: "sprite:#sticker-eyes-open", label: "Auge"},
-  {id: "sprite:#sticker-mouths-smiling", label: "Mund"},
-  {id: "sprite:#sticker-animals-pig-tail", label: "Schwein"},
-  {id: "sprite:#sticker-noses-round", label: "Nase"},
-];
-
-/**
- * Shape-Split Editor: Define polygon shapes and target proportions
- * for the shape-split minigame. Export as MinigameTask JSON or save to config.
- */
 @Component({
   selector: "app-shape-split-editor",
   standalone: true,
@@ -33,7 +13,7 @@ const SVG_BACKGROUNDS = [
   templateUrl: "./shape-split-editor.component.html",
   host: {"class": "h-dvh flex flex-col bg-neutral-50"},
 })
-export class ShapeSplitEditorComponent {
+export class ShapeSplitEditorComponent implements OnInit {
   private readonly http = inject(HttpClient);
 
   // ─── State ──────────────────────────────────────────────────────
@@ -49,7 +29,16 @@ export class ShapeSplitEditorComponent {
   readonly selectedBg = signal("");
 
   readonly viewBox = {minX: 0, maxX: 200, minY: 0, maxY: 200};
-  readonly backgrounds = SVG_BACKGROUNDS;
+  readonly backgrounds = signal<SpriteEntry[]>([]);
+
+  async ngOnInit() {
+    try {
+      const data = await firstValueFrom(this.http.get<SpriteEntry[]>("/api/sprite-ids"));
+      this.backgrounds.set(data);
+    } catch {
+      // Fallback: use empty list
+    }
+  }
 
   // ─── Computed ───────────────────────────────────────────────────
   readonly polygonPath = computed(() => {
@@ -70,13 +59,13 @@ export class ShapeSplitEditorComponent {
     const pts = this.points();
     const task: Record<string, any> = {
       type: "shape-split",
-      prompt: this.title(),
+      title: this.title(),
       durationSec: 45,
       polygon: pts.map(p => ({x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10})),
       targetFraction: Math.round(this.targetPercent()) / 100,
     };
     if (this.selectedBg()) {
-      task['baseImageUrl'] = this.selectedBg();
+      task['backgroundSvg'] = this.selectedBg();
     }
     return JSON.stringify(task, null, 2);
   });
@@ -180,7 +169,7 @@ export class ShapeSplitEditorComponent {
     this.saveError.set(null);
     try {
       const task = JSON.parse(this.exportJson());
-      await this.http.post("/api/game-config/tasks", {task}).toPromise();
+      await firstValueFrom(this.http.post("/api/game-config/tasks", {task}));
       this.saved.set(true);
       setTimeout(() => this.saved.set(false), 2000);
     } catch (err: any) {

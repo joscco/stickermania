@@ -11,8 +11,8 @@
       <app-sticker-board
         #stickerBoard
         class="flex-1 min-h-0 w-full"
-        [backgroundImage]="task()?.baseImageUrl ?? null"
-        [stickerName]="'sprite:#' + (task()?.shapePoints ?? 'sticker-shapes-heart')"
+        [backgroundImage]="$any(task())?.['backgroundSvg'] ?? null"
+        [stickerName]="'sprite:#' + ($any(task())?.['stickerSvg'] ?? 'sticker-shapes-heart')"
       />
       <div class="shrink-0 px-4 py-3 flex gap-2 w-full">
         <button (click)="skipRound.emit()" class="flex-1 bg-neutral-200 text-neutral-700 py-2.5 rounded-xl font-semibold active:scale-95 transition-transform">Uberspringen</button>
@@ -20,10 +20,11 @@
       </div>
     }
     @case ('drawing') {
+      @let bg = $any(task())?.['backgroundSvg'];
       <app-drawing-canvas-bg
         #drawingCanvas
         class="flex-1 min-h-0 w-full"
-        [baseImageUrl]="task()?.baseImageUrl ?? null"
+        [baseImageUrl]="bg ?? null"
         (submitted)="onSubmitDrawing($event)"
       />
       <div class="shrink-0 px-4 py-3 flex gap-2 w-full">
@@ -36,7 +37,7 @@
       <div class="flex-1 flex flex-col items-center justify-center w-full">
         <app-minigame-choice
           class="w-full"
-          [options]="task()?.options ?? []"
+          [options]="$any(task())?.['options'] ?? []"
           (submitted)="onSubmitChoice($event)"
         />
       </div>
@@ -47,9 +48,9 @@
     @case ('number') {
       <div class="flex-1 flex flex-col items-center justify-center w-full">
         <app-minigame-number
-          [min]="task()?.numberConfig?.min ?? 1"
-          [max]="task()?.numberConfig?.max ?? 100"
-          [default]="task()?.numberConfig?.default ?? 50"
+          [min]="$any(task())?.['min'] ?? 1"
+          [max]="$any(task())?.['max'] ?? 100"
+          [default]="$any(task())?.['default'] ?? 50"
           (submitted)="onSubmitNumber($event)"
         />
       </div>
@@ -60,7 +61,7 @@
     @case ('timer-stop') {
       <div class="flex-1 flex flex-col items-center justify-center w-full">
         <app-minigame-timer
-          [targetSec]="task()?.timerTarget ?? 5"
+          [targetSec]="$any(task())?.['targetSec'] ?? 5"
           (submitted)="onSubmitTimer($event)"
         />
       </div>
@@ -80,37 +81,9 @@
       </div>
     }
     @default {
-      <!-- Fallback to original sticker collage editor -->
-      @if (stickerCatalog().length > 0) {
-        <app-sticker-editor
-          #editor
-          [stickerCatalog]="stickerCatalog()"
-          [stickerPacks]="stickerPacks()"
-          [unlockedPackIds]="unlockedPackIds()"
-          [recommendedPackIds]="recommendedPackIds()"
-          [maxStickers]="maxStickersOnCanvas()"
-          class="flex-1 min-h-0 w-full"
-        />
-
-        <app-sticker-editor-toolbar
-          animOnInit="opacity"
-          [placementCount]="editor.placements().length"
-          [maxStickers]="maxStickersOnCanvas()"
-          [canAddMore]="editor.placements().length < maxStickersOnCanvas()"
-          [showPicker]="editor.showPicker()"
-          [showGameButtons]="true"
-          (clearAll)="editor.clearPlacements()"
-          (togglePicker)="editor.showPicker() ? editor.onPickerClose() : editor.showPicker.set(true)"
-          (skip)="skipRound.emit()"
-          (submit)="onSubmitStickerCollage()"
-          class="pt-1 w-full px-2"
-        />
-      } @else {
-        <div class="h-full flex items-center justify-center gap-2 text-neutral-400 text-base">
-          <div class="w-4 h-4 border-2 border-neutral-200 border-t-neutral-400 rounded-full animate-spin"></div>
-          Sticker werden geladen...
-        </div>
-      }
+      <div class="flex-1 flex items-center justify-center text-neutral-400 text-sm">
+        <p>Kein Minigame konfiguriert</p>
+      </div>
     }
   }
 </div>

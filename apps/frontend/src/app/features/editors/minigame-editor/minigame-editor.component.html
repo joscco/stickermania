@@ -1,0 +1,244 @@
+<!-- Header -->
+<div class="shrink-0 border-b border-neutral-200 bg-white px-4 py-3 flex items-center gap-4">
+  <h1 class="text-lg font-bold text-neutral-800">Minigame-Editor</h1>
+  <span class="text-xs text-neutral-400">Tasks verwalten &bull; Neue Minispiele anlegen</span>
+
+  <div class="ml-auto flex items-center gap-2">
+    <button (click)="newTask()" class="text-xs px-3 py-1.5 rounded-lg bg-black text-white font-medium active:scale-95 transition-transform">
+      + Neuen Task
+    </button>
+    <button (click)="loadTasks()" class="text-xs px-3 py-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 font-medium">
+      Aktualisieren
+    </button>
+  </div>
+</div>
+
+<!-- Error / Success -->
+@if (error()) {
+  <div class="shrink-0 bg-red-50 text-red-700 text-xs px-4 py-2 border-b border-red-100">{{ error() }}</div>
+}
+@if (saved()) {
+  <div class="shrink-0 bg-green-50 text-green-700 text-xs px-4 py-2 border-b border-green-100">Gespeichert!</div>
+}
+@if (deleted()) {
+  <div class="shrink-0 bg-amber-50 text-amber-700 text-xs px-4 py-2 border-b border-amber-100">Gelöscht!</div>
+}
+
+<!-- Main Content -->
+<div class="flex-1 flex overflow-hidden">
+
+  <!-- Left: Task List -->
+  <div class="w-72 shrink-0 border-r border-neutral-200 bg-white overflow-y-auto">
+    <div class="px-3 py-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider border-b border-neutral-100">
+      Tasks ({{ tasks().length }})
+    </div>
+    @if (tasks().length === 0) {
+      <div class="p-4 text-xs text-neutral-400 text-center">Noch keine Tasks in der Config</div>
+    }
+    @for (task of tasks(); track $index) {
+      <div class="group flex items-center gap-2 px-3 py-2 border-b border-neutral-50 hover:bg-neutral-50 cursor-pointer text-sm"
+           [class.bg-neutral-100]="selectedIndex() === task._index"
+           (click)="selectTask(task._index!)">
+        <span class="text-xs text-neutral-400 tabular-nums w-5">{{ task._index! + 1 }}</span>
+        <span class="text-[10px] font-mono text-neutral-400 w-20 truncate">{{ task.type }}</span>
+        <span class="flex-1 truncate text-neutral-700">{{ task['title'] || '(kein Text)' }}</span>
+        <button class="hidden group-hover:inline-block text-red-400 hover:text-red-600 text-xs px-1"
+                (click)="deleteTask(task._index!); $event.stopPropagation()">✕</button>
+      </div>
+    }
+  </div>
+
+  <!-- Right: Editor Form -->
+  <div class="flex-1 overflow-y-auto p-6">
+    <div class="max-w-lg space-y-5">
+
+      <!-- Type selector -->
+      <div class="space-y-1">
+        <label class="text-sm font-semibold text-neutral-700">Task-Typ</label>
+        <select [value]="selectedType()" (change)="onTypeChange($event)"
+          class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2 bg-white">
+          <option value="sticker-place">Sticker Place</option>
+          <option value="drawing">Drawing</option>
+          <option value="choice">Choice</option>
+          <option value="number">Number</option>
+          <option value="timer-stop">Timer Stop</option>
+          <option value="shape-split">Shape Split</option>
+        </select>
+      </div>
+
+      <!-- Prompt -->
+      <div class="space-y-1">
+        <label class="text-sm font-semibold text-neutral-700">Prompt / Titel</label>
+        <input type="text" [value]="title()" (input)="title.set(($any($event.target).value))"
+          class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" placeholder="z.B. Platziere das Herz!" />
+      </div>
+
+      <!-- Duration -->
+      <div class="space-y-1">
+        <label class="text-sm font-semibold text-neutral-700">Dauer (Sekunden)</label>
+        <input type="number" [value]="durationSec()" (input)="durationSec.set(toNum($any($event.target).value))"
+          class="w-24 text-sm border border-neutral-200 rounded-lg px-3 py-2" />
+      </div>
+
+      <!-- ═══ SVG Background (shared for sticker-place, drawing, shape-split) ═══ -->
+      @if (selectedType() === 'sticker-place' || selectedType() === 'drawing' || selectedType() === 'shape-split') {
+        <div class="space-y-1">
+          <label class="text-sm font-semibold text-neutral-700">SVG-Hintergrund (Sprite-Ref)</label>
+          <select [value]="backgroundSvg()" (change)="backgroundSvg.set(($any($event.target).value))"
+            class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2 bg-white">
+            <option value="">Kein Hintergrund</option>
+            @for (s of sprites(); track s.id) {
+              <option [value]="s.spriteRef">{{ s.id }}</option>
+            }
+          </select>
+          @if (backgroundSvg()) {
+            <div class="text-[10px] text-neutral-400 mt-1">{{ backgroundSvg() }}</div>
+          }
+        </div>
+      }
+
+      <!-- ═══ Sticker Place: shapePoints ═══ -->
+      @if (selectedType() === 'sticker-place') {
+        <div class="space-y-1">
+          <label class="text-sm font-semibold text-neutral-700">Sticker-ID (stickerSvg)</label>
+          <input type="text" [value]="stickerSvg()" (input)="stickerSvg.set(($any($event.target).value))"
+            class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" placeholder="sticker-shapes-heart" />
+        </div>
+      }
+
+      <!-- ═══ Choice: Options ═══ -->
+      @if (selectedType() === 'choice') {
+        <div class="space-y-2">
+          <label class="text-sm font-semibold text-neutral-700">Optionen</label>
+          @for (opt of options(); track $index) {
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-neutral-400 tabular-nums w-4">{{ $index + 1 }}</span>
+              @if (opt.emoji) { <span class="text-lg">{{ opt.emoji }}</span> }
+              <span class="flex-1 text-sm">{{ opt.label }}</span>
+              <button (click)="removeOption($index)" class="text-red-400 hover:text-red-600 text-xs">✕</button>
+            </div>
+          }
+          <div class="flex gap-2 mt-2">
+            <input type="text" [value]="newOptionEmoji()" (input)="newOptionEmoji.set(($any($event.target).value))"
+              class="w-12 text-sm border border-neutral-200 rounded-lg px-2 py-1" placeholder="😀" maxlength="6" />
+            <input type="text" [value]="newOptionLabel()" (input)="newOptionLabel.set(($any($event.target).value))"
+              class="flex-1 text-sm border border-neutral-200 rounded-lg px-3 py-1" placeholder="Optionstext" />
+            <button (click)="addOption()" [disabled]="!newOptionLabel().trim()"
+              class="text-xs px-3 py-1 rounded-lg bg-black text-white font-medium disabled:opacity-40">+</button>
+          </div>
+        </div>
+      }
+
+      <!-- ═══ Number: min/max/default ═══ -->
+      @if (selectedType() === 'number') {
+        <div class="grid grid-cols-3 gap-3">
+          <div class="space-y-1">
+            <label class="text-xs text-neutral-500">Min</label>
+            <input type="number" [value]="numberMin()" (input)="numberMin.set(toNum($any($event.target).value))"
+              class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs text-neutral-500">Max</label>
+            <input type="number" [value]="numberMax()" (input)="numberMax.set(toNum($any($event.target).value))"
+              class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs text-neutral-500">Default</label>
+            <input type="number" [value]="numberDefault()" (input)="numberDefault.set(toNum($any($event.target).value))"
+              class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" />
+          </div>
+        </div>
+      }
+
+      <!-- ═══ Timer Stop: target ═══ -->
+      @if (selectedType() === 'timer-stop') {
+        <div class="space-y-1">
+          <label class="text-sm font-semibold text-neutral-700">Zielzeit (Sekunden)</label>
+          <input type="number" [value]="targetSec()" (input)="targetSec.set(toNum($any($event.target).value))" step="0.1"
+            class="w-24 text-sm border border-neutral-200 rounded-lg px-3 py-2" />
+        </div>
+      }
+
+      <!-- ═══ Shape Split: target fraction ═══ -->
+      @if (selectedType() === 'shape-split') {
+        <div class="space-y-1">
+          <label class="text-sm font-semibold text-neutral-700">Ziel-Proportion (kleinerer Teil %)</label>
+          <div class="flex items-center gap-2">
+            <input type="range" min="5" max="50" [value]="targetFraction()" (input)="targetFraction.set(toNum($any($event.target).value))"
+              class="flex-1 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-black" />
+            <span class="text-sm font-mono font-bold w-12 text-right">{{ targetFraction() }}:{{ 100 - targetFraction() }}</span>
+          </div>
+        </div>
+        <p class="text-xs text-neutral-400">Polygon-Punkte im <a href="/shape-split-editor" class="text-blue-600 underline">Shape-Split Editor</a> bearbeiten</p>
+      }
+
+      <!-- JSON Preview -->
+      <div class="border-t border-neutral-200 pt-3">
+        <label class="text-sm font-semibold text-neutral-700 mb-1 block">Task JSON Vorschau</label>
+        <pre class="bg-neutral-50 border border-neutral-200 rounded-lg p-2 text-[10px] font-mono text-neutral-700 overflow-auto max-h-40">{{ taskJson() }}</pre>
+      </div>
+
+      <!-- Save button -->
+      <div class="flex gap-2">
+        <button (click)="save()" [disabled]="loading() || !title().trim()"
+          class="flex-1 bg-black text-white py-2.5 rounded-xl font-semibold disabled:opacity-40 active:scale-95 transition-transform">
+          {{ loading() ? 'Speichere...' : (isNew() ? 'Task anlegen' : 'Task aktualisieren') }}
+        </button>
+        <button (click)="togglePreview()"
+          class="px-4 py-2.5 rounded-xl font-semibold border border-neutral-300 bg-white text-neutral-700 active:scale-95 transition-transform">
+          {{ showPreview() ? 'Vorschau aus' : 'Vorschau' }}
+        </button>
+      </div>
+
+      <!-- ═══ Live Preview ═══ -->
+      @if (showPreview()) {
+        <div class="border-t border-neutral-200 pt-3">
+          <label class="text-sm font-semibold text-neutral-700 mb-2 block">Live-Vorschau</label>
+          <div class="bg-neutral-100 rounded-xl border border-neutral-200 overflow-hidden" style="height: 320px;">
+            @switch (previewTask()['type']) {
+              @case ('sticker-place') {
+                <app-sticker-board
+                  class="block w-full h-full"
+                  [backgroundImage]="$any(previewTask())?.['backgroundSvg'] ?? null"
+                  [stickerName]="'sprite:#' + ($any(previewTask())?.['stickerSvg'] ?? 'sticker-shapes-heart')"
+                />
+              }
+              @case ('drawing') {
+                <app-drawing-canvas-bg
+                  class="block w-full h-full"
+                  [baseImageUrl]="$any(previewTask())?.['backgroundSvg'] ?? null"
+                />
+              }
+              @case ('choice') {
+                <app-minigame-choice
+                  class="block w-full h-full"
+                  [options]="previewTask()['options'] ?? []"
+                />
+              }
+              @case ('number') {
+                <app-minigame-number
+                  class="block w-full h-full"
+                  [min]="previewTask()['numberConfig']?.min ?? 1"
+                  [max]="previewTask()['numberConfig']?.max ?? 100"
+                  [default]="previewTask()['numberConfig']?.default ?? 50"
+                />
+              }
+              @case ('timer-stop') {
+                <app-minigame-timer
+                  class="block w-full h-full"
+                  [targetSec]="$any(previewTask())?.['targetSec'] ?? 5"
+                />
+              }
+              @case ('shape-split') {
+                <app-minigame-shape-split
+                  class="block w-full h-full"
+                />
+              }
+            }
+          </div>
+        </div>
+      }
+
+    </div>
+  </div>
+</div>

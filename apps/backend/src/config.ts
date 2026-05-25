@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { parseGameConfig, type GameConfig } from "@birthday/shared";
+import { parseGameConfig, parseMinigameConfig, type GameConfig } from "@birthday/shared";
 
 export interface BackendConfig {
     devMode: boolean;
@@ -35,7 +35,17 @@ export function loadBackendConfig(args: { argv: string[]; cwd: string }): Backen
     const merged = { ...rawPublic, ...rawPrivate };
     const gameConfig = parseGameConfig(merged);
 
-    // 4. Env-var overrides (highest priority)
+    // 4. Load minigame config (separate JSON file)
+    const minigameConfigPath = path.resolve(args.cwd, "minigame.config.json");
+    try {
+        const rawMinigame = JSON.parse(fs.readFileSync(minigameConfigPath, "utf-8"));
+        gameConfig.minigame = parseMinigameConfig(rawMinigame);
+        console.log(`[config] loaded minigame.config.json (${gameConfig.minigame.tasks.length} tasks)`);
+    } catch {
+        console.warn(`[config] minigame.config.json not found, no minigame tasks`);
+    }
+
+    // 5. Env-var overrides (highest priority)
     if (process.env.PORT) {
         gameConfig.port = Number(process.env.PORT) || gameConfig.port;
     }

@@ -278,6 +278,8 @@ Ratende stimmen ab.
 - Lustige Ergebnisse
 - Hohe Gruppendynamik
 
+### Meinung - Ja & Nein + Raten welcher Prozentsatz wie ich denkt
+
 ### Vermeiden
 
 - Schönstes Bild gewinnt

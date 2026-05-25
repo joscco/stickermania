@@ -17,28 +17,20 @@ export function stickerRenderedSize(_p: StickerPlacement, def: StickerDefinition
   return {width: Math.round(stickerSizePx * vb.width / vb.height), height: stickerSizePx};
 }
 
-export function stickerTransform(p: StickerPlacement, def?: StickerDefinition, sizePx?: number): string {
-  const sx = effectiveScaleX(p);
-  const sy = effectiveScaleY(p);
-  return `rotate(${p.rotation}deg) scale(${sx}, ${sy})`;
+export function stickerTransform(_p: StickerPlacement, _def?: StickerDefinition, _sizePx?: number): string {
+  return `translate(-50%, -50%)`;
 }
 
-export function stickerAnchor(def?: StickerDefinition, sizePx?: number): string {
-  const ob = def?.overlayBounds;
-  if (!ob || sizePx == null) return '50% 50%';
-  return `${Math.round(ob.x * sizePx)}px ${Math.round(ob.y * sizePx)}px`;
+export function stickerAnchor(_def?: StickerDefinition, _sizePx?: number): string {
+  return '50% 50%';
 }
 
-export function stickerLeft(p: StickerPlacement, def?: StickerDefinition, sizePx?: number): number {
-  const ob = def?.overlayBounds;
-  if (!ob || sizePx == null) return p.x;
-  return p.x - ob.x * sizePx;
+export function stickerLeft(p: StickerPlacement, _def?: StickerDefinition, _sizePx?: number): number {
+  return p.x;
 }
 
-export function stickerTop(p: StickerPlacement, def?: StickerDefinition, sizePx?: number): number {
-  const ob = def?.overlayBounds;
-  if (!ob || sizePx == null) return p.y;
-  return p.y - ob.y * sizePx;
+export function stickerTop(p: StickerPlacement, _def?: StickerDefinition, _sizePx?: number): number {
+  return p.y;
 }
 
 export function overlayBox(p: StickerPlacement, def: StickerDefinition | undefined, stickerSizePx: number): BoundingBox | null {

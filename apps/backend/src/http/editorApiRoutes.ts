@@ -106,14 +106,42 @@ export async function registerEditorApiRoutes(
 
     // ─── Game Config Task Management ─────────────────────────────────
 
-    const configPath = path.resolve(backendConfig.dataRoot, "..", "game.config.public.json");
+    const configPath = path.resolve(backendConfig.dataRoot, "..", "minigame.config.json");
+
+    // ═══ SVG Sprite ID Listing ═══════════════════════════════════════
+
+    app.get("/api/sprite-ids", async () => {
+        const svgDir = path.resolve(backendConfig.dataRoot, "..", "apps", "frontend", "public", "assets", "svg");
+        try {
+            const files = fs.readdirSync(svgDir).filter(f => f.endsWith(".svg"));
+            return files.map(f => ({
+                id: f.replace(".svg", ""),
+                spriteRef: `sprite:#${f.replace(".svg", "")}`,
+            })).sort((a, b) => a.id.localeCompare(b.id));
+        } catch {
+            return [];
+        }
+    });
+
+    // ═══ Minigame Config CRUD ═══════════════════════════════════════
 
     app.get("/api/game-config", async () => {
         try {
             const raw = fs.readFileSync(configPath, "utf-8");
             return JSON.parse(raw);
         } catch {
-            return {error: "Config not found"};
+            return {tasks: []};
+        }
+    });
+
+    app.get("/api/game-config/tasks", async () => {
+        try {
+            const raw = fs.readFileSync(configPath, "utf-8");
+            const config = JSON.parse(raw) as any;
+            const tasks = config?.tasks ?? [];
+            return tasks.map((t: any, i: number) => ({...t, _index: i}));
+        } catch {
+            return [];
         }
     });
 
@@ -121,11 +149,46 @@ export async function registerEditorApiRoutes(
         try {
             const raw = fs.readFileSync(configPath, "utf-8");
             const config = JSON.parse(raw) as any;
-            if (!config.stickerCollage) config.stickerCollage = {};
-            if (!Array.isArray(config.stickerCollage.tasks)) config.stickerCollage.tasks = [];
-            config.stickerCollage.tasks.push(request.body.task);
+            if (!Array.isArray(config.tasks)) config.tasks = [];
+            config.tasks.push(request.body.task);
             fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
-            return {ok: true, taskCount: config.stickerCollage.tasks.length};
+            return {ok: true, taskCount: config.tasks.length};
+        } catch (err) {
+            reply.status(500);
+            return {error: String(err)};
+        }
+    });
+
+    app.put<{Params: {index: string}; Body: {task: import("@birthday/shared").MinigameTask}}>("/api/game-config/tasks/:index", async (request, reply) => {
+        try {
+            const idx = parseInt(request.params.index, 10);
+            const raw = fs.readFileSync(configPath, "utf-8");
+            const config = JSON.parse(raw) as any;
+            if (!config.tasks || idx < 0 || idx >= config.tasks.length) {
+                reply.status(404);
+                return {error: "Task not found"};
+            }
+            config.tasks[idx] = request.body.task;
+            fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+            return {ok: true, index: idx};
+        } catch (err) {
+            reply.status(500);
+            return {error: String(err)};
+        }
+    });
+
+    app.delete<{Params: {index: string}}>("/api/game-config/tasks/:index", async (request, reply) => {
+        try {
+            const idx = parseInt(request.params.index, 10);
+            const raw = fs.readFileSync(configPath, "utf-8");
+            const config = JSON.parse(raw) as any;
+            if (!config.tasks || idx < 0 || idx >= config.tasks.length) {
+                reply.status(404);
+                return {error: "Task not found"};
+            }
+            config.tasks.splice(idx, 1);
+            fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+            return {ok: true, taskCount: config.tasks.length};
         } catch (err) {
             reply.status(500);
             return {error: String(err)};

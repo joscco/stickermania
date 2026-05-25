@@ -66,46 +66,6 @@
     </div>
   }
 
-  <!-- Freehand lasso -->
-  @if (lassoPath() && lassoPath()!.length > 1) {
-    <svg class="absolute inset-0 w-full h-full pointer-events-none z-[8900] overflow-visible">
-      <polyline
-        [attr.points]="lassoPoints()"
-        fill="none"
-        stroke="oklch(85.2% 0.199 91.936)"
-        stroke-width="2.5"
-        stroke-dasharray="5"
-        stroke-linejoin="round"
-        stroke-linecap="round"
-      />
-    </svg>
-  }
-
-  <!-- Selection overlay (rotate + scale handles) -->
-  <app-sticker-overlay
-    [visible]="overlayVisible()"
-    [box]="overlayBox()"
-    [rotation]="overlayRotation()"
-    (handleDrag)="onOverlayHandle($event)"
-  />
-
-  <!-- Action bar: flip, z-index, delete, duplicate, group -->
-  <app-sticker-action-bar
-    [visible]="actionBarVisible()"
-    [box]="overlayBox() ?? selectionInfo()?.box ?? null"
-    [centerX]="selectionCenterX()"
-    [centerY]="selectionCenterY()"
-    [canvasW]="canvasW()"
-    [canvasH]="canvasH()"
-    [isMulti]="selectionState.isMultiSelection()"
-    [canGroup]="canGroup()"
-    [canUngroup]="canUngroup()"
-    [canDuplicate]="canDuplicate()"
-    [spacing]="actionBarSpacing"
-    [stickerRotation]="overlayRotation()"
-    (action)="onActionBarAction($event)"
-  />
-
   <div [animPresence]="committedCount() === 0 && canvasW() > 250"
        [animPresenceType]="'opacity'"
        class="absolute inset-0 flex items-center justify-center text-neutral-300 pointer-events-none">

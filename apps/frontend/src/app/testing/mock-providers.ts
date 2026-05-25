@@ -8,6 +8,12 @@ import type {
   StickerCollageResultsState,
   SessionState,
   MinigameTask,
+  StickerPlaceTask,
+  DrawingTask,
+  ChoiceTask,
+  NumberTask,
+  TimerStopTask,
+  ShapeSplitTask,
 } from '@birthday/shared';
 import {lobbyPhase, buildingPhase, votingPhase, resultsPhase, nextRoundPhase, makeGameState, makeSessionState, MOCK_SUBMISSIONS} from './mock-data';
 import type {VotingViewModel, VotingVariant, ResultsViewModel, WinnerStep} from '../features/game/player/player-view-models';
@@ -190,12 +196,12 @@ import {StickerPlayerService} from '../features/game/services/sticker-player.ser
 export type MockPhase = 'lobby' | 'building' | 'building-submitted' | 'building-skipped' | 'voting' | 'voting-done' | 'voting-all-done' | 'results' | 'next-round';
 
 export const MOCK_TASKS: Record<string, MinigameTask> = {
-  stickerPlace: {type: 'sticker-place', prompt: 'Platziere das Herz!', durationSec: 30, shapePoints: 'sticker-shapes-heart'},
-  drawing: {type: 'drawing', prompt: 'Zeichne einen Bart!', durationSec: 60},
-  choice: {type: 'choice', prompt: 'Wähle deinen Lieblingskäse', durationSec: 30, options: [{label: 'Gouda'}, {label: 'Cheddar'}, {label: 'Brie'}, {label: 'Camembert'}]},
-  number: {type: 'number', prompt: 'Wie viele Kinder?', durationSec: 30, numberConfig: {min: 0, max: 10, default: 2}},
-  timer: {type: 'timer-stop', prompt: 'Stoppe bei 5 Sekunden!', durationSec: 30, timerTarget: 5},
-  shapeSplit: {type: 'shape-split', prompt: 'Teile die Fläche 50:50!', durationSec: 45},
+  stickerPlace: {id: 'mock-sticker', type: 'sticker-place', title: 'Platziere das Herz!', durationSec: 30, stickerSvg: 'sticker-shapes-heart'} as StickerPlaceTask,
+  drawing: {id: 'mock-drawing', type: 'drawing', title: 'Zeichne einen Bart!', durationSec: 60} as DrawingTask,
+  choice: {id: 'mock-choice', type: 'choice', title: 'Wähle deinen Lieblingskäse', durationSec: 30, options: [{label: 'Gouda'}, {label: 'Cheddar'}, {label: 'Brie'}, {label: 'Camembert'}]} as ChoiceTask,
+  number: {id: 'mock-number', type: 'number', title: 'Wie viele Kinder?', durationSec: 30, min: 0, max: 10, default: 2} as NumberTask,
+  timer: {id: 'mock-timer', type: 'timer-stop', title: 'Stoppe bei 5 Sekunden!', durationSec: 30, targetSec: 5} as TimerStopTask,
+  shapeSplit: {id: 'mock-split', type: 'shape-split', title: 'Teile die Fläche 50:50!', durationSec: 45, polygon: [], targetFraction: 0.5} as ShapeSplitTask,
 };
 
 export function provideMockState(phase: MockPhase, taskKey?: keyof typeof MOCK_TASKS) {
@@ -210,37 +216,40 @@ export function provideMockState(phase: MockPhase, taskKey?: keyof typeof MOCK_T
       sessionState = makeSessionState(lobbyPhase());
       break;
     case 'building':
-      sessionState = makeSessionState(buildingPhase(), undefined, task ? {currentTask: task, currentPrompt: task.prompt} : undefined);
+      sessionState = makeSessionState(buildingPhase(), undefined, task ? {currentTask: task, currentPrompt: task['title']} : undefined);
       break;
     case 'building-submitted': {
-      const overrides = task ? {currentTask: task, currentPrompt: task.prompt} : undefined;
+      const overrides = task ? {currentTask: task, currentPrompt: task['title']} : undefined;
       sessionState = makeSessionState(buildingPhase(), undefined, overrides ? {...overrides, submissions} : {submissions});
       break;
     }
     case 'building-skipped':
-      sessionState = makeSessionState(buildingPhase({skippedPlayerIds: ['player-1']}), undefined, task ? {currentTask: task, currentPrompt: task.prompt} : undefined);
+      sessionState = makeSessionState(buildingPhase({skippedPlayerIds: ['player-1']}), undefined, task ? {currentTask: task, currentPrompt: task['title']} : undefined);
       break;
-    case 'voting':
-      sessionState = makeSessionState(votingPhase({
-        currentVotes: {'player-1': ['col-2'], 'player-2': ['col-1']},
-        doneVotingIds: [],
-      }), undefined, { submissions });
+    case 'voting': {
+      const overrides: any = { submissions };
+      if (task) { overrides.currentTask = task; overrides.currentPrompt = task['title']; }
+      sessionState = makeSessionState(votingPhase({currentVotes: {'player-1': ['col-2'], 'player-2': ['col-1']}, doneVotingIds: []}), undefined, overrides);
       break;
-    case 'voting-done':
-      sessionState = makeSessionState(votingPhase({
-        currentVotes: {'player-1': ['col-2', 'col-3']},
-        doneVotingIds: ['player-1'],
-      }), undefined, { submissions });
+    }
+    case 'voting-done': {
+      const overrides: any = { submissions };
+      if (task) { overrides.currentTask = task; overrides.currentPrompt = task['title']; }
+      sessionState = makeSessionState(votingPhase({currentVotes: {'player-1': ['col-2', 'col-3']}, doneVotingIds: ['player-1']}), undefined, overrides);
       break;
-    case 'voting-all-done':
-      sessionState = makeSessionState(votingPhase({
-        currentVotes: {'player-1': ['col-2', 'col-3'], 'player-2': ['col-1'], 'player-3': ['col-1', 'col-2']},
-        doneVotingIds: ['player-1', 'player-2', 'player-3'],
-      }), undefined, { submissions });
+    }
+    case 'voting-all-done': {
+      const overrides: any = { submissions };
+      if (task) { overrides.currentTask = task; overrides.currentPrompt = task['title']; }
+      sessionState = makeSessionState(votingPhase({currentVotes: {'player-1': ['col-2', 'col-3'], 'player-2': ['col-1'], 'player-3': ['col-1', 'col-2']}, doneVotingIds: ['player-1', 'player-2', 'player-3']}), undefined, overrides);
       break;
-    case 'results':
-      sessionState = makeSessionState(resultsPhase(), undefined, { submissions });
+    }
+    case 'results': {
+      const overrides: any = { submissions };
+      if (task) { overrides.currentTask = task; overrides.currentPrompt = task['title']; }
+      sessionState = makeSessionState(resultsPhase(), undefined, overrides);
       break;
+    }
     case 'next-round':
       sessionState = makeSessionState(nextRoundPhase());
       break;
@@ -248,16 +257,7 @@ export function provideMockState(phase: MockPhase, taskKey?: keyof typeof MOCK_T
 
   worldStore.setSessionState(sessionState);
 
-  return {
-    worldStore,
-    sessionStore,
-    providers: [
-      {provide: WorldStore, useValue: worldStore},
-      {provide: GameSessionStore, useValue: sessionStore},
-      {provide: WebSocketService, useClass: MockWebSocketService},
-      {provide: StickerPlayerService, useClass: MockStickerPlayerService},
-    ],
-  };
+  return { worldStore, sessionStore, providers: [] as any[] };
 }
 
 export function getMockVotingVm(phase: MockPhase, worldStore: MockWorldStore, sessionStore: MockGameSessionStore, stickerService: MockStickerPlayerService): VotingViewModel {

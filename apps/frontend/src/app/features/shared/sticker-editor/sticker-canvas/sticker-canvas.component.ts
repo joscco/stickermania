@@ -17,17 +17,15 @@ import {preloadSprite} from '../sprite-url.util';
 import {AudioService} from '../../../../core/audio.service';
 import {StickerItemComponent, type StickerAnimState} from '../sticker-item/sticker-item.component';
 import * as stickerTransformer from './sticker-transform.util';
-import {OverlayHandleEvent, StickerOverlayComponent} from '../sticker-overlay/sticker-overlay.component';
-import {ActionBarAction, StickerActionBarComponent} from '../sticker-action-bar/sticker-action-bar.component';
 import {CanvasSelectionState} from './canvas-selection.state';
 
 @Component({
   selector: 'app-sticker-canvas',
   standalone: true,
   imports: [
-    CommonModule, StickerActionBarComponent,
+    CommonModule,
     AnimOnInitDirective, AnimPresenceDirective,
-    StickerItemComponent, SvgComponent, StickerOverlayComponent,
+    StickerItemComponent, SvgComponent,
   ],
   templateUrl: './sticker-canvas.component.html',
   host: {class: 'block w-full h-full'},
@@ -131,10 +129,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   readonly canDuplicate = computed(() =>
     this.selectionState.selectionIds().length > 0
     && (this.committedCount() + this.selectionState.selectionIds().length) <= this.maxStickers());
-
-  readonly lassoPath = signal<{ x: number; y: number }[] | null>(null);
-  readonly lassoPoints = computed(() =>
-    this.lassoPath()?.map(p => `${p.x},${p.y}`).join(' '));
 
   // ── Internals ─────────────────────────────────────────────────
 
@@ -252,18 +246,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
   private buildGestureCallbacks(): GestureCallbacks {
     return {
       onPlacementsChanged: p => this.placementsChanged.emit(p),
-      onLassoPathChanged: path => this.lassoPath.set(path),
-      onLassoSelectionChanged: ids => {
-        this.selectionState.multiSelectionRotation.set(0);
-        if (ids.size === 0) this.selectionState.lassoSelection.set(new Set());
-        else if (ids.size === 1) {
-          this.selectionState.selectedInstanceId.set([...ids][0]);
-          this.selectionState.lassoSelection.set(new Set());
-        } else {
-          this.selectionState.lassoSelection.set(ids);
-          this.selectionState.selectedInstanceId.set(null);
-        }
-      },
       onSelectedChanged: id => {
         this.selectionState.clear();
         if (id) this.selectionState.selectedInstanceId.set(id);
@@ -296,117 +278,6 @@ export class StickerCanvasComponent implements AfterViewInit, OnDestroy {
 
   generateInstanceId(): string {
     return ops.generateInstanceId();
-  }
-
-  // ── Action bar ─────────────────────────────────────────────────
-
-  onOverlayHandle(ev: OverlayHandleEvent): void {
-    const ids = this.selectionState.selectionIds();
-    if (!ids.length) return;
-
-    const type = ev.type as string;
-    if (type === 'rotate') {
-      if (ev.done) {
-        this.isRotating.set(false);
-        this.freezeOverlay.set(false);
-        this.accumulatedRotateDeg.set(0);
-        this._lastRotateX = 0;
-        this._lastRotateY = 0;
-      } else {
-        if (!this.freezeOverlay()) this.freezeOverlay.set(true);
-        this.isRotating.set(true);
-        const box = this.overlayBox();
-        if (box && ids.length) {
-          const rect = this.canvasArea.nativeElement.getBoundingClientRect();
-          const cx = rect.left + box.x + box.w / 2;
-          const cy = rect.top + box.y + box.h / 2;
-          if (this._lastRotateX === 0 && this._lastRotateY === 0) {
-            this._lastRotateX = ev.clientX;
-            this._lastRotateY = ev.clientY;
-          } else {
-            const pa = Math.atan2(this._lastRotateY - cy, this._lastRotateX - cx);
-            const ca = Math.atan2(ev.clientY - cy, ev.clientX - cx);
-            this._lastRotateX = ev.clientX;
-            this._lastRotateY = ev.clientY;
-            const deg = (ca - pa) * 180 / Math.PI;
-            this.accumulatedRotateDeg.update(r => r + deg);
-            this.commit(ops.applyRotationDelta(this.stickersOnCanvas(), ids, deg));
-          }
-        }
-      }
-    } else if (type === 'n' || type === 's' || type === 'e' || type === 'w') {
-      if (ids.length === 1) {
-        this.commit(ops.applyStretchHandle(this.stickersOnCanvas(), ids[0], type as 'n' | 's' | 'e' | 'w', ev.dx, ev.dy, (id: string) => this.getRenderedSize(id)));
-      }
-    } else if (type === 'scale') {
-      const box = this.overlayBox();
-      if (box && box.w > 0 && box.h > 0) {
-        const half = Math.max(box.w, box.h) / 2;
-        const delta = (ev.dx + ev.dy) / 2;
-        if (ids.length === 1) {
-          this.commit(ops.scaleSingle(this.stickersOnCanvas(), ids[0], (half + delta) / half));
-        } else {
-          this.commit(ops.applyGroupTransform(this.stickersOnCanvas(), ids, 0, (half + delta) / half, null));
-        }
-      }
-    }
-
-    if (ev.done && type !== 'rotate') ids.forEach(id => this.setAnimState(id, 'settling'));
-  }
-
-  private resetSelection(ids: string[]): void {
-    if (!ids.length) return;
-    this.commit(this.stickersOnCanvas().map(p =>
-      ids.includes(p.instanceId)
-        ? {...p, scale: 1, rotation: 0, scaleX: undefined, scaleY: undefined, flipX: false, flipY: false}
-        : p));
-    ids.forEach(id => this.setAnimState(id, 'settling'));
-  }
-
-  onActionBarAction(action: ActionBarAction): void {
-    this.suppressDoubleTap.set(true);
-    if (this.suppressTimer) clearTimeout(this.suppressTimer);
-    this.suppressTimer = setTimeout(() => {
-      this.suppressDoubleTap.set(false);
-      this.suppressTimer = null;
-    }, 400);
-    const ids = this.selectionState.selectionIds();
-    this.handleAction(action, ids);
-  }
-
-  private handleAction(action: ActionBarAction, ids: string[]): void {
-    switch (action) {
-      case 'delete':
-        this.removeSelected();
-        break;
-      case 'flipH':
-        this.flipSelectionH(ids);
-        break;
-      case 'zForward':
-        this.commit(ops.swapZ(this.stickersOnCanvas(), ids, +1));
-        break;
-      case 'zBackward':
-        this.commit(ops.swapZ(this.stickersOnCanvas(), ids, -1));
-        break;
-      case 'zFront':
-        this.commit(ops.moveToEdge(this.stickersOnCanvas(), ids, 'front'));
-        break;
-      case 'zBack':
-        this.commit(ops.moveToEdge(this.stickersOnCanvas(), ids, 'back'));
-        break;
-      case 'group':
-        this.commitGroup(ops.groupPlacements(this.stickersOnCanvas(), ids), ids);
-        break;
-      case 'ungroup':
-        this.commitGroup(ops.ungroupPlacements(this.stickersOnCanvas(), ids), ids);
-        break;
-      case 'duplicate':
-        this.doDuplicate();
-        break;
-      case 'reset':
-        this.resetSelection(ids);
-        break;
-    }
   }
 
   private commit(updated: StickerPlacement[]): void {

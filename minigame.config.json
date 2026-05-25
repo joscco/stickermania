@@ -1,0 +1,42 @@
+{
+  "tasks": [
+    {
+      "id": "heart-placement",
+      "type": "sticker-place",
+      "title": "Platziere ein Herz auf dem Bild",
+      "durationSec": 30,
+      "stickerSvg": "sticker-shapes-heart",
+      "backgroundSvg": "sprite:#sticker-shapes-star"
+    },
+    {
+      "id": "kids-question",
+      "type": "number",
+      "title": "Wie viele Kinder möchtest du maximal haben?",
+      "durationSec": 30,
+      "min": 0,
+      "max": 10,
+      "default": 2
+    },
+    {
+      "id": "stop-at-five",
+      "type": "timer-stop",
+      "title": "Stopp die Uhr bei exakt 5 Sekunden!",
+      "durationSec": 30,
+      "targetSec": 5
+    },
+    {
+      "id": "split-rectangle",
+      "type": "shape-split",
+      "title": "Teile das Rechteck 50:50!",
+      "durationSec": 45,
+      "polygon": [
+        {"x": 20, "y": 20},
+        {"x": 180, "y": 20},
+        {"x": 180, "y": 180},
+        {"x": 20, "y": 180}
+      ],
+      "targetFraction": 0.5,
+      "backgroundSvg": "sprite:#sticker-shapes-heart"
+    }
+  ]
+}

@@ -99,8 +99,9 @@
       <label class="text-sm font-semibold text-neutral-700">SVG-Hintergrund</label>
       <select [value]="selectedBg()" (change)="onBgChange($event)"
         class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-black">
-        @for (bg of backgrounds; track bg.id) {
-          <option [value]="bg.id">{{ bg.label }}</option>
+        <option value="">Kein Hintergrund</option>
+        @for (bg of backgrounds(); track bg.id) {
+          <option [value]="bg.spriteRef">{{ bg.id }}</option>
         }
       </select>
       @if (selectedBg()) {

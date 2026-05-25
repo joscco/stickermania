@@ -20,7 +20,6 @@ export interface StickerCollageGameConfig {
     maxStickersOnCanvas: number;
     votesPerPlayer: number;
     prompts: PromptConfig[];
-    tasks: MinigameTask[];
     promptChoiceCount: number;
     packUnlockChoiceCount: number;
     catalog: StickerCatalogConfig;
@@ -36,6 +35,7 @@ export interface GameConfig {
     adminPassword: string | null;
     sessionTtlHours: number;
     stickerCollage: StickerCollageGameConfig;
+    minigame: MinigameConfig;
 }
 
 function parseSubObject(raw: Record<string, unknown>, key: string): Record<string, unknown> {
@@ -77,35 +77,6 @@ function parsePrompts(raw: unknown): PromptConfig[] {
     });
 }
 
-function parseTasks(raw: unknown): MinigameTask[] {
-    if (!Array.isArray(raw)) return [];
-    return raw.map((t: any): MinigameTask => {
-        const base: MinigameTask = {
-            type: (t?.type === "sticker-place" || t?.type === "drawing" || t?.type === "choice" || t?.type === "number" || t?.type === "timer-stop" || t?.type === "shape-split") ? t.type : "choice",
-            prompt: typeof t?.prompt === "string" ? t.prompt : "",
-            durationSec: typeof t?.durationSec === "number" ? t.durationSec : 60,
-        };
-        if (typeof t?.baseImageUrl === "string") base.baseImageUrl = t.baseImageUrl;
-        if (typeof t?.shapePoints === "string") base.shapePoints = t.shapePoints;
-        if (Array.isArray(t?.options)) base.options = t.options.map((o: any) => ({label: String(o?.label ?? ""), emoji: typeof o?.emoji === "string" ? o.emoji : undefined}));
-        if (t?.numberConfig && typeof t.numberConfig === "object") {
-            base.numberConfig = {
-                min: typeof t.numberConfig.min === "number" ? t.numberConfig.min : 1,
-                max: typeof t.numberConfig.max === "number" ? t.numberConfig.max : 100,
-                default: typeof t.numberConfig.default === "number" ? t.numberConfig.default : 50,
-            };
-        }
-        if (typeof t?.timerTarget === "number") base.timerTarget = t.timerTarget;
-        if (Array.isArray(t?.polygon)) {
-            base.polygon = t.polygon
-                .filter((p: any) => typeof p?.x === "number" && typeof p?.y === "number")
-                .map((p: any) => ({x: p.x, y: p.y}));
-        }
-        if (typeof t?.targetFraction === "number") base.targetFraction = Math.max(0, Math.min(1, t.targetFraction));
-        return base;
-    });
-}
-
 export function parseGameConfig(raw: unknown): GameConfig {
     const r = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
     const sc = parseSubObject(r, "stickerCollage");
@@ -121,11 +92,11 @@ export function parseGameConfig(raw: unknown): GameConfig {
             maxStickersOnCanvas: typeof sc["maxStickersOnCanvas"] === "number" ? sc["maxStickersOnCanvas"] : 12,
             votesPerPlayer: typeof sc["votesPerPlayer"] === "number" ? sc["votesPerPlayer"] : 3,
             prompts: parsePrompts(sc["prompts"]),
-            tasks: parseTasks(sc["tasks"]),
             promptChoiceCount: typeof sc["promptChoiceCount"] === "number" ? sc["promptChoiceCount"] : 3,
             packUnlockChoiceCount: typeof sc["packUnlockChoiceCount"] === "number" ? sc["packUnlockChoiceCount"] : 3,
             catalog: parseCatalogConfig(sc["catalog"] ?? null),
         },
+        minigame: {tasks: []},
     };
 }
 
@@ -351,30 +322,141 @@ export type GameServerEnvelope = {
 export type ClientToServerMessage = SessionClientToServerMessage | GameClientEnvelope;
 export type ServerToClientMessage = SessionServerToClientMessage | GameServerEnvelope;
 
-// ─── Minigame types (new) ───────────────────────────────────────
+// ─── Minigame types ─────────────────────────────────────────────
 
-export type MinigameTaskType =
-  | "sticker-place"
-  | "drawing"
-  | "choice"
-  | "number"
-  | "timer-stop"
-  | "shape-split";
+// ── Task definitions (discriminated union) ─────────────────────
 
-export interface MinigameTask {
-  type: MinigameTaskType;
-  prompt: string;
-  baseImageUrl?: string;
-  shapePoints?: string;
-  options?: Array<{label: string; emoji?: string}>;
-  numberConfig?: {min: number; max: number; default: number};
-  timerTarget?: number;
-  /** Polygon vertices for shape-split tasks (viewBox-local coords) */
-  polygon?: Array<{x: number; y: number}>;
-  /** Target fraction (0-1) for shape-split tasks */
-  targetFraction?: number;
+export interface StickerPlaceTask {
+  id: string;
+  type: "sticker-place";
+  title: string;
   durationSec: number;
+  /** Sprite ref for the sticker the player drags, e.g. "sticker-shapes-heart" */
+  stickerSvg: string;
+  /** Optional background image sprite ref, e.g. "sprite:#sticker-eyes-open" */
+  backgroundSvg?: string;
 }
+
+export interface DrawingTask {
+  id: string;
+  type: "drawing";
+  title: string;
+  durationSec: number;
+  /** Optional background image sprite ref to draw on */
+  backgroundSvg?: string;
+}
+
+export interface ChoiceTask {
+  id: string;
+  type: "choice";
+  title: string;
+  durationSec: number;
+  options: Array<{label: string; emoji?: string}>;
+}
+
+export interface NumberTask {
+  id: string;
+  type: "number";
+  title: string;
+  durationSec: number;
+  min: number;
+  max: number;
+  default: number;
+}
+
+export interface TimerStopTask {
+  id: string;
+  type: "timer-stop";
+  title: string;
+  durationSec: number;
+  targetSec: number;
+}
+
+export interface ShapeSplitTask {
+  id: string;
+  type: "shape-split";
+  title: string;
+  durationSec: number;
+  /** Sprite ref for background shape, e.g. "sprite:#sticker-shapes-heart" */
+  backgroundSvg?: string;
+  /** Polygon vertices (viewBox-local coords, typically 0-200) */
+  polygon: Array<{x: number; y: number}>;
+  /** Target fraction 0-1 for the smaller side */
+  targetFraction: number;
+}
+
+export type MinigameTask =
+  | StickerPlaceTask
+  | DrawingTask
+  | ChoiceTask
+  | NumberTask
+  | TimerStopTask
+  | ShapeSplitTask;
+
+// ── Config ──────────────────────────────────────────────────────
+
+export interface MinigameConfig {
+  tasks: MinigameTask[];
+}
+
+export function parseMinigameConfig(raw: unknown): MinigameConfig {
+  const r = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
+  const tasks: MinigameTask[] = [];
+  if (Array.isArray(r["tasks"])) {
+    for (const t of r["tasks"] as unknown[]) {
+      const task = parseTask(t);
+      if (task) tasks.push(task);
+    }
+  }
+  return {tasks};
+}
+
+function parseTask(raw: unknown): MinigameTask | null {
+  const t = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
+  const type = t["type"];
+  const id = typeof t["id"] === "string" && t["id"] ? t["id"] : crypto.randomUUID?.() ?? Math.random().toString(36).slice(2, 10);
+  const title = typeof t["title"] === "string" ? t["title"] : "";
+  const dur = typeof t["durationSec"] === "number" ? t["durationSec"] : 60;
+
+  switch (type) {
+    case "sticker-place": return {
+      id, type: "sticker-place", title, durationSec: dur,
+      stickerSvg: typeof t["stickerSvg"] === "string" ? t["stickerSvg"] : "sticker-shapes-heart",
+      backgroundSvg: typeof t["backgroundSvg"] === "string" ? t["backgroundSvg"] : undefined,
+    };
+    case "drawing": return {
+      id, type: "drawing", title, durationSec: dur,
+      backgroundSvg: typeof t["backgroundSvg"] === "string" ? t["backgroundSvg"] : undefined,
+    };
+    case "choice": return {
+      id, type: "choice", title, durationSec: dur,
+      options: Array.isArray(t["options"])
+        ? (t["options"] as unknown[]).map((o: any) => ({label: String(o?.label ?? ""), emoji: typeof o?.emoji === "string" ? o.emoji : undefined}))
+        : [],
+    };
+    case "number": return {
+      id, type: "number", title, durationSec: dur,
+      min: typeof t["min"] === "number" ? t["min"] : 1,
+      max: typeof t["max"] === "number" ? t["max"] : 100,
+      default: typeof t["default"] === "number" ? t["default"] : 50,
+    };
+    case "timer-stop": return {
+      id, type: "timer-stop", title, durationSec: dur,
+      targetSec: typeof t["targetSec"] === "number" ? t["targetSec"] : 5,
+    };
+    case "shape-split": return {
+      id, type: "shape-split", title, durationSec: dur,
+      backgroundSvg: typeof t["backgroundSvg"] === "string" ? t["backgroundSvg"] : undefined,
+      polygon: Array.isArray(t["polygon"])
+        ? (t["polygon"] as unknown[]).filter((p: any) => typeof p?.x === "number" && typeof p?.y === "number").map((p: any) => ({x: p.x, y: p.y}))
+        : [{x: 20, y: 20}, {x: 180, y: 20}, {x: 180, y: 180}, {x: 20, y: 180}],
+      targetFraction: typeof t["targetFraction"] === "number" ? Math.max(0, Math.min(1, t["targetFraction"])) : 0.5,
+    };
+    default: return null;
+  }
+}
+
+// ── Submissions ─────────────────────────────────────────────────
 
 export interface StickerPlaceSubmission {
   type: "sticker-place";
@@ -421,9 +503,7 @@ export interface ShapeSplitSubmission {
   type: "shape-split";
   playerId: string;
   roundIndex: number;
-  /** Two points defining the cut line (each 0-1 in polygon-local coords) */
   cutLine: {a: {x: number; y: number}; b: {x: number; y: number}};
-  /** Normalized area of one side (0-1, the smaller or first side) */
   areaFraction: number;
   submittedAt: number;
 }
@@ -436,12 +516,7 @@ export type MinigameSubmission =
   | TimerStopSubmission
   | ShapeSplitSubmission;
 
-export interface MinigameConfig {
-  roundDurationSec: number;
-  votingDurationSec: number;
-  resultsDurationSec: number;
-  tasks: MinigameTask[];
-}
+// ── Client Actions ──────────────────────────────────────────────
 
 export type MinigameClientAction =
   | { type: "submit-sticker-place"; position: {x: number; y: number}; stickerId: string }
