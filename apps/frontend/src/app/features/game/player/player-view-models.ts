@@ -1,4 +1,4 @@
-import type {StickerCollage, StickerDefinition, StickerPack, SessionPlayer} from '@birthday/shared';
+import type {StickerCollage, StickerDefinition, StickerPack, SessionPlayer, MinigameTask} from '@birthday/shared';
 
 export type VotingVariant = 'active' | 'done' | 'all-done';
 
@@ -18,6 +18,7 @@ export interface VotingViewModel {
 export interface BuildingViewModel {
   roundIndex: number;
   prompt: string;
+  task: MinigameTask | null;
   unlockedStickers: StickerDefinition[];
   stickerCatalog: StickerDefinition[];
   stickerPacks: StickerPack[];

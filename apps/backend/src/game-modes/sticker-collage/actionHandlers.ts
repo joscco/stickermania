@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import type {GameConfig, SessionState, StickerCollage, StickerCollageBuildingState, StickerCollageGameState, StickerCollageResultsState, StickerCollageServerEvent, StickerCollageVotingState, StickerPlacement,} from "@birthday/shared";
+import type {GameConfig, SessionState, StickerCollage, StickerCollageBuildingState, StickerCollageGameState, StickerCollageResultsState, StickerCollageServerEvent, StickerCollageVotingState, StickerPlacement, MinigameClientAction, MinigameSubmission,} from "@birthday/shared";
 import {shouldSkipVoting, transitionToBuilding, transitionToNextRound, transitionToResults, transitionToVoting} from "./roundManager.js";
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -100,6 +100,123 @@ export function skipRound(
 
     buildingPhase.skippedPlayerIds.push(playerId);
     return {stateChanged: true, events: []};
+}
+
+/**
+ * Minigame submission: store the result for the current round.
+ */
+export function submitMinigame(
+    state: SessionState,
+    playerId: string,
+    action: MinigameClientAction,
+    now: number,
+): HandlerResult {
+    const buildingPhase = asBuildingPhase(state.gameState);
+    if (!buildingPhase) {
+        return noChange;
+    }
+
+    const {gameState} = state;
+    const {currentRoundIndex} = gameState;
+    const existing = gameState.minigameSubmissions[currentRoundIndex] ?? [];
+    gameState.minigameSubmissions[currentRoundIndex] = existing.filter(s => s.playerId !== playerId);
+
+    let submission: MinigameSubmission;
+    switch (action.type) {
+        case "submit-sticker-place":
+            submission = {
+                type: "sticker-place",
+                playerId,
+                roundIndex: currentRoundIndex,
+                position: action.position,
+                stickerId: action.stickerId,
+                submittedAt: now,
+            };
+            break;
+        case "submit-drawing":
+            submission = {
+                type: "drawing",
+                playerId,
+                roundIndex: currentRoundIndex,
+                imageDataUrl: action.imageDataUrl,
+                submittedAt: now,
+            };
+            break;
+        case "submit-choice":
+            submission = {
+                type: "choice",
+                playerId,
+                roundIndex: currentRoundIndex,
+                selectedIndices: action.selectedIndices,
+                submittedAt: now,
+            };
+            break;
+        case "submit-number":
+            submission = {
+                type: "number",
+                playerId,
+                roundIndex: currentRoundIndex,
+                value: action.value,
+                submittedAt: now,
+            };
+            break;
+        case "submit-timer":
+            submission = {
+                type: "timer-stop",
+                playerId,
+                roundIndex: currentRoundIndex,
+                elapsedSec: action.elapsedSec,
+                submittedAt: now,
+            };
+            break;
+        case "submit-shape-split":
+            submission = {
+                type: "shape-split",
+                playerId,
+                roundIndex: currentRoundIndex,
+                cutLine: action.cutLine,
+                areaFraction: action.areaFraction,
+                submittedAt: now,
+            };
+            break;
+        default:
+            return noChange;
+    }
+
+    gameState.minigameSubmissions[currentRoundIndex].push(submission);
+
+    // Compatibility: also create a placeholder collage so existing voting/results logic works
+    const existingCollages = gameState.submissions[currentRoundIndex] ?? [];
+    gameState.submissions[currentRoundIndex] = existingCollages.filter((sub: StickerCollage) => sub.playerId !== playerId);
+    const collageId = `minigame_${playerId}_${currentRoundIndex}`;
+
+    let snapshotUrl: string | undefined;
+    if (submission.type === "drawing") {
+        snapshotUrl = submission.imageDataUrl;
+    } else if (submission.type === "sticker-place") {
+        // Simple SVG preview with a dot at the position
+        snapshotUrl = `data:image/svg+xml,${encodeURIComponent(
+            `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><circle cx="${submission.position.x * 2}" cy="${submission.position.y * 2}" r="8" fill="black"/></svg>`
+        )}`;
+    } else if (submission.type === "shape-split") {
+        const {cutLine, areaFraction} = submission;
+        const pct = Math.round(areaFraction * 100);
+        snapshotUrl = `data:image/svg+xml,${encodeURIComponent(
+            `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#f5f5f5"/><line x1="${cutLine.a.x}" y1="${cutLine.a.y}" x2="${cutLine.b.x}" y2="${cutLine.b.y}" stroke="black" stroke-width="2"/><text x="100" y="110" text-anchor="middle" font-size="20" font-family="sans-serif">${pct}%</text></svg>`
+        )}`;
+    }
+
+    const placeholderCollage: StickerCollage = {
+        id: collageId,
+        playerId,
+        roundIndex: currentRoundIndex,
+        placements: [],
+        submittedAt: now,
+        snapshotUrl,
+    };
+    gameState.submissions[currentRoundIndex].push(placeholderCollage);
+
+    return {stateChanged: true, events: [{type: "collage-submitted", playerId, collageId}]};
 }
 
 /**

@@ -4,7 +4,7 @@ import {PlayerConnectingComponent} from './scenes/connecting/player-connecting.c
 import {PlayerReconnectingComponent} from './scenes/reconnecting/player-reconnecting.component';
 import {PlayerDisconnectedComponent} from './scenes/disconnected/player-disconnected.component';
 import {PlayerLobbyWaitingComponent} from './scenes/lobby-waiting/player-lobby-waiting.component';
-import {PlayerBuildingComponent, SubmitCollageEvent} from './scenes/building/player-building.component';
+import {PlayerBuildingComponent, SubmitCollageEvent, MinigameSubmitEvent} from './scenes/building/player-building.component';
 import {PlayerBuildingSubmittedComponent} from './scenes/building-submitted/player-building-submitted.component';
 import {PlayerBuildingSkippedComponent} from './scenes/building-skipped/player-building-skipped.component';
 import {PlayerVotingComponent} from './scenes/voting/player-voting.component';
@@ -175,6 +175,11 @@ export class PlayerComponent implements OnInit, OnDestroy {
     if (event.imageDataUrl) {
       this.uploadSnapshot(event.imageDataUrl);
     }
+  }
+
+  public onSubmitMinigame(event: import("./scenes/building/player-building.component").MinigameSubmitEvent): void {
+    this.audio.playAction();
+    this.stickerService.submitMinigame(event as import("@birthday/shared").MinigameClientAction);
   }
 
   // ── Sound-wrapped actions ────────────────────────────────

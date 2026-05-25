@@ -1,0 +1,11 @@
+<div #wrapper class="relative w-full h-full" style="touch-action: none;">
+  @if (baseImageUrl()) {
+    <img [src]="baseImageUrl()" class="absolute inset-0 w-full h-full object-contain" style="z-index: 0; pointer-events: none;" draggable="false" />
+  }
+  <canvas #drawCanvas class="absolute inset-0 w-full h-full" style="z-index: 1; touch-action: none;"
+    (pointerdown)="painter.pointerDown($event)"
+    (pointermove)="painter.pointerMove($event)"
+    (pointerup)="painter.pointerUp($event)"
+    (pointercancel)="painter.pointerUp($event)"
+  ></canvas>
+</div>

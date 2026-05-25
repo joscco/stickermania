@@ -1,0 +1,19 @@
+<div
+  #board
+  class="w-full h-full relative overflow-hidden"
+  style="background-size: contain; background-position: center; background-repeat: no-repeat;"
+  [style.background-image]="backgroundImage() ? 'url(' + backgroundImage() + ')' : null"
+  (pointerdown)="onBoardPointerDown($event)"
+>
+  @if (stickerName()) {
+    <div
+      data-sticker
+      class="absolute w-16 h-16 -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing"
+      [style.left.%]="position().x"
+      [style.top.%]="position().y"
+      (pointerdown)="onStickerPointerDown($event)"
+    >
+      <app-svg [name]="stickerName()" w="64" h="64" />
+    </div>
+  }
+</div>

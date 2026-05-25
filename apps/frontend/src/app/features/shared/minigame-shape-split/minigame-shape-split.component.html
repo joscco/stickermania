@@ -1,0 +1,40 @@
+<div class="text-center">
+  <div class="text-sm font-medium text-neutral-600 mb-1">Ziel: {{ targetLabel() }}</div>
+  <div class="text-xs text-neutral-400">Ziehe die Punkte, um die Fläche zu teilen</div>
+</div>
+
+<div class="relative w-full max-w-xs aspect-square">
+  <svg #svg viewBox="0 0 200 200" class="w-full h-full" style="touch-action: none;">
+    <!-- Side 1 fill -->
+    @if (side1Path()) {
+      <path [attr.d]="side1Path()" fill="rgba(0,0,0,0.12)" />
+    }
+    <!-- Side 2 fill -->
+    @if (side2Path()) {
+      <path [attr.d]="side2Path()" fill="rgba(0,0,0,0.05)" />
+    }
+
+    <!-- Original polygon outline -->
+    <polygon [attr.points]="polygon().map(p => p.x + ',' + p.y).join(' ')"
+      fill="none" stroke="black" stroke-width="2" />
+
+    <!-- Cut line -->
+    <line [attr.x1]="handleA().x" [attr.y1]="handleA().y"
+          [attr.x2]="handleB().x" [attr.y2]="handleB().y"
+          stroke="black" stroke-width="2" stroke-dasharray="4 2" />
+
+    <!-- Handle A -->
+    <circle [attr.cx]="handleA().x" [attr.cy]="handleA().y" r="8"
+      fill="white" stroke="black" stroke-width="2"
+      class="cursor-grab active:cursor-grabbing"
+      (pointerdown)="onHandleDown('A', $event)" />
+
+    <!-- Handle B -->
+    <circle [attr.cx]="handleB().x" [attr.cy]="handleB().y" r="8"
+      fill="white" stroke="black" stroke-width="2"
+      class="cursor-grab active:cursor-grabbing"
+      (pointerdown)="onHandleDown('B', $event)" />
+  </svg>
+</div>
+
+<button (click)="submit()" class="bg-black text-white py-2.5 px-6 rounded-xl font-semibold shadow active:scale-95 transition-transform">Absenden</button>

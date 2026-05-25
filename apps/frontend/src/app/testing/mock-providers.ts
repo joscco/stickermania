@@ -7,6 +7,7 @@ import type {
   StickerCollageVotingState,
   StickerCollageResultsState,
   SessionState,
+  MinigameTask,
 } from '@birthday/shared';
 import {lobbyPhase, buildingPhase, votingPhase, resultsPhase, nextRoundPhase, makeGameState, makeSessionState, MOCK_SUBMISSIONS} from './mock-data';
 import type {VotingViewModel, VotingVariant, ResultsViewModel, WinnerStep} from '../features/game/player/player-view-models';
@@ -80,6 +81,7 @@ export class MockStickerPlayerService {
   });
 
   readonly currentPrompt = computed(() => this.gameState()?.currentPrompt ?? '');
+  readonly currentTask = computed<MinigameTask | null>(() => this.gameState()?.currentTask ?? null);
   readonly currentRoundIndex = computed(() => this.gameState()?.currentRoundIndex ?? 0);
   readonly phase = computed(() => this.gameState()?.phaseState.phase ?? 'LOBBY');
   readonly stickerCatalog = computed(() => this.gameState()?.stickerCatalog ?? []);
@@ -89,7 +91,9 @@ export class MockStickerPlayerService {
     const playerId = this.sessionStore.playerId();
     const ms = this.gameState();
     if (!playerId || !ms) return false;
-    return (ms.submissions[ms.currentRoundIndex] ?? []).some(s => s.playerId === playerId);
+    const collages = (ms.submissions[ms.currentRoundIndex] ?? []).some(s => s.playerId === playerId);
+    const minigames = (ms.minigameSubmissions[ms.currentRoundIndex] ?? []).some(s => s.playerId === playerId);
+    return collages || minigames;
   });
   readonly hasSkippedThisRound = computed(() => {
     const playerId = this.sessionStore.playerId();
@@ -104,8 +108,9 @@ export class MockStickerPlayerService {
     const activeIds = ms.roundParticipantIds.filter(id => players[id]?.connected);
     if (activeIds.length === 0) return false;
     const submittedIds = new Set((ms.submissions[ms.currentRoundIndex] ?? []).map(s => s.playerId));
+    const minigameIds = new Set((ms.minigameSubmissions[ms.currentRoundIndex] ?? []).map(s => s.playerId));
     const skippedIds = new Set(ps.skippedPlayerIds);
-    return activeIds.every(id => submittedIds.has(id) || skippedIds.has(id));
+    return activeIds.every(id => submittedIds.has(id) || minigameIds.has(id) || skippedIds.has(id));
   });
   readonly currentRoundSubmissions = computed<StickerCollage[]>(() => {
     const ms = this.gameState();
@@ -184,24 +189,36 @@ import {StickerPlayerService} from '../features/game/services/sticker-player.ser
 
 export type MockPhase = 'lobby' | 'building' | 'building-submitted' | 'building-skipped' | 'voting' | 'voting-done' | 'voting-all-done' | 'results' | 'next-round';
 
-export function provideMockState(phase: MockPhase) {
+export const MOCK_TASKS: Record<string, MinigameTask> = {
+  stickerPlace: {type: 'sticker-place', prompt: 'Platziere das Herz!', durationSec: 30, shapePoints: 'sticker-shapes-heart'},
+  drawing: {type: 'drawing', prompt: 'Zeichne einen Bart!', durationSec: 60},
+  choice: {type: 'choice', prompt: 'Wähle deinen Lieblingskäse', durationSec: 30, options: [{label: 'Gouda'}, {label: 'Cheddar'}, {label: 'Brie'}, {label: 'Camembert'}]},
+  number: {type: 'number', prompt: 'Wie viele Kinder?', durationSec: 30, numberConfig: {min: 0, max: 10, default: 2}},
+  timer: {type: 'timer-stop', prompt: 'Stoppe bei 5 Sekunden!', durationSec: 30, timerTarget: 5},
+  shapeSplit: {type: 'shape-split', prompt: 'Teile die Fläche 50:50!', durationSec: 45},
+};
+
+export function provideMockState(phase: MockPhase, taskKey?: keyof typeof MOCK_TASKS) {
   const worldStore = new MockWorldStore();
   const sessionStore = new MockGameSessionStore();
   const submissions = {0: MOCK_SUBMISSIONS} as Record<number, StickerCollage[]>;
 
   let sessionState: SessionState;
+  const task = taskKey ? MOCK_TASKS[taskKey] : null;
   switch (phase) {
     case 'lobby':
       sessionState = makeSessionState(lobbyPhase());
       break;
     case 'building':
-      sessionState = makeSessionState(buildingPhase());
+      sessionState = makeSessionState(buildingPhase(), undefined, task ? {currentTask: task, currentPrompt: task.prompt} : undefined);
       break;
-    case 'building-submitted':
-      sessionState = makeSessionState(buildingPhase(), undefined, { submissions });
+    case 'building-submitted': {
+      const overrides = task ? {currentTask: task, currentPrompt: task.prompt} : undefined;
+      sessionState = makeSessionState(buildingPhase(), undefined, overrides ? {...overrides, submissions} : {submissions});
       break;
+    }
     case 'building-skipped':
-      sessionState = makeSessionState(buildingPhase({skippedPlayerIds: ['player-1']}));
+      sessionState = makeSessionState(buildingPhase({skippedPlayerIds: ['player-1']}), undefined, task ? {currentTask: task, currentPrompt: task.prompt} : undefined);
       break;
     case 'voting':
       sessionState = makeSessionState(votingPhase({

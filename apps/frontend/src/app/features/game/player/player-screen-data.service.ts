@@ -126,6 +126,7 @@ export class PlayerScreenDataService {
     public readonly buildingVm = computed<BuildingViewModel>(() => ({
         roundIndex: this.stickerService.currentRoundIndex(),
         prompt: this.stickerService.currentPrompt(),
+        task: this.stickerService.currentTask(),
         unlockedStickers: this.stickerService.unlockedStickers(),
         stickerCatalog: this.stickerService.stickerCatalog(),
         stickerPacks: this.stickerService.stickerPacks(),
@@ -138,19 +139,31 @@ export class PlayerScreenDataService {
         connectedPlayers: Object.values(this.worldStore.players()).filter(p => p.connected),
     }));
 
-    public readonly buildingSubmittedVm = computed<BuildingSubmittedViewModel>(() => ({
-        allPlayersDone: this.stickerService.allPlayersDone(),
-        players: this.worldStore.players(),
-        roundParticipantIds: this.stickerService.gameState()?.roundParticipantIds ?? [],
-        submittedPlayerIds: new Set((this.stickerService.gameState()?.submissions?.[this.stickerService.currentRoundIndex()] ?? []).map(s => s.playerId)),
-    }));
+    public readonly buildingSubmittedVm = computed<BuildingSubmittedViewModel>(() => {
+        const gs = this.stickerService.gameState();
+        const ri = this.stickerService.currentRoundIndex();
+        const collageIds = new Set((gs?.submissions?.[ri] ?? []).map(s => s.playerId));
+        const minigameIds = new Set((gs?.minigameSubmissions?.[ri] ?? []).map(s => s.playerId));
+        return {
+            allPlayersDone: this.stickerService.allPlayersDone(),
+            players: this.worldStore.players(),
+            roundParticipantIds: gs?.roundParticipantIds ?? [],
+            submittedPlayerIds: new Set([...collageIds, ...minigameIds]),
+        };
+    });
 
-    public readonly buildingSkippedVm = computed<BuildingSkippedViewModel>(() => ({
-        allPlayersDone: this.stickerService.allPlayersDone(),
-        players: this.worldStore.players(),
-        roundParticipantIds: this.stickerService.gameState()?.roundParticipantIds ?? [],
-        submittedPlayerIds: new Set((this.stickerService.gameState()?.submissions?.[this.stickerService.currentRoundIndex()] ?? []).map(s => s.playerId)),
-    }));
+    public readonly buildingSkippedVm = computed<BuildingSkippedViewModel>(() => {
+        const gs = this.stickerService.gameState();
+        const ri = this.stickerService.currentRoundIndex();
+        const collageIds = new Set((gs?.submissions?.[ri] ?? []).map(s => s.playerId));
+        const minigameIds = new Set((gs?.minigameSubmissions?.[ri] ?? []).map(s => s.playerId));
+        return {
+            allPlayersDone: this.stickerService.allPlayersDone(),
+            players: this.worldStore.players(),
+            roundParticipantIds: gs?.roundParticipantIds ?? [],
+            submittedPlayerIds: new Set([...collageIds, ...minigameIds]),
+        };
+    });
 
     public readonly votingDoneVm = computed<VotingDoneViewModel>(() => {
         const gameState = this.stickerService.gameState();

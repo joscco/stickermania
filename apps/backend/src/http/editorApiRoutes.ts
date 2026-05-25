@@ -103,4 +103,32 @@ export async function registerEditorApiRoutes(
     app.get("/api/sticker-packs", async () => {
         return buildPacks(backendConfig.gameConfig.stickerCollage.catalog);
     });
+
+    // ─── Game Config Task Management ─────────────────────────────────
+
+    const configPath = path.resolve(backendConfig.dataRoot, "..", "game.config.public.json");
+
+    app.get("/api/game-config", async () => {
+        try {
+            const raw = fs.readFileSync(configPath, "utf-8");
+            return JSON.parse(raw);
+        } catch {
+            return {error: "Config not found"};
+        }
+    });
+
+    app.post<{Body: {task: import("@birthday/shared").MinigameTask}}>("/api/game-config/tasks", async (request, reply) => {
+        try {
+            const raw = fs.readFileSync(configPath, "utf-8");
+            const config = JSON.parse(raw) as any;
+            if (!config.stickerCollage) config.stickerCollage = {};
+            if (!Array.isArray(config.stickerCollage.tasks)) config.stickerCollage.tasks = [];
+            config.stickerCollage.tasks.push(request.body.task);
+            fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+            return {ok: true, taskCount: config.stickerCollage.tasks.length};
+        } catch (err) {
+            reply.status(500);
+            return {error: String(err)};
+        }
+    });
 }

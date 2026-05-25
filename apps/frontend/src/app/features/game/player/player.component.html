@@ -54,6 +54,7 @@
         <app-player-building
           [roundIndex]="screenData.buildingVm().roundIndex"
           [prompt]="screenData.buildingVm().prompt"
+          [task]="screenData.buildingVm().task"
           [stickerCatalog]="screenData.buildingVm().stickerCatalog"
           [stickerPacks]="screenData.buildingVm().stickerPacks"
           [unlockedPackIds]="screenData.buildingVm().unlockedPackIds"
@@ -61,6 +62,7 @@
           [maxStickersOnCanvas]="screenData.buildingVm().maxStickersOnCanvas"
           (skipRound)="skipRoundWithSound()"
           (submitCollage)="submitCollageWithSound($event)"
+          (submitMinigame)="onSubmitMinigame($event)"
         />
       }
       @case (PlayerScreen.BUILDING_SUBMITTED) {

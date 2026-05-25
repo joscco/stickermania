@@ -39,6 +39,38 @@
         ]
       }
     ],
+    "tasks": [
+      {
+        "type": "sticker-place",
+        "prompt": "Platziere ein Herz auf dem Bild",
+        "durationSec": 30,
+        "shapePoints": "sticker-shapes-heart"
+      },
+      {
+        "type": "number",
+        "prompt": "Wie viele Kinder möchtest du maximal haben?",
+        "durationSec": 30,
+        "numberConfig": {"min": 0, "max": 10, "default": 2}
+      },
+      {
+        "type": "timer-stop",
+        "prompt": "Stopp die Uhr bei exakt 5 Sekunden!",
+        "durationSec": 30,
+        "timerTarget": 5
+      },
+      {
+        "type": "shape-split",
+        "prompt": "Teile das Rechteck 50:50!",
+        "durationSec": 45,
+        "polygon": [
+          {"x": 20, "y": 20},
+          {"x": 180, "y": 20},
+          {"x": 180, "y": 180},
+          {"x": 20, "y": 180}
+        ],
+        "targetFraction": 0.5
+      }
+    ],
     "catalog": {
       "packs": [
         {

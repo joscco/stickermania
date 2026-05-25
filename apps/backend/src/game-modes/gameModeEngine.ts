@@ -28,7 +28,7 @@ export interface GameEngine {
 
     applyAction(args: {
         sessionState: SessionState;
-        action: import("@birthday/shared").StickerCollageClientAction;
+        action: import("@birthday/shared").GameClientAction;
         context: {sessionId: string; playerId: string; clientId: string; clientKind: import("@birthday/shared").ClientKind; now: number};
     }): GameActionResult;
 

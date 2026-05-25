@@ -23,6 +23,11 @@ function setPrompt(gameState: StickerCollageGameState, config: StickerCollageGam
 
 // ─── Phase transitions ──────────────────────────────────────────
 
+function pickRandomTask(config: StickerCollageGameConfig): import("@birthday/shared").MinigameTask | null {
+    if (config.tasks.length === 0) return null;
+    return config.tasks[Math.floor(Math.random() * config.tasks.length)] ?? null;
+}
+
 export function transitionToBuilding(
     state: SessionState,
     config: StickerCollageGameConfig,
@@ -35,6 +40,9 @@ export function transitionToBuilding(
     gameState.roundStartedAt = now;
     setPrompt(gameState, config, chosenPrompt ?? pickUnusedPrompt(config, gameState));
 
+    const task = pickRandomTask(config);
+    gameState.currentTask = task;
+
     gameState.roundParticipantIds = Object.values(state.players)
         .filter(player => player.connected)
         .map(player => player.id);
@@ -42,10 +50,13 @@ export function transitionToBuilding(
     if (!gameState.submissions[gameState.currentRoundIndex]) {
         gameState.submissions[gameState.currentRoundIndex] = [];
     }
+    if (!gameState.minigameSubmissions[gameState.currentRoundIndex]) {
+        gameState.minigameSubmissions[gameState.currentRoundIndex] = [];
+    }
 
     gameState.phaseState = {
         phase: "BUILDING",
-        roundEndsAt: now + config.roundDurationSec * 1000,
+        roundEndsAt: now + (task?.durationSec ?? config.roundDurationSec) * 1000,
         skippedPlayerIds: [],
     };
 }
@@ -56,7 +67,8 @@ export function transitionToBuilding(
  */
 export function shouldSkipVoting(gameState: StickerCollageGameState): boolean {
     const currentSubmissions = gameState.submissions[gameState.currentRoundIndex] ?? [];
-    return currentSubmissions.length <= 1;
+    const currentMinigames = gameState.minigameSubmissions[gameState.currentRoundIndex] ?? [];
+    return (currentSubmissions.length + currentMinigames.length) <= 1;
 }
 
 /**

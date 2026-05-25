@@ -3,6 +3,7 @@ import type {
   StickerCollageClientAction, StickerCollageGameState, StickerCollage,
   StickerPlacement, StickerPack,
   StickerCollageBuildingState, StickerCollageVotingState, StickerCollageResultsState,
+  MinigameClientAction, MinigameTask,
 } from "@birthday/shared";
 import {GameSessionStore} from '../../../core/challenge.store';
 import {WorldStore} from '../../../core/world.store';
@@ -36,6 +37,7 @@ export class StickerPlayerService {
   // ─── General state ───────────────────────────────────────────
 
   public readonly currentPrompt = computed(() => this.gameState()?.currentPrompt ?? "");
+  public readonly currentTask = computed<MinigameTask | null>(() => this.gameState()?.currentTask ?? null);
   public readonly currentRecommendedPackIds = computed(() => this.gameState()?.currentRecommendedPackIds ?? []);
   public readonly currentRoundIndex = computed(() => this.gameState()?.currentRoundIndex ?? 0);
   public readonly phase = computed(() => this.gameState()?.phaseState.phase ?? "LOBBY");
@@ -49,7 +51,9 @@ export class StickerPlayerService {
     const playerId = this.sessionStore.playerId();
     const ms = this.gameState();
     if (!playerId || !ms) return false;
-    return (ms.submissions[ms.currentRoundIndex] ?? []).some(s => s.playerId === playerId);
+    const collages = (ms.submissions[ms.currentRoundIndex] ?? []).some(s => s.playerId === playerId);
+    const minigames = (ms.minigameSubmissions[ms.currentRoundIndex] ?? []).some(s => s.playerId === playerId);
+    return collages || minigames;
   });
 
   public readonly hasSkippedThisRound = computed<boolean>(() => {
@@ -67,8 +71,9 @@ export class StickerPlayerService {
     const activeIds = ms.roundParticipantIds.filter(id => players[id]?.connected);
     if (activeIds.length === 0) return false;
     const submittedIds = new Set((ms.submissions[ms.currentRoundIndex] ?? []).map(s => s.playerId));
+    const minigameIds = new Set((ms.minigameSubmissions[ms.currentRoundIndex] ?? []).map(s => s.playerId));
     const skippedIds = new Set(ps.skippedPlayerIds);
-    return activeIds.every(id => submittedIds.has(id) || skippedIds.has(id));
+    return activeIds.every(id => submittedIds.has(id) || minigameIds.has(id) || skippedIds.has(id));
   });
 
   // ─── Voting phase ────────────────────────────────────────────
@@ -166,6 +171,10 @@ export class StickerPlayerService {
 
   public submitCollage(placements: StickerPlacement[]): void {
     this.sendAction({type: "submit-collage", placements});
+  }
+
+  public submitMinigame(action: MinigameClientAction): void {
+    this.wsService.send({type: "game-action", action});
   }
 
   public skipRound(): void {

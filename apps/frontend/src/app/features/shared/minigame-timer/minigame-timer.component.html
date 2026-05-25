@@ -1,0 +1,17 @@
+<div class="text-6xl font-mono font-bold tabular-nums text-neutral-900">{{ displayTime() }}</div>
+
+<div class="flex gap-3">
+  @if (!started() && !stopped()) {
+    <button (click)="start()" class="bg-black text-white py-2.5 px-6 rounded-xl font-semibold shadow active:scale-95 transition-transform">Start</button>
+  }
+  @if (started() && !stopped()) {
+    <button (click)="stop()" class="bg-black text-white py-2.5 px-6 rounded-xl font-semibold shadow active:scale-95 transition-transform">Stopp</button>
+  }
+  @if (stopped()) {
+    <button (click)="reset()" class="bg-neutral-200 text-neutral-700 py-2.5 px-6 rounded-xl font-semibold active:scale-95 transition-transform">Nochmal</button>
+  }
+</div>
+
+@if (stopped()) {
+  <div class="text-lg font-semibold text-neutral-800">{{ deviation().toFixed(2) }}s Abweichung</div>
+}

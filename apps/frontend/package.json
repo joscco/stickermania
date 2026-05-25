@@ -6,6 +6,7 @@
     "sprite:watch": "node scripts/build-sprite.mjs --watch",
     "check-stickers": "node scripts/check-sticker-assets.mjs",
     "prebuild": "node scripts/build-sprite.mjs && node scripts/check-sticker-assets.mjs",
+    "start": "ng serve --project frontend --configuration dev-tools",
     "dev": "ng serve --project frontend --configuration development",
     "dev:tools": "ng serve --project frontend --configuration dev-tools",
     "build": "ng build --project frontend --configuration production",

@@ -20,6 +20,7 @@ export interface StickerCollageGameConfig {
     maxStickersOnCanvas: number;
     votesPerPlayer: number;
     prompts: PromptConfig[];
+    tasks: MinigameTask[];
     promptChoiceCount: number;
     packUnlockChoiceCount: number;
     catalog: StickerCatalogConfig;
@@ -76,6 +77,35 @@ function parsePrompts(raw: unknown): PromptConfig[] {
     });
 }
 
+function parseTasks(raw: unknown): MinigameTask[] {
+    if (!Array.isArray(raw)) return [];
+    return raw.map((t: any): MinigameTask => {
+        const base: MinigameTask = {
+            type: (t?.type === "sticker-place" || t?.type === "drawing" || t?.type === "choice" || t?.type === "number" || t?.type === "timer-stop" || t?.type === "shape-split") ? t.type : "choice",
+            prompt: typeof t?.prompt === "string" ? t.prompt : "",
+            durationSec: typeof t?.durationSec === "number" ? t.durationSec : 60,
+        };
+        if (typeof t?.baseImageUrl === "string") base.baseImageUrl = t.baseImageUrl;
+        if (typeof t?.shapePoints === "string") base.shapePoints = t.shapePoints;
+        if (Array.isArray(t?.options)) base.options = t.options.map((o: any) => ({label: String(o?.label ?? ""), emoji: typeof o?.emoji === "string" ? o.emoji : undefined}));
+        if (t?.numberConfig && typeof t.numberConfig === "object") {
+            base.numberConfig = {
+                min: typeof t.numberConfig.min === "number" ? t.numberConfig.min : 1,
+                max: typeof t.numberConfig.max === "number" ? t.numberConfig.max : 100,
+                default: typeof t.numberConfig.default === "number" ? t.numberConfig.default : 50,
+            };
+        }
+        if (typeof t?.timerTarget === "number") base.timerTarget = t.timerTarget;
+        if (Array.isArray(t?.polygon)) {
+            base.polygon = t.polygon
+                .filter((p: any) => typeof p?.x === "number" && typeof p?.y === "number")
+                .map((p: any) => ({x: p.x, y: p.y}));
+        }
+        if (typeof t?.targetFraction === "number") base.targetFraction = Math.max(0, Math.min(1, t.targetFraction));
+        return base;
+    });
+}
+
 export function parseGameConfig(raw: unknown): GameConfig {
     const r = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
     const sc = parseSubObject(r, "stickerCollage");
@@ -91,6 +121,7 @@ export function parseGameConfig(raw: unknown): GameConfig {
             maxStickersOnCanvas: typeof sc["maxStickersOnCanvas"] === "number" ? sc["maxStickersOnCanvas"] : 12,
             votesPerPlayer: typeof sc["votesPerPlayer"] === "number" ? sc["votesPerPlayer"] : 3,
             prompts: parsePrompts(sc["prompts"]),
+            tasks: parseTasks(sc["tasks"]),
             promptChoiceCount: typeof sc["promptChoiceCount"] === "number" ? sc["promptChoiceCount"] : 3,
             packUnlockChoiceCount: typeof sc["packUnlockChoiceCount"] === "number" ? sc["packUnlockChoiceCount"] : 3,
             catalog: parseCatalogConfig(sc["catalog"] ?? null),
@@ -261,12 +292,14 @@ export type StickerCollagePhaseState =
 export interface StickerCollageGameState {
     currentRoundIndex: number;
     currentPrompt: string;
+    currentTask: MinigameTask | null;
     currentRecommendedPackIds: string[];
     roundStartedAt: number | null;
     stickerCatalog: StickerDefinition[];
     stickerPacks: StickerPack[];
     unlockedPackIds: string[];
     submissions: Record<number, StickerCollage[]>;
+    minigameSubmissions: Record<number, MinigameSubmission[]>;
     promptHistory: Record<number, string>;
     roundParticipantIds: string[];
     maxStickersOnCanvas: number;
@@ -302,9 +335,11 @@ export type StickerCollageServerEvent =
     | { type: "prompt-chosen"; prompt: string }
     | { type: "round-ended"; roundIndex: number; results: StickerCollageVoteResult[] };
 
+export type GameClientAction = StickerCollageClientAction | MinigameClientAction;
+
 export type GameClientEnvelope = {
     type: "game-action";
-    action: StickerCollageClientAction;
+    action: GameClientAction;
 };
 
 export type GameServerEnvelope = {
@@ -315,4 +350,116 @@ export type GameServerEnvelope = {
 
 export type ClientToServerMessage = SessionClientToServerMessage | GameClientEnvelope;
 export type ServerToClientMessage = SessionServerToClientMessage | GameServerEnvelope;
+
+// ─── Minigame types (new) ───────────────────────────────────────
+
+export type MinigameTaskType =
+  | "sticker-place"
+  | "drawing"
+  | "choice"
+  | "number"
+  | "timer-stop"
+  | "shape-split";
+
+export interface MinigameTask {
+  type: MinigameTaskType;
+  prompt: string;
+  baseImageUrl?: string;
+  shapePoints?: string;
+  options?: Array<{label: string; emoji?: string}>;
+  numberConfig?: {min: number; max: number; default: number};
+  timerTarget?: number;
+  /** Polygon vertices for shape-split tasks (viewBox-local coords) */
+  polygon?: Array<{x: number; y: number}>;
+  /** Target fraction (0-1) for shape-split tasks */
+  targetFraction?: number;
+  durationSec: number;
+}
+
+export interface StickerPlaceSubmission {
+  type: "sticker-place";
+  playerId: string;
+  roundIndex: number;
+  position: {x: number; y: number};
+  stickerId: string;
+  submittedAt: number;
+}
+
+export interface DrawingSubmission {
+  type: "drawing";
+  playerId: string;
+  roundIndex: number;
+  imageDataUrl: string;
+  submittedAt: number;
+}
+
+export interface ChoiceSubmission {
+  type: "choice";
+  playerId: string;
+  roundIndex: number;
+  selectedIndices: number[];
+  submittedAt: number;
+}
+
+export interface NumberSubmission {
+  type: "number";
+  playerId: string;
+  roundIndex: number;
+  value: number;
+  submittedAt: number;
+}
+
+export interface TimerStopSubmission {
+  type: "timer-stop";
+  playerId: string;
+  roundIndex: number;
+  elapsedSec: number;
+  submittedAt: number;
+}
+
+export interface ShapeSplitSubmission {
+  type: "shape-split";
+  playerId: string;
+  roundIndex: number;
+  /** Two points defining the cut line (each 0-1 in polygon-local coords) */
+  cutLine: {a: {x: number; y: number}; b: {x: number; y: number}};
+  /** Normalized area of one side (0-1, the smaller or first side) */
+  areaFraction: number;
+  submittedAt: number;
+}
+
+export type MinigameSubmission =
+  | StickerPlaceSubmission
+  | DrawingSubmission
+  | ChoiceSubmission
+  | NumberSubmission
+  | TimerStopSubmission
+  | ShapeSplitSubmission;
+
+export interface MinigameConfig {
+  roundDurationSec: number;
+  votingDurationSec: number;
+  resultsDurationSec: number;
+  tasks: MinigameTask[];
+}
+
+export type MinigameClientAction =
+  | { type: "submit-sticker-place"; position: {x: number; y: number}; stickerId: string }
+  | { type: "submit-drawing"; imageDataUrl: string }
+  | { type: "submit-choice"; selectedIndices: number[] }
+  | { type: "submit-number"; value: number }
+  | { type: "submit-timer"; elapsedSec: number }
+  | { type: "submit-shape-split"; cutLine: {a: {x: number; y: number}; b: {x: number; y: number}}; areaFraction: number }
+  | { type: "skip-round" }
+  | { type: "cast-vote"; submissionId: string }
+  | { type: "done-voting" }
+  | { type: "ready-to-advance" }
+  | { type: "start-game" }
+  | { type: "end-round-early" }
+  | { type: "end-voting-early" }
+  | { type: "advance-from-results" };
+
+export type MinigameServerEvent =
+  | StickerCollageServerEvent
+  | { type: "task-changed"; task: MinigameTask };
 

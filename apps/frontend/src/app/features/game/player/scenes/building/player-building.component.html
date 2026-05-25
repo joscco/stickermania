@@ -6,34 +6,111 @@
     class="w-full px-4"
   />
 
-  @if (stickerCatalog().length > 0) {
-    <app-sticker-editor
-      #editor
-      [stickerCatalog]="stickerCatalog()"
-      [stickerPacks]="stickerPacks()"
-      [unlockedPackIds]="unlockedPackIds()"
-      [recommendedPackIds]="recommendedPackIds()"
-      [maxStickers]="maxStickersOnCanvas()"
-      class="flex-1 min-h-0 w-full"
-    />
+  @switch (task()?.type) {
+    @case ('sticker-place') {
+      <app-sticker-board
+        #stickerBoard
+        class="flex-1 min-h-0 w-full"
+        [backgroundImage]="task()?.baseImageUrl ?? null"
+        [stickerName]="'sprite:#' + (task()?.shapePoints ?? 'sticker-shapes-heart')"
+      />
+      <div class="shrink-0 px-4 py-3 flex gap-2 w-full">
+        <button (click)="skipRound.emit()" class="flex-1 bg-neutral-200 text-neutral-700 py-2.5 rounded-xl font-semibold active:scale-95 transition-transform">Uberspringen</button>
+        <button (click)="onSubmitStickerPlace()" class="flex-1 bg-black text-white py-2.5 rounded-xl font-semibold shadow active:scale-95 transition-transform">Absenden</button>
+      </div>
+    }
+    @case ('drawing') {
+      <app-drawing-canvas-bg
+        #drawingCanvas
+        class="flex-1 min-h-0 w-full"
+        [baseImageUrl]="task()?.baseImageUrl ?? null"
+        (submitted)="onSubmitDrawing($event)"
+      />
+      <div class="shrink-0 px-4 py-3 flex gap-2 w-full">
+        <button (click)="drawingCanvas.clear()" class="flex-1 bg-neutral-200 text-neutral-700 py-2.5 rounded-xl font-semibold active:scale-95 transition-transform">Löschen</button>
+        <button (click)="skipRound.emit()" class="flex-1 bg-neutral-200 text-neutral-700 py-2.5 rounded-xl font-semibold active:scale-95 transition-transform">Uberspringen</button>
+        <button (click)="drawingCanvas.submit()" class="flex-1 bg-black text-white py-2.5 rounded-xl font-semibold shadow active:scale-95 transition-transform">Absenden</button>
+      </div>
+    }
+    @case ('choice') {
+      <div class="flex-1 flex flex-col items-center justify-center w-full">
+        <app-minigame-choice
+          class="w-full"
+          [options]="task()?.options ?? []"
+          (submitted)="onSubmitChoice($event)"
+        />
+      </div>
+      <div class="shrink-0 px-4 py-3 w-full">
+        <button (click)="skipRound.emit()" class="w-full bg-neutral-200 text-neutral-700 py-2.5 rounded-xl font-semibold active:scale-95 transition-transform">Uberspringen</button>
+      </div>
+    }
+    @case ('number') {
+      <div class="flex-1 flex flex-col items-center justify-center w-full">
+        <app-minigame-number
+          [min]="task()?.numberConfig?.min ?? 1"
+          [max]="task()?.numberConfig?.max ?? 100"
+          [default]="task()?.numberConfig?.default ?? 50"
+          (submitted)="onSubmitNumber($event)"
+        />
+      </div>
+      <div class="shrink-0 px-4 py-3 w-full">
+        <button (click)="skipRound.emit()" class="w-full bg-neutral-200 text-neutral-700 py-2.5 rounded-xl font-semibold active:scale-95 transition-transform">Uberspringen</button>
+      </div>
+    }
+    @case ('timer-stop') {
+      <div class="flex-1 flex flex-col items-center justify-center w-full">
+        <app-minigame-timer
+          [targetSec]="task()?.timerTarget ?? 5"
+          (submitted)="onSubmitTimer($event)"
+        />
+      </div>
+      <div class="shrink-0 px-4 py-3 w-full">
+        <button (click)="skipRound.emit()" class="w-full bg-neutral-200 text-neutral-700 py-2.5 rounded-xl font-semibold active:scale-95 transition-transform">Uberspringen</button>
+      </div>
+    }
+    @case ('shape-split') {
+      <div class="flex-1 flex flex-col items-center justify-center w-full">
+        <app-minigame-shape-split
+          [targetLabel]="'50:50'"
+          (submitted)="onSubmitShapeSplit($event)"
+        />
+      </div>
+      <div class="shrink-0 px-4 py-3 w-full">
+        <button (click)="skipRound.emit()" class="w-full bg-neutral-200 text-neutral-700 py-2.5 rounded-xl font-semibold active:scale-95 transition-transform">Uberspringen</button>
+      </div>
+    }
+    @default {
+      <!-- Fallback to original sticker collage editor -->
+      @if (stickerCatalog().length > 0) {
+        <app-sticker-editor
+          #editor
+          [stickerCatalog]="stickerCatalog()"
+          [stickerPacks]="stickerPacks()"
+          [unlockedPackIds]="unlockedPackIds()"
+          [recommendedPackIds]="recommendedPackIds()"
+          [maxStickers]="maxStickersOnCanvas()"
+          class="flex-1 min-h-0 w-full"
+        />
 
-    <app-sticker-editor-toolbar
-      animOnInit="opacity"
-      [placementCount]="editor.placements().length"
-      [maxStickers]="maxStickersOnCanvas()"
-      [canAddMore]="editor.placements().length < maxStickersOnCanvas()"
-      [showPicker]="editor.showPicker()"
-      [showGameButtons]="true"
-      (clearAll)="editor.clearPlacements()"
-      (togglePicker)="editor.showPicker() ? editor.onPickerClose() : editor.showPicker.set(true)"
-      (skip)="skipRound.emit()"
-      (submit)="onSubmit()"
-      class="pt-1 w-full px-2"
-    />
-  } @else {
-    <div class="h-full flex items-center justify-center gap-2 text-neutral-400 text-base">
-      <div class="w-4 h-4 border-2 border-neutral-200 border-t-neutral-400 rounded-full animate-spin"></div>
-      Sticker werden geladen...
-    </div>
+        <app-sticker-editor-toolbar
+          animOnInit="opacity"
+          [placementCount]="editor.placements().length"
+          [maxStickers]="maxStickersOnCanvas()"
+          [canAddMore]="editor.placements().length < maxStickersOnCanvas()"
+          [showPicker]="editor.showPicker()"
+          [showGameButtons]="true"
+          (clearAll)="editor.clearPlacements()"
+          (togglePicker)="editor.showPicker() ? editor.onPickerClose() : editor.showPicker.set(true)"
+          (skip)="skipRound.emit()"
+          (submit)="onSubmitStickerCollage()"
+          class="pt-1 w-full px-2"
+        />
+      } @else {
+        <div class="h-full flex items-center justify-center gap-2 text-neutral-400 text-base">
+          <div class="w-4 h-4 border-2 border-neutral-200 border-t-neutral-400 rounded-full animate-spin"></div>
+          Sticker werden geladen...
+        </div>
+      }
+    }
   }
 </div>

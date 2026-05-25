@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
-import type {GameConfig, SessionState, StickerCollageGameState, StickerCollageServerEvent, StickerDefinition,} from "@birthday/shared";
+import type {GameConfig, SessionState, StickerCollageGameState, StickerCollageServerEvent, StickerDefinition, MinigameClientAction,} from "@birthday/shared";
 import type {GameActionResult, GameEngine} from "../gameModeEngine.js";
 import {buildCatalog, buildPacks} from "./stickerCatalog.js";
 import {transitionToNextRound, transitionToResults, transitionToVoting, shouldSkipVoting} from "./roundManager.js";
-import {advanceToNextRound, boardAdvancesToNextRound, castVote, endBuildingPhaseEarly, endVotingPhaseEarly, markPlayerDoneVoting, skipRound, startGame, submitCollage, winnerPicksPrompt, winnerUnlocksPack,} from "./actionHandlers.js";
+import {advanceToNextRound, boardAdvancesToNextRound, castVote, endBuildingPhaseEarly, endVotingPhaseEarly, markPlayerDoneVoting, skipRound, startGame, submitCollage, winnerPicksPrompt, winnerUnlocksPack, submitMinigame,} from "./actionHandlers.js";
 
 /**
  * Merge hitbox polygon data from hitbox-data.json into the sticker catalog built from config.
@@ -49,12 +49,14 @@ export class StickerCollageEngine implements GameEngine {
         return {
             currentRoundIndex: 0,
             currentPrompt: "",
+            currentTask: null,
             currentRecommendedPackIds: [],
             roundStartedAt: null,
             stickerCatalog: buildCatalogWithHitboxes(this.config),
             stickerPacks: packs,
             unlockedPackIds,
             submissions: {},
+            minigameSubmissions: {},
             promptHistory: {},
             roundParticipantIds: [],
             maxStickersOnCanvas: this.config.stickerCollage.maxStickersOnCanvas,
@@ -100,7 +102,7 @@ export class StickerCollageEngine implements GameEngine {
 
     public applyAction(args: {
         sessionState: SessionState;
-        action: import("@birthday/shared").StickerCollageClientAction;
+        action: import("@birthday/shared").GameClientAction;
         context: {sessionId: string; playerId: string; clientId: string; clientKind: import("@birthday/shared").ClientKind; now: number};
     }): GameActionResult {
         const result = this.dispatchAction(args.sessionState, args.action, args.context);
@@ -109,7 +111,7 @@ export class StickerCollageEngine implements GameEngine {
 
     private dispatchAction(
         state: SessionState,
-        action: import("@birthday/shared").StickerCollageClientAction,
+        action: import("@birthday/shared").GameClientAction,
         context: {playerId: string; now: number},
     ) {
         const {playerId, now} = context;
@@ -117,7 +119,7 @@ export class StickerCollageEngine implements GameEngine {
         switch (action.type) {
             case "submit-collage":       return submitCollage(state, playerId, action.placements, this.config, now);
             case "skip-round":           return skipRound(state, playerId);
-            case "cast-vote":            return castVote(state, playerId, action.collageId, this.config);
+            case "cast-vote":            return castVote(state, playerId, "collageId" in action ? action.collageId : (action as any).submissionId ?? "", this.config);
             case "done-voting":          return markPlayerDoneVoting(state, playerId);
             case "ready-to-advance":     return advanceToNextRound(state, playerId, this.config, now);
             case "start-game":           return startGame(state, this.config, now);
@@ -126,6 +128,12 @@ export class StickerCollageEngine implements GameEngine {
             case "pick-prompt":          return winnerPicksPrompt(state, playerId, action.prompt);
             case "unlock-pack":          return winnerUnlocksPack(state, playerId, action.packId);
             case "advance-from-results": return boardAdvancesToNextRound(state, this.config, now);
+            case "submit-sticker-place":
+            case "submit-drawing":
+            case "submit-choice":
+            case "submit-number":
+            case "submit-timer":
+            case "submit-shape-split":   return submitMinigame(state, playerId, action as MinigameClientAction, now);
             default:                     return {stateChanged: false, events: []};
         }
     }
