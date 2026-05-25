@@ -203,10 +203,17 @@
           <div class="bg-neutral-100 rounded-xl border border-neutral-200 overflow-hidden" style="height: 260px;">
             <svg #polyCanvas viewBox="0 0 200 200" class="w-full h-full" style="touch-action: none;"
                  (pointerdown)="onPolyCanvasClick($event)">
+              <!-- Grid -->
+              <defs>
+                <pattern id="polyGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e5e5e5" stroke-width="0.5"/>
+                </pattern>
+              </defs>
+              <rect width="200" height="200" fill="url(#polyGrid)" />
               <!-- Background sprite -->
               @if (backgroundSvg(); as bg) {
                 @let bgId = bg.startsWith('sprite:#') ? bg.substring(8) : bg;
-                <use [attr.href]="'#' + bgId" x="0" y="0" width="200" height="200" style="pointer-events: none; opacity: 0.3;" />
+                <use [attr.href]="'#' + bgId" x="0" y="0" width="200" height="200" style="pointer-events: none; opacity: 0.15;" />
               }
               <!-- Polygon fill -->
               @if (polygon().length >= 3) {
@@ -217,10 +224,13 @@
               <!-- Polygon points -->
               @for (pt of polygon(); track $index) {
                 <circle class="poly-point"
-                  [attr.cx]="pt.x" [attr.cy]="pt.y" r="6"
+                  [attr.cx]="pt.x" [attr.cy]="pt.y" r="4"
                   fill="white" stroke="black" stroke-width="2"
                   style="cursor: grab;"
-                  (pointerdown)="onPolyPointDown($index, $event)" />
+                  (pointerdown)="onPolyPointDown($index, $event)"
+                  (dblclick)="onPolyPointDblClick($index, $event)" />
+                <text [attr.x]="pt.x + 5" [attr.y]="pt.y - 5" font-size="6" fill="#666"
+                  style="pointer-events: none;">{{ $index + 1 }}</text>
               }
             </svg>
           </div>
@@ -251,6 +261,22 @@
           <label class="text-sm font-semibold text-neutral-700">Abstimmungsfrage (Runde 2)</label>
           <input type="text" [value]="voteQuestion()" (input)="voteQuestion.set(($any($event.target).value))"
             class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" placeholder="z.B. Welches Gericht hat mehr Kalorien?" />
+        </div>
+      }
+
+      <!-- ═══ Thesis: option labels ═══ -->
+      @if (selectedType() === 'thesis') {
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1">
+            <label class="text-xs text-neutral-500">Option A (links)</label>
+            <input type="text" [value]="thesisOptionA()" (input)="thesisOptionA.set(($any($event.target).value))"
+              class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" placeholder="Stimme zu" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs text-neutral-500">Option B (rechts)</label>
+            <input type="text" [value]="thesisOptionB()" (input)="thesisOptionB.set(($any($event.target).value))"
+              class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" placeholder="Stimme nicht zu" />
+          </div>
         </div>
       }
 
@@ -329,6 +355,8 @@
                 <div class="flex items-center justify-center h-full">
                   <app-minigame-thesis
                     [title]="$any(previewTask())?.['title'] ?? ''"
+                    [optionA]="$any(previewTask())?.['optionA'] ?? 'Stimme zu'"
+                    [optionB]="$any(previewTask())?.['optionB'] ?? 'Stimme nicht zu'"
                   />
                 </div>
               }

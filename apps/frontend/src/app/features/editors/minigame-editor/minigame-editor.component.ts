@@ -69,6 +69,8 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
   readonly backgroundSvg = signal("");
   readonly goal = signal("");
   readonly voteQuestion = signal("");
+  readonly thesisOptionA = signal("");
+  readonly thesisOptionB = signal("");
   readonly targetSec = signal(5);
   readonly numberMin = signal(1);
   readonly numberMax = signal(100);
@@ -140,6 +142,8 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
     this.backgroundSvg.set(task['backgroundSvg'] ?? "");
     this.goal.set(task['goal'] ?? "");
     this.voteQuestion.set(task['voteQuestion'] ?? "");
+    this.thesisOptionA.set(task['optionA'] ?? "");
+    this.thesisOptionB.set(task['optionB'] ?? "");
     this.polygon.set(
       Array.isArray(task['polygon']) && task['polygon'].length > 0
         ? task['polygon']
@@ -163,6 +167,8 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
     this.backgroundSvg.set("");
     this.goal.set("");
     this.voteQuestion.set("");
+    this.thesisOptionA.set("");
+    this.thesisOptionB.set("");
     this.polygon.set(DEFAULT_POLYGON);
     this.targetSec.set(5);
     this.numberMin.set(1);
@@ -211,9 +217,13 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
 
   onPolyCanvasClick(e: PointerEvent): void {
     if ((e.target as HTMLElement).closest(".poly-point")) return;
+    if (this.draggingPolyIndex() !== null) return;
     const pt = this.svgPointFromEvent(e);
     if (!pt) return;
-    this.polygon.update(arr => [...arr, pt]);
+    // Prevent points too close together
+    const tooClose = this.polygon().some(p => Math.hypot(p.x - pt.x, p.y - pt.y) < 4);
+    if (tooClose) return;
+    this.polygon.update(arr => [...arr, {x: Math.round(pt.x * 10) / 10, y: Math.round(pt.y * 10) / 10}]);
   }
 
   onPolyPointDown(index: number, e: PointerEvent): void {
@@ -221,6 +231,11 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
     e.stopPropagation();
     this.draggingPolyIndex.set(index);
     (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+  }
+
+  onPolyPointDblClick(index: number, e: MouseEvent): void {
+    e.stopPropagation();
+    this.removePolygonPoint(index);
   }
 
   private onPolyPointerMove(e: PointerEvent): void {
@@ -262,6 +277,10 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
     }
     if (this.selectedType() === "text-answer") {
       task['voteQuestion'] = this.voteQuestion();
+    }
+    if (this.selectedType() === "thesis") {
+      if (this.thesisOptionA()) task['optionA'] = this.thesisOptionA();
+      if (this.thesisOptionB()) task['optionB'] = this.thesisOptionB();
     }
     if (this.selectedType() === "timer-stop") task['targetSec'] = this.targetSec();
     if (this.selectedType() === "number") {

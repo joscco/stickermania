@@ -186,18 +186,6 @@ function lineIntersect(
   };
 }
 
-function pointInPolygon(pt: Point, poly: Point[]): boolean {
-  let inside = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const xi = poly[i].x, yi = poly[i].y;
-    const xj = poly[j].x, yj = poly[j].y;
-    if (((yi > pt.y) !== (yj > pt.y)) && (pt.x < (xj - xi) * (pt.y - yi) / (yj - yi) + xi)) {
-      inside = !inside;
-    }
-  }
-  return inside;
-}
-
 function polygonArea(poly: Point[]): number {
   let area = 0;
   for (let i = 0; i < poly.length; i++) {

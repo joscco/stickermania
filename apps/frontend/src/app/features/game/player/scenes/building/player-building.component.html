@@ -98,6 +98,8 @@
       <div class="flex-1 flex flex-col items-center justify-center w-full">
         <app-minigame-thesis
           [title]="$any(task())?.['title'] ?? ''"
+          [optionA]="$any(task())?.['optionA'] ?? 'Stimme zu'"
+          [optionB]="$any(task())?.['optionB'] ?? 'Stimme nicht zu'"
           (submitted)="onSubmitThesis($event)"
         />
       </div>

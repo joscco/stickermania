@@ -1,4 +1,4 @@
-import {Component, input, output, signal} from "@angular/core";
+import {Component, input, output, signal, computed} from "@angular/core";
 import {CommonModule} from "@angular/common";
 
 @Component({
@@ -10,10 +10,18 @@ import {CommonModule} from "@angular/common";
 })
 export class MinigameThesisComponent {
   readonly title = input<string>("");
+  readonly optionA = input<string>("Option A");
+  readonly optionB = input<string>("Option B");
   readonly submitted = output<{agreed: boolean; estimatedPercent: number}>();
 
   agreed = signal<boolean | null>(null);
   estimatedPercent = signal(50);
+
+  readonly myChoice = computed(() => {
+    if (this.agreed() === true) return this.optionA();
+    if (this.agreed() === false) return this.optionB();
+    return null;
+  });
 
   submit(): void {
     if (this.agreed() === null) return;
@@ -23,6 +31,6 @@ export class MinigameThesisComponent {
     });
   }
 
-  agree() { this.agreed.set(true); }
-  disagree() { this.agreed.set(false); }
+  pickA() { this.agreed.set(true); }
+  pickB() { this.agreed.set(false); }
 }

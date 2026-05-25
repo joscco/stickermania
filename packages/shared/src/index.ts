@@ -406,6 +406,10 @@ export interface ThesisTask {
   type: "thesis";
   title: string;
   durationSec: number;
+  /** Label für Option A, default: "Stimme zu" */
+  optionA?: string;
+  /** Label für Option B, default: "Stimme nicht zu" */
+  optionB?: string;
 }
 
 export type MinigameTask =
@@ -496,6 +500,8 @@ function parseTask(raw: unknown): MinigameTask | null {
     };
     case "thesis": return {
       id, type: "thesis", title, durationSec: dur,
+      optionA: typeof t["optionA"] === "string" ? t["optionA"] : undefined,
+      optionB: typeof t["optionB"] === "string" ? t["optionB"] : undefined,
     };
     default: return null;
   }
