@@ -4,7 +4,7 @@ import {PlayerConnectingComponent} from './scenes/connecting/player-connecting.c
 import {PlayerReconnectingComponent} from './scenes/reconnecting/player-reconnecting.component';
 import {PlayerDisconnectedComponent} from './scenes/disconnected/player-disconnected.component';
 import {PlayerLobbyWaitingComponent} from './scenes/lobby-waiting/player-lobby-waiting.component';
-import {PlayerBuildingComponent, SubmitCollageEvent, MinigameSubmitEvent} from './scenes/building/player-building.component';
+import {PlayerBuildingComponent, MinigameSubmitEvent} from './scenes/building/player-building.component';
 import {PlayerBuildingSubmittedComponent} from './scenes/building-submitted/player-building-submitted.component';
 import {PlayerBuildingSkippedComponent} from './scenes/building-skipped/player-building-skipped.component';
 import {PlayerVotingComponent} from './scenes/voting/player-voting.component';
@@ -170,14 +170,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     this.screenData.isEditingAvatar.set(false);
   }
 
-  public onSubmitCollage(event: SubmitCollageEvent): void {
-    this.stickerService.submitCollage(event.placements);
-    if (event.imageDataUrl) {
-      this.uploadSnapshot(event.imageDataUrl);
-    }
-  }
-
-  public onSubmitMinigame(event: import("./scenes/building/player-building.component").MinigameSubmitEvent): void {
+  public onSubmitMinigame(event: MinigameSubmitEvent): void {
     this.audio.playAction();
     this.stickerService.submitMinigame(event as import("@birthday/shared").MinigameClientAction);
   }
@@ -186,7 +179,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   public startGameWithSound(): void { this.audio.playClick(); this.stickerService.startGame(); }
   public skipRoundWithSound(): void { this.audio.playClick(); this.stickerService.skipRound(); }
-  public submitCollageWithSound(event: SubmitCollageEvent): void { this.audio.playAction(); this.onSubmitCollage(event); }
   public endRoundEarlyWithSound(): void { this.audio.playClick(); this.stickerService.endRoundEarly(); }
   public castVoteWithSound(collageId: string): void { this.audio.playClick(); this.stickerService.castVote(collageId); }
   public doneVotingWithSound(): void { this.audio.playClick(); this.stickerService.doneVoting(); }
@@ -194,22 +186,4 @@ export class PlayerComponent implements OnInit, OnDestroy {
   public pickPromptWithSound(prompt: string): void { this.audio.playClick(); this.stickerService.pickPrompt(prompt); }
   public unlockPackWithSound(packId: string): void { this.audio.playClick(); this.stickerService.unlockPack(packId); }
   public readyToAdvanceWithSound(): void { this.audio.playAction(); this.stickerService.readyToAdvance(); }
-
-  private async uploadSnapshot(imageDataUrl: string): Promise<void> {
-    const sessionId = this.sessionStore.sessionId();
-    const playerId  = this.sessionStore.playerId();
-    if (!sessionId || !playerId) return;
-
-    let collageId: string | null = null;
-    for (let attempt = 0; attempt < 30; attempt++) {
-      const ms = this.stickerService.gameState();
-      if (ms) {
-        const mine = (ms.submissions[ms.currentRoundIndex] ?? []).find(s => s.playerId === playerId);
-        if (mine) { collageId = mine.id; break; }
-      }
-      await new Promise(r => setTimeout(r, 200));
-    }
-    if (!collageId) return;
-    try { await this.apiService.uploadCollageImage(sessionId, playerId, collageId, imageDataUrl); } catch {}
-  }
 }

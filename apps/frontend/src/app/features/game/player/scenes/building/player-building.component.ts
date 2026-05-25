@@ -1,7 +1,7 @@
 import {Component, input, output, ViewChild} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {MinigameTask} from "@birthday/shared";
-import {AnimGroupDirective, AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
+import {AnimGroupDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {PromptBannerComponent} from '../../../../shared/prompt-banner/prompt-banner.component';
 import {StickerBoardComponent} from '../../../../shared/sticker-board/sticker-board.component';
 import {DrawingCanvasBgComponent} from '../../../../shared/drawing-canvas-bg/drawing-canvas-bg.component';
@@ -23,7 +23,7 @@ export type MinigameSubmitEvent =
     standalone: true,
     imports: [
       CommonModule,
-      AnimOnInitDirective, PromptBannerComponent, AnimGroupDirective,
+      PromptBannerComponent, AnimGroupDirective,
       StickerBoardComponent, DrawingCanvasBgComponent,
       MinigameChoiceComponent, MinigameNumberComponent, MinigameTimerComponent,
       MinigameShapeSplitComponent,
