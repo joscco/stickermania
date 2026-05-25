@@ -123,6 +123,11 @@ export class MockStickerPlayerService {
     if (!ms) return [];
     return ms.submissions[ms.currentRoundIndex] ?? [];
   });
+  readonly currentRoundMinigameSubmissions = computed(() => {
+    const ms = this.gameState();
+    if (!ms) return [];
+    return ms.minigameSubmissions[this.currentRoundIndex()] ?? [];
+  });
   readonly myVotes = computed<string[]>(() => {
     const playerId = this.sessionStore.playerId();
     if (!playerId) return [];
@@ -315,43 +320,23 @@ export function getMockVotingVm(phase: MockPhase, worldStore: MockWorldStore, se
     votesRemaining: (stickerService.gameState()?.votesPerPlayer ?? 3) - stickerService.myVotes().length,
     players: worldStore.players(),
     myPlayerId: sessionStore.playerId(),
+    currentTask: stickerService.currentTask(),
+    minigameSubmissions: stickerService.currentRoundMinigameSubmissions(),
   };
 }
 
 export function getMockResultsVm(worldStore: MockWorldStore, sessionStore: MockGameSessionStore, stickerService: MockStickerPlayerService): ResultsViewModel {
-  const isWinner = stickerService.isWinner();
-  const winnerChoicesDone = stickerService.winnerChoicesDone();
-  const hasChosenPrompt = stickerService.hasChosenPrompt();
-  const hasLockedPacks = stickerService.hasLockedPacks();
-  const hasUnlockedPack = stickerService.hasUnlockedPack();
-  const promptChoices = stickerService.promptChoices();
-  const packUnlockChoices = stickerService.packUnlockChoices();
-
-  let currentWinnerStep: WinnerStep = null;
-  if (isWinner && !winnerChoicesDone) {
-    if (!hasChosenPrompt && promptChoices.length > 0) {
-      currentWinnerStep = 'prompt';
-    } else if (hasChosenPrompt && !hasUnlockedPack && packUnlockChoices.length > 0) {
-      currentWinnerStep = 'unlock';
-    }
-  }
-
   const winnerId = stickerService.winnerId();
   const myResult = stickerService.lastVoteResults().find(r => r.playerId === (sessionStore.playerId() ?? ''));
   return {
     myPlacement: stickerService.myPlacement(),
     myVoteCount: myResult?.voteCount ?? 0,
-    isWinner,
+    isWinner: stickerService.isWinner(),
     isTiedWinner: stickerService.isTiedWinner(),
-    winnerChoicesDone,
-    currentWinnerStep,
-    hasChosenPrompt,
-    hasLockedPacks,
-    hasUnlockedPack,
-    promptChoices,
-    packUnlockChoices,
     winnerId,
-    winnerName: winnerId ? (worldStore.players()[winnerId]?.name ?? 'Der Gewinner') : '',
-    canReadyToAdvance: stickerService.canReadyToAdvance(),
+    winnerName: winnerId ? (worldStore.players()[winnerId]?.name ?? 'Gewinner') : '',
+    lastVoteResults: stickerService.lastVoteResults(),
+    currentTask: stickerService.currentTask(),
+    resultSummary: "Mock-Ergebnis: Platz 1 mit 3 Stimmen",
   };
 }

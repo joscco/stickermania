@@ -4,14 +4,13 @@ import {PlayerConnectingComponent} from './scenes/connecting/player-connecting.c
 import {PlayerReconnectingComponent} from './scenes/reconnecting/player-reconnecting.component';
 import {PlayerDisconnectedComponent} from './scenes/disconnected/player-disconnected.component';
 import {PlayerLobbyWaitingComponent} from './scenes/lobby-waiting/player-lobby-waiting.component';
-import {PlayerBuildingComponent, MinigameSubmitEvent} from './scenes/building/player-building.component';
+import {MinigameSubmitEvent, PlayerBuildingComponent} from './scenes/building/player-building.component';
 import {PlayerBuildingSubmittedComponent} from './scenes/building-submitted/player-building-submitted.component';
 import {PlayerBuildingSkippedComponent} from './scenes/building-skipped/player-building-skipped.component';
 import {PlayerVotingComponent} from './scenes/voting/player-voting.component';
 import {PlayerVotingDoneComponent} from './scenes/voting/player-voting-done.component';
 import {PlayerResultsComponent} from './scenes/results/player-results.component';
 import {PlayerNextRoundComponent} from './scenes/next-round/player-next-round.component';
-import {PlayerWinnerChoicesComponent} from './scenes/winner-choices/player-winner-choices.component';
 import {PlayerScreenDataService} from './player-screen-data.service';
 import {StickerPlayerService} from '../services/sticker-player.service';
 import {PlayerTimerService} from '../services/player-timer.service';
@@ -19,7 +18,6 @@ import {PlayerMessageHandler} from '../services/player-message-handler.service';
 import {WebSocketService} from '../../../core/websocket.service';
 import {ApiService} from '../../../core/api.service';
 import {GameSessionStore} from '../../../core/challenge.store';
-import {WorldStore} from '../../../core/world.store';
 import {ReconnectService} from '../../../core/reconnect.service';
 import {AudioService} from '../../../core/audio.service';
 import {PlayerScreen} from './player-screen.enum';
@@ -48,7 +46,6 @@ import {AnimPresenceDirective} from '../../shared/animations/anim-on-init.direct
     PlayerVotingDoneComponent,
     PlayerResultsComponent,
     PlayerNextRoundComponent,
-    PlayerWinnerChoicesComponent,
     PlayerHeaderComponent,
     TimerFillComponent, TimerNotificationComponent,
     AnimPresenceDirective,
@@ -183,7 +180,5 @@ export class PlayerComponent implements OnInit, OnDestroy {
   public castVoteWithSound(collageId: string): void { this.audio.playClick(); this.stickerService.castVote(collageId); }
   public doneVotingWithSound(): void { this.audio.playClick(); this.stickerService.doneVoting(); }
   public endVotingEarlyWithSound(): void { this.audio.playClick(); this.stickerService.endVotingEarly(); }
-  public pickPromptWithSound(prompt: string): void { this.audio.playClick(); this.stickerService.pickPrompt(prompt); }
-  public unlockPackWithSound(packId: string): void { this.audio.playClick(); this.stickerService.unlockPack(packId); }
   public readyToAdvanceWithSound(): void { this.audio.playAction(); this.stickerService.readyToAdvance(); }
 }

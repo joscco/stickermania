@@ -1,14 +1,15 @@
-<app-prompt-banner
-  [text]="vm().prompt"
-  subtitle="Abstimmung"
-  anim="banner"
+<app-round-info
+  [roundIndex]="0"
+  [title]="vm().prompt"
+  [task]="vm().currentTask"
 />
 
 @if (vm().variant === 'active') {
   <div animOnInit="opacity" [animDelay]="0.15" class="flex-1 overflow-y-auto">
-    <app-sticker-voting
+    <app-minigame-voting
       [submissions]="vm().submissions"
-      [stickerCatalog]="vm().stickerCatalog"
+      [minigameSubmissions]="vm().minigameSubmissions"
+      [currentTask]="vm().currentTask"
       [myVotes]="vm().myVotes"
       [votesRemaining]="vm().votesRemaining"
       [players]="vm().players"

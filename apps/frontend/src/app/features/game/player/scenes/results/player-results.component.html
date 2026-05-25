@@ -1,15 +1,29 @@
 <div class="flex-1 flex flex-col overflow-y-auto">
-  <!-- Results header -->
-  <app-prompt-banner
-    text="Ergebnisse"
-    icon="icon-trophy-md"
-    anim="banner"
+  <app-round-info
+    [roundIndex]="0"
+    title="Ergebnisse"
+    [task]="currentTask()"
   />
 
-  <!-- My placement -->
   @if (myPlacement(); as placement) {
-    <div animOnInit="medal" [animDelay]="0.15" class="flex items-center justify-center">
+    <div animOnInit="medal" [animDelay]="0.15" class="flex flex-col items-center justify-center gap-3 py-4">
       <app-placement-badge [placement]="placement" [count]="myVoteCount()"/>
+
+      @if (currentTask(); as task) {
+        <div class="text-xs text-neutral-400 text-center px-4">
+          {{ taskResultLabel(task) }}
+        </div>
+      }
+
+      @if (resultSummary()) {
+        <div class="text-sm text-neutral-700 text-center px-4 py-2 bg-neutral-50 rounded-xl mx-4">{{ resultSummary() }}</div>
+      }
+
+      @if (isWinner()) {
+        <div class="text-lg font-bold text-neutral-800 mt-2">🎉 Du hast gewonnen!</div>
+      } @else if (isTiedWinner()) {
+        <div class="text-lg font-bold text-neutral-800 mt-2">🤝 Geteilter 1. Platz!</div>
+      }
     </div>
   } @else {
     <app-player-status-screen
@@ -18,43 +32,11 @@
       titleClass="text-neutral-400 text-sm"
     />
   }
-
-  <!-- Winner choices (only if I'm the winner) -->
-  @if (isWinner() && !winnerChoicesDone()) {
-    <app-player-winner-choices
-      [currentWinnerStep]="currentWinnerStep()"
-      [hasChosenPrompt]="hasChosenPrompt()"
-      [hasLockedPacks]="hasLockedPacks()"
-      [hasUnlockedPack]="hasUnlockedPack()"
-      [promptChoices]="promptChoices()"
-      [packUnlockChoices]="packUnlockChoices()"
-      (pickPrompt)="pickPrompt.emit($event)"
-      (unlockPack)="unlockPack.emit($event)"
-    />
-  } @else if (isWinner() && winnerChoicesDone()) {
-    <app-player-status-screen
-      icon=""
-      title="Auswahl getroffen!"
-      titleClass="text-neutral-700 font-medium text-sm"
-    />
-  } @else if (winnerId()) {
-    <app-player-status-screen icon="" title="" subtitle="">
-      @if (isTiedWinner()) {
-        <p class="text-neutral-500 text-sm text-center px-4">Du teilst dir den ersten Platz — {{ winnerName() }} wählt die nächste Runde aus.</p>
-      } @else {
-        <p class="text-neutral-500 text-sm">{{ winnerName() }} wählt die nächste Runde...</p>
-      }
-      <div class="w-6 h-6 border-2 border-neutral-200 border-t-neutral-400 rounded-full animate-spin mx-auto mt-2"></div>
-    </app-player-status-screen>
-  }
 </div>
 
-<!-- Footer -->
-@if (canReadyToAdvance()) {
-  <div class="flex w-full shrink-0 items-center justify-center p-4 overflow-hidden">
-    <button
-      class="w-full max-w-lg bg-black text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
-      (click)="readyToAdvance.emit()"
-    >Nächste Runde starten</button>
-  </div>
-}
+<div class="flex w-full shrink-0 items-center justify-center p-4 overflow-hidden">
+  <button
+    class="w-full max-w-lg bg-black text-white py-2.5 rounded-xl font-semibold shadow-lg active:scale-95 transition-transform"
+    (click)="readyToAdvance.emit()"
+  >Weiter</button>
+</div>

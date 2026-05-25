@@ -2,7 +2,7 @@ import {Component, input, output, signal, viewChild, ElementRef, AfterViewInit, 
 import {CommonModule} from "@angular/common";
 import gsap from "gsap";
 import {SvgComponent} from "../svg/svg.component";
-import {getSpriteViewBox} from "../sticker-editor/sprite-url.util";
+import {getSpriteViewBox} from '../svg/sprite-url.util';
 
 interface PlacedSticker {
   id: string;

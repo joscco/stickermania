@@ -104,6 +104,13 @@ export class CatalogComponent implements OnInit {
     return screen as PlayerScreen;
   });
 
+  public readonly showTaskSelector = computed(() =>
+    this.currentScreen() === 'building' ||
+    this.currentScreen() === 'voting' ||
+    this.currentScreen() === 'voting-done' ||
+    this.currentScreen() === 'results'
+  );
+
   public readonly boardPhase = computed<string | null>(() => {
     const screen = this.currentScreen();
     switch (screen) {
@@ -184,9 +191,10 @@ export class CatalogComponent implements OnInit {
     };
     const phase = phaseMap[screen] ?? 'lobby';
 
-    // If building screen and a real task is selected, use it
+    // If a task is selected, pass it for building, voting, and results screens
     const taskId = this.selectedTaskId();
-    const customTask = (screen === 'building' && taskId)
+    const minigameScreens = ['building', 'voting', 'voting-done', 'results'];
+    const customTask = (minigameScreens.includes(screen) && taskId)
       ? this.tasks().find(t => t.id === taskId)
       : undefined;
 

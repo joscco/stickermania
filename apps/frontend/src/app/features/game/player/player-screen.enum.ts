@@ -12,7 +12,5 @@ export enum PlayerScreen {
     VOTING_DONE         = 'voting-done',
     VOTING_ALL_DONE     = 'voting-all-done',
     RESULTS             = 'results',
-    WINNER_PROMPT       = 'winner-prompt',
-    WINNER_UNLOCK       = 'winner-unlock',
     NEXT_ROUND          = 'next-round',
 }

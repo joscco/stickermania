@@ -1,4 +1,4 @@
-import type {StickerCollage, StickerDefinition, StickerPack, SessionPlayer, MinigameTask} from '@birthday/shared';
+import type {StickerCollage, StickerDefinition, StickerPack, SessionPlayer, MinigameTask, MinigameSubmission, StickerCollageVoteResult} from '@birthday/shared';
 
 export type VotingVariant = 'active' | 'done' | 'all-done';
 
@@ -13,6 +13,10 @@ export interface VotingViewModel {
   votesRemaining: number;
   players: Record<string, SessionPlayer>;
   myPlayerId: string;
+  /** The current minigame task, for minigame-specific voting UI */
+  currentTask: MinigameTask | null;
+  /** Minigame submissions for the current round */
+  minigameSubmissions: MinigameSubmission[];
 }
 
 export interface BuildingViewModel {
@@ -53,16 +57,12 @@ export interface ResultsViewModel {
   myVoteCount: number;
   isWinner: boolean;
   isTiedWinner: boolean;
-  winnerChoicesDone: boolean;
-  currentWinnerStep: WinnerStep;
-  hasChosenPrompt: boolean;
-  hasLockedPacks: boolean;
-  hasUnlockedPack: boolean;
-  promptChoices: string[];
-  packUnlockChoices: StickerPack[];
   winnerId: string | null;
   winnerName: string;
-  canReadyToAdvance: boolean;
+  lastVoteResults: StickerCollageVoteResult[];
+  currentTask: MinigameTask | null;
+  /** Human-readable summary of the player's performance for this task */
+  resultSummary: string;
 }
 
 export interface NextRoundViewModel {

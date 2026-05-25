@@ -1,17 +1,15 @@
 import {Component, input, output} from "@angular/core";
 import {CommonModule} from "@angular/common";
-import type {StickerPack} from "@birthday/shared";
-import type {WinnerStep} from '../../player-view-models';
+import type {MinigameTask} from "@birthday/shared";
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
-import {PromptBannerComponent} from '../../../../shared/prompt-banner/prompt-banner.component';
-import {PlayerWinnerChoicesComponent} from '../winner-choices/player-winner-choices.component';
+import {RoundInfoComponent} from '../../../../shared/round-info/round-info.component';
 import {PlayerStatusScreenComponent} from '../../player-status-screen/player-status-screen.component';
 import PlacementBadgeComponent from '../../../shared/placement-badge/placement-badge.component';
 
 @Component({
     selector: "app-player-results",
     standalone: true,
-  imports: [CommonModule, AnimOnInitDirective, PlayerStatusScreenComponent, PromptBannerComponent, PlacementBadgeComponent, PlayerWinnerChoicesComponent],
+    imports: [CommonModule, AnimOnInitDirective, PlayerStatusScreenComponent, RoundInfoComponent, PlacementBadgeComponent],
     templateUrl: "./player-results.component.html",
     host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })
@@ -20,18 +18,21 @@ export class PlayerResultsComponent {
     public readonly myVoteCount = input<number>(0);
     public readonly isWinner = input<boolean>(false);
     public readonly isTiedWinner = input<boolean>(false);
-    public readonly winnerChoicesDone = input<boolean>(false);
-    public readonly currentWinnerStep = input<WinnerStep>(null);
-    public readonly hasChosenPrompt = input<boolean>(false);
-    public readonly hasLockedPacks = input<boolean>(false);
-    public readonly hasUnlockedPack = input<boolean>(false);
-    public readonly promptChoices = input<string[]>([]);
-    public readonly packUnlockChoices = input<StickerPack[]>([]);
-    public readonly winnerId = input<string | null>(null);
     public readonly winnerName = input<string>('');
-    public readonly canReadyToAdvance = input<boolean>(false);
+    public readonly currentTask = input<MinigameTask | null>(null);
+    public readonly resultSummary = input<string>("");
 
-    public readonly pickPrompt = output<string>();
-    public readonly unlockPack = output<string>();
     public readonly readyToAdvance = output<void>();
+
+    public taskResultLabel(task: MinigameTask): string {
+        switch (task.type) {
+            case "thesis": return "Wer am nächsten an der tatsächlichen Zustimmungs-Quote lag, gewinnt.";
+            case "number": return "Am nächsten am Durchschnitt aller Antworten.";
+            case "timer-stop": return "Am nächsten an der Zielzeit.";
+            case "shape-split": return "Am nächsten an der Ziel-Proportion.";
+            case "drawing": case "text-answer": case "sticker-place": case "choice":
+                return "Die meisten Stimmen gewinnen.";
+            default: return "";
+        }
+    }
 }

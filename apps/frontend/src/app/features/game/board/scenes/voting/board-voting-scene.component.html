@@ -1,9 +1,8 @@
 <div class="h-full flex flex-col">
-  <!-- Voting banner (Banderole) -->
-  <app-prompt-banner
-    [text]="gameState()?.currentPrompt ?? ''"
-    subtitle="Abstimmung"
-    anim="banner"
+  <app-round-info
+    [roundIndex]="gameState()?.currentRoundIndex ?? 0"
+    [title]="gameState()?.currentPrompt ?? ''"
+    [task]="$any(gameState())?.currentTask ?? null"
   />
 
   <!-- Slideshow strip -->

@@ -36,7 +36,11 @@ export class StickerPlayerService {
 
   // ─── General state ───────────────────────────────────────────
 
-  public readonly currentPrompt = computed(() => this.gameState()?.currentPrompt ?? "");
+  public readonly currentPrompt = computed(() => {
+    const task = this.gameState()?.currentTask;
+    if (task?.title) return task.title;
+    return this.gameState()?.currentPrompt ?? "";
+  });
   public readonly currentTask = computed<MinigameTask | null>(() => this.gameState()?.currentTask ?? null);
   public readonly currentRecommendedPackIds = computed(() => this.gameState()?.currentRecommendedPackIds ?? []);
   public readonly currentRoundIndex = computed(() => this.gameState()?.currentRoundIndex ?? 0);
@@ -82,6 +86,12 @@ export class StickerPlayerService {
     const ms = this.gameState();
     if (!ms) return [];
     return ms.submissions[ms.currentRoundIndex] ?? [];
+  });
+
+  public readonly currentRoundMinigameSubmissions = computed(() => {
+    const ms = this.gameState();
+    if (!ms) return [];
+    return ms.minigameSubmissions[this.currentRoundIndex()] ?? [];
   });
 
   public readonly myVotes = computed<string[]>(() => {

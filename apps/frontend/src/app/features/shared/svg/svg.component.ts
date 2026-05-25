@@ -1,5 +1,5 @@
 import {Component, computed, effect, input, signal} from '@angular/core';
-import {getSpriteViewBox, preloadSprite} from '../sticker-editor/sprite-url.util';
+import {getSpriteViewBox, preloadSprite} from './sprite-url.util';
 
 function parsePx(v: string | number): number | undefined {
   return typeof v === 'number' ? v : Number(v) || undefined;

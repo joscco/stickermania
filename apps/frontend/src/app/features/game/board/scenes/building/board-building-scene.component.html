@@ -1,9 +1,8 @@
 <div class="h-full flex flex-col">
-  <!-- Prompt banner (Banderole) -->
-  <app-prompt-banner
-    [text]="gameState()?.currentPrompt ?? ''"
-    [subtitle]="'Runde ' + (gameState()?.currentRoundIndex ?? 0)"
-    anim="banner"
+  <app-round-info
+    [roundIndex]="gameState()?.currentRoundIndex ?? 0"
+    [title]="gameState()?.currentPrompt ?? ''"
+    [task]="$any(gameState())?.currentTask ?? null"
   />
 
   <!-- Round info: newly unlocked pack + guaranteed pack -->

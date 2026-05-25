@@ -109,43 +109,10 @@
           [myVoteCount]="screenData.resultsVm().myVoteCount"
           [isWinner]="screenData.resultsVm().isWinner"
           [isTiedWinner]="screenData.resultsVm().isTiedWinner"
-          [winnerChoicesDone]="screenData.resultsVm().winnerChoicesDone"
-          [currentWinnerStep]="screenData.resultsVm().currentWinnerStep"
-          [hasChosenPrompt]="screenData.resultsVm().hasChosenPrompt"
-          [hasLockedPacks]="screenData.resultsVm().hasLockedPacks"
-          [hasUnlockedPack]="screenData.resultsVm().hasUnlockedPack"
-          [promptChoices]="screenData.resultsVm().promptChoices"
-          [packUnlockChoices]="screenData.resultsVm().packUnlockChoices"
-          [winnerId]="screenData.resultsVm().winnerId"
           [winnerName]="screenData.resultsVm().winnerName"
-          [canReadyToAdvance]="screenData.resultsVm().canReadyToAdvance"
-          (pickPrompt)="pickPromptWithSound($event)"
-          (unlockPack)="unlockPackWithSound($event)"
+          [currentTask]="screenData.resultsVm().currentTask"
+          [resultSummary]="screenData.resultsVm().resultSummary"
           (readyToAdvance)="readyToAdvanceWithSound()"
-        />
-      }
-      @case (PlayerScreen.WINNER_PROMPT) {
-        <app-player-winner-choices
-          [currentWinnerStep]="'prompt'"
-          [hasChosenPrompt]="screenData.resultsVm().hasChosenPrompt"
-          [hasLockedPacks]="screenData.resultsVm().hasLockedPacks"
-          [hasUnlockedPack]="screenData.resultsVm().hasUnlockedPack"
-          [promptChoices]="screenData.resultsVm().promptChoices"
-          [packUnlockChoices]="screenData.resultsVm().packUnlockChoices"
-          (pickPrompt)="pickPromptWithSound($event)"
-          (unlockPack)="unlockPackWithSound($event)"
-        />
-      }
-      @case (PlayerScreen.WINNER_UNLOCK) {
-        <app-player-winner-choices
-          [currentWinnerStep]="'unlock'"
-          [hasChosenPrompt]="screenData.resultsVm().hasChosenPrompt"
-          [hasLockedPacks]="screenData.resultsVm().hasLockedPacks"
-          [hasUnlockedPack]="screenData.resultsVm().hasUnlockedPack"
-          [promptChoices]="screenData.resultsVm().promptChoices"
-          [packUnlockChoices]="screenData.resultsVm().packUnlockChoices"
-          (pickPrompt)="pickPromptWithSound($event)"
-          (unlockPack)="unlockPackWithSound($event)"
         />
       }
       @case (PlayerScreen.NEXT_ROUND) {

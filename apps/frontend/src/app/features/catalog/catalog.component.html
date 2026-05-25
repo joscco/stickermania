@@ -14,7 +14,7 @@
     </select>
   </label>
 
-  @if (currentScreen() === 'building' && tasks().length > 0) {
+  @if (showTaskSelector() && tasks().length > 0) {
     <select
       [value]="selectedTaskId()"
       (change)="onTaskSelect(($any($event.target).value))"

@@ -3,7 +3,7 @@ import {CommonModule} from "@angular/common";
 import type {StickerCollageGameState, StickerCollage} from "@birthday/shared";
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {SvgComponent} from '../../../../shared/svg/svg.component';
-import {PromptBannerComponent} from '../../../../shared/prompt-banner/prompt-banner.component';
+import {RoundInfoComponent} from '../../../../shared/round-info/round-info.component';
 
 const CARD_WIDTH = 256;
 const CARD_GAP   = 24;
@@ -12,7 +12,7 @@ const STRIP_PAD  = 32;
 @Component({
     selector: "app-board-voting-scene",
     standalone: true,
-    imports: [CommonModule, AnimOnInitDirective, SvgComponent, PromptBannerComponent],
+    imports: [CommonModule, AnimOnInitDirective, SvgComponent, RoundInfoComponent],
     templateUrl: "./board-voting-scene.component.html",
     styleUrl: "./board-voting-scene.component.css",
 })
