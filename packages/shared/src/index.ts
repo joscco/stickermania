@@ -344,6 +344,8 @@ export interface DrawingTask {
   durationSec: number;
   /** Optional background image sprite ref to draw on */
   backgroundSvg?: string;
+  /** Secret additional tasks — one per player, others must guess which was applied */
+  extraTasks?: string[];
 }
 
 export interface ChoiceTask {
@@ -427,6 +429,9 @@ function parseTask(raw: unknown): MinigameTask | null {
     case "drawing": return {
       id, type: "drawing", title, durationSec: dur,
       backgroundSvg: typeof t["backgroundSvg"] === "string" ? t["backgroundSvg"] : undefined,
+      extraTasks: Array.isArray(t["extraTasks"])
+        ? (t["extraTasks"] as unknown[]).filter((e): e is string => typeof e === "string" && e.length > 0)
+        : undefined,
     };
     case "choice": return {
       id, type: "choice", title, durationSec: dur,

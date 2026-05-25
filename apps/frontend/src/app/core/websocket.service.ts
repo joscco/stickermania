@@ -7,7 +7,7 @@ import type { ClientToServerMessage, ServerToClientMessage } from "@birthday/sha
  * connected    – WebSocket is open
  * disconnected – intentionally disconnected (e.g. session deleted), no reconnect
  */
-export type WsConnectionStatus = "idle" | "connecting" | "connected" | "disconnected";
+type WsConnectionStatus = "idle" | "connecting" | "connected" | "disconnected";
 
 @Injectable({ providedIn: "root" })
 export class WebSocketService {

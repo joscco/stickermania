@@ -1,11 +1,52 @@
-<div #wrapper class="relative w-full h-full" style="touch-action: none;">
-  @if (baseImageUrl()) {
-    <img [src]="baseImageUrl()" class="absolute inset-0 w-full h-full object-contain" style="z-index: 0; pointer-events: none;" draggable="false" />
-  }
-  <canvas #drawCanvas class="absolute inset-0 w-full h-full" style="z-index: 1; touch-action: none;"
-    (pointerdown)="painter.pointerDown($event)"
-    (pointermove)="painter.pointerMove($event)"
-    (pointerup)="painter.pointerUp($event)"
-    (pointercancel)="painter.pointerUp($event)"
-  ></canvas>
+<!-- Canvas area: fills remaining space, canvas uses cqmin to stay square -->
+<div class="flex-1 min-h-0 w-full"
+     style="container-type: size; overflow: hidden; display: grid; place-items: center;">
+  <div #wrapper class="w-[100cqmin] aspect-square relative overflow-hidden no-select"
+       style="touch-action: none; user-select: none; -webkit-touch-callout: none; -webkit-user-select: none;"
+       (pointerdown)="$event.preventDefault()"
+       (pointermove)="$event.preventDefault()">
+    @if (baseImageUrl()) {
+      <img [src]="baseImageUrl()"
+           [class]="'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 object-contain'"
+           [style.width]="canvasSizePercent"
+           [style.height]="canvasSizePercent"
+           style="z-index: 0; pointer-events: none;" draggable="false" />
+    }
+    <app-svg name="draw-frame" class="absolute inset-0 w-full h-full pointer-events-none z-20"/>
+    <canvas #drawCanvas style="touch-action: none;"
+            [class]="'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'"
+            [style.width]="canvasSizePercent"
+            [style.height]="canvasSizePercent"
+            (pointerdown)="painter.pointerDown($event)"
+            (pointermove)="painter.pointerMove($event)"
+            (pointerup)="painter.pointerUp($event)"
+            (pointercancel)="painter.pointerUp($event)"
+    ></canvas>
+  </div>
+</div>
+
+<!-- Brush controls -->
+<div class="shrink-0 flex items-center justify-center w-full px-2 py-1 gap-0">
+  <button class="flex items-center justify-center rounded-full transition-all p-1 scale-90 hover:scale-100 active:scale-110"
+          (click)="clear()">
+    <app-svg name="icon-draw-btn-delete" w="70"/>
+  </button>
+  <button class="flex items-center justify-center rounded-full transition-all p-1 scale-90 hover:scale-100 active:scale-110"
+          [class.bg-white]="drawMode() === 'small'"
+          [class.scale-100]="drawMode() === 'small'"
+          (click)="drawMode.set('small')">
+    <app-svg name="icon-draw-btn-small-lg" w="70"/>
+  </button>
+  <button class="flex items-center justify-center rounded-full transition-all p-1 scale-90 hover:scale-100 active:scale-110"
+          [class.bg-white]="drawMode() === 'big'"
+          [class.scale-100]="drawMode() === 'big'"
+          (click)="drawMode.set('big')">
+    <app-svg name="icon-draw-btn-big-lg" w="70"/>
+  </button>
+  <button class="flex items-center justify-center rounded-full transition-all p-1 scale-90 hover:scale-100 active:scale-110"
+          [class.bg-white]="drawMode() === 'erase'"
+          [class.scale-100]="drawMode() === 'erase'"
+          (click)="drawMode.set('erase')">
+    <app-svg name="icon-draw-btn-eraser-lg" w="70"/>
+  </button>
 </div>

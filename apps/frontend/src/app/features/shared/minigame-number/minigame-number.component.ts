@@ -1,4 +1,4 @@
-import {Component, input, output, signal} from "@angular/core";
+import {Component, effect, input, output, signal} from "@angular/core";
 import {CommonModule} from "@angular/common";
 
 @Component({
@@ -14,21 +14,31 @@ export class MinigameNumberComponent {
   readonly default = input(50);
   readonly submitted = output<number>();
 
-  value = signal(this.default());
+  value = signal(0);
+
+  constructor() {
+    effect(() => {
+      this.value.set(this.clamp(this.default()));
+    });
+  }
 
   onSlider(e: Event): void {
-    this.value.set(Number((e.target as HTMLInputElement).value));
+    this.value.set(this.clamp(Number((e.target as HTMLInputElement).value)));
   }
 
-  onNumberInput(e: Event): void {
-    const v = Number((e.target as HTMLInputElement).value);
-    if (!isNaN(v)) this.value.set(Math.max(this.min(), Math.min(this.max(), Math.round(v))));
+  increment(): void {
+    this.value.update(v => this.clamp(v + 1));
   }
 
-  increment(): void { this.value.set(Math.min(this.max(), this.value() + 1)); }
-  decrement(): void { this.value.set(Math.max(this.min(), this.value() - 1)); }
+  decrement(): void {
+    this.value.update(v => this.clamp(v - 1))
+  }
 
   submit(): void {
     this.submitted.emit(this.value());
+  }
+
+  private clamp(v: number): number {
+    return Math.max(Math.min(v, this.min()), Math.min(v, this.max()));
   }
 }

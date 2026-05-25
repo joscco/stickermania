@@ -1,18 +1,18 @@
 <div class="text-7xl font-bold tabular-nums text-neutral-900">{{ value() }}</div>
 
-<input
-  type="range"
-  [min]="min()"
-  [max]="max()"
-  [value]="value()"
-  (input)="onSlider($event)"
-  class="w-full max-w-sm h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-black"
-/>
+<div class="flex items-center justify-center gap-2">
+  <button (click)="decrement()" class="w-10 h-10 shrink-0 rounded-full bg-white text-neutral-700 font-bold active:scale-95">−</button>
+  <input
+    type="range"
+    [min]="min()"
+    [max]="max()"
+    [value]="value()"
+    (input)="onSlider($event)"
+    class="w-full max-w-sm h-2 bg-white rounded-md appearance-none cursor-pointer accent-black"
+  />
+  <button (click)="increment()" class="w-10 h-10 shrink-0 rounded-full bg-white text-neutral-700 font-bold active:scale-95">+</button>
 
-<div class="flex items-center gap-3">
-  <button (click)="decrement()" class="w-10 h-10 rounded-full bg-neutral-200 text-neutral-700 font-bold flex items-center justify-center active:scale-95">−</button>
-  <input type="number" [min]="min()" [max]="max()" [value]="value()" (input)="onNumberInput($event)" class="w-20 text-center text-xl font-bold text-neutral-700 outline-none border-2 border-neutral-200 rounded-xl py-2" />
-  <button (click)="increment()" class="w-10 h-10 rounded-full bg-neutral-200 text-neutral-700 font-bold flex items-center justify-center active:scale-95">+</button>
 </div>
+
 
 <button (click)="submit()" class="bg-black text-white py-2.5 px-6 rounded-xl font-semibold shadow active:scale-95 transition-transform">Bestätigen</button>

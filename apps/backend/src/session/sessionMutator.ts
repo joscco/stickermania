@@ -11,7 +11,7 @@ import {SessionLock} from "./sessionLock.js";
  * - `gameEvents` — optional game events to broadcast
  * - `extra` — arbitrary extra data the caller wants back (e.g. a player object)
  */
-export interface MutationResult<TExtra = void> {
+interface MutationResult<TExtra = void> {
     stateChanged: boolean;
     gameEvents?: StickerCollageServerEvent[];
     extra: TExtra;

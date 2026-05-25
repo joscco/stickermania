@@ -1,18 +1,17 @@
 import {AfterViewInit, Component, ElementRef, input, OnDestroy, output, signal, viewChild} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import {CanvasPainter, CANVAS_RESOLUTION} from "../paint-canvas/canvas-painter";
+import {SvgComponent} from '../svg/svg.component';
 
-/**
- * Drawing canvas with a background image that cannot be erased.
- * Background is rendered as a separate layer behind the drawing canvas.
- * On export, both layers are merged.
- */
+const FRAME_SIZE = 4123;
+const CANVAS_SIZE = 3416;
+
 @Component({
   selector: "app-drawing-canvas-bg",
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SvgComponent],
   templateUrl: "./drawing-canvas-bg.component.html",
-  host: {"style": "display: block"},
+  host: {"style": "display: flex; flex-direction: column; flex: 1; min-height: 0;"},
 })
 export class DrawingCanvasBgComponent implements AfterViewInit, OnDestroy {
   readonly baseImageUrl = input<string | null>(null);
@@ -22,13 +21,14 @@ export class DrawingCanvasBgComponent implements AfterViewInit, OnDestroy {
   readonly canvasRef = viewChild<ElementRef<HTMLCanvasElement>>("drawCanvas");
   readonly wrapperRef = viewChild<ElementRef<HTMLElement>>("wrapper");
 
+  readonly canvasSizePercent = `${((CANVAS_SIZE / FRAME_SIZE) * 100).toFixed(3)}%`;
+  drawMode = signal<"big" | "small" | "erase">("big");
+
   public readonly painter = new CanvasPainter(
     () => this.canvasRef()?.nativeElement,
     () => (this.drawMode() === "erase") ? "__erase__" : "#000000",
     () => (this.drawMode() === "erase" ? 20 : (this.drawMode() === "small" ? 5 : 10)),
   );
-
-  drawMode = signal<"big" | "small" | "erase">("big");
 
   private lastTouchStart = 0;
   private guards: [EventTarget, string, (e: any) => void][] = [];
@@ -69,8 +69,6 @@ export class DrawingCanvasBgComponent implements AfterViewInit, OnDestroy {
     this.lastTouchStart = now;
   };
 
-  public setDrawMode(mode: "big" | "small" | "erase"): void { this.drawMode.set(mode); }
-
   public clear(): void { this.painter.clear(); this.cleared.emit(); }
 
   public submit(): void {
@@ -83,7 +81,6 @@ export class DrawingCanvasBgComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    // Merge background + drawing
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {

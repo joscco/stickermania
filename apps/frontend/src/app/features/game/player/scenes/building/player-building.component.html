@@ -23,12 +23,10 @@
       @let bg = $any(task())?.['backgroundSvg'];
       <app-drawing-canvas-bg
         #drawingCanvas
-        class="flex-1 min-h-0 w-full"
         [baseImageUrl]="bg ?? null"
         (submitted)="onSubmitDrawing($event)"
       />
       <div class="shrink-0 px-4 py-3 flex gap-2 w-full">
-        <button (click)="drawingCanvas.clear()" class="flex-1 bg-neutral-200 text-neutral-700 py-2.5 rounded-xl font-semibold active:scale-95 transition-transform">Löschen</button>
         <button (click)="skipRound.emit()" class="flex-1 bg-neutral-200 text-neutral-700 py-2.5 rounded-xl font-semibold active:scale-95 transition-transform">Uberspringen</button>
         <button (click)="drawingCanvas.submit()" class="flex-1 bg-black text-white py-2.5 rounded-xl font-semibold shadow active:scale-95 transition-transform">Absenden</button>
       </div>

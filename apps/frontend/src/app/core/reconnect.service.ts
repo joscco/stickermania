@@ -4,7 +4,7 @@ import type { ActivatedRoute } from "@angular/router";
 const RECONNECT_STORAGE_KEY = "birthday_reconnect";
 const DEVICE_NAME_KEY = "birthday_device_player_name";
 
-export interface ReconnectPayload {
+interface ReconnectPayload {
   /** Server-assigned player UUID — used to reclaim the same player slot on rejoin. */
   playerId: string;
   /** Server-assigned session UUID — used to verify the player belongs to this session. */

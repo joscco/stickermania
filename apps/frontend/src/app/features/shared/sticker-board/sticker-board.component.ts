@@ -142,8 +142,4 @@ export class StickerBoardComponent implements AfterViewInit, OnDestroy {
       },
     );
   }
-
-  onConfirm(): void {
-    this.confirmed.emit();
-  }
 }

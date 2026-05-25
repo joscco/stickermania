@@ -9,12 +9,11 @@
  * Extracts the sprite fragment id from a sprite URL.
  * "sprite:#sticker-eye-round" → "sticker-eye-round"
  */
-export function getSpriteId(imageUrl: string): string {
+function getSpriteId(imageUrl: string): string {
     return imageUrl.replace('sprite:#', '');
 }
 
-/** The path to the global sprite file, relative to the app root. */
-export const SPRITE_PATH = 'assets/sprite.svg';
+const SPRITE_PATH = 'assets/sprite.svg';
 
 
 // ── Sprite loading & injection ─────────────────────────────────────────────

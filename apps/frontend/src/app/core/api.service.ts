@@ -3,7 +3,7 @@ import { HttpClient } from "@angular/common/http";
 import type { SessionInfo } from "@birthday/shared";
 import { firstValueFrom } from "rxjs";
 
-export interface ResolvedSessionInfo {
+interface ResolvedSessionInfo {
   sessionId: string;
   sessionCode: string;
   createdAt: number;

@@ -12,6 +12,6 @@ export interface RuntimeEntry {
   phaseTimer: ReturnType<typeof setTimeout> | null;
 }
 
-export interface SessionRuntime {
+interface SessionRuntime {
   connectedClients: Map<string, ConnectedClientSession>;
 }

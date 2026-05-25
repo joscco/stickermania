@@ -52,12 +52,6 @@ export class BoardBuildingSceneComponent {
         return 'drawing';
     };
 
-    private isDrawing(playerId: string): boolean {
-        const ps = this.buildingPs;
-        if (!ps) return false;
-        return !this.hasSubmitted(playerId);
-    }
-
     private hasSubmitted(playerId: string): boolean {
         const ms = this.gameState();
         if (!ms) return false;
