@@ -97,12 +97,38 @@
         </div>
       }
 
-      <!-- ═══ Sticker Place: shapePoints ═══ -->
+      <!-- ═══ Sticker Place: stickers + background + goal ═══ -->
       @if (selectedType() === 'sticker-place') {
         <div class="space-y-1">
-          <label class="text-sm font-semibold text-neutral-700">Sticker-ID (stickerSvg)</label>
-          <input type="text" [value]="stickerSvg()" (input)="stickerSvg.set(($any($event.target).value))"
-            class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" placeholder="sticker-shapes-heart" />
+          <label class="text-sm font-semibold text-neutral-700">Sticker (Sprite-IDs)</label>
+          @for (svg of stickerSvgs(); track $index) {
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-neutral-400 tabular-nums w-4">{{ $index + 1 }}</span>
+              <span class="flex-1 text-sm font-mono">{{ svg }}</span>
+              <button (click)="removeStickerSvg($index)" class="text-red-400 hover:text-red-600 text-xs">✕</button>
+            </div>
+          }
+          <div class="flex gap-2 mt-2">
+            <select [value]="newStickerSvg()" (change)="newStickerSvg.set(($any($event.target).value))"
+              class="flex-1 text-sm border border-neutral-200 rounded-lg px-3 py-2 bg-white">
+              <option value="">Sticker auswählen...</option>
+              @for (s of sprites(); track s.id) {
+                <option [value]="s.id">{{ s.id }}</option>
+              }
+            </select>
+            <button (click)="addStickerSvg()" [disabled]="!newStickerSvg().trim()"
+              class="text-xs px-3 py-1 rounded-lg bg-black text-white font-medium disabled:opacity-40">+</button>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-sm font-semibold text-neutral-700">Ziel / Gewinner-Ermittlung</label>
+          <select [value]="goal()" (change)="goal.set(($any($event.target).value))"
+            class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2 bg-white">
+            <option value="">Standard (nächste an Durchschnitt)</option>
+            <option value="closest-to-average">Möglichst nah am Durchschnitt</option>
+            <option value="furthest-from-average">Möglichst weit vom Durchschnitt</option>
+          </select>
         </div>
       }
 
@@ -159,7 +185,7 @@
         </div>
       }
 
-      <!-- ═══ Shape Split: target fraction ═══ -->
+      <!-- ═══ Shape Split: target fraction + polygon points ═══ -->
       @if (selectedType() === 'shape-split') {
         <div class="space-y-1">
           <label class="text-sm font-semibold text-neutral-700">Ziel-Proportion (kleinerer Teil %)</label>
@@ -169,7 +195,52 @@
             <span class="text-sm font-mono font-bold w-12 text-right">{{ targetFraction() }}:{{ 100 - targetFraction() }}</span>
           </div>
         </div>
-        <p class="text-xs text-neutral-400">Polygon-Punkte im <a href="/shape-split-editor" class="text-blue-600 underline">Shape-Split Editor</a> bearbeiten</p>
+
+        <div class="space-y-1">
+          <label class="text-sm font-semibold text-neutral-700">Polygon (Klick ins Feld = Punkt setzen, Punkte ziehen)</label>
+          <div class="bg-neutral-100 rounded-xl border border-neutral-200 overflow-hidden" style="height: 260px;">
+            <svg #polyCanvas viewBox="0 0 200 200" class="w-full h-full" style="touch-action: none;"
+                 (pointerdown)="onPolyCanvasClick($event)">
+              <!-- Background sprite -->
+              @if (backgroundSvg(); as bg) {
+                @let bgId = bg.startsWith('sprite:#') ? bg.substring(8) : bg;
+                <use [attr.href]="'#' + bgId" x="0" y="0" width="200" height="200" style="pointer-events: none; opacity: 0.3;" />
+              }
+              <!-- Polygon fill -->
+              @if (polygon().length >= 3) {
+                <polygon [attr.points]="polygon().map(p => p.x + ',' + p.y).join(' ')"
+                  fill="rgba(0,0,0,0.06)" stroke="black" stroke-width="1.5" fill-rule="evenodd"
+                  style="pointer-events: none;" />
+              }
+              <!-- Polygon points -->
+              @for (pt of polygon(); track $index) {
+                <circle class="poly-point"
+                  [attr.cx]="pt.x" [attr.cy]="pt.y" r="6"
+                  fill="white" stroke="black" stroke-width="2"
+                  style="cursor: grab;"
+                  (pointerdown)="onPolyPointDown($index, $event)" />
+              }
+            </svg>
+          </div>
+          <div class="flex flex-wrap gap-1">
+            @for (pt of polygon(); track $index) {
+              <span class="text-[11px] font-mono text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded">
+                {{ $index + 1 }}:{{ pt.x }},{{ pt.y }}
+                <button (click)="removePolygonPoint($index)" [disabled]="polygon().length <= 3"
+                  class="text-red-400 hover:text-red-600 ml-1 disabled:opacity-30">✕</button>
+              </span>
+            }
+          </div>
+          @if (polygon().length < 3) {
+            <p class="text-xs text-amber-600">Mindestens 3 Punkte erforderlich</p>
+          }
+          @if (polygon().length >= 3) {
+            <div class="text-xs text-neutral-500 mt-1">
+              Fläche: {{ polygonArea() }} px² in 200×200 ViewBox
+              · Ziel-Aufteilung: <span class="font-mono">{{ targetFraction() }}:{{ 100 - targetFraction() }}</span>
+            </div>
+          }
+        </div>
       }
 
       <!-- JSON Preview -->
@@ -194,13 +265,13 @@
       @if (showPreview()) {
         <div class="border-t border-neutral-200 pt-3">
           <label class="text-sm font-semibold text-neutral-700 mb-2 block">Live-Vorschau</label>
-          <div class="bg-neutral-100 rounded-xl border border-neutral-200 overflow-hidden" style="height: 320px;">
+          <div class="bg-neutral-100 rounded-xl border border-neutral-200 overflow-hidden flex flex-col" style="height: 320px;">
             @switch (previewTask()['type']) {
               @case ('sticker-place') {
                 <app-sticker-board
                   class="block w-full h-full"
-                  [backgroundImage]="$any(previewTask())?.['backgroundSvg'] ?? null"
-                  [stickerName]="'sprite:#' + ($any(previewTask())?.['stickerSvg'] ?? 'sticker-shapes-heart')"
+                  [backgroundSvg]="$any(previewTask())?.['backgroundSvg'] ?? null"
+                  [stickerNames]="$any(previewTask())?.['stickerSvgs'] ?? []"
                 />
               }
               @case ('drawing') {
@@ -231,6 +302,9 @@
               @case ('shape-split') {
                 <app-minigame-shape-split
                   class="block w-full h-full"
+                  [polygon]="$any(previewTask())?.['polygon'] ?? undefined"
+                  [targetLabel]="targetLabel($any(previewTask())?.['targetFraction'] ?? 0.5)"
+                  [backgroundSvg]="$any(previewTask())?.['backgroundSvg'] ?? null"
                 />
               }
             }

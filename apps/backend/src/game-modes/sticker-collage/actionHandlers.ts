@@ -129,8 +129,7 @@ export function submitMinigame(
                 type: "sticker-place",
                 playerId,
                 roundIndex: currentRoundIndex,
-                position: action.position,
-                stickerId: action.stickerId,
+                positions: action.positions,
                 submittedAt: now,
             };
             break;
@@ -195,9 +194,11 @@ export function submitMinigame(
     if (submission.type === "drawing") {
         snapshotUrl = submission.imageDataUrl;
     } else if (submission.type === "sticker-place") {
-        // Simple SVG preview with a dot at the position
+        const dots = submission.positions.map(p =>
+            `<circle cx="${p.x * 2}" cy="${p.y * 2}" r="8" fill="black"/>`
+        ).join('');
         snapshotUrl = `data:image/svg+xml,${encodeURIComponent(
-            `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><circle cx="${submission.position.x * 2}" cy="${submission.position.y * 2}" r="8" fill="black"/></svg>`
+            `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">${dots}</svg>`
         )}`;
     } else if (submission.type === "shape-split") {
         const {cutLine, areaFraction} = submission;

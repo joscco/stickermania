@@ -196,7 +196,7 @@ import {StickerPlayerService} from '../features/game/services/sticker-player.ser
 export type MockPhase = 'lobby' | 'building' | 'building-submitted' | 'building-skipped' | 'voting' | 'voting-done' | 'voting-all-done' | 'results' | 'next-round';
 
 export const MOCK_TASKS: Record<string, MinigameTask> = {
-  stickerPlace: {id: 'mock-sticker', type: 'sticker-place', title: 'Platziere das Herz!', durationSec: 30, stickerSvg: 'sticker-shapes-heart'} as StickerPlaceTask,
+  stickerPlace: {id: 'mock-sticker', type: 'sticker-place', title: 'Platziere das Herz!', durationSec: 30, stickerSvgs: ['sticker-shapes-heart']} as StickerPlaceTask,
   drawing: {id: 'mock-drawing', type: 'drawing', title: 'Zeichne einen Bart!', durationSec: 60} as DrawingTask,
   choice: {id: 'mock-choice', type: 'choice', title: 'Wähle deinen Lieblingskäse', durationSec: 30, options: [{label: 'Gouda'}, {label: 'Cheddar'}, {label: 'Brie'}, {label: 'Camembert'}]} as ChoiceTask,
   number: {id: 'mock-number', type: 'number', title: 'Wie viele Kinder?', durationSec: 30, min: 0, max: 10, default: 2} as NumberTask,

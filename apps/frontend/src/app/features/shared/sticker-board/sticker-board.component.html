@@ -2,25 +2,52 @@
   #board
   class="w-full h-full relative overflow-hidden"
   style="background-size: contain; background-position: center; background-repeat: no-repeat;"
-  [style.background-image]="backgroundImage() ? 'url(' + backgroundImage() + ')' : null"
   (pointerdown)="onBoardPointerDown($event)"
 >
-  @if (stickerName()) {
-    <div
-      class="absolute"
-      [style.left.%]="position().x"
-      [style.top.%]="position().y"
-      style="transform: translate(-50%, -50%);"
-    >
-      <div #sticker class="w-16 h-16">
+  @if (backgroundSvgId()) {
+    <svg class="absolute inset-0 w-full h-full object-contain pointer-events-none" style="z-index: 0">
+      <use [attr.href]="'#' + backgroundSvgId()"/>
+    </svg>
+  }
+  @if (stickerNames().length > 0) {
+    <div #stickerContainer>
+      @for (sticker of stickers(); track sticker.index) {
         <div
-          data-sticker
-          class="w-full h-full cursor-grab active:cursor-grabbing"
-          (pointerdown)="onStickerPointerDown($event)"
+          class="absolute"
+          [style.left.%]="sticker.pos.x"
+          [style.top.%]="sticker.pos.y"
+          style="transform: translate(-50%, -50%);"
+          [style.zIndex]="activeIndex() === sticker.index ? 10 : 1"
         >
-          <app-svg [name]="stickerName()" w="64" h="64" />
+          <div class="w-16 h-16">
+            <div
+              data-sticker
+              class="w-full h-full cursor-grab active:cursor-grabbing"
+              [class.ring-2]="activeIndex() === sticker.index"
+              [class.ring-black]="activeIndex() === sticker.index"
+              [class.ring-offset-2]="activeIndex() === sticker.index"
+              (pointerdown)="onStickerPointerDown($event, sticker.index)"
+            >
+              <app-svg [name]="'sprite:#' + sticker.name" w="64" h="64" />
+            </div>
+          </div>
         </div>
-      </div>
+      }
+    </div>
+  }
+
+  <!-- Sticker palette at bottom -->
+  @if (stickerNames().length > 1) {
+    <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 bg-white/80 rounded-xl px-2 py-1.5 backdrop-blur shadow">
+      @for (sticker of stickers(); track sticker.index) {
+        <button
+          class="w-10 h-10 flex items-center justify-center rounded-lg transition-all"
+          [class.bg-black/10]="activeIndex() === sticker.index"
+          (click)="selectSticker(sticker.index)"
+        >
+          <app-svg [name]="'sprite:#' + sticker.name" w="32" h="32" />
+        </button>
+      }
     </div>
   }
 </div>

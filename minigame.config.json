@@ -1,15 +1,16 @@
 {
   "tasks": [
     {
-      "id": "heart-placement",
       "type": "sticker-place",
       "title": "Platziere ein Herz auf dem Bild",
       "durationSec": 30,
-      "stickerSvg": "sticker-shapes-heart",
-      "backgroundSvg": "sprite:#sticker-shapes-star"
+      "stickerSvgs": [
+        "sticker-shapes-heart",
+        "sticker-jewelry-diamond-0"
+      ],
+      "backgroundSvg": "sprite:#sticker-shapes-diamond-filled"
     },
     {
-      "id": "kids-question",
       "type": "number",
       "title": "Wie viele Kinder möchtest du maximal haben?",
       "durationSec": 30,
@@ -25,18 +26,53 @@
       "targetSec": 5
     },
     {
-      "id": "split-rectangle",
       "type": "shape-split",
       "title": "Teile das Rechteck 50:50!",
       "durationSec": 45,
-      "polygon": [
-        {"x": 20, "y": 20},
-        {"x": 180, "y": 20},
-        {"x": 180, "y": 180},
-        {"x": 20, "y": 180}
-      ],
+      "backgroundSvg": "sprite:#sticker-kitchen-glass",
       "targetFraction": 0.5,
-      "backgroundSvg": "sprite:#sticker-shapes-heart"
+      "polygon": [
+        {
+          "x": 59,
+          "y": 49
+        },
+        {
+          "x": 142,
+          "y": 49
+        },
+        {
+          "x": 130,
+          "y": 156
+        },
+        {
+          "x": 71,
+          "y": 157
+        }
+      ]
+    },
+    {
+      "type": "drawing",
+      "title": "Male einen Hirsch",
+      "durationSec": 45
+    },
+    {
+      "type": "choice",
+      "title": "Wähle deinen Lieblingskäse",
+      "durationSec": 45,
+      "options": [
+        {
+          "label": "Gouda"
+        },
+        {
+          "label": "Camembert"
+        },
+        {
+          "label": "Buko"
+        },
+        {
+          "label": "Gorgonzola"
+        }
+      ]
     }
   ]
 }

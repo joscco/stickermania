@@ -1,4 +1,4 @@
-import {Component, signal, computed, inject, OnInit} from "@angular/core";
+import {Component, signal, computed, inject, OnInit, viewChild, ElementRef, AfterViewInit, OnDestroy} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import {HttpClient} from "@angular/common/http";
 import {firstValueFrom} from "rxjs";
@@ -13,6 +13,9 @@ interface SpriteEntry {id: string; spriteRef: string}
 interface TaskItem {_index?: number; type: string; title: string; durationSec: number; [key: string]: any}
 interface OptionItem {label: string; emoji?: string}
 interface PointItem {x: number; y: number}
+const DEFAULT_POLYGON: PointItem[] = [
+  {x: 20, y: 20}, {x: 180, y: 20}, {x: 180, y: 180}, {x: 20, y: 180},
+];
 
 @Component({
   selector: "app-minigame-editor",
@@ -26,8 +29,24 @@ interface PointItem {x: number; y: number}
   templateUrl: "./minigame-editor.component.html",
   host: {"class": "h-dvh flex flex-col bg-neutral-50"},
 })
-export class MinigameEditorComponent implements OnInit {
+export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly http = inject(HttpClient);
+
+  readonly polyCanvasRef = viewChild<ElementRef<SVGSVGElement>>("polyCanvas");
+  readonly draggingPolyIndex = signal<number | null>(null);
+
+  private boundPolyPointerMove = (e: PointerEvent) => this.onPolyPointerMove(e);
+  private boundPolyPointerUp = () => this.onPolyPointerUp();
+
+  ngAfterViewInit(): void {
+    document.addEventListener("pointermove", this.boundPolyPointerMove);
+    document.addEventListener("pointerup", this.boundPolyPointerUp);
+  }
+
+  ngOnDestroy(): void {
+    document.removeEventListener("pointermove", this.boundPolyPointerMove);
+    document.removeEventListener("pointerup", this.boundPolyPointerUp);
+  }
 
   // ─── State ──────────────────────────────────────────────────
   readonly tasks = signal<TaskItem[]>([]);
@@ -42,14 +61,17 @@ export class MinigameEditorComponent implements OnInit {
   // Form state
   readonly title = signal("");
   readonly durationSec = signal(45);
-  readonly stickerSvg = signal("");
+  readonly stickerSvgs = signal<string[]>([]);
+  readonly newStickerSvg = signal("");
   readonly backgroundSvg = signal("");
+  readonly goal = signal("");
   readonly targetSec = signal(5);
   readonly numberMin = signal(1);
   readonly numberMax = signal(100);
   readonly numberDefault = signal(50);
   readonly options = signal<OptionItem[]>([]);
   readonly targetFraction = signal(50);
+  readonly polygon = signal<PointItem[]>(DEFAULT_POLYGON);
 
   readonly newOptionLabel = signal("");
   readonly newOptionEmoji = signal("");
@@ -78,6 +100,21 @@ export class MinigameEditorComponent implements OnInit {
   }
 
   toNum(v: any): number { return Number(v) || 0; }
+  targetLabel(fraction: number): string {
+    const pct = Math.round(fraction * 100);
+    return `${pct}:${100 - pct}`;
+  }
+
+  polygonArea(): number {
+    const pts = this.polygon();
+    if (pts.length < 3) return 0;
+    let area = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const j = (i + 1) % pts.length;
+      area += pts[i].x * pts[j].y - pts[j].x * pts[i].y;
+    }
+    return Math.round(Math.abs(area) / 2);
+  }
 
   readonly showPreview = signal(false);
 
@@ -91,8 +128,18 @@ export class MinigameEditorComponent implements OnInit {
     this.title.set(task['title'] ?? "");
     this.durationSec.set(task['durationSec'] ?? 45);
     this.selectedType.set(task['type'] ?? "choice");
-    this.stickerSvg.set(task['stickerSvg'] ?? "");
+    this.stickerSvgs.set(
+      Array.isArray(task['stickerSvgs'])
+        ? task['stickerSvgs']
+        : (task['stickerSvg'] ? [task['stickerSvg']] : [])
+    );
     this.backgroundSvg.set(task['backgroundSvg'] ?? "");
+    this.goal.set(task['goal'] ?? "");
+    this.polygon.set(
+      Array.isArray(task['polygon']) && task['polygon'].length > 0
+        ? task['polygon']
+        : DEFAULT_POLYGON
+    );
     this.targetSec.set(task['targetSec'] ?? 5);
     this.numberMin.set(task['min'] ?? 1);
     this.numberMax.set(task['max'] ?? 100);
@@ -106,8 +153,11 @@ export class MinigameEditorComponent implements OnInit {
     this.title.set("");
     this.durationSec.set(45);
     this.selectedType.set("choice");
-    this.stickerSvg.set("");
+    this.stickerSvgs.set([]);
+    this.newStickerSvg.set("");
     this.backgroundSvg.set("");
+    this.goal.set("");
+    this.polygon.set(DEFAULT_POLYGON);
     this.targetSec.set(5);
     this.numberMin.set(1);
     this.numberMax.set(100);
@@ -131,6 +181,65 @@ export class MinigameEditorComponent implements OnInit {
 
   removeOption(i: number) { this.options.update(o => o.filter((_, idx) => idx !== i)); }
 
+  addStickerSvg() {
+    const s = this.newStickerSvg().trim();
+    if (!s) return;
+    this.stickerSvgs.update(arr => [...arr, s]);
+    this.newStickerSvg.set("");
+  }
+
+  removeStickerSvg(i: number) {
+    this.stickerSvgs.update(arr => arr.filter((_, idx) => idx !== i));
+  }
+
+  // ─── Polygon canvas ────────────────────────────────────────
+  private svgPointFromEvent(e: PointerEvent): PointItem | null {
+    const svg = this.polyCanvasRef()?.nativeElement;
+    if (!svg) return null;
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const loc = pt.matrixTransform(svg.getScreenCTM()?.inverse());
+    return {x: Math.round(Math.max(0, Math.min(200, loc.x))), y: Math.round(Math.max(0, Math.min(200, loc.y)))};
+  }
+
+  onPolyCanvasClick(e: PointerEvent): void {
+    if ((e.target as HTMLElement).closest(".poly-point")) return;
+    const pt = this.svgPointFromEvent(e);
+    if (!pt) return;
+    this.polygon.update(arr => [...arr, pt]);
+  }
+
+  onPolyPointDown(index: number, e: PointerEvent): void {
+    e.preventDefault();
+    e.stopPropagation();
+    this.draggingPolyIndex.set(index);
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+  }
+
+  private onPolyPointerMove(e: PointerEvent): void {
+    const idx = this.draggingPolyIndex();
+    if (idx === null) return;
+    const pt = this.svgPointFromEvent(e);
+    if (!pt) return;
+    this.polygon.update(arr => {
+      const next = [...arr];
+      if (idx >= 0 && idx < next.length) next[idx] = pt;
+      return next;
+    });
+  }
+
+  private onPolyPointerUp(): void {
+    this.draggingPolyIndex.set(null);
+  }
+
+  removePolygonPoint(i: number) {
+    this.polygon.update(arr => {
+      if (arr.length <= 3) return arr;
+      return arr.filter((_, idx) => idx !== i);
+    });
+  }
+
   // ─── Save / Delete ─────────────────────────────────────────
   buildTask(): TaskItem {
     const task: TaskItem = {
@@ -138,8 +247,13 @@ export class MinigameEditorComponent implements OnInit {
       title: this.title(),
       durationSec: this.durationSec(),
     };
-    if (this.stickerSvg()) task['stickerSvg'] = this.stickerSvg();
-    if (this.backgroundSvg()) task['backgroundSvg'] = this.backgroundSvg();
+    if (this.selectedType() === "sticker-place") {
+      task['stickerSvgs'] = this.stickerSvgs();
+      if (this.goal()) task['goal'] = this.goal();
+    }
+    if (this.selectedType() === "sticker-place" || this.selectedType() === "drawing" || this.selectedType() === "shape-split") {
+      if (this.backgroundSvg()) task['backgroundSvg'] = this.backgroundSvg();
+    }
     if (this.selectedType() === "timer-stop") task['targetSec'] = this.targetSec();
     if (this.selectedType() === "number") {
       task['min'] = this.numberMin();
@@ -151,8 +265,7 @@ export class MinigameEditorComponent implements OnInit {
     }
     if (this.selectedType() === "shape-split") {
       task['targetFraction'] = this.targetFraction() / 100;
-      const existing = this.isNew() ? null : this.tasks()[this.selectedIndex()!];
-      if (existing?.['polygon']) task['polygon'] = existing['polygon'];
+      task['polygon'] = this.polygon();
     }
     return task;
   }
@@ -170,7 +283,6 @@ export class MinigameEditorComponent implements OnInit {
       this.saved.set(true);
       setTimeout(() => this.saved.set(false), 2000);
       await this.loadTasks();
-      this.newTask();
     } catch (err: any) {
       this.error.set(err?.message ?? "Speichern fehlgeschlagen");
     } finally {

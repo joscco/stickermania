@@ -4,6 +4,9 @@ import {AppComponent} from "./app/app.component";
 import {devRoutes} from "./app/app.routes.dev";
 import {provideHttpClient} from "@angular/common/http";
 import {provideBrowserGlobalErrorListeners, provideZonelessChangeDetection} from "@angular/core";
+import {preloadSprite} from "./app/features/shared/sticker-editor/sprite-url.util";
+
+preloadSprite();
 
 bootstrapApplication(AppComponent, {
     providers: [

@@ -11,7 +11,7 @@ import {MinigameTimerComponent} from '../../../../shared/minigame-timer/minigame
 import {MinigameShapeSplitComponent} from '../../../../shared/minigame-shape-split/minigame-shape-split.component';
 
 export type MinigameSubmitEvent =
-  | {type: "submit-sticker-place"; position: {x: number; y: number}; stickerId: string}
+  | {type: "submit-sticker-place"; positions: Array<{stickerId: string; x: number; y: number}>}
   | {type: "submit-drawing"; imageDataUrl: string}
   | {type: "submit-choice"; selectedIndices: number[]}
   | {type: "submit-number"; value: number}
@@ -43,9 +43,9 @@ export class PlayerBuildingComponent {
     @ViewChild("drawingCanvas") drawingCanvas!: DrawingCanvasBgComponent;
 
     public onSubmitStickerPlace(): void {
-        const pos = this.stickerBoard?.position();
-        if (!pos) return;
-        this.submitMinigame.emit({type: "submit-sticker-place", position: pos, stickerId: (this.task() as any)?.['stickerSvg'] ?? "sticker-shapes-heart"});
+        const positions = this.stickerBoard?.getPositions();
+        if (!positions || positions.length === 0) return;
+        this.submitMinigame.emit({type: "submit-sticker-place", positions});
     }
 
     public onSubmitDrawing(imageDataUrl: string): void {

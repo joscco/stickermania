@@ -1,4 +1,4 @@
-import {Component, input, output, signal, viewChild, ElementRef, AfterViewInit, OnDestroy} from "@angular/core";
+import {Component, input, output, signal, viewChild, ElementRef, AfterViewInit, OnDestroy, computed} from "@angular/core";
 import {CommonModule} from "@angular/common";
 
 interface Point {x: number; y: number}
@@ -20,18 +20,27 @@ export class MinigameShapeSplitComponent implements AfterViewInit, OnDestroy {
   /** Polygon vertices in viewBox-local coords (0-200 range). */
   readonly polygon = input<Point[]>(DEFAULT_POLYGON);
   readonly targetLabel = input<string>("50:50");
+  readonly backgroundSvg = input<string | null>(null);
   readonly submitted = output<{cutLine: {a: Point; b: Point}; areaFraction: number}>();
 
   readonly svgRef = viewChild<ElementRef<SVGSVGElement>>("svg");
+
+  readonly bgSvgId = computed(() => {
+    const s = this.backgroundSvg();
+    if (!s) return null;
+    return s.startsWith('sprite:#') ? s.replace('sprite:#', '') : s;
+  });
 
   // Handle positions in viewBox coords (0-200)
   handleA = signal<Point>({x: 60, y: 100});
   handleB = signal<Point>({x: 140, y: 100});
   dragging = signal<'A' | 'B' | null>(null);
 
-  // For visual feedback: which side is which colour
+  // For visual feedback: which side is which color
   side1Path = signal<string>("");
   side2Path = signal<string>("");
+  side1AreaPct = signal<number>(0);
+  side2AreaPct = signal<number>(0);
 
   private boundPointerMove = (e: PointerEvent) => this.onPointerMove(e);
   private boundPointerUp = () => this.onPointerUp();
@@ -91,54 +100,33 @@ export class MinigameShapeSplitComponent implements AfterViewInit, OnDestroy {
     const a = this.handleA();
     const b = this.handleB();
 
-    // Find all intersection points of line AB with polygon edges
-    const intersections: Array<{point: Point; edgeIndex: number; t: number; u: number}> = [];
-    for (let i = 0; i < poly.length; i++) {
-      const j = (i + 1) % poly.length;
-      const isect = lineIntersect(a, b, poly[i], poly[j]);
-      if (isect && isect.t > 0.0001 && isect.t < 0.9999 && isect.u > 0.0001 && isect.u < 0.9999) {
-        intersections.push({point: isect.point, edgeIndex: i, t: isect.t, u: isect.u});
-      }
-    }
+    // Find all intersections of the infinite line AB with polygon edges
+    const intersections = findBoundaryIntersections(poly, a, b);
 
-    // For a convex polygon, a line intersects at 0 or 2 edges
-    // If both handles are inside, we need the boundary intersections
-    const isInside = (pt: Point) => pointInPolygon(pt, poly);
-    const aInside = isInside(a);
-    const bInside = isInside(b);
-
-    let cutPoints: Point[] = [];
-    if (aInside && bInside) {
-      // Both inside: line AB, find 2 boundary intersections
-      cutPoints = intersections.map(i => i.point);
-    } else if (aInside) {
-      // A inside, B outside: A + 1 boundary intersection
-      const nearest = intersections
-        .map(i => ({...i, da: distSq(i.point, a)}))
-        .sort((x, y) => x.da - y.da)[0];
-      if (nearest) cutPoints = [a, nearest.point];
-      else cutPoints = [a];
-    } else if (bInside) {
-      const nearest = intersections
-        .map(i => ({...i, db: distSq(i.point, b)}))
-        .sort((x, y) => x.db - y.db)[0];
-      if (nearest) cutPoints = [b, nearest.point];
-      else cutPoints = [b];
-    } else {
-      // Both outside: find 2 boundary intersections
-      cutPoints = intersections.map(i => i.point);
-    }
-
-    if (cutPoints.length < 2) {
+    if (intersections.length < 2) {
       this.side1Path.set("");
       this.side2Path.set("");
+      this.side1AreaPct.set(0);
+      this.side2AreaPct.set(0);
       return;
     }
 
-    // Build two polygons by following the original edges and inserting cut points
-    const {poly1, poly2} = splitPolygon(poly, cutPoints[0], cutPoints[1]);
+    // Take the two extreme intersections along the line
+    const sorted = [...intersections].sort((x, y) => x.t - y.t);
+    const cut1 = {point: sorted[0].point, edgeIndex: sorted[0].edgeIndex};
+    const cut2 = {point: sorted[sorted.length - 1].point, edgeIndex: sorted[sorted.length - 1].edgeIndex};
+
+    const {poly1, poly2} = splitPolygonByEdges(poly, cut1, cut2);
     this.side1Path.set(poly1.length > 2 ? pointsToPath(poly1) : "");
     this.side2Path.set(poly2.length > 2 ? pointsToPath(poly2) : "");
+
+    const area1 = polygonArea(poly1);
+    const area2 = polygonArea(poly2);
+    const total = area1 + area2;
+    if (total > 0) {
+      this.side1AreaPct.set(Math.round((area1 / total) * 100));
+      this.side2AreaPct.set(Math.round((area2 / total) * 100));
+    }
   }
 
   public areaFraction(): number {
@@ -146,39 +134,14 @@ export class MinigameShapeSplitComponent implements AfterViewInit, OnDestroy {
     const a = this.handleA();
     const b = this.handleB();
 
-    const intersections: Array<{point: Point; t: number; u: number}> = [];
-    for (let i = 0; i < poly.length; i++) {
-      const j = (i + 1) % poly.length;
-      const isect = lineIntersect(a, b, poly[i], poly[j]);
-      if (isect && isect.t > 0.0001 && isect.t < 0.9999 && isect.u > 0.0001 && isect.u < 0.9999) {
-        intersections.push(isect);
-      }
-    }
+    const intersections = findBoundaryIntersections(poly, a, b);
+    if (intersections.length < 2) return 0.5;
 
-    const isInside = (pt: Point) => pointInPolygon(pt, poly);
-    const aInside = isInside(a);
-    const bInside = isInside(b);
+    const sorted = [...intersections].sort((x, y) => x.t - y.t);
+    const cut1 = {point: sorted[0].point, edgeIndex: sorted[0].edgeIndex};
+    const cut2 = {point: sorted[sorted.length - 1].point, edgeIndex: sorted[sorted.length - 1].edgeIndex};
 
-    let cutPoints: Point[] = [];
-    if (aInside && bInside) {
-      cutPoints = intersections.map(i => i.point);
-    } else if (aInside) {
-      const nearest = intersections
-        .map(i => ({point: i.point, da: distSq(i.point, a)}))
-        .sort((x, y) => x.da - y.da)[0];
-      if (nearest) cutPoints = [a, nearest.point];
-    } else if (bInside) {
-      const nearest = intersections
-        .map(i => ({point: i.point, db: distSq(i.point, b)}))
-        .sort((x, y) => x.db - y.db)[0];
-      if (nearest) cutPoints = [b, nearest.point];
-    } else {
-      cutPoints = intersections.map(i => i.point);
-    }
-
-    if (cutPoints.length < 2) return 0.5;
-
-    const {poly1, poly2} = splitPolygon(poly, cutPoints[0], cutPoints[1]);
+    const {poly1, poly2} = splitPolygonByEdges(poly, cut1, cut2);
     const area1 = polygonArea(poly1);
     const area2 = polygonArea(poly2);
     const total = area1 + area2;
@@ -201,12 +164,6 @@ const DEFAULT_POLYGON: Point[] = [
   {x: 180, y: 180},
   {x: 20, y: 180},
 ];
-
-function distSq(a: Point, b: Point): number {
-  const dx = a.x - b.x;
-  const dy = a.y - b.y;
-  return dx * dx + dy * dy;
-}
 
 function lineIntersect(
   a1: Point, a2: Point,
@@ -250,65 +207,79 @@ function polygonArea(poly: Point[]): number {
   return Math.abs(area) / 2;
 }
 
-function splitPolygon(poly: Point[], p1: Point, p2: Point): {poly1: Point[]; poly2: Point[]} {
-  // Find where p1 and p2 lie on edges
-  const insertions: Array<{index: number; point: Point}> = [];
-
+/**
+ * Split a polygon into two halves by cutting along the line from cut1 to cut2.
+ * cut1 and cut2 are ON polygon edges. edgeIndex refers to the polygon edge
+ * from poly[edgeIndex] to poly[(edgeIndex+1)%n].
+ * When edgeIndex === -1, the point is a handle inside the polygon (not on an edge);
+ * in that case the two halves share that point.
+ */
+function findBoundaryIntersections(
+  poly: Point[], a: Point, b: Point,
+): Array<{point: Point; edgeIndex: number; t: number; u: number}> {
+  const eps = 1e-9;
+  const raw: Array<{point: Point; edgeIndex: number; t: number; u: number}> = [];
   for (let i = 0; i < poly.length; i++) {
     const j = (i + 1) % poly.length;
-    if (pointOnSegment(p1, poly[i], poly[j])) insertions.push({index: i, point: p1});
-    if (pointOnSegment(p2, poly[i], poly[j])) insertions.push({index: i, point: p2});
+    const isect = lineIntersect(a, b, poly[i], poly[j]);
+    if (isect && isect.u >= -eps && isect.u <= 1 + eps) {
+      raw.push({point: isect.point, edgeIndex: i, t: isect.t, u: Math.max(0, Math.min(1, isect.u))});
+    }
+  }
+  // Deduplicate: when line hits a vertex, two adjacent edges report the same point
+  const result: Array<{point: Point; edgeIndex: number; t: number; u: number}> = [];
+  for (const r of raw) {
+    const dup = result.find(e => Math.abs(e.point.x - r.point.x) < 0.01 && Math.abs(e.point.y - r.point.y) < 0.01);
+    if (!dup) result.push(r);
+  }
+  return result;
+}
+
+function splitPolygonByEdges(
+  poly: Point[],
+  cut1: {point: Point; edgeIndex: number},
+  cut2: {point: Point; edgeIndex: number},
+): {poly1: Point[]; poly2: Point[]} {
+  const n = poly.length;
+
+  // Build an ordered list of vertices with cut points inserted at their edges.
+  // For handle points (edgeIndex === -1), insert at the start.
+  const verts: Point[] = [];
+  const cutIdx1: number[] = [];
+  const cutIdx2: number[] = [];
+
+  for (let i = 0; i < n; i++) {
+    // Insert cut points BEFORE vertex i if they belong to edge (i-1 → i)
+    // Actually: edge i connects vertex i to vertex (i+1)%n.
+    // We insert cut points AFTER vertex i if they belong to edge i.
+    verts.push(poly[i]);
+    if (cut1.edgeIndex === i) { cutIdx1.push(verts.length); verts.push(cut1.point); }
+    if (cut2.edgeIndex === i) { cutIdx2.push(verts.length); verts.push(cut2.point); }
   }
 
-  // Deduplicate and sort by edge index
-  const unique = insertions.filter((v, i, a) =>
-    a.findIndex(t => samePoint(t.point, v.point)) === i
-  );
-  unique.sort((a, b) => a.index - b.index);
+  // If we didn't find edge matches (handle points with -1), add at end
+  if (cutIdx1.length === 0) { cutIdx1.push(verts.length); verts.push(cut1.point); }
+  if (cutIdx2.length === 0) { cutIdx2.push(verts.length); verts.push(cut2.point); }
 
-  if (unique.length < 2) return {poly1: poly, poly2: []};
+  const idx1 = cutIdx1[0];
+  const idx2 = cutIdx2[0];
+  const m = verts.length;
 
-  // Build ordered vertex list with insertions
-  const verts: Array<{point: Point; isCut: boolean}> = [];
-  for (let i = 0; i < poly.length; i++) {
-    const ins = unique.filter(u => u.index === i);
-    ins.forEach(u => verts.push({point: u.point, isCut: true}));
-    verts.push({point: poly[i], isCut: false});
-  }
-
-  // Find cut point indices
-  const cutIndices = verts.map((v, i) => v.isCut ? i : -1).filter(i => i >= 0);
-  if (cutIndices.length < 2) return {poly1: poly, poly2: []};
-
-  // Walk around in both directions between cut points
-  const n = verts.length;
-  const i1 = cutIndices[0];
-  const i2 = cutIndices[1];
-
+  // Walk from cut1 to cut2 in one direction
   const poly1: Point[] = [];
-  for (let i = i1; i !== i2; i = (i + 1) % n) {
-    poly1.push(verts[i].point);
+  for (let i = idx1; i !== idx2; i = (i + 1) % m) {
+    poly1.push(verts[i]);
   }
-  poly1.push(verts[i2].point);
+  poly1.push(verts[idx2]);
 
+  // Walk from cut2 to cut1 in the other direction
   const poly2: Point[] = [];
-  for (let i = i2; i !== i1; i = (i + 1) % n) {
-    poly2.push(verts[i].point);
+  for (let i = idx2; i !== idx1; i = (i + 1) % m) {
+    poly2.push(verts[i]);
   }
-  poly2.push(verts[i1].point);
+  poly2.push(verts[idx1]);
 
   return {poly1, poly2};
-}
-
-function pointOnSegment(p: Point, a: Point, b: Point): boolean {
-  const cross = (p.x - a.x) * (b.y - a.y) - (p.y - a.y) * (b.x - a.x);
-  if (Math.abs(cross) > 1e-6) return false;
-  const dot = (p.x - a.x) * (p.x - b.x) + (p.y - a.y) * (p.y - b.y);
-  return dot <= 1e-6;
-}
-
-function samePoint(a: Point, b: Point): boolean {
-  return Math.abs(a.x - b.x) < 1e-6 && Math.abs(a.y - b.y) < 1e-6;
 }
 
 function pointsToPath(pts: Point[]): string {

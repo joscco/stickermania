@@ -326,15 +326,20 @@ export type ServerToClientMessage = SessionServerToClientMessage | GameServerEnv
 
 // ── Task definitions (discriminated union) ─────────────────────
 
+/** How the winner is determined for sticker placement games */
+export type StickerPlaceGoal = 'closest-to-average' | 'furthest-from-average';
+
 export interface StickerPlaceTask {
   id: string;
   type: "sticker-place";
   title: string;
   durationSec: number;
-  /** Sprite ref for the sticker the player drags, e.g. "sticker-shapes-heart" */
-  stickerSvg: string;
+  /** Sprite refs for the stickers the player places, e.g. "sticker-shapes-heart" */
+  stickerSvgs: string[];
   /** Optional background image sprite ref, e.g. "sprite:#sticker-eyes-open" */
   backgroundSvg?: string;
+  /** How the winner is determined. Default: closest-to-average */
+  goal?: StickerPlaceGoal;
 }
 
 export interface DrawingTask {
@@ -421,11 +426,21 @@ function parseTask(raw: unknown): MinigameTask | null {
   const dur = typeof t["durationSec"] === "number" ? t["durationSec"] : 60;
 
   switch (type) {
-    case "sticker-place": return {
-      id, type: "sticker-place", title, durationSec: dur,
-      stickerSvg: typeof t["stickerSvg"] === "string" ? t["stickerSvg"] : "sticker-shapes-heart",
-      backgroundSvg: typeof t["backgroundSvg"] === "string" ? t["backgroundSvg"] : undefined,
-    };
+    case "sticker-place": {
+      const goalRaw = t["goal"];
+      const goal: StickerPlaceGoal | undefined =
+        goalRaw === "closest-to-average" || goalRaw === "furthest-from-average" ? goalRaw : undefined;
+      // Backward compat: single stickerSvg string → array, or new stickerSvgs array
+      const svgs = Array.isArray(t["stickerSvgs"])
+        ? (t["stickerSvgs"] as unknown[]).filter((s): s is string => typeof s === "string")
+        : typeof t["stickerSvg"] === "string" ? [t["stickerSvg"]] : ["sticker-shapes-heart"];
+      return {
+        id, type: "sticker-place", title, durationSec: dur,
+        stickerSvgs: svgs,
+        backgroundSvg: typeof t["backgroundSvg"] === "string" ? t["backgroundSvg"] : undefined,
+        goal,
+      };
+    }
     case "drawing": return {
       id, type: "drawing", title, durationSec: dur,
       backgroundSvg: typeof t["backgroundSvg"] === "string" ? t["backgroundSvg"] : undefined,
@@ -467,8 +482,8 @@ export interface StickerPlaceSubmission {
   type: "sticker-place";
   playerId: string;
   roundIndex: number;
-  position: {x: number; y: number};
-  stickerId: string;
+  /** Positions for each placed sticker */
+  positions: Array<{stickerId: string; x: number; y: number}>;
   submittedAt: number;
 }
 
@@ -524,7 +539,7 @@ export type MinigameSubmission =
 // ── Client Actions ──────────────────────────────────────────────
 
 export type MinigameClientAction =
-  | { type: "submit-sticker-place"; position: {x: number; y: number}; stickerId: string }
+  | { type: "submit-sticker-place"; positions: Array<{stickerId: string; x: number; y: number}> }
   | { type: "submit-drawing"; imageDataUrl: string }
   | { type: "submit-choice"; selectedIndices: number[] }
   | { type: "submit-number"; value: number }
