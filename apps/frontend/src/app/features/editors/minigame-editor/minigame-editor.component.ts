@@ -62,6 +62,7 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
   readonly error = signal<string | null>(null);
 
   // Form state
+  readonly taskId = signal("");
   readonly title = signal("");
   readonly durationSec = signal(45);
   readonly stickerSvgs = signal<string[]>([]);
@@ -71,6 +72,7 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
   readonly voteQuestion = signal("");
   readonly thesisOptionA = signal("");
   readonly thesisOptionB = signal("");
+  readonly extraTasksStr = signal("");
   readonly targetSec = signal(5);
   readonly numberMin = signal(1);
   readonly numberMax = signal(100);
@@ -131,6 +133,7 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
     const task = this.tasks()[index];
     if (!task) return;
     this.selectedIndex.set(index);
+    this.taskId.set(task['id'] ?? String((task._index ?? index) + 1));
     this.title.set(task['title'] ?? "");
     this.durationSec.set(task['durationSec'] ?? 45);
     this.selectedType.set(task['type'] ?? "choice");
@@ -144,6 +147,7 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
     this.voteQuestion.set(task['voteQuestion'] ?? "");
     this.thesisOptionA.set(task['optionA'] ?? "");
     this.thesisOptionB.set(task['optionB'] ?? "");
+    this.extraTasksStr.set((task['extraTasks'] ?? []).join(", "));
     this.polygon.set(
       Array.isArray(task['polygon']) && task['polygon'].length > 0
         ? task['polygon']
@@ -159,6 +163,7 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
 
   newTask() {
     this.selectedIndex.set(null);
+    this.taskId.set(String((this.tasks().length || 0) + 1));
     this.title.set("");
     this.durationSec.set(45);
     this.selectedType.set("choice");
@@ -169,6 +174,7 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
     this.voteQuestion.set("");
     this.thesisOptionA.set("");
     this.thesisOptionB.set("");
+    this.extraTasksStr.set("");
     this.polygon.set(DEFAULT_POLYGON);
     this.targetSec.set(5);
     this.numberMin.set(1);
@@ -264,6 +270,7 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
   // ─── Save / Delete ─────────────────────────────────────────
   buildTask(): TaskItem {
     const task: TaskItem = {
+      id: this.taskId().trim() || String((this.tasks().length || 0) + 1),
       type: this.selectedType(),
       title: this.title(),
       durationSec: this.durationSec(),
@@ -274,6 +281,10 @@ export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy
     }
     if (this.selectedType() === "sticker-place" || this.selectedType() === "drawing" || this.selectedType() === "shape-split") {
       if (this.backgroundSvg()) task['backgroundSvg'] = this.backgroundSvg();
+    }
+    if (this.selectedType() === "drawing") {
+      const tasks = this.extraTasksStr().split(",").map(s => s.trim()).filter(s => s.length > 0);
+      if (tasks.length > 0) task['extraTasks'] = tasks;
     }
     if (this.selectedType() === "text-answer") {
       task['voteQuestion'] = this.voteQuestion();

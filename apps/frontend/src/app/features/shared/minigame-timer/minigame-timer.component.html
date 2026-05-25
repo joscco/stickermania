@@ -1,17 +1,21 @@
-<div class="text-6xl font-mono font-bold tabular-nums text-neutral-900">{{ displayTime() }}</div>
+<!-- Visual progress bar instead of running time -->
+<div class="flex items-center justify-center w-75 max-w-xs h-8 rounded-sm overflow-hidden">
+  <div
+    class="h-full rounded-sm transition-all duration-75"
+    [style.width.%]="barProgress() * 100"
+    [class]="stopped() ? 'bg-green-500' : 'bg-black'"
+  ></div>
+</div>
 
 <div class="flex gap-3">
   @if (!started() && !stopped()) {
-    <button (click)="start()" class="bg-black text-white py-2.5 px-6 rounded-xl font-semibold shadow active:scale-95 transition-transform">Start</button>
+    <button (click)="start()" class="bg-black text-white w-30 h-30 rounded-xl font-semibold shadow active:scale-95 transition-transform">Start</button>
   }
   @if (started() && !stopped()) {
-    <button (click)="stop()" class="bg-black text-white py-2.5 px-6 rounded-xl font-semibold shadow active:scale-95 transition-transform">Stopp</button>
+    <button (click)="stop()" class="bg-red-600 text-white w-30 h-30 rounded-xl font-semibold shadow active:scale-95 transition-transform">Stopp</button>
   }
   @if (stopped()) {
-    <button (click)="reset()" class="bg-neutral-200 text-neutral-700 py-2.5 px-6 rounded-xl font-semibold active:scale-95 transition-transform">Nochmal</button>
+    <button (click)="reset()" class="bg-white text-black w-30 h-30 rounded-xl font-semibold active:scale-95 transition-transform">Nochmal</button>
   }
 </div>
 
-@if (stopped()) {
-  <div class="text-lg font-semibold text-neutral-800">{{ deviation().toFixed(2) }}s Abweichung</div>
-}

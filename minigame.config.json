@@ -1,6 +1,7 @@
 {
   "tasks": [
     {
+      "id": "place-heart",
       "type": "sticker-place",
       "title": "Platziere ein Herz auf dem Bild",
       "durationSec": 30,
@@ -11,6 +12,7 @@
       "backgroundSvg": "sprite:#sticker-home-key"
     },
     {
+      "id": "many-children",
       "type": "number",
       "title": "Wie viele Kinder möchtest du maximal haben?",
       "durationSec": 30,
@@ -26,6 +28,7 @@
       "targetSec": 5
     },
     {
+      "id": "split-glass",
       "type": "shape-split",
       "title": "Teile das Rechteck 50:50!",
       "durationSec": 45,
@@ -51,11 +54,19 @@
       ]
     },
     {
+      "id": "draw-spaghetti",
       "type": "drawing",
-      "title": "Male einen Hirsch",
-      "durationSec": 45
+      "title": "Male eine Portion Spaghetti",
+      "durationSec": 45,
+      "backgroundSvg": "sprite:#sticker-kitchen-bowl",
+      "extraTasks": [
+        "Scharf",
+        "Würzig",
+        "Heiß"
+      ]
     },
     {
+      "id": "favourite-cheese",
       "type": "choice",
       "title": "Wähle deinen Lieblingskäse",
       "durationSec": 45,
@@ -75,12 +86,14 @@
       ]
     },
     {
+      "id": "italian-dish",
       "type": "text-answer",
       "title": "Nenne ein Gericht vom Italiener",
       "durationSec": 45,
       "voteQuestion": "Welches Gericht hat die meisten Kalorien?"
     },
     {
+      "id": "pineapple-pizza",
       "type": "thesis",
       "title": "Ananas ist ein legitimer Pizza-Belag.",
       "durationSec": 45

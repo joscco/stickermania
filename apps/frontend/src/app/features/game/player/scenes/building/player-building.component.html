@@ -6,37 +6,36 @@
     class="w-full px-4"
   />
 
-  @switch (task()?.type) {
-    @case ('sticker-place') {
-      @let svgs = $any(task())?.['stickerSvgs'] ?? [];
-      @let bg = $any(task())?.['backgroundSvg'];
-      <app-sticker-board
-        #stickerBoard
-        class="flex-1 min-h-0 w-full"
-        [backgroundSvg]="bg ?? null"
-        [stickerNames]="svgs"
-      />
-    }
+  <div class="flex-1 flex flex-col items-center justify-center w-full">
+    @switch (task()?.type) {
+      @case ('sticker-place') {
+        @let svgs = $any(task())?.['stickerSvgs'] ?? [];
+        @let bg = $any(task())?.['backgroundSvg'];
+        <app-sticker-board
+          #stickerBoard
+          class="flex-1 min-h-0 w-full"
+          [backgroundSvg]="bg ?? null"
+          [stickerNames]="svgs"
+        />
+      }
     @case ('drawing') {
       @let bg = $any(task())?.['backgroundSvg'];
       <app-drawing-canvas-bg
         #drawingCanvas
         [baseImageUrl]="bg ?? null"
+        [extraTasks]="$any(task())?.['extraTasks'] ?? []"
         (submitted)="onSubmitDrawing($event)"
       />
-    }
-    @case ('choice') {
-      <div class="flex-1 flex flex-col items-center justify-center w-full">
+      }
+      @case ('choice') {
         <app-minigame-choice
           #choiceCmp
           class="w-full"
           [options]="$any(task())?.['options'] ?? []"
           (submitted)="onSubmitChoice($event)"
         />
-      </div>
-    }
-    @case ('number') {
-      <div class="flex-1 flex flex-col items-center justify-center w-full">
+      }
+      @case ('number') {
         <app-minigame-number
           #numberCmp
           [min]="$any(task())?.['min'] ?? 1"
@@ -44,20 +43,16 @@
           [default]="$any(task())?.['default'] ?? 50"
           (submitted)="onSubmitNumber($event)"
         />
-      </div>
-    }
-    @case ('timer-stop') {
-      <div class="flex-1 flex flex-col items-center justify-center w-full">
+      }
+      @case ('timer-stop') {
         <app-minigame-timer
           #timerCmp
           [targetSec]="$any(task())?.['targetSec'] ?? 5"
           (submitted)="onSubmitTimer($event)"
         />
-      </div>
-    }
-    @case ('shape-split') {
-      @let fraction = $any(task())?.['targetFraction'];
-      <div class="flex-1 flex flex-col items-center justify-center w-full">
+      }
+      @case ('shape-split') {
+        @let fraction = $any(task())?.['targetFraction'];
         <app-minigame-shape-split
           #splitCmp
           [polygon]="$any(task())?.['polygon'] ?? undefined"
@@ -65,18 +60,15 @@
           [backgroundSvg]="$any(task())?.['backgroundSvg'] ?? null"
           (submitted)="onSubmitShapeSplit($event)"
         />
-      </div>
-    }
-    @case ('text-answer') {
-      <div class="flex-1 flex flex-col items-center justify-center w-full">
+      }
+      @case ('text-answer') {
         <app-minigame-text-answer
           #textCmp
           (submitted)="onSubmitTextAnswer($event)"
         />
-      </div>
-    }
-    @case ('thesis') {
-      <div class="flex-1 flex flex-col items-center justify-center w-full">
+
+      }
+      @case ('thesis') {
         <app-minigame-thesis
           #thesisCmp
           [title]="$any(task())?.['title'] ?? ''"
@@ -84,19 +76,25 @@
           [optionB]="$any(task())?.['optionB'] ?? 'Stimme nicht zu'"
           (submitted)="onSubmitThesis($event)"
         />
-      </div>
+      }
+      @default {
+        <div class="flex-1 flex items-center justify-center text-neutral-400 text-sm">
+          <p>Kein Minigame konfiguriert</p>
+        </div>
+      }
     }
-    @default {
-      <div class="flex-1 flex items-center justify-center text-neutral-400 text-sm">
-        <p>Kein Minigame konfiguriert</p>
-      </div>
-    }
-  }
+  </div>
 
   @if (task()) {
-    <div class="shrink-0 px-4 py-3 flex gap-2 w-full">
-      <button (click)="skipRound.emit()" class="flex-1 bg-neutral-200 text-neutral-700 py-2.5 rounded-xl font-semibold active:scale-95 transition-transform">Überspringen</button>
-      <button (click)="submitCurrentTask()" class="flex-1 bg-black text-white py-2.5 rounded-xl font-semibold shadow active:scale-95 transition-transform">Absenden</button>
+    <div class="shrink-0 p-4 flex gap-3 w-full max-w-md">
+      <button (click)="skipRound.emit()"
+              class="flex-1 bg-white text-black py-2.5 rounded-xl font-semibold active:scale-95 transition-transform">
+        Überspringen
+      </button>
+      <button (click)="submitCurrentTask()"
+              class="flex-1 bg-black text-white py-2.5 rounded-xl font-semibold shadow active:scale-95 transition-transform">
+        Absenden
+      </button>
     </div>
   }
 </div>

@@ -26,8 +26,9 @@ export class DrawingCanvasComponent implements AfterViewInit, OnDestroy {
 
   public readonly painter = new CanvasPainter(
     () => this.canvasRef?.nativeElement,
-    () => (this.drawMode() == 'erase' ? "#ffffff" : "#000000"),
+    () => "#000000",
     () => (this.drawMode() == 'erase' ? 20 : ((this.drawMode() == "small") ? 5 : 10)),
+    () => this.drawMode() == 'erase',
   );
 
   public readonly canvasSizePercent = `${((CANVAS_SIZE / FRAME_SIZE) * 100).toFixed(3)}%`;

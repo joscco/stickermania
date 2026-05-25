@@ -1,4 +1,4 @@
-import {Component, input, output, signal, OnDestroy} from "@angular/core";
+import {Component, input, output, signal, computed, OnDestroy} from "@angular/core";
 import {CommonModule} from "@angular/common";
 
 @Component({
@@ -14,10 +14,13 @@ export class MinigameTimerComponent implements OnDestroy {
 
   started = signal(false);
   stopped = signal(false);
-  displayTime = signal("0.000");
   deviation = signal(0);
 
+  /** Visual progress 0-1 (clamped to 2x target for visual range) */
+  barProgress = signal(0);
+
   private startTime = 0;
+  private maxVisualSec = 0;
   private intervalId: ReturnType<typeof setInterval> | null = null;
 
   ngOnDestroy(): void {
@@ -27,18 +30,21 @@ export class MinigameTimerComponent implements OnDestroy {
   start(): void {
     this.started.set(true);
     this.stopped.set(false);
-    this.displayTime.set("0.000");
+    this.deviation.set(0);
+    this.barProgress.set(0);
     this.startTime = performance.now();
+    this.maxVisualSec = this.targetSec() * 2;
     this.intervalId = setInterval(() => {
-      this.displayTime.set(((performance.now() - this.startTime) / 1000).toFixed(3));
+      const elapsed = (performance.now() - this.startTime) / 1000;
+      this.barProgress.set(Math.min(1, elapsed / this.maxVisualSec));
     }, 30);
   }
 
   stop(): void {
     if (this.intervalId) clearInterval(this.intervalId);
     const sec = (performance.now() - this.startTime) / 1000;
-    this.displayTime.set(sec.toFixed(3));
     this.deviation.set(Math.abs(sec - this.targetSec()));
+    this.barProgress.set(Math.min(1, sec / this.maxVisualSec));
     this.stopped.set(true);
     this.submitted.emit(sec);
   }
@@ -47,11 +53,11 @@ export class MinigameTimerComponent implements OnDestroy {
     if (this.intervalId) clearInterval(this.intervalId);
     this.started.set(false);
     this.stopped.set(false);
-    this.displayTime.set("0.000");
     this.deviation.set(0);
+    this.barProgress.set(0);
   }
 
-  /** Called by parent submit button: start → stop → reset → start cycle */
+  /** Called by parent submit button */
   submit(): void {
     if (!this.started()) { this.start(); return; }
     if (!this.stopped()) { this.stop(); return; }

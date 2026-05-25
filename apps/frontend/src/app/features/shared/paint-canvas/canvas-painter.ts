@@ -13,17 +13,22 @@ export class CanvasPainter {
     private readonly getCanvas: () => HTMLCanvasElement | undefined,
     private readonly getColor: () => string,
     private readonly getBrushSize: () => number,
+    private readonly isErasing?: () => boolean,
   ) {}
 
-  public init(): boolean {
+  public init(transparent = false): boolean {
     const canvas = this.getCanvas();
     if (!canvas) return false;
     canvas.width = CANVAS_RESOLUTION;
     canvas.height = CANVAS_RESOLUTION;
     const ctx = canvas.getContext("2d");
     if (ctx) {
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, CANVAS_RESOLUTION, CANVAS_RESOLUTION);
+      if (!transparent) {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, CANVAS_RESOLUTION, CANVAS_RESOLUTION);
+      } else {
+        ctx.clearRect(0, 0, CANVAS_RESOLUTION, CANVAS_RESOLUTION);
+      }
     }
     return true;
   }
@@ -62,7 +67,6 @@ export class CanvasPainter {
 
   public pointerDown(event: PointerEvent): void {
     event.preventDefault();
-    // Only allow one pointer to draw at a time — ignore additional fingers
     if (this.isDrawing) return;
 
     const canvas = this.getCanvas();
@@ -80,17 +84,22 @@ export class CanvasPainter {
 
     const ctx = canvas.getContext("2d");
     if (ctx && this.lastPoint) {
-      ctx.fillStyle = this.getColor();
+      if (this.isErasing?.()) {
+        ctx.globalCompositeOperation = "destination-out";
+      }
+      ctx.fillStyle = this.isErasing?.() ? "black" : this.getColor();
       ctx.beginPath();
       ctx.arc(this.lastPoint.x, this.lastPoint.y, this.getBrushSize() / 2, 0, Math.PI * 2);
       ctx.fill();
+      if (this.isErasing?.()) {
+        ctx.globalCompositeOperation = "source-over";
+      }
     }
   }
 
   public pointerMove(event: PointerEvent): void {
     if (!this.isDrawing || !this.lastPoint) return;
     event.preventDefault();
-    // Ignore events from fingers that didn't start the stroke
     if (event.pointerId !== this.activePointerId) return;
     const canvas = this.getCanvas();
     if (!canvas) return;
@@ -102,7 +111,10 @@ export class CanvasPainter {
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.strokeStyle = this.getColor();
+    if (this.isErasing?.()) {
+      ctx.globalCompositeOperation = "destination-out";
+    }
+    ctx.strokeStyle = this.isErasing?.() ? "black" : this.getColor();
     ctx.lineWidth = this.getBrushSize();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -110,6 +122,9 @@ export class CanvasPainter {
     ctx.moveTo(this.lastPoint.x, this.lastPoint.y);
     ctx.lineTo(currentX, currentY);
     ctx.stroke();
+    if (this.isErasing?.()) {
+      ctx.globalCompositeOperation = "source-over";
+    }
     this.lastPoint = { x: currentX, y: currentY };
   }
 

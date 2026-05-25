@@ -2,7 +2,7 @@ import {Component, signal, computed, inject, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {HttpClient} from '@angular/common/http';
 import {firstValueFrom} from 'rxjs';
-import type {SessionPlayer, MinigameTask} from '@birthday/shared';
+import type {MinigameTask} from '@birthday/shared';
 import {PlayerScreen} from '../game/player/player-screen.enum';
 import {
   MockWorldStore,
@@ -10,11 +10,7 @@ import {
   MockWebSocketService,
   MockStickerPlayerService,
   type MockPhase,
-  provideMockState,
   makeMockSessionState,
-  getMockVotingVm,
-  getMockResultsVm,
-  MOCK_TASKS,
 } from '../../testing/mock-providers';
 import {WorldStore} from '../../core/world.store';
 import {GameSessionStore} from '../../core/challenge.store';
@@ -38,23 +34,11 @@ type ScreenKey =
   | 'lobby-avatar'
   | 'lobby-waiting'
   | 'building'
-  | 'building-sticker-place'
-  | 'building-drawing'
-  | 'building-choice'
-  | 'building-number'
-  | 'building-timer'
-  | 'building-shape-split'
-  | 'building-text-answer'
-  | 'building-thesis'
   | 'building-submitted'
   | 'building-skipped'
   | 'voting'
   | 'voting-done'
-  | 'voting-all-done'
   | 'results'
-  | 'winner-prompt'
-  | 'winner-unlock'
-  | 'winner-guaranteed'
   | 'next-round'
   | 'board-lobby'
   | 'board-lobby-scene'
@@ -84,32 +68,26 @@ type ScreenKey =
 })
 export class CatalogComponent implements OnInit {
   private readonly http = inject(HttpClient);
+  public readonly mockWorldStore = inject(WorldStore) as unknown as MockWorldStore;
 
   public readonly currentScreen = signal<ScreenKey>('lobby-waiting');
-
-  // ── Task loading for minigame testing ───────────────────────
-  public readonly tasks = signal<MinigameTask[]>([]);
-  public readonly selectedTaskId = signal<string>('');
-
-  public readonly selectedTask = computed<MinigameTask | undefined>(() => {
-    const id = this.selectedTaskId();
-    if (!id) return undefined;
-    return this.tasks().find(t => t.id === id);
-  });
-
-  async ngOnInit() {
-    try {
-      const data = await firstValueFrom(this.http.get<Array<MinigameTask & {_index?: number}>>("/api/game-config/tasks"));
-      this.tasks.set(data);
-    } catch { /* offline or no config */ }
-  }
   public readonly showVmPanel = signal(false);
   public readonly isEditingVm = signal(false);
   public readonly vmEditJson = signal('');
   public readonly editError = signal<string | null>(null);
 
-  public readonly mockWorldStore = inject(WorldStore) as unknown as MockWorldStore;
+  // ── Task loading ────────────────────────────────────────────
+  public readonly tasks = signal<MinigameTask[]>([]);
+  public readonly selectedTaskId = signal<string>('');
 
+  async ngOnInit() {
+    try {
+      const data = await firstValueFrom(this.http.get<Array<MinigameTask & {_index?: number}>>("/api/game-config/tasks"));
+      this.tasks.set(data);
+    } catch { /* offline */ }
+  }
+
+  // ── Computed ────────────────────────────────────────────────
   public readonly currentMode = computed<ViewMode>(() => {
     const screen = this.currentScreen();
     if (screen === 'landing') return 'landing';
@@ -122,10 +100,7 @@ export class CatalogComponent implements OnInit {
     const screen = this.currentScreen();
     if (screen === 'landing' || screen === 'offline') return null;
     if (screen.startsWith('board-')) return null;
-    if (screen === 'winner-prompt') return PlayerScreen.WINNER_PROMPT;
-    if (screen === 'winner-unlock') return PlayerScreen.WINNER_UNLOCK;
-    // Map minigame building variants to the base BUILDING screen
-    if (screen.startsWith('building-')) return PlayerScreen.BUILDING;
+    if (screen === 'building') return PlayerScreen.BUILDING;
     return screen as PlayerScreen;
   });
 
@@ -148,32 +123,20 @@ export class CatalogComponent implements OnInit {
   });
 
   public readonly screens: {key: ScreenKey; label: string; group: string}[] = [
-    {key: 'landing', label: 'Landing / Code Entry', group: 'Other'},
-    {key: 'offline', label: 'Offline', group: 'Other'},
+    {key: 'landing', label: 'Landing / Code Entry', group: 'App'},
+    {key: 'offline', label: 'Offline', group: 'App'},
     {key: 'connecting', label: 'Connecting', group: 'Player'},
     {key: 'disconnected', label: 'Disconnected', group: 'Player'},
     {key: 'reconnecting', label: 'Reconnecting', group: 'Player'},
     {key: 'lobby-name', label: 'Lobby: Name', group: 'Player'},
     {key: 'lobby-avatar', label: 'Lobby: Avatar', group: 'Player'},
     {key: 'lobby-waiting', label: 'Lobby Waiting', group: 'Player'},
-    {key: 'building', label: 'Building (collage editor)', group: 'Player'},
-    {key: 'building-sticker-place', label: 'Building: Sticker Place', group: 'Minigame'},
-    {key: 'building-drawing', label: 'Building: Drawing', group: 'Minigame'},
-    {key: 'building-choice', label: 'Building: Choice', group: 'Minigame'},
-    {key: 'building-number', label: 'Building: Number', group: 'Minigame'},
-    {key: 'building-timer', label: 'Building: Timer', group: 'Minigame'},
-    {key: 'building-shape-split', label: 'Building: Shape Split', group: 'Minigame'},
-    {key: 'building-text-answer', label: 'Building: Text Answer', group: 'Minigame'},
-    {key: 'building-thesis', label: 'Building: Thesis', group: 'Minigame'},
+    {key: 'building', label: 'Building (Minigame)', group: 'Player'},
     {key: 'building-submitted', label: 'Building (submitted)', group: 'Player'},
     {key: 'building-skipped', label: 'Building (skipped)', group: 'Player'},
     {key: 'voting', label: 'Voting', group: 'Player'},
     {key: 'voting-done', label: 'Voting (done)', group: 'Player'},
-    {key: 'voting-all-done', label: 'Voting (all done)', group: 'Player'},
     {key: 'results', label: 'Results', group: 'Player'},
-    {key: 'winner-prompt', label: 'Winner: Prompt Choice', group: 'Player'},
-    {key: 'winner-unlock', label: 'Winner: Pack Unlock', group: 'Player'},
-    {key: 'winner-guaranteed', label: 'Winner: Guaranteed Pack', group: 'Player'},
     {key: 'next-round', label: 'Next Round', group: 'Player'},
     {key: 'board-lobby', label: 'Board Lobby (session list)', group: 'Board'},
     {key: 'board-lobby-scene', label: 'Board Lobby (game)', group: 'Board'},
@@ -182,30 +145,56 @@ export class CatalogComponent implements OnInit {
     {key: 'board-results', label: 'Results', group: 'Board'},
   ];
 
+  // ── Screen change ───────────────────────────────────────────
   public onScreenChange(event: Event): void {
     const screen = (event.target as HTMLSelectElement).value as ScreenKey;
     this.currentScreen.set(screen);
     this.selectedTaskId.set('');
-    const {phase, task} = this.phaseForScreen(screen);
-    const overrides = provideMockState(phase, task);
-    this.mockWorldStore.setSessionState(overrides.worldStore.sessionState()!);
-    if (screen.startsWith('board-')) {
-      this.mockWorldStore.sessionState.update(s => s ? {...s, gameState: {...s.gameState}} : s);
-    }
-    this.isEditingVm.set(false);
-    this.editError.set(null);
+    this.applyBuildingState();
   }
 
   public onTaskSelect(taskId: string): void {
     this.selectedTaskId.set(taskId);
-    const task = this.tasks().find(t => t.id === taskId);
-    if (!task) return;
+    this.applyBuildingState();
+  }
+
+  private applyBuildingState(): void {
     const screen = this.currentScreen();
-    const {phase} = this.phaseForScreen(screen);
-    const sessionState = makeMockSessionState(phase, undefined, task);
+    const phaseMap: Record<string, MockPhase> = {
+      'connecting': 'lobby',
+      'disconnected': 'lobby',
+      'reconnecting': 'lobby',
+      'lobby-name': 'lobby',
+      'lobby-avatar': 'lobby',
+      'lobby-waiting': 'lobby',
+      'landing': 'lobby',
+      'offline': 'lobby',
+      'building': 'building',
+      'building-submitted': 'building-submitted',
+      'building-skipped': 'building-skipped',
+      'voting': 'voting',
+      'voting-done': 'voting-done',
+      'results': 'results',
+      'next-round': 'next-round',
+      'board-lobby': 'lobby',
+      'board-lobby-scene': 'lobby',
+      'board-building': 'building',
+      'board-voting': 'voting',
+      'board-results': 'results',
+    };
+    const phase = phaseMap[screen] ?? 'lobby';
+
+    // If building screen and a real task is selected, use it
+    const taskId = this.selectedTaskId();
+    const customTask = (screen === 'building' && taskId)
+      ? this.tasks().find(t => t.id === taskId)
+      : undefined;
+
+    const sessionState = makeMockSessionState(phase, undefined, customTask);
     this.mockWorldStore.setSessionState(sessionState);
   }
 
+  // ── VM state editing ────────────────────────────────────────
   public toggleVmPanel(): void {
     this.showVmPanel.update(v => !v);
   }
@@ -243,57 +232,5 @@ export class CatalogComponent implements OnInit {
 
   public onVmEditInput(event: Event): void {
     this.vmEditJson.set((event.target as HTMLTextAreaElement).value);
-  }
-
-  public screenTaskType(): string {
-    const map: Record<string, string> = {
-      'building-sticker-place': 'sticker-place',
-      'building-drawing': 'drawing',
-      'building-choice': 'choice',
-      'building-number': 'number',
-      'building-timer': 'timer-stop',
-      'building-shape-split': 'shape-split',
-      'building-text-answer': 'text-answer',
-      'building-thesis': 'thesis',
-    };
-    return map[this.currentScreen()] ?? '';
-  }
-
-  private phaseForScreen(screen: ScreenKey): {phase: MockPhase; task?: keyof typeof MOCK_TASKS} {
-    const map: Record<ScreenKey, {phase: MockPhase; task?: keyof typeof MOCK_TASKS}> = {
-      'landing': {phase: 'lobby'},
-      'offline': {phase: 'lobby'},
-      'connecting': {phase: 'lobby'},
-      'disconnected': {phase: 'lobby'},
-      'reconnecting': {phase: 'lobby'},
-      'lobby-name': {phase: 'lobby'},
-      'lobby-avatar': {phase: 'lobby'},
-      'lobby-waiting': {phase: 'lobby'},
-      'building': {phase: 'building'},
-      'building-sticker-place': {phase: 'building', task: 'stickerPlace'},
-      'building-drawing': {phase: 'building', task: 'drawing'},
-      'building-choice': {phase: 'building', task: 'choice'},
-      'building-number': {phase: 'building', task: 'number'},
-      'building-timer': {phase: 'building', task: 'timer'},
-      'building-shape-split': {phase: 'building', task: 'shapeSplit'},
-      'building-text-answer': {phase: 'building', task: 'textAnswer'},
-      'building-thesis': {phase: 'building', task: 'thesis'},
-      'building-submitted': {phase: 'building-submitted'},
-      'building-skipped': {phase: 'building-skipped'},
-      'voting': {phase: 'voting'},
-      'voting-done': {phase: 'voting-done'},
-      'voting-all-done': {phase: 'voting-all-done'},
-      'results': {phase: 'results'},
-      'winner-prompt': {phase: 'results'},
-      'winner-unlock': {phase: 'results'},
-      'winner-guaranteed': {phase: 'results'},
-      'next-round': {phase: 'next-round'},
-      'board-lobby': {phase: 'lobby'},
-      'board-lobby-scene': {phase: 'lobby'},
-      'board-building': {phase: 'building'},
-      'board-voting': {phase: 'voting'},
-      'board-results': {phase: 'results'},
-    };
-    return map[screen];
   }
 }

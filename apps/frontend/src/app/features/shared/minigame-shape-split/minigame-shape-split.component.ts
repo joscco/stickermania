@@ -14,7 +14,7 @@ interface Point {x: number; y: number}
   standalone: true,
   imports: [CommonModule],
   templateUrl: "./minigame-shape-split.component.html",
-  host: {"class": "flex-1 flex flex-col items-center justify-center gap-4 p-4 w-full"},
+  host: {"class": "flex-1 flex flex-col items-center justify-center gap-4 p-4 w-full min-h-0"},
 })
 export class MinigameShapeSplitComponent implements AfterViewInit, OnDestroy {
   /** Polygon vertices in viewBox-local coords (0-200 range). */

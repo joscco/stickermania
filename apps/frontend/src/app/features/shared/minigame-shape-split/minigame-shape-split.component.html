@@ -1,54 +1,38 @@
-<div class="text-center">
-  <div class="text-sm font-medium text-neutral-600 mb-1">Ziel: {{ targetLabel() }}</div>
-  <div class="text-xs text-neutral-400">Ziehe die Punkte, um die Fläche zu teilen</div>
-</div>
-
 <div class="relative w-full max-w-xs aspect-square">
   <svg #svg viewBox="0 0 200 200" class="w-full h-full" style="touch-action: none;">
     <!-- Background SVG -->
     @if (bgSvgId()) {
-      <use [attr.href]="'#' + bgSvgId()" x="0" y="0" width="200" height="200" style="pointer-events: none;" />
+      <use [attr.href]="'#' + bgSvgId()" x="0" y="0" width="200" height="200" style="pointer-events: none;"/>
     }
     <!-- Side 1 fill -->
     @if (side1Path()) {
-      <path [attr.d]="side1Path()" fill="#FBBF24" fill-opacity="0.5" />
+      <path [attr.d]="side1Path()" fill="#FBBF24" fill-opacity="0.5"/>
     }
     <!-- Side 2 fill -->
     @if (side2Path()) {
-      <path [attr.d]="side2Path()" fill="#F97316" fill-opacity="0.5" />
+      <path [attr.d]="side2Path()" fill="#F97316" fill-opacity="0.5"/>
     }
 
     <!-- Original polygon outline -->
     <polygon [attr.points]="polygon().map(p => p.x + ',' + p.y).join(' ')"
-      fill="none" stroke="black" stroke-width="2" />
+             fill="none" stroke="black" stroke-width="2"/>
 
     <!-- Cut line -->
     <line [attr.x1]="handleA().x" [attr.y1]="handleA().y"
           [attr.x2]="handleB().x" [attr.y2]="handleB().y"
-          stroke="black" stroke-width="2" stroke-dasharray="4 2" />
+          stroke="black" stroke-width="2" stroke-dasharray="4 2"/>
 
     <!-- Handle A -->
     <circle [attr.cx]="handleA().x" [attr.cy]="handleA().y" r="8"
-      fill="white" stroke="black" stroke-width="2"
-      class="cursor-grab active:cursor-grabbing"
-      (pointerdown)="onHandleDown('A', $event)" />
+            fill="white" stroke="black" stroke-width="2"
+            class="cursor-grab active:cursor-grabbing"
+            (pointerdown)="onHandleDown('A', $event)"/>
 
     <!-- Handle B -->
     <circle [attr.cx]="handleB().x" [attr.cy]="handleB().y" r="8"
-      fill="white" stroke="black" stroke-width="2"
-      class="cursor-grab active:cursor-grabbing"
-      (pointerdown)="onHandleDown('B', $event)" />
+            fill="white" stroke="black" stroke-width="2"
+            class="cursor-grab active:cursor-grabbing"
+            (pointerdown)="onHandleDown('B', $event)"/>
   </svg>
-  @if (side1Path() && side2Path()) {
-    <div class="mt-1 flex gap-3 text-xs font-mono justify-center">
-      <span class="flex items-center gap-1">
-        <span class="inline-block w-3 h-3 rounded-sm" style="background: #FBBF24;"></span>
-        {{ side1AreaPct() }}%
-      </span>
-      <span class="flex items-center gap-1">
-        <span class="inline-block w-3 h-3 rounded-sm" style="background: #F97316;"></span>
-        {{ side2AreaPct() }}%
-      </span>
-    </div>
-  }
 </div>
+<div class="text-center text-xs text-neutral-400">Ziehe die Punkte, um die Fläche zu teilen</div>

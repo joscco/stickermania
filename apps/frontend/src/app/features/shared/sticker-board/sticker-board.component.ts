@@ -2,6 +2,7 @@ import {Component, input, output, signal, viewChild, ElementRef, AfterViewInit, 
 import {CommonModule} from "@angular/common";
 import gsap from "gsap";
 import {SvgComponent} from "../svg/svg.component";
+import {getSpriteViewBox} from "../sticker-editor/sprite-url.util";
 
 interface PlacedSticker {
   id: string;
@@ -60,6 +61,9 @@ export class StickerBoardComponent implements AfterViewInit, OnDestroy {
   private animState: Map<number, 'entering' | 'settling' | 'idle'> = new Map();
   private dragOffset = {x: 0, y: 0};
 
+  /** Percentage bounds of the rendered background (contain-fit). null = full board. */
+  private bgBounds = signal<{minX: number; minY: number; maxX: number; maxY: number} | null>(null);
+
   private boundPointerMove = (e: PointerEvent) => this.onPointerMove(e);
   private boundPointerUp = () => this.onPointerUp();
 
@@ -81,9 +85,36 @@ export class StickerBoardComponent implements AfterViewInit, OnDestroy {
     } else {
       this.positions.set(this.stickerNames().map(() => ({x: 50, y: 50})));
     }
+    this.computeBgBounds();
     document.addEventListener("pointermove", this.boundPointerMove);
     document.addEventListener("pointerup", this.boundPointerUp);
     this.runEnteringAnimations();
+  }
+
+  private computeBgBounds(): void {
+    const id = this.backgroundSvgId();
+    if (!id) { this.bgBounds.set(null); return; }
+    const vb = getSpriteViewBox(`sprite:#${id}`);
+    if (!vb || vb.width <= 0 || vb.height <= 0) { this.bgBounds.set(null); return; }
+
+    const board = this.boardEl()?.nativeElement;
+    if (!board) { this.bgBounds.set(null); return; }
+    const rect = board.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) { this.bgBounds.set(null); return; }
+
+    // Compute object-fit: contain bounds
+    const scale = Math.min(rect.width / vb.width, rect.height / vb.height);
+    const w = vb.width * scale;
+    const h = vb.height * scale;
+    const ox = (rect.width - w) / 2;
+    const oy = (rect.height - h) / 2;
+
+    this.bgBounds.set({
+      minX: (ox / rect.width) * 100,
+      minY: (oy / rect.height) * 100,
+      maxX: ((ox + w) / rect.width) * 100,
+      maxY: ((oy + h) / rect.height) * 100,
+    });
   }
 
   ngOnDestroy(): void {
@@ -97,18 +128,8 @@ export class StickerBoardComponent implements AfterViewInit, OnDestroy {
   }
 
   onBoardPointerDown(e: PointerEvent): void {
+    // Don't auto-place the sticker on board click — only drag moves it
     if ((e.target as HTMLElement).closest("[data-sticker]")) return;
-    // Place active sticker at click position
-    this.positions.update(arr => {
-      const next = [...arr];
-      const i = this.activeIndex();
-      if (i >= 0 && i < next.length) {
-        next[i] = this.eventToPercent(e);
-      }
-      return next;
-    });
-    this.runSettlingAnimation(this.activeIndex());
-    this.emitPositions();
   }
 
   onStickerPointerDown(e: PointerEvent, index: number): void {
@@ -128,6 +149,15 @@ export class StickerBoardComponent implements AfterViewInit, OnDestroy {
     };
   }
 
+  private clampToBg(p: {x: number; y: number}): {x: number; y: number} {
+    const b = this.bgBounds();
+    if (!b) return p;
+    return {
+      x: Math.max(b.minX, Math.min(b.maxX, p.x)),
+      y: Math.max(b.minY, Math.min(b.maxY, p.y)),
+    };
+  }
+
   private onPointerMove(e: PointerEvent): void {
     if (!this.isDragging()) return;
     const idx = this.activeIndex();
@@ -135,10 +165,10 @@ export class StickerBoardComponent implements AfterViewInit, OnDestroy {
       const next = [...arr];
       if (idx >= 0 && idx < next.length) {
         const raw = this.eventToPercent(e);
-        next[idx] = {
-          x: Math.max(2, Math.min(98, raw.x + this.dragOffset.x)),
-          y: Math.max(2, Math.min(98, raw.y + this.dragOffset.y)),
-        };
+        next[idx] = this.clampToBg({
+          x: raw.x + this.dragOffset.x,
+          y: raw.y + this.dragOffset.y,
+        });
       }
       return next;
     });

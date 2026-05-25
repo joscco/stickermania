@@ -15,6 +15,8 @@ const CANVAS_SIZE = 3416;
 })
 export class DrawingCanvasBgComponent implements AfterViewInit, OnDestroy {
   readonly baseImageUrl = input<string | null>(null);
+  readonly extraTasks = input<string[]>([]);
+  readonly assignedExtraTask = input<string | null>(null);
   readonly submitted = output<string>();
   readonly cleared = output<void>();
 
@@ -26,17 +28,27 @@ export class DrawingCanvasBgComponent implements AfterViewInit, OnDestroy {
   readonly bgSpriteId = computed(() => (this.baseImageUrl() ?? '').replace('sprite:#', ''));
   drawMode = signal<"big" | "small" | "erase">("big");
 
+  readonly displayExtraTask = computed(() => {
+    const assigned = this.assignedExtraTask();
+    if (assigned) return assigned;
+    const tasks = this.extraTasks();
+    if (tasks.length === 0) return null;
+    // Pick a seeded "random" one based on component creation (stable for session)
+    return tasks[Math.floor(Math.random() * tasks.length)];
+  });
+
   public readonly painter = new CanvasPainter(
     () => this.canvasRef()?.nativeElement,
-    () => (this.drawMode() === "erase") ? "__erase__" : "#000000",
+    () => "#000000",
     () => (this.drawMode() === "erase" ? 20 : (this.drawMode() === "small" ? 5 : 10)),
+    () => this.drawMode() === "erase",
   );
 
   private lastTouchStart = 0;
   private guards: [EventTarget, string, (e: any) => void][] = [];
 
   ngAfterViewInit(): void {
-    setTimeout(() => this.painter.init(), 50);
+    setTimeout(() => this.painter.init(!!this.baseImageUrl()), 50);
 
     const wrapper = this.wrapperRef()?.nativeElement;
     const canvas = this.canvasRef()?.nativeElement;
@@ -71,7 +83,19 @@ export class DrawingCanvasBgComponent implements AfterViewInit, OnDestroy {
     this.lastTouchStart = now;
   };
 
-  public clear(): void { this.painter.clear(); this.cleared.emit(); }
+  public clear(): void {
+    if (this.baseImageUrl()) {
+      // Clear only the drawing, keep background visible
+      const canvas = this.canvasRef()?.nativeElement;
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    } else {
+      this.painter.clear();
+    }
+    this.cleared.emit();
+  }
 
   public submit(): void {
     const drawingUrl = this.painter.toDataURL();
