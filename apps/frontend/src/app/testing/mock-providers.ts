@@ -206,13 +206,52 @@ export const MOCK_TASKS: Record<string, MinigameTask> = {
   thesis: {id: 'mock-thesis', type: 'thesis', title: 'Ananas auf Pizza ist legitim', durationSec: 30} as import("@birthday/shared").ThesisTask,
 };
 
-export function provideMockState(phase: MockPhase, taskKey?: keyof typeof MOCK_TASKS) {
+export function makeMockSessionState(phase: MockPhase, taskKey?: keyof typeof MOCK_TASKS, customTask?: MinigameTask): SessionState {
+  const submissions = {0: MOCK_SUBMISSIONS} as Record<number, StickerCollage[]>;
+  const task = customTask ?? (taskKey ? MOCK_TASKS[taskKey] : null);
+  switch (phase) {
+    case 'lobby':
+      return makeSessionState(lobbyPhase());
+    case 'building':
+      return makeSessionState(buildingPhase(), undefined, task ? {currentTask: task, currentPrompt: task['title']} : undefined);
+    case 'building-submitted': {
+      const overrides: any = task ? {currentTask: task, currentPrompt: task['title']} : undefined;
+      return makeSessionState(buildingPhase(), undefined, overrides ? {...overrides, submissions} : {submissions});
+    }
+    case 'building-skipped':
+      return makeSessionState(buildingPhase({skippedPlayerIds: ['player-1']}), undefined, task ? {currentTask: task, currentPrompt: task['title']} : undefined);
+    case 'voting': {
+      const overrides: any = { submissions };
+      if (task) { overrides.currentTask = task; overrides.currentPrompt = task['title']; }
+      return makeSessionState(votingPhase({currentVotes: {'player-1': ['col-2'], 'player-2': ['col-1']}, doneVotingIds: []}), undefined, overrides);
+    }
+    case 'voting-done': {
+      const overrides: any = { submissions };
+      if (task) { overrides.currentTask = task; overrides.currentPrompt = task['title']; }
+      return makeSessionState(votingPhase({currentVotes: {'player-1': ['col-2', 'col-3']}, doneVotingIds: ['player-1']}), undefined, overrides);
+    }
+    case 'voting-all-done': {
+      const overrides: any = { submissions };
+      if (task) { overrides.currentTask = task; overrides.currentPrompt = task['title']; }
+      return makeSessionState(votingPhase({currentVotes: {'player-1': ['col-2', 'col-3'], 'player-2': ['col-1'], 'player-3': ['col-1', 'col-2']}, doneVotingIds: ['player-1', 'player-2', 'player-3']}), undefined, overrides);
+    }
+    case 'results': {
+      const overrides: any = { submissions };
+      if (task) { overrides.currentTask = task; overrides.currentPrompt = task['title']; }
+      return makeSessionState(resultsPhase(), undefined, overrides);
+    }
+    case 'next-round':
+      return makeSessionState(nextRoundPhase());
+  }
+}
+
+export function provideMockState(phase: MockPhase, taskKey?: keyof typeof MOCK_TASKS, customTask?: MinigameTask) {
   const worldStore = new MockWorldStore();
   const sessionStore = new MockGameSessionStore();
   const submissions = {0: MOCK_SUBMISSIONS} as Record<number, StickerCollage[]>;
 
   let sessionState: SessionState;
-  const task = taskKey ? MOCK_TASKS[taskKey] : null;
+  const task = customTask ?? (taskKey ? MOCK_TASKS[taskKey] : null);
   switch (phase) {
     case 'lobby':
       sessionState = makeSessionState(lobbyPhase());

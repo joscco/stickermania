@@ -1,8 +1,5 @@
 <div class="text-center">
   <div class="text-sm text-neutral-600 mb-1">Deine Antwort (bleibt in Runde 1 geheim)</div>
-  @if (voteQuestion()) {
-    <div class="text-xs text-neutral-400 mb-3">Abstimmungsfrage: {{ voteQuestion() }}</div>
-  }
 </div>
 
 <div class="w-full max-w-md">
@@ -13,8 +10,3 @@
     (keyup.enter)="submit()"
   />
 </div>
-
-<button (click)="submit()" [disabled]="!answer().trim()"
-  class="bg-black text-white py-2.5 px-6 rounded-xl font-semibold shadow active:scale-95 transition-transform disabled:opacity-40">
-  Absenden
-</button>

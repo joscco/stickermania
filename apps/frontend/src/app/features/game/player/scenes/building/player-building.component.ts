@@ -44,9 +44,49 @@ export class PlayerBuildingComponent {
     public readonly skipRound = output<void>();
     public readonly submitMinigame = output<MinigameSubmitEvent>();
 
-    @ViewChild("stickerBoard") stickerBoard!: StickerBoardComponent;
-    @ViewChild("drawingCanvas") drawingCanvas!: DrawingCanvasBgComponent;
+    @ViewChild("stickerBoard") stickerBoard?: StickerBoardComponent;
+    @ViewChild("drawingCanvas") drawingCanvas?: DrawingCanvasBgComponent;
+    @ViewChild("choiceCmp") choiceCmp?: MinigameChoiceComponent;
+    @ViewChild("numberCmp") numberCmp?: MinigameNumberComponent;
+    @ViewChild("timerCmp") timerCmp?: MinigameTimerComponent;
+    @ViewChild("splitCmp") splitCmp?: MinigameShapeSplitComponent;
+    @ViewChild("textCmp") textCmp?: MinigameTextAnswerComponent;
+    @ViewChild("thesisCmp") thesisCmp?: MinigameThesisComponent;
 
+    public submitCurrentTask(): void {
+      const t = this.task();
+      if (!t) return;
+      switch (t.type) {
+        case "sticker-place": {
+          const pos = this.stickerBoard?.getPositions();
+          if (pos) this.submitMinigame.emit({type: "submit-sticker-place", positions: pos});
+          break;
+        }
+        case "drawing":
+          this.drawingCanvas?.submit();
+          break;
+        case "choice":
+          this.choiceCmp?.submit();
+          break;
+        case "number":
+          this.numberCmp?.submit();
+          break;
+        case "timer-stop":
+          this.timerCmp?.submit();
+          break;
+        case "shape-split":
+          this.splitCmp?.submit();
+          break;
+        case "text-answer":
+          this.textCmp?.submit();
+          break;
+        case "thesis":
+          this.thesisCmp?.submit();
+          break;
+      }
+    }
+
+    // Kept for output compatibility — called from child components
     public onSubmitStickerPlace(): void {
         const positions = this.stickerBoard?.getPositions();
         if (!positions || positions.length === 0) return;

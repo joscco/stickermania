@@ -50,4 +50,11 @@ export class MinigameTimerComponent implements OnDestroy {
     this.displayTime.set("0.000");
     this.deviation.set(0);
   }
+
+  /** Called by parent submit button: start → stop → reset → start cycle */
+  submit(): void {
+    if (!this.started()) { this.start(); return; }
+    if (!this.stopped()) { this.stop(); return; }
+    this.reset();
+  }
 }

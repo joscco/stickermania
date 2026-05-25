@@ -1,6 +1,8 @@
-import {Component, signal, computed, inject} from '@angular/core';
+import {Component, signal, computed, inject, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import type {SessionPlayer} from '@birthday/shared';
+import {HttpClient} from '@angular/common/http';
+import {firstValueFrom} from 'rxjs';
+import type {SessionPlayer, MinigameTask} from '@birthday/shared';
 import {PlayerScreen} from '../game/player/player-screen.enum';
 import {
   MockWorldStore,
@@ -9,6 +11,7 @@ import {
   MockStickerPlayerService,
   type MockPhase,
   provideMockState,
+  makeMockSessionState,
   getMockVotingVm,
   getMockResultsVm,
   MOCK_TASKS,
@@ -79,8 +82,27 @@ type ScreenKey =
   templateUrl: './catalog.component.html',
   host: {class: 'h-dvh text-neutral-900 flex flex-col'},
 })
-export class CatalogComponent {
+export class CatalogComponent implements OnInit {
+  private readonly http = inject(HttpClient);
+
   public readonly currentScreen = signal<ScreenKey>('lobby-waiting');
+
+  // ── Task loading for minigame testing ───────────────────────
+  public readonly tasks = signal<MinigameTask[]>([]);
+  public readonly selectedTaskId = signal<string>('');
+
+  public readonly selectedTask = computed<MinigameTask | undefined>(() => {
+    const id = this.selectedTaskId();
+    if (!id) return undefined;
+    return this.tasks().find(t => t.id === id);
+  });
+
+  async ngOnInit() {
+    try {
+      const data = await firstValueFrom(this.http.get<Array<MinigameTask & {_index?: number}>>("/api/game-config/tasks"));
+      this.tasks.set(data);
+    } catch { /* offline or no config */ }
+  }
   public readonly showVmPanel = signal(false);
   public readonly isEditingVm = signal(false);
   public readonly vmEditJson = signal('');
@@ -163,6 +185,7 @@ export class CatalogComponent {
   public onScreenChange(event: Event): void {
     const screen = (event.target as HTMLSelectElement).value as ScreenKey;
     this.currentScreen.set(screen);
+    this.selectedTaskId.set('');
     const {phase, task} = this.phaseForScreen(screen);
     const overrides = provideMockState(phase, task);
     this.mockWorldStore.setSessionState(overrides.worldStore.sessionState()!);
@@ -171,6 +194,16 @@ export class CatalogComponent {
     }
     this.isEditingVm.set(false);
     this.editError.set(null);
+  }
+
+  public onTaskSelect(taskId: string): void {
+    this.selectedTaskId.set(taskId);
+    const task = this.tasks().find(t => t.id === taskId);
+    if (!task) return;
+    const screen = this.currentScreen();
+    const {phase} = this.phaseForScreen(screen);
+    const sessionState = makeMockSessionState(phase, undefined, task);
+    this.mockWorldStore.setSessionState(sessionState);
   }
 
   public toggleVmPanel(): void {
@@ -210,6 +243,20 @@ export class CatalogComponent {
 
   public onVmEditInput(event: Event): void {
     this.vmEditJson.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  public screenTaskType(): string {
+    const map: Record<string, string> = {
+      'building-sticker-place': 'sticker-place',
+      'building-drawing': 'drawing',
+      'building-choice': 'choice',
+      'building-number': 'number',
+      'building-timer': 'timer-stop',
+      'building-shape-split': 'shape-split',
+      'building-text-answer': 'text-answer',
+      'building-thesis': 'thesis',
+    };
+    return map[this.currentScreen()] ?? '';
   }
 
   private phaseForScreen(screen: ScreenKey): {phase: MockPhase; task?: keyof typeof MOCK_TASKS} {

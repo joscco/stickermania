@@ -346,9 +346,7 @@
               }
               @case ('text-answer') {
                 <div class="flex items-center justify-center h-full">
-                  <app-minigame-text-answer
-                    [voteQuestion]="$any(previewTask())?.['voteQuestion'] ?? ''"
-                  />
+                  <app-minigame-text-answer />
                 </div>
               }
               @case ('thesis') {
