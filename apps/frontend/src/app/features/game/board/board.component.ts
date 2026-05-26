@@ -4,13 +4,11 @@ import {ActivatedRoute, Router} from "@angular/router";
 import type {ServerToClientMessage, StickerCollageClientAction} from "@birthday/shared";
 import * as QRCode from "qrcode";
 import {Subscription} from "rxjs";
-import {BoardLobbyComponent} from './board-lobby.component';
 import {BoardLobbySceneComponent} from './scenes/lobby/board-lobby-scene.component';
 import {BoardBuildingSceneComponent} from './scenes/building/board-building-scene.component';
 import {BoardVotingSceneComponent} from './scenes/voting/board-voting-scene.component';
 import {BoardResultsSceneComponent} from './scenes/results/board-results-scene.component';
 import {BoardQrPanelComponent} from './qr-panel/board-qr-panel.component';
-import {BoardHeaderComponent} from './board-header.component';
 import {BoardScreenDataService} from './board-screen-data.service';
 import {AnimOnInitDirective} from '../../shared/animations/anim-on-init.directive';
 import {WebSocketService} from '../../../core/websocket.service';
@@ -18,6 +16,8 @@ import {ApiService} from '../../../core/api.service';
 import {WorldStore} from '../../../core/world.store';
 import {AudioService} from '../../../core/audio.service';
 import {TimerFillComponent} from '../../shared/timer-fill/timer-fill.component';
+import {BoardHeaderComponent} from './board-header/board-header.component';
+import {BoardLobbyComponent} from './scenes/board-lobby/board-lobby.component';
 
 @Component({
   selector: "app-board",

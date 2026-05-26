@@ -1,5 +1,5 @@
 import {Component} from '@angular/core';
-import {AnimOnInitDirective} from '../../shared/animations/anim-on-init.directive';
+import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 
 @Component({
     selector: 'app-offline',

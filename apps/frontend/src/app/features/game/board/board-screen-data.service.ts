@@ -19,10 +19,18 @@ export class BoardScreenDataService {
 
     readonly currentTimerEndsAt = computed(() => {
         const ps = this.worldStore.stickerCollageGameState()?.phaseState;
-        if (!ps) return 0;
-        if (ps.phase === 'BUILDING') return ps.roundEndsAt;
-        if (ps.phase === 'VOTING') return ps.votingEndsAt;
-        if (ps.phase === 'RESULTS') return ps.resultsEndsAt;
+        if (!ps) {
+          return 0;
+        }
+        if (ps.phase === 'BUILDING') {
+          return ps.roundEndsAt;
+        }
+        if (ps.phase === 'VOTING') {
+          return ps.votingEndsAt;
+        }
+        if (ps.phase === 'RESULTS') {
+          return ps.resultsEndsAt;
+        }
         return 0;
     });
 
@@ -32,11 +40,13 @@ export class BoardScreenDataService {
 
     readonly timerPercentElapsed = computed(() => {
         this._tick();
-        const e = this.currentTimerEndsAt();
-        const total = this.currentTimerTotalSec();
-        if (!e || !total) return 0;
-        const remaining = Math.max(0, e - Date.now());
-        return Math.min(100, Math.max(0, (1 - remaining / (total * 1000)) * 100));
+        const endTime = this.currentTimerEndsAt();
+        const totalSeconds = this.currentTimerTotalSec();
+        if (!endTime || !totalSeconds) {
+          return 0;
+        }
+        const remaining = Math.max(0, endTime - Date.now());
+        return Math.min(100, Math.max(0, (1 - remaining / (totalSeconds * 1000)) * 100));
     });
 
     readonly timerActive = computed(() => 'BUILDING,VOTING'.includes(this.basePhase()));

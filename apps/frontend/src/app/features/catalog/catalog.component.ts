@@ -18,9 +18,9 @@ import {WebSocketService} from '../../core/websocket.service';
 import {StickerPlayerService} from '../game/services/sticker-player.service';
 import {PlayerComponent} from '../game/player/player.component';
 import {BoardComponent} from '../game/board/board.component';
-import {LandingComponent} from '../game/landing/landing.component';
-import {OfflineComponent} from '../game/offline/offline.component';
-import {BoardLobbyComponent} from '../game/board/board-lobby.component';
+import {LandingComponent} from '../game/board/scenes/landing/landing.component';
+import {OfflineComponent} from '../game/board/scenes/offline/offline.component';
+import {BoardLobbyComponent} from '../game/board/scenes/board-lobby/board-lobby.component';
 
 type ViewMode = 'player' | 'board' | 'landing' | 'offline';
 

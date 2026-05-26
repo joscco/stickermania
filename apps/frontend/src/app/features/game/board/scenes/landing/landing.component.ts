@@ -3,8 +3,8 @@ import {Component, ElementRef, OnInit, QueryList, ViewChildren, signal} from "@a
 import {ActivatedRoute, Router} from "@angular/router";
 import {HttpClient} from "@angular/common/http";
 import {firstValueFrom} from "rxjs";
-import {ApiService} from '../../../core/api.service';
-import {AnimOnInitDirective, AnimPresenceDirective} from '../../shared/animations/anim-on-init.directive';
+import {AnimOnInitDirective, AnimPresenceDirective} from '../../../../shared/animations/anim-on-init.directive';
+import {ApiService} from '../../../../../core/api.service';
 
 @Component({
   selector: "app-landing",

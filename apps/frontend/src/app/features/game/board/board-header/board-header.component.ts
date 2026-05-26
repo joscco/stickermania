@@ -1,7 +1,7 @@
 import {Component, input, output} from '@angular/core';
-import {CountdownBarComponent} from '../../shared/countdown-bar/countdown-bar.component';
-import {AnimPresenceDirective} from '../../shared/animations/anim-on-init.directive';
-import type {BoardHeaderViewModel} from './board-view-models';
+import {AnimPresenceDirective} from '../../../shared/animations/anim-on-init.directive';
+import {CountdownBarComponent} from '../../../shared/countdown-bar/countdown-bar.component';
+import {BoardHeaderViewModel} from '../board-view-models';
 
 @Component({
     selector: 'app-board-header',

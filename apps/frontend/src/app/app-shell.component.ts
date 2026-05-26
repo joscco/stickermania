@@ -3,11 +3,11 @@ import {Component, inject, OnInit, signal} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
 import {HttpClient} from "@angular/common/http";
 import {firstValueFrom} from "rxjs";
-import {LandingComponent} from './features/game/landing/landing.component';
 import {BoardComponent} from './features/game/board/board.component';
 import {PlayerComponent} from './features/game/player/player.component';
 import {SvgComponent} from './features/shared/svg/svg.component';
 import {AudioService} from './core/audio.service';
+import {LandingComponent} from './features/game/board/scenes/landing/landing.component';
 
 type AppView = "landing" | "board" | "player";
 
