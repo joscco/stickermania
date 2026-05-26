@@ -115,9 +115,6 @@
           (readyToAdvance)="readyToAdvanceWithSound()"
         />
       }
-      @case (PlayerScreen.NEXT_ROUND) {
-        <app-player-next-round [hasNewPack]="screenData.nextRoundVm().hasNewPack"/>
-      }
       @default {
         <app-player-connecting/>
       }

@@ -39,7 +39,6 @@ type ScreenKey =
   | 'voting'
   | 'voting-done'
   | 'results'
-  | 'next-round'
   | 'board-lobby'
   | 'board-lobby-scene'
   | 'board-building'
@@ -144,7 +143,6 @@ export class CatalogComponent implements OnInit {
     {key: 'voting', label: 'Voting', group: 'Player'},
     {key: 'voting-done', label: 'Voting (done)', group: 'Player'},
     {key: 'results', label: 'Results', group: 'Player'},
-    {key: 'next-round', label: 'Next Round', group: 'Player'},
     {key: 'board-lobby', label: 'Board Lobby (session list)', group: 'Board'},
     {key: 'board-lobby-scene', label: 'Board Lobby (game)', group: 'Board'},
     {key: 'board-building', label: 'Building', group: 'Board'},
@@ -182,7 +180,6 @@ export class CatalogComponent implements OnInit {
       'voting': 'voting',
       'voting-done': 'voting-done',
       'results': 'results',
-      'next-round': 'next-round',
       'board-lobby': 'lobby',
       'board-lobby-scene': 'lobby',
       'board-building': 'building',

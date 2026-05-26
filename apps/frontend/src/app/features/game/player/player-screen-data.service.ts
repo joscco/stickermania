@@ -1,23 +1,12 @@
-import {inject, Injectable, computed, signal} from '@angular/core';
+import {computed, inject, Injectable, signal} from '@angular/core';
 import {GameSessionStore} from '../../../core/challenge.store';
 import {WorldStore} from '../../../core/world.store';
 import {WebSocketService} from '../../../core/websocket.service';
 import {StickerPlayerService} from '../services/sticker-player.service';
 import {PlayerTimerService} from '../services/player-timer.service';
 import {PlayerScreen} from './player-screen.enum';
-import type {
-    VotingViewModel,
-    VotingVariant,
-    BuildingViewModel,
-    BuildingSubmittedViewModel,
-    BuildingSkippedViewModel,
-    VotingDoneViewModel,
-    ResultsViewModel,
-    WinnerStep,
-    NextRoundViewModel,
-    PlayerHeaderViewModel,
-} from './player-view-models';
-import type {MinigameTask, MinigameSubmission} from '@birthday/shared';
+import type {BuildingSkippedViewModel, BuildingSubmittedViewModel, BuildingViewModel, PlayerHeaderViewModel, ResultsViewModel, VotingDoneViewModel, VotingVariant, VotingViewModel,} from './player-view-models';
+import type {MinigameSubmission, MinigameTask} from '@birthday/shared';
 
 @Injectable()
 export class PlayerScreenDataService {
@@ -69,7 +58,6 @@ export class PlayerScreenDataService {
                 return PlayerScreen.VOTING;
             }
             case 'RESULTS':          return PlayerScreen.RESULTS;
-            case 'NEXT_ROUND_SETUP': return PlayerScreen.NEXT_ROUND;
             default:                 return PlayerScreen.LOBBY_WAITING;
         }
     });
@@ -116,9 +104,8 @@ export class PlayerScreenDataService {
             variant,
             prompt: this.stickerService.currentPrompt(),
             submissions: this.stickerService.currentRoundSubmissions(),
-            stickerCatalog: this.stickerService.stickerCatalog(),
             myVotes: this.stickerService.myVotes(),
-            votesRemaining: this.stickerService.votesPerPlayer() - this.stickerService.myVotes().length,
+            votesRemaining: 1 - this.stickerService.myVotes().length,
             players: this.worldStore.players(),
             myPlayerId: this.sessionStore.playerId() ?? '',
             currentTask: this.stickerService.currentTask(),
@@ -130,12 +117,6 @@ export class PlayerScreenDataService {
         roundIndex: this.stickerService.currentRoundIndex(),
         prompt: this.stickerService.currentPrompt(),
         task: this.stickerService.currentTask(),
-        unlockedStickers: this.stickerService.unlockedStickers(),
-        stickerCatalog: this.stickerService.stickerCatalog(),
-        stickerPacks: this.stickerService.stickerPacks(),
-        unlockedPackIds: this.stickerService.unlockedPackIds(),
-        recommendedPackIds: this.stickerService.currentRecommendedPackIds(),
-        maxStickersOnCanvas: this.stickerService.maxStickersOnCanvas(),
     }));
 
     public readonly lobbyWaitingVm = computed(() => ({
@@ -199,10 +180,6 @@ export class PlayerScreenDataService {
             resultSummary: computeResultSummary(task, minigames, myId),
         };
     });
-
-    public readonly nextRoundVm = computed<NextRoundViewModel>(() => ({
-        hasNewPack: !!this.stickerService.lastUnlockedPackId(),
-    }));
 }
 
 function computeResultSummary(task: MinigameTask | null, submissions: MinigameSubmission[], myId: string): string {

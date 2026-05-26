@@ -1,8 +1,8 @@
 <div class="h-full flex flex-col items-center justify-center">
-  <app-prompt-banner
-    text="Ergebnisse"
-    icon="icon-trophy-md"
-    anim="medal"
+  <app-round-info
+    [roundIndex]="gameState()?.currentRoundIndex ?? 0"
+    title="Ergebnisse"
+    [task]="$any(gameState())?.currentTask ?? null"
     class="w-full shrink-0"
   />
 
@@ -23,20 +23,27 @@
               <app-svg name="crown" w="60" color="black" class="absolute -top-9 left-1/2 -translate-x-1/2"/>
             }
           </div>
-          <!-- Snapshot image -->
-          <div class="relative rounded-2xl border-4 bg-neutral-100 shrink-0 aspect-square"
-               [ngClass]="[slot.imgSizeClass, slot.borderClass, slot.shadowClass]">
-            @if (getSnapshotUrl(slot.result.playerId); as url) {
-              <img [src]="url" alt="" class="w-full h-full object-contain" draggable="false"/>
-            } @else {
-              <div class="w-full h-full grid place-items-center text-neutral-300">
-                <app-svg name="icon-camera-lg" [w]="slot.camW" color="black"/>
+          <!-- Snapshot image – only for drawing tasks -->
+          @if (isDrawingTask()) {
+            <div class="relative rounded-2xl border-4 bg-neutral-100 shrink-0 aspect-square"
+                 [ngClass]="[slot.imgSizeClass, slot.borderClass, slot.shadowClass]">
+              @if (getSnapshotUrl(slot.result.playerId); as url) {
+                <img [src]="url" alt="" class="w-full h-full object-contain" draggable="false"/>
+              } @else {
+                <div class="w-full h-full grid place-items-center text-neutral-300">
+                  <app-svg name="icon-camera-lg" [w]="slot.camW" color="black"/>
+                </div>
+              }
+              <div class="absolute translate-x-1/2 -translate-y-1/2 top-1 right-0">
+                <app-svg [name]="slot.medalIcon" [w]="slot.medalW"/>
               </div>
-            }
-            <div class="absolute translate-x-1/2 -translate-y-1/2 top-1 right-0">
+            </div>
+          } @else {
+            <!-- Non-drawing task: show medal above the podium bar -->
+            <div class="shrink-0 flex items-center justify-center h-8">
               <app-svg [name]="slot.medalIcon" [w]="slot.medalW"/>
             </div>
-          </div>
+          }
           <!-- Podium step bar -->
           <div class="w-20 sm:w-28 md:w-30 shrink-0" [ngClass]="[slot.barColorClass + ' ' + slot.barHeightClass]"></div>
           <!-- Vote stars -->
@@ -46,52 +53,9 @@
     </div>
   </div>
 
-  <!-- Winner action status -->
-  <div animOnInit="opacity" [animDelay]="0.7" class="w-full max-w-lg self-center shrink-0 mx-4 mb-2 p-3 bg-white rounded-2xl border border-neutral-200">
-    @if (winnerId() && !winnerChoicesDone()) {
-      <div class="text-center">
-        <p class="text-base font-bold text-neutral-800">
-          {{ getPlayer(winnerId()!)?.name ?? 'Der Gewinner' }}, stimme für die nächste Runde ab!
-        </p>
-        <div class="flex justify-center gap-3 mt-2">
-          <div class="flex flex-col items-center gap-1" [class.opacity-30]="promptChosen()">
-            <div class="w-10 h-10 rounded-full grid place-items-center text-lg shadow-sm transition-colors"
-                 [class.bg-black]="promptChosen()" [class.text-white]="promptChosen()"
-                 [class.bg-neutral-100]="!promptChosen()" [class.text-neutral-600]="!promptChosen()">
-              @if (promptChosen()) {
-                <app-svg name="icon-checkmark-md" w="30"/>
-              } @else {
-                <app-svg name="icon-first" w="30"/>
-              }
-            </div>
-            <span class="text-xs text-neutral-500">Prompt</span>
-          </div>
-          <div class="flex flex-col items-center gap-1" [class.opacity-30]="packUnlocked()">
-            <div class="w-10 h-10 rounded-full grid place-items-center text-lg shadow-sm transition-colors"
-                 [class.bg-black]="packUnlocked()" [class.text-white]="packUnlocked()"
-                 [class.bg-neutral-100]="!packUnlocked()" [class.text-neutral-600]="!packUnlocked()">
-              @if (packUnlocked()) {
-                <app-svg name="icon-checkmark-md" w="30"/>
-              } @else {
-                <app-svg name="icon-second" w="30"/>
-              }
-            </div>
-            <span class="text-xs text-neutral-500">Pack</span>
-          </div>
-        </div>
-      </div>
-    } @else if (winnerChoicesDone()) {
-      <div class="text-center">
-        <p class="text-base font-bold text-neutral-800">Auswahl getroffen!</p>
-      </div>
-    }
-  </div>
-
   <!-- Advance button -->
   <div animOnInit="opacity" [animDelay]="0.85" class="shrink-0 text-center pb-4 flex flex-col items-center gap-2">
-    @if (winnerChoicesDone()) {
-      <p class="text-sm text-neutral-400">{{ readyToAdvanceCount() }}/{{ gameState()?.roundParticipantIds?.length ?? 0 }} bereit</p>
-    }
+    <p class="text-sm text-neutral-400">{{ readyToAdvanceCount() }}/{{ gameState()?.roundParticipantIds?.length ?? 0 }} bereit</p>
     <button
       class="bg-black text-white px-8 py-3 rounded-xl text-lg font-semibold shadow-lg hover:bg-neutral-800 active:scale-95 transition-all"
       (click)="advanceFromResults.emit()"

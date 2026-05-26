@@ -1,7 +1,6 @@
 import {inject, Injectable, computed} from "@angular/core";
 import type {
   StickerCollageClientAction, StickerCollageGameState, StickerCollage,
-  StickerPlacement, StickerPack,
   StickerCollageBuildingState, StickerCollageVotingState, StickerCollageResultsState,
   MinigameClientAction, MinigameTask,
 } from "@birthday/shared";
@@ -42,12 +41,8 @@ export class StickerPlayerService {
     return this.gameState()?.currentPrompt ?? "";
   });
   public readonly currentTask = computed<MinigameTask | null>(() => this.gameState()?.currentTask ?? null);
-  public readonly currentRecommendedPackIds = computed(() => this.gameState()?.currentRecommendedPackIds ?? []);
   public readonly currentRoundIndex = computed(() => this.gameState()?.currentRoundIndex ?? 0);
   public readonly phase = computed(() => this.gameState()?.phaseState.phase ?? "LOBBY");
-  public readonly stickerCatalog = computed(() => this.gameState()?.stickerCatalog ?? []);
-  public readonly votesPerPlayer = computed(() => this.gameState()?.votesPerPlayer ?? 3);
-  public readonly maxStickersOnCanvas = computed(() => this.gameState()?.maxStickersOnCanvas ?? 12);
 
   // ─── Building phase ──────────────────────────────────────────
 
@@ -139,49 +134,7 @@ export class StickerPlayerService {
     const myResult = r.find(r => r.playerId === playerId);
     return myResult?.placement ?? null;
   });
-
-  public readonly promptChoices = computed(() => this.resultsState()?.promptChoices ?? []);
-  public readonly packUnlockChoices = computed<StickerPack[]>(() => {
-    const ms = this.gameState();
-    const ps = this.resultsState();
-    if (!ms || !ps) return [];
-    return ps.packUnlockChoices.map(id => ms.stickerPacks.find(p => p.id === id)).filter((p): p is StickerPack => !!p);
-  });
-  public readonly winnerChoicesDone = computed(() => this.resultsState()?.winnerChoicesDone ?? false);
-  public readonly hasChosenPrompt = computed(() => {
-    const ms = this.gameState();
-    return !!ms && !!ms.promptHistory[ms.currentRoundIndex + 1];
-  });
-  public readonly hasUnlockedPack = computed(() => !!(this.resultsState()?.lastUnlockedPackId));
-  public readonly hasLockedPacks = computed(() => (this.resultsState()?.packUnlockChoices ?? []).length > 0);
-
-  /** True once the winner has completed all choices — unlocks the "Weiter" button for everyone. */
-  public readonly canReadyToAdvance = computed<boolean>(() => this.resultsState()?.winnerChoicesDone ?? true);
-
-  // ─── Sticker packs (cross-phase) ─────────────────────────────
-
-  public readonly stickerPacks = computed(() => this.gameState()?.stickerPacks ?? []);
-  public readonly lastUnlockedPackId = computed(() => this.resultsState()?.lastUnlockedPackId ?? null);
-
-  public readonly unlockedPackIds = computed<string[]>(() => this.gameState()?.unlockedPackIds ?? []);
-
-  public readonly unlockedStickers = computed(() => {
-    const state = this.gameState();
-    if (!state) return [];
-    const unlockedIds = new Set(state.unlockedPackIds);
-    return state.stickerCatalog.filter(s => {
-      if (!s.packId) return false;
-      const pack = state.stickerPacks.find(p => p.id === s.packId);
-      if (!pack) return false;
-      return pack.unlockedAtStart || unlockedIds.has(s.packId);
-    });
-  });
-
   // ─── Actions ─────────────────────────────────────────────────
-
-  public submitCollage(placements: StickerPlacement[]): void {
-    this.sendAction({type: "submit-collage", placements});
-  }
 
   public submitMinigame(action: MinigameClientAction): void {
     this.wsService.send({type: "game-action", action});
@@ -213,14 +166,6 @@ export class StickerPlayerService {
 
   public endVotingEarly(): void {
     this.sendAction({type: "end-voting-early"});
-  }
-
-  public pickPrompt(prompt: string): void {
-    this.sendAction({type: "pick-prompt", prompt});
-  }
-
-  public unlockPack(packId: string): void {
-    this.sendAction({type: "unlock-pack", packId});
   }
 
   private sendAction(action: StickerCollageClientAction): void {

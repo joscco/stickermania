@@ -1,12 +1,11 @@
 import {signal, computed, inject, Injectable} from '@angular/core';
 import type {
+  SessionState,
   StickerCollageGameState,
   StickerCollage,
-  StickerPack,
   StickerCollageBuildingState,
   StickerCollageVotingState,
   StickerCollageResultsState,
-  SessionState,
   MinigameTask,
   StickerPlaceTask,
   DrawingTask,
@@ -15,8 +14,8 @@ import type {
   TimerStopTask,
   ShapeSplitTask,
 } from '@birthday/shared';
-import {lobbyPhase, buildingPhase, votingPhase, resultsPhase, nextRoundPhase, makeGameState, makeSessionState, MOCK_SUBMISSIONS} from './mock-data';
-import type {VotingViewModel, VotingVariant, ResultsViewModel, WinnerStep} from '../features/game/player/player-view-models';
+import {lobbyPhase, buildingPhase, votingPhase, resultsPhase, makeSessionState, MOCK_SUBMISSIONS} from './mock-data';
+import type {VotingViewModel, VotingVariant, ResultsViewModel} from '../features/game/player/player-view-models';
 
 @Injectable({providedIn: 'root'})
 export class MockWorldStore {
@@ -90,9 +89,6 @@ export class MockStickerPlayerService {
   readonly currentTask = computed<MinigameTask | null>(() => this.gameState()?.currentTask ?? null);
   readonly currentRoundIndex = computed(() => this.gameState()?.currentRoundIndex ?? 0);
   readonly phase = computed(() => this.gameState()?.phaseState.phase ?? 'LOBBY');
-  readonly stickerCatalog = computed(() => this.gameState()?.stickerCatalog ?? []);
-  readonly votesPerPlayer = computed(() => this.gameState()?.votesPerPlayer ?? 3);
-  readonly maxStickersOnCanvas = computed(() => this.gameState()?.maxStickersOnCanvas ?? 12);
   readonly hasSubmittedThisRound = computed(() => {
     const playerId = this.sessionStore.playerId();
     const ms = this.gameState();
@@ -161,26 +157,7 @@ export class MockStickerPlayerService {
     const myResult = r.find(r => r.playerId === playerId);
     return myResult?.placement ?? null;
   });
-  readonly promptChoices = computed(() => this.resultsState()?.promptChoices ?? []);
-  readonly packUnlockChoices = computed<StickerPack[]>(() => {
-    const ms = this.gameState();
-    const ps = this.resultsState();
-    if (!ms || !ps) return [];
-    return ps.packUnlockChoices.map(id => ms.stickerPacks.find(p => p.id === id)).filter((p): p is StickerPack => !!p);
-  });
-  readonly winnerChoicesDone = computed(() => this.resultsState()?.winnerChoicesDone ?? false);
-  readonly hasChosenPrompt = computed(() => {
-    const ms = this.gameState();
-    return !!ms && !!ms.promptHistory[ms.currentRoundIndex + 1];
-  });
-  readonly hasUnlockedPack = computed(() => !!(this.resultsState()?.lastUnlockedPackId));
-  readonly hasLockedPacks = computed(() => (this.resultsState()?.packUnlockChoices ?? []).length > 0);
-  readonly canReadyToAdvance = computed(() => this.resultsState()?.winnerChoicesDone ?? true);
-  readonly stickerPacks = computed(() => this.gameState()?.stickerPacks ?? []);
-  readonly unlockedPackIds = computed(() => this.gameState()?.unlockedPackIds ?? []);
-  readonly lastUnlockedPackId = computed(() => this.resultsState()?.lastUnlockedPackId ?? null);
   requestHand() {}
-  submitCollage(_placements: any[]) {}
   skipRound() {}
   castVote(_collageId: string) {}
   doneVoting() {}
@@ -188,8 +165,6 @@ export class MockStickerPlayerService {
   startGame() {}
   endRoundEarly() {}
   endVotingEarly() {}
-  pickPrompt(_prompt: string) {}
-  unlockPack(_packId: string) {}
 
 }
 
@@ -198,7 +173,7 @@ import {GameSessionStore} from '../core/challenge.store';
 import {WebSocketService} from '../core/websocket.service';
 import {StickerPlayerService} from '../features/game/services/sticker-player.service';
 
-export type MockPhase = 'lobby' | 'building' | 'building-submitted' | 'building-skipped' | 'voting' | 'voting-done' | 'voting-all-done' | 'results' | 'next-round';
+export type MockPhase = 'lobby' | 'building' | 'building-submitted' | 'building-skipped' | 'voting' | 'voting-done' | 'voting-all-done' | 'results';
 
 export const MOCK_TASKS: Record<string, MinigameTask> = {
   stickerPlace: {id: 'mock-sticker', type: 'sticker-place', title: 'Platziere das Herz!', durationSec: 30, stickerSvgs: ['sticker-shapes-heart']} as StickerPlaceTask,
@@ -245,98 +220,5 @@ export function makeMockSessionState(phase: MockPhase, taskKey?: keyof typeof MO
       if (task) { overrides.currentTask = task; overrides.currentPrompt = task['title']; }
       return makeSessionState(resultsPhase(), undefined, overrides);
     }
-    case 'next-round':
-      return makeSessionState(nextRoundPhase());
   }
-}
-
-export function provideMockState(phase: MockPhase, taskKey?: keyof typeof MOCK_TASKS, customTask?: MinigameTask) {
-  const worldStore = new MockWorldStore();
-  const sessionStore = new MockGameSessionStore();
-  const submissions = {0: MOCK_SUBMISSIONS} as Record<number, StickerCollage[]>;
-
-  let sessionState: SessionState;
-  const task = customTask ?? (taskKey ? MOCK_TASKS[taskKey] : null);
-  switch (phase) {
-    case 'lobby':
-      sessionState = makeSessionState(lobbyPhase());
-      break;
-    case 'building':
-      sessionState = makeSessionState(buildingPhase(), undefined, task ? {currentTask: task, currentPrompt: task['title']} : undefined);
-      break;
-    case 'building-submitted': {
-      const overrides = task ? {currentTask: task, currentPrompt: task['title']} : undefined;
-      sessionState = makeSessionState(buildingPhase(), undefined, overrides ? {...overrides, submissions} : {submissions});
-      break;
-    }
-    case 'building-skipped':
-      sessionState = makeSessionState(buildingPhase({skippedPlayerIds: ['player-1']}), undefined, task ? {currentTask: task, currentPrompt: task['title']} : undefined);
-      break;
-    case 'voting': {
-      const overrides: any = { submissions };
-      if (task) { overrides.currentTask = task; overrides.currentPrompt = task['title']; }
-      sessionState = makeSessionState(votingPhase({currentVotes: {'player-1': ['col-2'], 'player-2': ['col-1']}, doneVotingIds: []}), undefined, overrides);
-      break;
-    }
-    case 'voting-done': {
-      const overrides: any = { submissions };
-      if (task) { overrides.currentTask = task; overrides.currentPrompt = task['title']; }
-      sessionState = makeSessionState(votingPhase({currentVotes: {'player-1': ['col-2', 'col-3']}, doneVotingIds: ['player-1']}), undefined, overrides);
-      break;
-    }
-    case 'voting-all-done': {
-      const overrides: any = { submissions };
-      if (task) { overrides.currentTask = task; overrides.currentPrompt = task['title']; }
-      sessionState = makeSessionState(votingPhase({currentVotes: {'player-1': ['col-2', 'col-3'], 'player-2': ['col-1'], 'player-3': ['col-1', 'col-2']}, doneVotingIds: ['player-1', 'player-2', 'player-3']}), undefined, overrides);
-      break;
-    }
-    case 'results': {
-      const overrides: any = { submissions };
-      if (task) { overrides.currentTask = task; overrides.currentPrompt = task['title']; }
-      sessionState = makeSessionState(resultsPhase(), undefined, overrides);
-      break;
-    }
-    case 'next-round':
-      sessionState = makeSessionState(nextRoundPhase());
-      break;
-  }
-
-  worldStore.setSessionState(sessionState);
-
-  return { worldStore, sessionStore, providers: [] as any[] };
-}
-
-export function getMockVotingVm(phase: MockPhase, worldStore: MockWorldStore, sessionStore: MockGameSessionStore, stickerService: MockStickerPlayerService): VotingViewModel {
-  let variant: VotingVariant = 'active';
-  if (phase === 'voting-done') variant = 'done';
-  if (phase === 'voting-all-done') variant = 'all-done';
-
-  return {
-    variant,
-    prompt: stickerService.currentPrompt(),
-    submissions: stickerService.currentRoundSubmissions(),
-    stickerCatalog: stickerService.stickerCatalog(),
-    myVotes: stickerService.myVotes(),
-    votesRemaining: (stickerService.gameState()?.votesPerPlayer ?? 3) - stickerService.myVotes().length,
-    players: worldStore.players(),
-    myPlayerId: sessionStore.playerId(),
-    currentTask: stickerService.currentTask(),
-    minigameSubmissions: stickerService.currentRoundMinigameSubmissions(),
-  };
-}
-
-export function getMockResultsVm(worldStore: MockWorldStore, sessionStore: MockGameSessionStore, stickerService: MockStickerPlayerService): ResultsViewModel {
-  const winnerId = stickerService.winnerId();
-  const myResult = stickerService.lastVoteResults().find(r => r.playerId === (sessionStore.playerId() ?? ''));
-  return {
-    myPlacement: stickerService.myPlacement(),
-    myVoteCount: myResult?.voteCount ?? 0,
-    isWinner: stickerService.isWinner(),
-    isTiedWinner: stickerService.isTiedWinner(),
-    winnerId,
-    winnerName: winnerId ? (worldStore.players()[winnerId]?.name ?? 'Gewinner') : '',
-    lastVoteResults: stickerService.lastVoteResults(),
-    currentTask: stickerService.currentTask(),
-    resultSummary: "Mock-Ergebnis: Platz 1 mit 3 Stimmen",
-  };
 }

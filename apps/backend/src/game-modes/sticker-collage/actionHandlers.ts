@@ -1,10 +1,9 @@
-import crypto from "node:crypto";
-import type {GameConfig, SessionState, StickerCollage, StickerCollageBuildingState, StickerCollageGameState, StickerCollageResultsState, StickerCollageServerEvent, StickerCollageVotingState, StickerPlacement, MinigameClientAction, MinigameSubmission, MinigameConfig,} from "@birthday/shared";
+import type {GameConfig, SessionState, StickerCollage, StickerCollageBuildingState, StickerCollageGameState, StickerCollageResultsState, StickerCollageServerEvent, StickerCollageVotingState, MinigameClientAction, MinigameSubmission, MinigameConfig,} from "@birthday/shared";
 import {shouldSkipVoting, transitionToBuilding, transitionToNextRound, transitionToResults, transitionToVoting} from "./roundManager.js";
 
 // ─── Helpers ────────────────────────────────────────────────────
 
-type HandlerResult = {stateChanged: boolean; events: StickerCollageServerEvent[]};
+type HandlerResult = { stateChanged: boolean; events: StickerCollageServerEvent[] };
 const noChange: HandlerResult = {stateChanged: false, events: []};
 
 function asBuildingPhase(gameState: StickerCollageGameState): StickerCollageBuildingState | null {
@@ -34,7 +33,7 @@ export function startGame(
         return noChange;
     }
 
-    transitionToBuilding(state, config.stickerCollage, minigameConfig, now);
+    transitionToBuilding(state, minigameConfig, now);
 
     const {gameState} = state;
     const buildingPhase = gameState.phaseState;
@@ -46,43 +45,17 @@ export function startGame(
         stateChanged: true,
         events: [
             {type: "game-started"},
-            {type: "round-started", roundIndex: gameState.currentRoundIndex, prompt: gameState.currentPrompt, endsAt: buildingPhase.roundEndsAt},
+            {
+                type: "round-started",
+                roundIndex: gameState.currentRoundIndex,
+                prompt: gameState.currentPrompt,
+                endsAt: buildingPhase.roundEndsAt
+            },
         ],
     };
 }
 
 // ─── BUILDING ───────────────────────────────────────────────────
-
-/**
- * "submit-collage": save a player's collage for the current round.
- */
-export function submitCollage(
-    state: SessionState,
-    playerId: string,
-    placements: StickerPlacement[],
-    config: GameConfig,
-    now: number,
-): HandlerResult {
-    const {gameState} = state;
-    const buildingPhase = asBuildingPhase(gameState);
-    if (!buildingPhase) {
-        return noChange;
-    }
-
-    if (placements.length > config.stickerCollage.maxStickersOnCanvas) {
-        return noChange;
-    }
-
-    const {currentRoundIndex} = gameState;
-    const existingSubmissions = gameState.submissions[currentRoundIndex] ?? [];
-    gameState.submissions[currentRoundIndex] = existingSubmissions.filter((sub: StickerCollage) => sub.playerId !== playerId);
-
-    const collageId = `collage_${playerId}_${currentRoundIndex}_${crypto.randomUUID().slice(0, 6)}`;
-    const collage: StickerCollage = {id: collageId, playerId, roundIndex: currentRoundIndex, placements, submittedAt: now};
-    gameState.submissions[currentRoundIndex].push(collage);
-
-    return {stateChanged: true, events: [{type: "collage-submitted", playerId, collageId}]};
-}
 
 /**
  * "skip-round": mark the player as skipping (no collage this round).
@@ -269,12 +242,12 @@ export function endBuildingPhaseEarly(
             state.gameState.phaseState = {phase: "LOBBY"};
             return {stateChanged: true, events: []};
         }
-        transitionToVoting(state, config.stickerCollage, now);
-        transitionToResults(state, config.stickerCollage, now);
+        transitionToVoting(state, now);
+        transitionToResults(state, now);
         return buildResultsEvents(state);
     }
 
-    transitionToVoting(state, config.stickerCollage, now);
+    transitionToVoting(state, now);
 
     const {phaseState} = state.gameState;
     if (phaseState.phase !== "VOTING") {
@@ -287,7 +260,7 @@ export function endBuildingPhaseEarly(
 // ─── VOTING ─────────────────────────────────────────────────────
 
 /**
- * "cast-vote": vote for a collage (max votesPerPlayer per player, no self-votes).
+ * "cast-vote": vote for a collage.
  */
 export function castVote(
     state: SessionState,
@@ -316,7 +289,7 @@ export function castVote(
     }
 
     // At capacity: remove the oldest vote before adding the new one
-    if (myVotes.length >= config.stickerCollage.votesPerPlayer) {
+    if (myVotes.length >= 1) {
         votingPhase.currentVotes[playerId] = [...myVotes.slice(1), collageId];
         return {stateChanged: true, events: [{type: "vote-registered", voterId: playerId, collageId}]};
     }
@@ -359,7 +332,7 @@ export function endVotingPhaseEarly(
         return noChange;
     }
 
-    transitionToResults(state, config.stickerCollage, now);
+    transitionToResults(state, now);
     return buildResultsEvents(state);
 }
 
@@ -377,58 +350,7 @@ function buildResultsEvents(state: SessionState): HandlerResult {
 // ─── RESULTS ────────────────────────────────────────────────────
 
 /**
- * "pick-prompt": winner picks the next round's prompt from the offered choices.
- */
-export function winnerPicksPrompt(
-    state: SessionState,
-    playerId: string,
-    prompt: string,
-): HandlerResult {
-    const {gameState} = state;
-    const resultsPhase = asResultsPhase(gameState);
-    if (!resultsPhase || resultsPhase.winnerId !== playerId) {
-        return noChange;
-    }
-    if (!resultsPhase.promptChoices.includes(prompt)) {
-        return noChange;
-    }
-
-    gameState.promptHistory[gameState.currentRoundIndex + 1] = prompt;
-    return {stateChanged: true, events: [{type: "prompt-chosen", prompt}]};
-}
-
-/**
- * "unlock-pack": winner unlocks a new sticker pack.
- * This is the final winner choice — marks choices as done.
- */
-export function winnerUnlocksPack(
-    state: SessionState,
-    playerId: string,
-    packId: string,
-): HandlerResult {
-    const {gameState} = state;
-    const resultsPhase = asResultsPhase(gameState);
-    if (!resultsPhase || resultsPhase.winnerId !== playerId) {
-        return noChange;
-    }
-    if (!resultsPhase.packUnlockChoices.includes(packId)) {
-        return noChange;
-    }
-    if (gameState.unlockedPackIds.includes(packId)) {
-        return noChange;
-    }
-
-    gameState.unlockedPackIds.push(packId);
-    resultsPhase.lastUnlockedPackId = packId;
-    resultsPhase.winnerChoicesDone = true;
-
-    const pack = gameState.stickerPacks.find(p => p.id === packId);
-    return {stateChanged: true, events: [{type: "pack-unlocked", packId, packName: pack?.name ?? packId}]};
-}
-
-/**
  * "ready-to-advance": any player pressing this immediately starts the next round.
- * Only available once the winner has completed their choices (or there is no winner).
  */
 export function advanceToNextRound(
     state: SessionState,
@@ -452,7 +374,7 @@ export function advanceToNextRound(
     }
 
     resultsPhase.readyToAdvanceIds.push(playerId);
-    transitionToNextRound(state, config.stickerCollage, minigameConfig, now);
+    transitionToNextRound(state, minigameConfig, now);
 
     const {gameState} = state;
     const {phaseState} = gameState;
@@ -462,7 +384,12 @@ export function advanceToNextRound(
 
     return {
         stateChanged: true,
-        events: [{type: "round-started", roundIndex: gameState.currentRoundIndex, prompt: gameState.currentPrompt, endsAt: phaseState.roundEndsAt}],
+        events: [{
+            type: "round-started",
+            roundIndex: gameState.currentRoundIndex,
+            prompt: gameState.currentPrompt,
+            endsAt: phaseState.roundEndsAt
+        }],
     };
 }
 
@@ -485,7 +412,7 @@ export function boardAdvancesToNextRound(
         return {stateChanged: true, events: []};
     }
 
-    transitionToNextRound(state, config.stickerCollage, minigameConfig, now);
+    transitionToNextRound(state, minigameConfig, now);
 
     const {gameState} = state;
     const {phaseState} = gameState;
@@ -495,6 +422,11 @@ export function boardAdvancesToNextRound(
 
     return {
         stateChanged: true,
-        events: [{type: "round-started", roundIndex: gameState.currentRoundIndex, prompt: gameState.currentPrompt, endsAt: phaseState.roundEndsAt}],
+        events: [{
+            type: "round-started",
+            roundIndex: gameState.currentRoundIndex,
+            prompt: gameState.currentPrompt,
+            endsAt: phaseState.roundEndsAt
+        }],
     };
 }

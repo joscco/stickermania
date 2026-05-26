@@ -1,7 +1,4 @@
-import type {
-    SessionState, StickerCollageGameState, StickerCollageGameConfig, StickerCollage,
-    StickerCollageVoteResult, StickerCollageResultsState, MinigameConfig, MinigameSubmission,
-} from "@birthday/shared";
+import type {MinigameConfig, MinigameSubmission, SessionState, StickerCollage, StickerCollageGameState, StickerCollageVoteResult,} from "@birthday/shared";
 
 function pickRandomTask(minigameConfig: MinigameConfig): import("@birthday/shared").MinigameTask | null {
     if (minigameConfig.tasks.length === 0) return null;
@@ -10,7 +7,6 @@ function pickRandomTask(minigameConfig: MinigameConfig): import("@birthday/share
 
 export function transitionToBuilding(
     state: SessionState,
-    config: StickerCollageGameConfig,
     minigameConfig: MinigameConfig,
     now: number,
     _chosenPrompt?: string,
@@ -38,7 +34,7 @@ export function transitionToBuilding(
 
     gameState.phaseState = {
         phase: "BUILDING",
-        roundEndsAt: now + (task?.durationSec ?? config.roundDurationSec) * 1000,
+        roundEndsAt: now + (task?.durationSec ?? 60) * 1000,
         skippedPlayerIds: [],
     };
 }
@@ -58,12 +54,11 @@ export function shouldSkipVoting(gameState: StickerCollageGameState): boolean {
 
 export function transitionToVoting(
     state: SessionState,
-    config: StickerCollageGameConfig,
     now: number,
 ): void {
     state.gameState.phaseState = {
         phase: "VOTING",
-        votingEndsAt: now + config.votingDurationSec * 1000,
+        votingEndsAt: now + 60 * 1000,
         currentVotes: {},
         doneVotingIds: [],
     };
@@ -71,7 +66,6 @@ export function transitionToVoting(
 
 export function transitionToResults(
     state: SessionState,
-    config: StickerCollageGameConfig,
     now: number,
 ): void {
     const {gameState} = state;
@@ -122,15 +116,11 @@ export function transitionToResults(
 
     gameState.phaseState = {
         phase: "RESULTS",
-        resultsEndsAt: now + config.resultsDurationSec * 1000,
+        resultsEndsAt: now + 60 * 1000,
         lastVoteResults,
         winnerId,
         tiedWinnerIds,
         readyToAdvanceIds: [],
-        promptChoices: [],
-        packUnlockChoices: [],
-        lastUnlockedPackId: null,
-        winnerChoicesDone: true,
     };
 }
 
@@ -262,7 +252,6 @@ function computeMinigameResults(
 
 export function transitionToNextRound(
     state: SessionState,
-    config: StickerCollageGameConfig,
     minigameConfig: MinigameConfig,
     now: number,
 ): void {
@@ -272,5 +261,5 @@ export function transitionToNextRound(
         return;
     }
 
-    transitionToBuilding(state, config, minigameConfig, now);
+    transitionToBuilding(state, minigameConfig, now);
 }

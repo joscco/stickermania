@@ -10,7 +10,6 @@ import type {
   StickerCollageBuildingState,
   StickerCollageVotingState,
   StickerCollageResultsState,
-  StickerCollageNextRoundSetupState,
   StickerCollageVoteResult,
 } from '@birthday/shared';
 
@@ -138,40 +137,26 @@ export function resultsPhase(): StickerCollageResultsState {
     resultsEndsAt: Date.now() + 60_000,
     lastVoteResults: MOCK_VOTE_RESULTS,
     winnerId: 'player-1',
-    promptChoices: ['Das gruseligste Tier', 'Mein Traumfrühstück', 'Ein Roboter im Urlaub'],
-    packUnlockChoices: ['pack_shapes', 'pack_home', 'pack_lines'],
-    lastUnlockedPackId: null,
-    winnerChoicesDone: false,
     tiedWinnerIds: [],
     readyToAdvanceIds: [],
   };
 }
 
-export function nextRoundPhase(): StickerCollageNextRoundSetupState {
-  return { phase: 'NEXT_ROUND_SETUP' };
-}
-
 // ── Game state builder ───────────────────────────────────────────────────────
 
 export function makeGameState(
-  phaseState: StickerCollageBuildingState | StickerCollageVotingState | StickerCollageResultsState | StickerCollageLobbyState | StickerCollageNextRoundSetupState,
+  phaseState: StickerCollageBuildingState | StickerCollageVotingState | StickerCollageResultsState | StickerCollageLobbyState,
   overrides?: Partial<StickerCollageGameState>,
 ): StickerCollageGameState {
   const base: StickerCollageGameState = {
     currentRoundIndex: 0,
     currentPrompt: 'Das schönste Geburtstagsmonster',
     currentTask: null,
-    currentRecommendedPackIds: [],
     roundStartedAt: Date.now() - 60_000,
-    stickerCatalog: MOCK_CATALOG,
-    stickerPacks: [MOCK_SHAPES_PACK, MOCK_HOME_PACK, MOCK_LINES_PACK],
-    unlockedPackIds: ['pack_shapes'],
     submissions: {},
     minigameSubmissions: {},
     promptHistory: { 0: 'Das schönste Geburtstagsmonster' },
     roundParticipantIds: ['player-1', 'player-2', 'player-3'],
-    maxStickersOnCanvas: 12,
-    votesPerPlayer: 3,
     phaseState,
     roundDurationSec: 20,
     votingDurationSec: 120,
@@ -183,7 +168,7 @@ export function makeGameState(
 // ── Session state builder ────────────────────────────────────────────────────
 
 export function makeSessionState(
-  phaseState: StickerCollageBuildingState | StickerCollageVotingState | StickerCollageResultsState | StickerCollageLobbyState | StickerCollageNextRoundSetupState,
+  phaseState: StickerCollageBuildingState | StickerCollageVotingState | StickerCollageResultsState | StickerCollageLobbyState,
   players?: Record<string, SessionPlayer>,
   gameStateOverrides?: Partial<StickerCollageGameState>,
 ): SessionState {

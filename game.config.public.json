@@ -4,8 +4,6 @@
     "roundDurationSec": 180,
     "votingDurationSec": 120,
     "resultsDurationSec": 100,
-    "maxStickersOnCanvas": 20,
-    "votesPerPlayer": 1,
     "prompts": [
       {
         "text": "Biblisch akkurate Darstellung eines Engels",

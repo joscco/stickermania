@@ -1,14 +1,11 @@
-import type {StickerCollage, StickerDefinition, StickerPack, SessionPlayer, MinigameTask, MinigameSubmission, StickerCollageVoteResult} from '@birthday/shared';
+import type {StickerCollage, SessionPlayer, MinigameTask, MinigameSubmission, StickerCollageVoteResult} from '@birthday/shared';
 
 export type VotingVariant = 'active' | 'done' | 'all-done';
-
-export type WinnerStep = 'prompt' | 'unlock' | null;
 
 export interface VotingViewModel {
   variant: VotingVariant;
   prompt: string;
   submissions: StickerCollage[];
-  stickerCatalog: StickerDefinition[];
   myVotes: string[];
   votesRemaining: number;
   players: Record<string, SessionPlayer>;
@@ -23,12 +20,6 @@ export interface BuildingViewModel {
   roundIndex: number;
   prompt: string;
   task: MinigameTask | null;
-  unlockedStickers: StickerDefinition[];
-  stickerCatalog: StickerDefinition[];
-  stickerPacks: StickerPack[];
-  unlockedPackIds: string[];
-  recommendedPackIds: string[];
-  maxStickersOnCanvas: number;
 }
 
 export interface BuildingSubmittedViewModel {
@@ -63,10 +54,6 @@ export interface ResultsViewModel {
   currentTask: MinigameTask | null;
   /** Human-readable summary of the player's performance for this task */
   resultSummary: string;
-}
-
-export interface NextRoundViewModel {
-  hasNewPack: boolean;
 }
 
 export interface PlayerHeaderViewModel {

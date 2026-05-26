@@ -10,7 +10,6 @@ import {PlayerBuildingSkippedComponent} from './scenes/building-skipped/player-b
 import {PlayerVotingComponent} from './scenes/voting/player-voting.component';
 import {PlayerVotingDoneComponent} from './scenes/voting/player-voting-done.component';
 import {PlayerResultsComponent} from './scenes/results/player-results.component';
-import {PlayerNextRoundComponent} from './scenes/next-round/player-next-round.component';
 import {PlayerScreenDataService} from './player-screen-data.service';
 import {StickerPlayerService} from '../services/sticker-player.service';
 import {PlayerTimerService} from '../services/player-timer.service';
@@ -45,7 +44,6 @@ import {AnimPresenceDirective} from '../../shared/animations/anim-on-init.direct
     PlayerVotingComponent,
     PlayerVotingDoneComponent,
     PlayerResultsComponent,
-    PlayerNextRoundComponent,
     PlayerHeaderComponent,
     TimerFillComponent, TimerNotificationComponent,
     AnimPresenceDirective,

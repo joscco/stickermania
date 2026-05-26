@@ -1,101 +1,19 @@
 // ─── Config types ────────────────────────────────────────────────
 
-export interface StickerPackConfig {
-    id: string;
-    name: string;
-    /** Sprite symbol id for the pack icon, e.g. "pack-icon-shape" */
-    iconId?: string;
-    unlockedAtStart: boolean;
-    stickers: string[];
-}
-
-export interface StickerCatalogConfig {
-    packs: StickerPackConfig[];
-}
-
-export interface StickerCollageGameConfig {
-    roundDurationSec: number;
-    votingDurationSec: number;
-    resultsDurationSec: number;
-    maxStickersOnCanvas: number;
-    votesPerPlayer: number;
-    prompts: PromptConfig[];
-    promptChoiceCount: number;
-    packUnlockChoiceCount: number;
-    catalog: StickerCatalogConfig;
-}
-
-export interface PromptConfig {
-    text: string;
-    recommendedPackIds?: string[];
-}
-
 export interface GameConfig {
     port: number;
     adminPassword: string | null;
     sessionTtlHours: number;
-    stickerCollage: StickerCollageGameConfig;
     minigame: MinigameConfig;
-}
-
-function parseSubObject(raw: Record<string, unknown>, key: string): Record<string, unknown> {
-    const sub = raw[key];
-    return typeof sub === "object" && sub !== null ? sub as Record<string, unknown> : {};
-}
-
-// ── Default catalog (fallback when nothing is specified in config) ──────────
-
-const DEFAULT_CATALOG_CONFIG: StickerCatalogConfig = {
-    packs: []
-};
-
-function parseCatalogConfig(raw: unknown): StickerCatalogConfig {
-    if (typeof raw !== "object" || raw === null) return DEFAULT_CATALOG_CONFIG;
-    const r = raw as Record<string, unknown>;
-
-    const packs = Array.isArray(r["packs"])
-        ? (r["packs"] as unknown[]).filter(
-              (p): p is StickerPackConfig =>
-                  typeof p === "object" && p !== null && typeof (p as any).id === "string",
-          )
-        : DEFAULT_CATALOG_CONFIG.packs;
-
-    return {packs};
-}
-
-function parsePrompts(raw: unknown): PromptConfig[] {
-    if (!Array.isArray(raw)) return [{text: "Bau ein Monster"}, {text: "Mach eine Geburtstagstorte"}];
-    return raw.map((p: any) => {
-        if (typeof p === "string") return {text: p};
-        if (typeof p === "object" && p !== null && typeof p.text === "string") {
-            return {
-                text: p.text,
-                recommendedPackIds: Array.isArray(p.recommendedPackIds) ? p.recommendedPackIds : undefined,
-            };
-        }
-        return {text: String(p)};
-    });
 }
 
 export function parseGameConfig(raw: unknown): GameConfig {
     const r = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
-    const sc = parseSubObject(r, "stickerCollage");
 
     return {
         port: typeof r["port"] === "number" ? r["port"] : 3001,
         adminPassword: typeof r["adminPassword"] === "string" ? r["adminPassword"] : null,
         sessionTtlHours: typeof r["sessionTtlHours"] === "number" ? r["sessionTtlHours"] : 24,
-        stickerCollage: {
-            roundDurationSec: typeof sc["roundDurationSec"] === "number" ? sc["roundDurationSec"] : 600,
-            votingDurationSec: typeof sc["votingDurationSec"] === "number" ? sc["votingDurationSec"] : 120,
-            resultsDurationSec: typeof sc["resultsDurationSec"] === "number" ? sc["resultsDurationSec"] : 60,
-            maxStickersOnCanvas: typeof sc["maxStickersOnCanvas"] === "number" ? sc["maxStickersOnCanvas"] : 12,
-            votesPerPlayer: typeof sc["votesPerPlayer"] === "number" ? sc["votesPerPlayer"] : 3,
-            prompts: parsePrompts(sc["prompts"]),
-            promptChoiceCount: typeof sc["promptChoiceCount"] === "number" ? sc["promptChoiceCount"] : 3,
-            packUnlockChoiceCount: typeof sc["packUnlockChoiceCount"] === "number" ? sc["packUnlockChoiceCount"] : 3,
-            catalog: parseCatalogConfig(sc["catalog"] ?? null),
-        },
         minigame: {tasks: []},
     };
 }
@@ -240,41 +158,25 @@ export interface StickerCollageResultsState {
     winnerId: string | null;
     /** Player IDs that tied for first place but were not selected as winner */
     tiedWinnerIds: string[];
-    promptChoices: string[];
-    packUnlockChoices: string[];
-    lastUnlockedPackId: string | null;
-    winnerChoicesDone: boolean;
     readyToAdvanceIds: string[];
-}
-
-export interface StickerCollageNextRoundSetupState {
-    phase: "NEXT_ROUND_SETUP";
 }
 
 export type StickerCollagePhaseState =
     | StickerCollageLobbyState
     | StickerCollageBuildingState
     | StickerCollageVotingState
-    | StickerCollageResultsState
-    | StickerCollageNextRoundSetupState;
-
+    | StickerCollageResultsState;
 // ─── Game state ───────────────────────────────────────────────
 
 export interface StickerCollageGameState {
     currentRoundIndex: number;
     currentPrompt: string;
     currentTask: MinigameTask | null;
-    currentRecommendedPackIds: string[];
     roundStartedAt: number | null;
-    stickerCatalog: StickerDefinition[];
-    stickerPacks: StickerPack[];
-    unlockedPackIds: string[];
     submissions: Record<number, StickerCollage[]>;
     minigameSubmissions: Record<number, MinigameSubmission[]>;
     promptHistory: Record<number, string>;
     roundParticipantIds: string[];
-    maxStickersOnCanvas: number;
-    votesPerPlayer: number;
     phaseState: StickerCollagePhaseState;
     roundDurationSec: number;
     votingDurationSec: number;
@@ -282,7 +184,6 @@ export interface StickerCollageGameState {
 }
 
 export type StickerCollageClientAction =
-    | { type: "submit-collage"; placements: StickerPlacement[] }
     | { type: "skip-round" }
     | { type: "cast-vote"; collageId: string }
     | { type: "done-voting" }
@@ -290,8 +191,6 @@ export type StickerCollageClientAction =
     | { type: "start-game" }
     | { type: "end-round-early" }
     | { type: "end-voting-early" }
-    | { type: "pick-prompt"; prompt: string }
-    | { type: "unlock-pack"; packId: string }
     | { type: "advance-from-results" };
 
 export type StickerCollageServerEvent =
@@ -301,10 +200,7 @@ export type StickerCollageServerEvent =
     | { type: "voting-started"; votingEndsAt: number }
     | { type: "vote-registered"; voterId: string; collageId: string }
     | { type: "vote-unregistered"; voterId: string; collageId: string }
-    | { type: "results-ready"; winnerId: string | null; results: StickerCollageVoteResult[] }
-    | { type: "pack-unlocked"; packId: string; packName: string }
-    | { type: "prompt-chosen"; prompt: string }
-    | { type: "round-ended"; roundIndex: number; results: StickerCollageVoteResult[] };
+    | { type: "results-ready"; winnerId: string | null; results: StickerCollageVoteResult[] };
 
 export type GameClientAction = StickerCollageClientAction | MinigameClientAction;
 

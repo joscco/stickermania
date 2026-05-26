@@ -12,5 +12,4 @@ export enum PlayerScreen {
     VOTING_DONE         = 'voting-done',
     VOTING_ALL_DONE     = 'voting-all-done',
     RESULTS             = 'results',
-    NEXT_ROUND          = 'next-round',
 }

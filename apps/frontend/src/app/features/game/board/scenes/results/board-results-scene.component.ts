@@ -10,7 +10,7 @@ import type {
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {BoardPlayerAvatarComponent} from '../../player-avatar/board-player-avatar.component';
 import {SvgComponent} from '../../../../shared/svg/svg.component';
-import {PromptBannerComponent} from '../../../../shared/prompt-banner/prompt-banner.component';
+import {RoundInfoComponent} from '../../../../shared/round-info/round-info.component';
 import {StarsDisplayComponent} from '../../../shared/stars-display/stars-display.component';
 
 /** Approximate ideal pixel height needed to show the podium at scale 1 (3 columns with trophies). */
@@ -35,7 +35,7 @@ interface PodiumSlot {
 @Component({
     selector: "app-board-results-scene",
     standalone: true,
-    imports: [CommonModule, AnimOnInitDirective, BoardPlayerAvatarComponent, SvgComponent, PromptBannerComponent, StarsDisplayComponent],
+    imports: [CommonModule, AnimOnInitDirective, BoardPlayerAvatarComponent, SvgComponent, RoundInfoComponent, StarsDisplayComponent],
     templateUrl: "./board-results-scene.component.html",
 })
 export class BoardResultsSceneComponent implements AfterViewInit, OnDestroy {
@@ -108,15 +108,6 @@ export class BoardResultsSceneComponent implements AfterViewInit, OnDestroy {
     });
 
     public readonly winnerId = computed(() => this.resultsPs?.winnerId ?? null);
-    public readonly winnerChoicesDone = computed(() => this.resultsPs?.winnerChoicesDone ?? false);
-
-    public readonly promptChosen = computed(() => {
-        const ms = this.gameState();
-        if (!ms) return false;
-        return !!ms.promptHistory[ms.currentRoundIndex + 1];
-    });
-
-    public readonly packUnlocked = computed(() => !!(this.resultsPs?.lastUnlockedPackId));
 
     public readonly readyToAdvanceCount = computed(() => this.resultsPs?.readyToAdvanceIds.length ?? 0);
 
@@ -125,6 +116,10 @@ export class BoardResultsSceneComponent implements AfterViewInit, OnDestroy {
         if (!ms) return [];
         return ms.submissions[ms.currentRoundIndex] ?? [];
     });
+
+    public readonly currentTask = computed(() => this.gameState()?.currentTask ?? null);
+
+    public readonly isDrawingTask = computed(() => this.currentTask()?.type === "drawing");
 
     public getSnapshotUrl(playerId: string): string | null {
         const subs = this.currentRoundSubmissions();

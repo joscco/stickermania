@@ -40,9 +40,9 @@ export class PlayerTimerService {
       const phase = gameState?.phaseState.phase;
       let totalSec = 0;
       if (phase === "BUILDING") {
-        totalSec = gameState?.roundDurationSec
-          || (gameState?.roundStartedAt ? Math.ceil((e - gameState.roundStartedAt) / 1000) : 0)
-          || 0;
+        totalSec = gameState?.roundStartedAt
+          ? Math.ceil((e - gameState.roundStartedAt) / 1000)
+          : (gameState?.roundDurationSec || 0);
       } else if (phase === "VOTING") {
         totalSec = gameState?.votingDurationSec ?? 0;
       }

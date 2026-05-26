@@ -51,10 +51,6 @@
                 <app-board-results-scene [gameState]="gameState()" [players]="screenData.players()"
                                          (advanceFromResults)="advanceFromResults()"/>
               }
-              @case ("NEXT_ROUND_SETUP") {
-                <app-board-building-scene [gameState]="gameState()" [players]="screenData.players()"
-                                          (endRoundEarly)="endRoundEarly()"/>
-              }
             }
             <div animOnInit="opacity" class="absolute bottom-3 right-3 z-10">
               <app-board-qr-panel

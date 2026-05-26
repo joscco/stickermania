@@ -158,23 +158,6 @@ function check(label, items) {
   }
 }
 
-// Pack iconId references (from catalog, checked against sprite)
-const packIconChecked = catalogPackIconIds.map(({ id, packId }) => ({
-  ref: `#${id}`,
-  file: `game.config (pack: ${packId})`,
-  missing: spriteSymbolIds.size > 0 && !spriteSymbolIds.has(id),
-}));
-
-// Catalog entries
-const catalogChecked = catalogImageUrls.map(({ url }) => {
-  if (url.startsWith('sprite:#')) {
-    const id = url.replace('sprite:#', '');
-    return { ref: url, missing: spriteSymbolIds.size > 0 && !spriteSymbolIds.has(id) };
-  } else {
-    return { ref: url, missing: !existsSync(resolve(PUBLIC, url)) };
-  }
-});
-
 // HTML <use> references (deduplicated by id)
 const useChecked = spriteUseRefs
   .filter((v, i, a) => a.findIndex(x => x.id === v.id) === i)
@@ -205,8 +188,6 @@ if (spriteSymbolIds.size > 0) {
 }
 
 console.log('');
-check('Catalog sticker imageUrls',   catalogChecked);
-check('Catalog pack iconIds',        packIconChecked);
 check('HTML <use> sprite refs',     useChecked);
 
 if (imgChecked.length > 0) {

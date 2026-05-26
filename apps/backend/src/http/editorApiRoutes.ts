@@ -1,9 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type {FastifyInstance} from "fastify";
-import type {StickerDefinition} from "@birthday/shared";
 import type {BackendConfig} from "../config.js";
-import {buildCatalog, buildPacks} from "../game-modes/sticker-collage/stickerCatalog.js";
 
 type HitboxEntry = {
     polygon: Array<{x: number; y: number}>;
@@ -82,26 +80,6 @@ export async function registerEditorApiRoutes(
         delete data[request.params.stickerId];
         saveHitboxData(data);
         return {ok: true};
-    });
-
-    app.get("/api/sticker-catalog", async () => {
-        const hitboxData = loadHitboxData();
-        const catalog = buildCatalog(backendConfig.gameConfig.stickerCollage.catalog);
-        return catalog.map((sticker): StickerDefinition => {
-            const entry = hitboxData[sticker.id];
-            if (entry?.polygon && entry.polygon.length >= 3) {
-                return {
-                    ...sticker,
-                    hitboxPolygon: entry.polygon,
-                    overlayBounds: entry.overlayBounds,
-                };
-            }
-            return sticker;
-        });
-    });
-
-    app.get("/api/sticker-packs", async () => {
-        return buildPacks(backendConfig.gameConfig.stickerCollage.catalog);
     });
 
     // ─── Game Config Task Management ─────────────────────────────────

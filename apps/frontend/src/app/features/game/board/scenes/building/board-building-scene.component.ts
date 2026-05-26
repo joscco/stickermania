@@ -1,6 +1,6 @@
 import {Component, computed, input, output} from "@angular/core";
 import {CommonModule} from "@angular/common";
-import type {StickerCollageGameState, SessionPlayer, StickerPack, StickerCollageBuildingState} from "@birthday/shared";
+import type {StickerCollageGameState, SessionPlayer, StickerCollageBuildingState} from "@birthday/shared";
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {RoundInfoComponent} from '../../../../shared/round-info/round-info.component';
 import {BoardPlayerAvatarComponent, type PlayerAvatarStatus} from '../../player-avatar/board-player-avatar.component';
@@ -30,13 +30,6 @@ export class BoardBuildingSceneComponent {
         return ms.roundParticipantIds
             .map(id => players[id])
             .filter((p): p is SessionPlayer => !!p);
-    });
-
-    public readonly lastUnlockedPack = computed<StickerPack | null>(() => {
-        const ms = this.gameState();
-        const lastId = ms?.phaseState.phase === "RESULTS" ? ms.phaseState.lastUnlockedPackId : null;
-        if (!lastId) return null;
-        return ms!.stickerPacks.find(p => p.id === lastId) ?? null;
     });
 
     public readonly submissionCount = computed(() => {
