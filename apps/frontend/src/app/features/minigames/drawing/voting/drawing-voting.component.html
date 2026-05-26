@@ -1,0 +1,22 @@
+<div class="p-2 text-xs text-neutral-500 text-center border-b border-neutral-100 shrink-0">
+  Wähle dein Favorit-Bild
+</div>
+<div class="flex-1 grid grid-cols-2 gap-1 p-1 overflow-y-auto">
+  @for (entry of entries(); track entry.submission.playerId) {
+    <button (click)="select(entry.submission.playerId)"
+            class="relative aspect-square rounded-lg overflow-hidden border-2 transition-all"
+            [class.border-yellow-400]="selectedId() === entry.submission.playerId"
+            [class.border-transparent]="selectedId() !== entry.submission.playerId">
+      @if (entry.snapshotUrl; as url) {
+        <img [src]="url" alt="" class="w-full h-full object-cover"/>
+      } @else {
+        <div class="w-full h-full flex items-center justify-center text-neutral-400 text-xs">
+          Kein Bild
+        </div>
+      }
+      <div class="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] px-1 py-0.5 truncate">
+        {{ entry.playerName }}
+      </div>
+    </button>
+  }
+</div>

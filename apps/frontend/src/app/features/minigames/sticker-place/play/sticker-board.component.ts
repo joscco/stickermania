@@ -1,8 +1,8 @@
 import {Component, input, output, signal, viewChild, ElementRef, AfterViewInit, OnDestroy, computed} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import gsap from "gsap";
-import {SvgComponent} from "../svg/svg.component";
-import {getSpriteViewBox} from '../svg/sprite-url.util';
+import {SvgComponent} from "../../../shared/svg/svg.component";
+import {getSpriteViewBox} from '../../../shared/svg/sprite-url.util';
 
 interface PlacedSticker {
   id: string;

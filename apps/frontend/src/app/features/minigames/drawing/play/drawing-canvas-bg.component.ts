@@ -1,7 +1,7 @@
 import {AfterViewInit, Component, ElementRef, input, OnDestroy, output, signal, viewChild, computed} from "@angular/core";
 import {CommonModule} from "@angular/common";
-import {CanvasPainter, CANVAS_RESOLUTION} from "../paint-canvas/canvas-painter";
-import {SvgComponent} from '../svg/svg.component';
+import {CanvasPainter, CANVAS_RESOLUTION} from "../../../shared/paint-canvas/canvas-painter";
+import {SvgComponent} from '../../../shared/svg/svg.component';
 
 const FRAME_SIZE = 4123;
 const CANVAS_SIZE = 3416;

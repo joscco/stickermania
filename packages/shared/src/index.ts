@@ -1,5 +1,8 @@
 // ─── Config types ────────────────────────────────────────────────
 
+import {minigameRegistry} from './minigames/index.js';
+export {minigameRegistry, type MinigameHandler} from './minigames/index.js';
+
 export interface GameConfig {
     port: number;
     adminPassword: string | null;
@@ -339,68 +342,14 @@ export function parseMinigameConfig(raw: unknown): MinigameConfig {
 function parseTask(raw: unknown): MinigameTask | null {
   const t = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
   const type = t["type"];
+  if (typeof type !== "string") return null;
   const id = typeof t["id"] === "string" && t["id"] ? t["id"] : crypto.randomUUID?.() ?? Math.random().toString(36).slice(2, 10);
   const title = typeof t["title"] === "string" ? t["title"] : "";
   const dur = typeof t["durationSec"] === "number" ? t["durationSec"] : 60;
 
-  switch (type) {
-    case "sticker-place": {
-      const goalRaw = t["goal"];
-      const goal: StickerPlaceGoal | undefined =
-        goalRaw === "closest-to-average" || goalRaw === "furthest-from-average" ? goalRaw : undefined;
-      // Backward compat: single stickerSvg string → array, or new stickerSvgs array
-      const svgs = Array.isArray(t["stickerSvgs"])
-        ? (t["stickerSvgs"] as unknown[]).filter((s): s is string => typeof s === "string")
-        : typeof t["stickerSvg"] === "string" ? [t["stickerSvg"]] : ["sticker-shapes-heart"];
-      return {
-        id, type: "sticker-place", title, durationSec: dur,
-        stickerSvgs: svgs,
-        backgroundSvg: typeof t["backgroundSvg"] === "string" ? t["backgroundSvg"] : undefined,
-        goal,
-      };
-    }
-    case "drawing": return {
-      id, type: "drawing", title, durationSec: dur,
-      backgroundSvg: typeof t["backgroundSvg"] === "string" ? t["backgroundSvg"] : undefined,
-      extraTasks: Array.isArray(t["extraTasks"])
-        ? (t["extraTasks"] as unknown[]).filter((e): e is string => typeof e === "string" && e.length > 0)
-        : undefined,
-    };
-    case "choice": return {
-      id, type: "choice", title, durationSec: dur,
-      options: Array.isArray(t["options"])
-        ? (t["options"] as unknown[]).map((o: any) => ({label: String(o?.label ?? ""), emoji: typeof o?.emoji === "string" ? o.emoji : undefined}))
-        : [],
-    };
-    case "number": return {
-      id, type: "number", title, durationSec: dur,
-      min: typeof t["min"] === "number" ? t["min"] : 1,
-      max: typeof t["max"] === "number" ? t["max"] : 100,
-      default: typeof t["default"] === "number" ? t["default"] : 50,
-    };
-    case "timer-stop": return {
-      id, type: "timer-stop", title, durationSec: dur,
-      targetSec: typeof t["targetSec"] === "number" ? t["targetSec"] : 5,
-    };
-    case "shape-split": return {
-      id, type: "shape-split", title, durationSec: dur,
-      backgroundSvg: typeof t["backgroundSvg"] === "string" ? t["backgroundSvg"] : undefined,
-      polygon: Array.isArray(t["polygon"])
-        ? (t["polygon"] as unknown[]).filter((p: any) => typeof p?.x === "number" && typeof p?.y === "number").map((p: any) => ({x: p.x, y: p.y}))
-        : [{x: 20, y: 20}, {x: 180, y: 20}, {x: 180, y: 180}, {x: 20, y: 180}],
-      targetFraction: typeof t["targetFraction"] === "number" ? Math.max(0, Math.min(1, t["targetFraction"])) : 0.5,
-    };
-    case "text-answer": return {
-      id, type: "text-answer", title, durationSec: dur,
-      voteQuestion: typeof t["voteQuestion"] === "string" ? t["voteQuestion"] : "",
-    };
-    case "thesis": return {
-      id, type: "thesis", title, durationSec: dur,
-      optionA: typeof t["optionA"] === "string" ? t["optionA"] : undefined,
-      optionB: typeof t["optionB"] === "string" ? t["optionB"] : undefined,
-    };
-    default: return null;
-  }
+  const handler = minigameRegistry.getHandler(type);
+  if (!handler) return null;
+  return handler.parseTask(t, id, title, dur);
 }
 
 // ── Submissions ─────────────────────────────────────────────────

@@ -1,4 +1,5 @@
-import type {GameConfig, SessionState, StickerCollage, StickerCollageBuildingState, StickerCollageGameState, StickerCollageResultsState, StickerCollageServerEvent, StickerCollageVotingState, MinigameClientAction, MinigameSubmission, MinigameConfig,} from "@birthday/shared";
+import type {GameConfig, SessionState, StickerCollage, StickerCollageBuildingState, StickerCollageGameState, StickerCollageResultsState, StickerCollageServerEvent, StickerCollageVotingState, MinigameClientAction, MinigameConfig,} from "@birthday/shared";
+import {minigameRegistry} from "@birthday/shared";
 import {shouldSkipVoting, transitionToBuilding, transitionToNextRound, transitionToResults, transitionToVoting} from "./roundManager.js";
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -92,124 +93,25 @@ export function submitMinigame(
 
     const {gameState} = state;
     const {currentRoundIndex} = gameState;
+
+    const task = gameState.currentTask;
+    if (!task) return noChange;
+
+    const handler = minigameRegistry.getHandlerForTask(task);
+    if (!handler) return noChange;
+
+    const submission = handler.createSubmission(playerId, currentRoundIndex, action, now);
+    if (!submission) return noChange;
+
     const existing = gameState.minigameSubmissions[currentRoundIndex] ?? [];
     gameState.minigameSubmissions[currentRoundIndex] = existing.filter(s => s.playerId !== playerId);
-
-    let submission: MinigameSubmission;
-    switch (action.type) {
-        case "submit-sticker-place":
-            submission = {
-                type: "sticker-place",
-                playerId,
-                roundIndex: currentRoundIndex,
-                positions: action.positions,
-                submittedAt: now,
-            };
-            break;
-        case "submit-drawing":
-            submission = {
-                type: "drawing",
-                playerId,
-                roundIndex: currentRoundIndex,
-                imageDataUrl: action.imageDataUrl,
-                submittedAt: now,
-            };
-            break;
-        case "submit-choice":
-            submission = {
-                type: "choice",
-                playerId,
-                roundIndex: currentRoundIndex,
-                selectedIndices: action.selectedIndices,
-                submittedAt: now,
-            };
-            break;
-        case "submit-number":
-            submission = {
-                type: "number",
-                playerId,
-                roundIndex: currentRoundIndex,
-                value: action.value,
-                submittedAt: now,
-            };
-            break;
-        case "submit-timer":
-            submission = {
-                type: "timer-stop",
-                playerId,
-                roundIndex: currentRoundIndex,
-                elapsedSec: action.elapsedSec,
-                submittedAt: now,
-            };
-            break;
-        case "submit-shape-split":
-            submission = {
-                type: "shape-split",
-                playerId,
-                roundIndex: currentRoundIndex,
-                cutLine: action.cutLine,
-                areaFraction: action.areaFraction,
-                submittedAt: now,
-            };
-            break;
-        case "submit-text-answer":
-            submission = {
-                type: "text-answer",
-                playerId,
-                roundIndex: currentRoundIndex,
-                answer: action.answer,
-                submittedAt: now,
-            };
-            break;
-        case "submit-thesis":
-            submission = {
-                type: "thesis",
-                playerId,
-                roundIndex: currentRoundIndex,
-                agreed: action.agreed,
-                estimatedPercent: action.estimatedPercent,
-                submittedAt: now,
-            };
-            break;
-        default:
-            return noChange;
-    }
-
     gameState.minigameSubmissions[currentRoundIndex].push(submission);
 
-    // Compatibility: also create a placeholder collage so existing voting/results logic works
     const existingCollages = gameState.submissions[currentRoundIndex] ?? [];
     gameState.submissions[currentRoundIndex] = existingCollages.filter((sub: StickerCollage) => sub.playerId !== playerId);
     const collageId = `minigame_${playerId}_${currentRoundIndex}`;
 
-    let snapshotUrl: string | undefined;
-    if (submission.type === "drawing") {
-        snapshotUrl = submission.imageDataUrl;
-    } else if (submission.type === "sticker-place") {
-        const dots = submission.positions.map(p =>
-            `<circle cx="${p.x * 2}" cy="${p.y * 2}" r="8" fill="black"/>`
-        ).join('');
-        snapshotUrl = `data:image/svg+xml,${encodeURIComponent(
-            `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">${dots}</svg>`
-        )}`;
-    } else if (submission.type === "shape-split") {
-        const {cutLine, areaFraction} = submission;
-        const pct = Math.round(areaFraction * 100);
-        snapshotUrl = `data:image/svg+xml,${encodeURIComponent(
-            `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#f5f5f5"/><line x1="${cutLine.a.x}" y1="${cutLine.a.y}" x2="${cutLine.b.x}" y2="${cutLine.b.y}" stroke="black" stroke-width="2"/><text x="100" y="110" text-anchor="middle" font-size="20" font-family="sans-serif">${pct}%</text></svg>`
-        )}`;
-    } else if (submission.type === "text-answer") {
-        const safe = submission.answer.replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 40);
-        snapshotUrl = `data:image/svg+xml,${encodeURIComponent(
-            `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80"><rect width="200" height="80" fill="#f5f5f5"/><text x="100" y="45" text-anchor="middle" font-size="14" font-family="sans-serif" fill="black">${safe}</text></svg>`
-        )}`;
-    } else if (submission.type === "thesis") {
-        const agreed = submission.agreed ? '✓ Zustimmung' : '✗ Ablehnung';
-        const pct = `${submission.estimatedPercent}%`;
-        snapshotUrl = `data:image/svg+xml,${encodeURIComponent(
-            `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80"><rect width="200" height="80" fill="#f5f5f5"/><text x="100" y="35" text-anchor="middle" font-size="14" font-family="sans-serif" fill="black">${agreed}</text><text x="100" y="55" text-anchor="middle" font-size="12" font-family="sans-serif" fill="#666">Schätzung: ${pct}</text></svg>`
-        )}`;
-    }
+    const snapshotUrl = handler.getSnapshotSvg(submission) ?? undefined;
 
     const placeholderCollage: StickerCollage = {
         id: collageId,

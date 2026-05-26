@@ -101,6 +101,8 @@ export class StickerCollageEngine implements GameEngine {
             case "submit-number":
             case "submit-timer":
             case "submit-shape-split":
+            case "submit-text-answer":
+            case "submit-thesis":
                 return submitMinigame(state, playerId, action as MinigameClientAction, now);
             default:
                 return {stateChanged: false, events: []};

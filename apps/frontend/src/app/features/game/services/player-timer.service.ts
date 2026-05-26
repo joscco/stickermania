@@ -48,8 +48,11 @@ export class PlayerTimerService {
       }
       this.totalDurationSec.set(totalSec);
 
+      const phaseStartClientMs = Date.now();
+
       const tick = () => {
-        const remaining = Math.max(0, e - Date.now());
+        const elapsedMs = Date.now() - phaseStartClientMs;
+        const remaining = Math.max(0, totalSec * 1000 - elapsedMs);
         const s = Math.ceil(remaining / 1000);
         const min = Math.floor(s / 60);
         const sec = s % 60;

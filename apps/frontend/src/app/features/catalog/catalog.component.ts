@@ -75,7 +75,6 @@ export class CatalogComponent implements OnInit {
   public readonly vmEditJson = signal('');
   public readonly editError = signal<string | null>(null);
 
-  // ── Task loading ────────────────────────────────────────────
   public readonly tasks = signal<MinigameTask[]>([]);
   public readonly selectedTaskId = signal<string>('');
 

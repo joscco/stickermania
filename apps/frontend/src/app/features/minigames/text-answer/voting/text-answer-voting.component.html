@@ -1,0 +1,15 @@
+<div class="p-2 text-xs text-neutral-500 text-center border-b border-neutral-100 shrink-0">
+  Wähle die beste Antwort
+</div>
+<div class="flex-1 overflow-y-auto p-2 space-y-1.5">
+  @for (entry of answers(); track entry.submission.playerId) {
+    <button (click)="select(entry.submission.playerId)"
+            class="w-full text-left px-3 py-2 rounded-lg border-2 transition-all text-sm"
+            [class.border-yellow-400]="selectedId() === entry.submission.playerId"
+            [class.bg-yellow-50]="selectedId() === entry.submission.playerId"
+            [class.border-neutral-200]="selectedId() !== entry.submission.playerId">
+      <div class="font-medium text-neutral-800">{{ entry.submission.answer }}</div>
+      <div class="text-xs text-neutral-400 mt-0.5">{{ entry.playerName }}</div>
+    </button>
+  }
+</div>

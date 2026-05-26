@@ -2,15 +2,15 @@ import {Component, input, output, ViewChild} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {MinigameTask} from "@birthday/shared";
 import {AnimGroupDirective} from '../../../../shared/animations/anim-on-init.directive';
-import {RoundInfoComponent} from '../../../../shared/round-info/round-info.component';
-import {StickerBoardComponent} from '../../../../shared/sticker-board/sticker-board.component';
-import {DrawingCanvasBgComponent} from '../../../../shared/drawing-canvas-bg/drawing-canvas-bg.component';
-import {MinigameChoiceComponent} from '../../../../shared/minigame-choice/minigame-choice.component';
-import {MinigameNumberComponent} from '../../../../shared/minigame-number/minigame-number.component';
-import {MinigameTimerComponent} from '../../../../shared/minigame-timer/minigame-timer.component';
-import {MinigameShapeSplitComponent} from '../../../../shared/minigame-shape-split/minigame-shape-split.component';
-import {MinigameTextAnswerComponent} from '../../../../shared/minigame-text-answer/minigame-text-answer.component';
-import {MinigameThesisComponent} from '../../../../shared/minigame-thesis/minigame-thesis.component';
+import {MinigameShellComponent} from '../../../../minigames/_shared/minigame-shell.component';
+import {StickerBoardComponent} from '../../../../minigames/sticker-place/play/sticker-board.component';
+import {DrawingCanvasBgComponent} from '../../../../minigames/drawing/play/drawing-canvas-bg.component';
+import {MinigameChoiceComponent} from '../../../../minigames/choice/play/minigame-choice.component';
+import {MinigameNumberComponent} from '../../../../minigames/number/play/minigame-number.component';
+import {MinigameTimerComponent} from '../../../../minigames/timer-stop/play/minigame-timer.component';
+import {MinigameShapeSplitComponent} from '../../../../minigames/shape-split/play/minigame-shape-split.component';
+import {MinigameTextAnswerComponent} from '../../../../minigames/text-answer/play/minigame-text-answer.component';
+import {MinigameThesisComponent} from '../../../../minigames/thesis/play/minigame-thesis.component';
 
 export type MinigameSubmitEvent =
   | {type: "submit-sticker-place"; positions: Array<{stickerId: string; x: number; y: number}>}
@@ -27,7 +27,7 @@ export type MinigameSubmitEvent =
     standalone: true,
     imports: [
       CommonModule,
-      RoundInfoComponent, AnimGroupDirective,
+      MinigameShellComponent, AnimGroupDirective,
       StickerBoardComponent, DrawingCanvasBgComponent,
       MinigameChoiceComponent, MinigameNumberComponent, MinigameTimerComponent,
       MinigameShapeSplitComponent,

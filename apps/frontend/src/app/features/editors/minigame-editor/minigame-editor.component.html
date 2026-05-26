@@ -1,386 +1,309 @@
-<!-- Header -->
-<div class="shrink-0 border-b border-neutral-200 bg-white px-4 py-3 flex items-center gap-4">
-  <h1 class="text-lg font-bold text-neutral-800">Minigame-Editor</h1>
-  <span class="text-xs text-neutral-400">Tasks verwalten &bull; Neue Minispiele anlegen</span>
+<div class="h-full flex flex-col overflow-hidden">
+  @if (taskError()) {
+    <div class="p-4 bg-red-100 text-red-700 text-sm">{{ taskError() }}</div>
+  }
 
-  <div class="ml-auto flex items-center gap-2">
-    <button (click)="newTask()" class="text-xs px-3 py-1.5 rounded-lg bg-black text-white font-medium active:scale-95 transition-transform">
-      + Neuen Task
-    </button>
-    <button (click)="loadTasks()" class="text-xs px-3 py-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 font-medium">
-      Aktualisieren
-    </button>
-  </div>
-</div>
+  <!-- Main content: 3-column layout -->
+  <div class="flex-1 flex min-h-0 overflow-hidden">
 
-<!-- Error / Success -->
-@if (error()) {
-  <div class="shrink-0 bg-red-50 text-red-700 text-xs px-4 py-2 border-b border-red-100">{{ error() }}</div>
-}
-@if (saved()) {
-  <div class="shrink-0 bg-green-50 text-green-700 text-xs px-4 py-2 border-b border-green-100">Gespeichert!</div>
-}
-@if (deleted()) {
-  <div class="shrink-0 bg-amber-50 text-amber-700 text-xs px-4 py-2 border-b border-amber-100">Gelöscht!</div>
-}
-
-<!-- Main Content -->
-<div class="flex-1 flex overflow-hidden">
-
-  <!-- Left: Task List -->
-  <div class="w-72 shrink-0 border-r border-neutral-200 bg-white overflow-y-auto">
-    <div class="px-3 py-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider border-b border-neutral-100">
-      Tasks ({{ tasks().length }})
+    <!-- LEFT: Task list -->
+    <div class="w-56 shrink-0 border-r border-neutral-200 bg-white flex flex-col overflow-hidden">
+      <div class="p-3 border-b border-neutral-200 flex items-center justify-between">
+        <span class="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Tasks</span>
+        <button (click)="loadTasks()"
+                class="text-xs text-neutral-400 hover:text-neutral-600 px-2 py-0.5 rounded">
+          ↻
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-2 space-y-1">
+        @if (loadingTasks()) {
+          <div class="text-xs text-neutral-400 text-center py-4">Laden...</div>
+        }
+        @for (task of tasks(); track task.id; let i = $index) {
+          <button (click)="selectTask(i)"
+                  [class.bg-neutral-900]="selectedIndex() === i"
+                  [class.text-white]="selectedIndex() === i"
+                  [class.text-neutral-600]="selectedIndex() !== i"
+                  [class.hover:bg-neutral-100]="selectedIndex() !== i"
+                  class="w-full text-left px-3 py-2 rounded-lg text-xs transition-colors">
+            <div class="font-medium truncate">{{ task.title || 'Unbenannt' }}</div>
+            <div class="text-[10px] opacity-60 mt-0.5">{{ task.type }} · {{ task.durationSec }}s</div>
+          </button>
+        }
+      </div>
     </div>
-    @if (tasks().length === 0) {
-      <div class="p-4 text-xs text-neutral-400 text-center">Noch keine Tasks in der Config</div>
-    }
-    @for (task of tasks(); track $index) {
-      <div class="group flex items-center gap-2 px-3 py-2 border-b border-neutral-50 hover:bg-neutral-50 cursor-pointer text-sm"
-           [class.bg-neutral-100]="selectedIndex() === task._index"
-           (click)="selectTask(task._index!)">
-        <span class="text-xs text-neutral-400 tabular-nums w-5">{{ task._index! + 1 }}</span>
-        <span class="text-[10px] font-mono text-neutral-400 w-20 truncate">{{ task.type }}</span>
-        <span class="flex-1 truncate text-neutral-700">{{ task['title'] || '(kein Text)' }}</span>
-        <button class="hidden group-hover:inline-block text-red-400 hover:text-red-600 text-xs px-1"
-                (click)="deleteTask(task._index!); $event.stopPropagation()">✕</button>
+
+    <!-- CENTER: Interactive area -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+      @if (selectedTask(); as task) {
+        <div class="flex flex-col flex-1 min-h-0 p-4 gap-3">
+          <!-- Header -->
+          <div class="text-center shrink-0">
+            <div class="text-xs text-neutral-400 font-medium uppercase tracking-wide">Runde 1</div>
+            <div class="text-sm font-semibold text-neutral-800 mt-0.5">{{ task.title }}</div>
+            <div class="text-xs text-neutral-500 max-w-sm mx-auto mt-1 leading-relaxed">{{ description() }}</div>
+          </div>
+
+          <!-- Square interactive area -->
+          <div class="flex-1 flex items-center justify-center min-h-0">
+            <div class="w-full max-w-[320px] aspect-square bg-white rounded-2xl shadow-md border border-neutral-200 overflow-hidden relative">
+              @for (key of [renderKey()]; track key) {
+                @switch (task.type) {
+                  @case ("sticker-place") {
+                    <app-sticker-board #stickerBoard
+                      class="w-full h-full"
+                      [backgroundSvg]="$any(task).backgroundSvg ?? null"
+                      [stickerNames]="$any(task).stickerSvgs ?? $any(task).stickerSvg ? [$any(task).stickerSvg] : []"
+                    />
+                  }
+                  @case ("drawing") {
+                    <app-drawing-canvas-bg #drawingCanvas
+                      class="w-full h-full"
+                      [baseImageUrl]="$any(task).backgroundSvg ?? null"
+                      [extraTasks]="$any(task).extraTasks ?? []"
+                    />
+                  }
+                  @case ("choice") {
+                    <app-minigame-choice #choiceCmp
+                      class="w-full h-full"
+                      [options]="$any(task).options ?? []"
+                    />
+                  }
+                  @case ("number") {
+                    <app-minigame-number #numberCmp
+                      class="w-full h-full"
+                      [min]="$any(task).min ?? 1"
+                      [max]="$any(task).max ?? 100"
+                      [default]="$any(task).default ?? 50"
+                    />
+                  }
+                  @case ("timer-stop") {
+                    <app-minigame-timer #timerCmp
+                      class="w-full h-full"
+                      [targetSec]="$any(task).targetSec ?? 5"
+                      (submitted)="onTimerSubmitted($event)"
+                    />
+                  }
+                  @case ("shape-split") {
+                    <app-minigame-shape-split #splitCmp
+                      class="w-full h-full"
+                      [polygon]="$any(task).polygon ?? undefined"
+                      [targetLabel]="((($any(task).targetFraction ?? 0.5) * 100).toFixed(0)) + ':' + ((100 - ($any(task).targetFraction ?? 0.5) * 100).toFixed(0))"
+                      [backgroundSvg]="$any(task).backgroundSvg ?? null"
+                    />
+                  }
+                  @case ("text-answer") {
+                    <app-minigame-text-answer #textCmp
+                      class="w-full h-full"
+                    />
+                  }
+                  @case ("thesis") {
+                    <app-minigame-thesis #thesisCmp
+                      class="w-full h-full"
+                      [title]="$any(task).title ?? ''"
+                      [optionA]="$any(task).optionA ?? 'Stimme zu'"
+                      [optionB]="$any(task).optionB ?? 'Stimme nicht zu'"
+                    />
+                  }
+                }
+              }
+            </div>
+          </div>
+
+          <!-- Action bar -->
+          <div class="flex gap-3 shrink-0">
+            <button (click)="onSubmitClick()"
+                    class="flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold bg-black text-white active:bg-neutral-800 transition-colors select-none">
+              Submit as {{ activePlayer().name }}
+            </button>
+            <button (click)="evaluate()"
+                    [class.opacity-30]="submissionCount() === 0"
+                    [disabled]="submissionCount() === 0"
+                    class="py-2.5 px-5 rounded-xl text-sm font-medium bg-yellow-400 text-black active:bg-yellow-500 transition-colors select-none disabled:pointer-events-none">
+              Auswerten
+            </button>
+          </div>
+
+          <!-- Submitted indicator -->
+          @if (submissionCount() > 0) {
+            <div class="text-center text-xs text-neutral-400 shrink-0">
+              {{ submissionCount() }}/{{ players().length }} Spieler haben submitted
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="flex-1 flex items-center justify-center text-neutral-400 text-sm">
+          Wähle links einen Task aus
+        </div>
+      }
+    </div>
+
+    <!-- RIGHT: Players -->
+    <div class="w-52 shrink-0 border-l border-neutral-200 bg-white flex flex-col overflow-hidden">
+      <div class="p-3 border-b border-neutral-200">
+        <span class="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Spieler</span>
       </div>
-    }
+      <div class="flex-1 overflow-y-auto p-2 space-y-1">
+        @for (player of players(); track player.id; let i = $index) {
+          <div class="group flex items-center gap-2 px-2 py-1.5 rounded-lg"
+               [class.bg-neutral-100]="activePlayerIndex() === i && renamingIdx() !== i">
+            <button (click)="setActivePlayer(i)"
+                    class="flex-1 text-left min-w-0">
+              <div class="flex items-center gap-2">
+                @if (renamingIdx() === i) {
+                  <input #renameInput
+                         [value]="renameValue()"
+                         (input)="renameValue.set(($any($event.target).value))"
+                         (blur)="commitRename()"
+                         (keydown.enter)="commitRename()"
+                         (keydown.escape)="cancelRename()"
+                         class="w-full text-xs px-1.5 py-0.5 border border-neutral-300 rounded outline-none focus:border-black"
+                         (click)="$event.stopPropagation()"/>
+                } @else {
+                  <span class="text-sm font-medium truncate"
+                        [class.text-black]="activePlayerIndex() === i"
+                        [class.text-neutral-500]="activePlayerIndex() !== i">
+                    {{ player.name }}
+                  </span>
+                }
+              </div>
+            </button>
+            @if (submissions()[player.id]) {
+              <span class="text-[10px] text-green-600 font-bold">✓</span>
+            }
+            @if (renamingIdx() !== i) {
+              <button (click)="startRename(i); $event.stopPropagation()"
+                      class="opacity-0 group-hover:opacity-100 text-[10px] text-neutral-400 hover:text-neutral-600 px-1">
+                ✎
+              </button>
+            }
+            @if (players().length > 1) {
+              <button (click)="removePlayer(i); $event.stopPropagation()"
+                      class="opacity-0 group-hover:opacity-100 text-[10px] text-neutral-400 hover:text-red-500 px-1">
+                ✕
+              </button>
+            }
+          </div>
+        }
+      </div>
+      <!-- Add player -->
+      <div class="p-2 border-t border-neutral-200">
+        <div class="flex gap-1">
+          <input #newPlayerField
+                 [value]="newPlayerName()"
+                 (input)="onPlayerNameInput($event)"
+                 (keydown.enter)="addPlayer(); newPlayerField.value = ''"
+                 placeholder="Name..."
+                 class="flex-1 text-xs px-2 py-1.5 border border-neutral-200 rounded-lg outline-none focus:border-black"/>
+          <button (click)="addPlayer()"
+                  class="text-xs px-2 py-1.5 bg-neutral-100 rounded-lg hover:bg-neutral-200 font-medium">
+            +
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Right: Editor Form -->
-  <div class="flex-1 overflow-y-auto p-6">
-    <div class="max-w-lg space-y-5">
+  <!-- BOTTOM: Voting & Results -->
+  @if (results(); as res) {
+    <div class="border-t border-neutral-300 bg-white overflow-y-auto" style="max-height: 45vh;">
+      <div class="p-4">
+        <div class="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">Auswertung</div>
 
-      <!-- ID -->
-      <div class="space-y-1">
-        <label class="text-sm font-semibold text-neutral-700">Task-ID</label>
-        <input type="text" [value]="taskId()" (input)="taskId.set(($any($event.target).value))"
-          class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2 font-mono" placeholder="1" />
-      </div>
-
-      <!-- Type selector -->
-      <div class="space-y-1">
-        <label class="text-sm font-semibold text-neutral-700">Task-Typ</label>
-        <select [value]="selectedType()" (change)="onTypeChange($event)"
-          class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2 bg-white">
-          <option value="sticker-place">Sticker Place</option>
-          <option value="drawing">Drawing</option>
-          <option value="choice">Choice</option>
-          <option value="number">Number</option>
-          <option value="timer-stop">Timer Stop</option>
-          <option value="shape-split">Shape Split</option>
-          <option value="text-answer">Text Answer</option>
-          <option value="thesis">Thesis</option>
-        </select>
-      </div>
-
-      <!-- Prompt -->
-      <div class="space-y-1">
-        <label class="text-sm font-semibold text-neutral-700">Prompt / Titel</label>
-        <input type="text" [value]="title()" (input)="title.set(($any($event.target).value))"
-          class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" placeholder="z.B. Platziere das Herz!" />
-      </div>
-
-      <!-- Duration -->
-      <div class="space-y-1">
-        <label class="text-sm font-semibold text-neutral-700">Dauer (Sekunden)</label>
-        <input type="number" [value]="durationSec()" (input)="durationSec.set(toNum($any($event.target).value))"
-          class="w-24 text-sm border border-neutral-200 rounded-lg px-3 py-2" />
-      </div>
-
-      <!-- ═══ SVG Background (shared for sticker-place, drawing, shape-split) ═══ -->
-      @if (selectedType() === 'sticker-place' || selectedType() === 'drawing' || selectedType() === 'shape-split') {
-        <div class="space-y-1">
-          <label class="text-sm font-semibold text-neutral-700">SVG-Hintergrund (Sprite-Ref)</label>
-          <select [value]="backgroundSvg()" (change)="backgroundSvg.set(($any($event.target).value))"
-            class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2 bg-white">
-            <option value="">Kein Hintergrund</option>
-            @for (s of sprites(); track s.id) {
-              <option [value]="s.spriteRef">{{ s.id }}</option>
-            }
-          </select>
-          @if (backgroundSvg()) {
-            <div class="text-[10px] text-neutral-400 mt-1">{{ backgroundSvg() }}</div>
-          }
-        </div>
-      }
-
-      <!-- ═══ Sticker Place: stickers + background + goal ═══ -->
-      @if (selectedType() === 'sticker-place') {
-        <div class="space-y-1">
-          <label class="text-sm font-semibold text-neutral-700">Sticker (Sprite-IDs)</label>
-          @for (svg of stickerSvgs(); track $index) {
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-neutral-400 tabular-nums w-4">{{ $index + 1 }}</span>
-              <span class="flex-1 text-sm font-mono">{{ svg }}</span>
-              <button (click)="removeStickerSvg($index)" class="text-red-400 hover:text-red-600 text-xs">✕</button>
-            </div>
-          }
-          <div class="flex gap-2 mt-2">
-            <select [value]="newStickerSvg()" (change)="newStickerSvg.set(($any($event.target).value))"
-              class="flex-1 text-sm border border-neutral-200 rounded-lg px-3 py-2 bg-white">
-              <option value="">Sticker auswählen...</option>
-              @for (s of sprites(); track s.id) {
-                <option [value]="s.id">{{ s.id }}</option>
-              }
-            </select>
-            <button (click)="addStickerSvg()" [disabled]="!newStickerSvg().trim()"
-              class="text-xs px-3 py-1 rounded-lg bg-black text-white font-medium disabled:opacity-40">+</button>
-          </div>
-        </div>
-
-        <div class="space-y-1">
-          <label class="text-sm font-semibold text-neutral-700">Ziel / Gewinner-Ermittlung</label>
-          <select [value]="goal()" (change)="goal.set(($any($event.target).value))"
-            class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2 bg-white">
-            <option value="">Standard (nächste an Durchschnitt)</option>
-            <option value="closest-to-average">Möglichst nah am Durchschnitt</option>
-            <option value="furthest-from-average">Möglichst weit vom Durchschnitt</option>
-          </select>
-        </div>
-      }
-
-      <!-- ═══ Choice: Options ═══ -->
-      @if (selectedType() === 'choice') {
-        <div class="space-y-2">
-          <label class="text-sm font-semibold text-neutral-700">Optionen</label>
-          @for (opt of options(); track $index) {
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-neutral-400 tabular-nums w-4">{{ $index + 1 }}</span>
-              @if (opt.emoji) { <span class="text-lg">{{ opt.emoji }}</span> }
-              <span class="flex-1 text-sm">{{ opt.label }}</span>
-              <button (click)="removeOption($index)" class="text-red-400 hover:text-red-600 text-xs">✕</button>
-            </div>
-          }
-          <div class="flex gap-2 mt-2">
-            <input type="text" [value]="newOptionEmoji()" (input)="newOptionEmoji.set(($any($event.target).value))"
-              class="w-12 text-sm border border-neutral-200 rounded-lg px-2 py-1" placeholder="😀" maxlength="6" />
-            <input type="text" [value]="newOptionLabel()" (input)="newOptionLabel.set(($any($event.target).value))"
-              class="flex-1 text-sm border border-neutral-200 rounded-lg px-3 py-1" placeholder="Optionstext" />
-            <button (click)="addOption()" [disabled]="!newOptionLabel().trim()"
-              class="text-xs px-3 py-1 rounded-lg bg-black text-white font-medium disabled:opacity-40">+</button>
-          </div>
-        </div>
-      }
-
-      <!-- ═══ Number: min/max/default ═══ -->
-      @if (selectedType() === 'number') {
-        <div class="grid grid-cols-3 gap-3">
-          <div class="space-y-1">
-            <label class="text-xs text-neutral-500">Min</label>
-            <input type="number" [value]="numberMin()" (input)="numberMin.set(toNum($any($event.target).value))"
-              class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" />
-          </div>
-          <div class="space-y-1">
-            <label class="text-xs text-neutral-500">Max</label>
-            <input type="number" [value]="numberMax()" (input)="numberMax.set(toNum($any($event.target).value))"
-              class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" />
-          </div>
-          <div class="space-y-1">
-            <label class="text-xs text-neutral-500">Default</label>
-            <input type="number" [value]="numberDefault()" (input)="numberDefault.set(toNum($any($event.target).value))"
-              class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" />
-          </div>
-        </div>
-      }
-
-      <!-- ═══ Timer Stop: target ═══ -->
-      @if (selectedType() === 'timer-stop') {
-        <div class="space-y-1">
-          <label class="text-sm font-semibold text-neutral-700">Zielzeit (Sekunden)</label>
-          <input type="number" [value]="targetSec()" (input)="targetSec.set(toNum($any($event.target).value))" step="0.1"
-            class="w-24 text-sm border border-neutral-200 rounded-lg px-3 py-2" />
-        </div>
-      }
-
-      <!-- ═══ Shape Split: target fraction + polygon points ═══ -->
-      @if (selectedType() === 'shape-split') {
-        <div class="space-y-1">
-          <label class="text-sm font-semibold text-neutral-700">Ziel-Proportion (kleinerer Teil %)</label>
-          <div class="flex items-center gap-2">
-            <input type="range" min="5" max="50" [value]="targetFraction()" (input)="targetFraction.set(toNum($any($event.target).value))"
-              class="flex-1 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-black" />
-            <span class="text-sm font-mono font-bold w-12 text-right">{{ targetFraction() }}:{{ 100 - targetFraction() }}</span>
-          </div>
-        </div>
-
-        <div class="space-y-1">
-          <label class="text-sm font-semibold text-neutral-700">Polygon (Klick ins Feld = Punkt setzen, Punkte ziehen)</label>
-          <div class="bg-neutral-100 rounded-xl border border-neutral-200 overflow-hidden" style="height: 260px;">
-            <svg #polyCanvas viewBox="0 0 200 200" class="w-full h-full" style="touch-action: none;"
-                 (pointerdown)="onPolyCanvasClick($event)">
-              <!-- Grid -->
-              <defs>
-                <pattern id="polyGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e5e5e5" stroke-width="0.5"/>
-                </pattern>
-              </defs>
-              <rect width="200" height="200" fill="url(#polyGrid)" />
-              <!-- Background sprite -->
-              @if (backgroundSvg(); as bg) {
-                @let bgId = bg.startsWith('sprite:#') ? bg.substring(8) : bg;
-                <use [attr.href]="'#' + bgId" x="0" y="0" width="200" height="200" style="pointer-events: none; opacity: 0.15;" />
-              }
-              <!-- Polygon fill -->
-              @if (polygon().length >= 3) {
-                <polygon [attr.points]="polygon().map(p => p.x + ',' + p.y).join(' ')"
-                  fill="rgba(0,0,0,0.06)" stroke="black" stroke-width="1.5" fill-rule="evenodd"
-                  style="pointer-events: none;" />
-              }
-              <!-- Polygon points -->
-              @for (pt of polygon(); track $index) {
-                <circle class="poly-point"
-                  [attr.cx]="pt.x" [attr.cy]="pt.y" r="4"
-                  fill="white" stroke="black" stroke-width="2"
-                  style="cursor: grab;"
-                  (pointerdown)="onPolyPointDown($index, $event)"
-                  (dblclick)="onPolyPointDblClick($index, $event)" />
-                <text [attr.x]="pt.x + 5" [attr.y]="pt.y - 5" font-size="6" fill="#666"
-                  style="pointer-events: none;">{{ $index + 1 }}</text>
-              }
-            </svg>
-          </div>
-          <div class="flex flex-wrap gap-1">
-            @for (pt of polygon(); track $index) {
-              <span class="text-[11px] font-mono text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded">
-                {{ $index + 1 }}:{{ pt.x }},{{ pt.y }}
-                <button (click)="removePolygonPoint($index)" [disabled]="polygon().length <= 3"
-                  class="text-red-400 hover:text-red-600 ml-1 disabled:opacity-30">✕</button>
+        <!-- Winner badge -->
+        @if (winnerId(); as wid) {
+          @let winnerName = players().find(p => p.id === wid)?.name ?? wid;
+          <div class="mb-3 px-4 py-2 bg-yellow-100 rounded-xl text-sm font-bold text-yellow-800 text-center">
+            ★ {{ winnerName }}
+            @if (tiedWinnerIds().length > 0) {
+              <span class="font-normal">
+                + {{ tiedWinnerIds().length }}x Gleichstand ({{ tiedWinnerIds().map(id => players().find(p => p.id === id)?.name ?? id).join(", ") }})
               </span>
             }
           </div>
-          @if (polygon().length < 3) {
-            <p class="text-xs text-amber-600">Mindestens 3 Punkte erforderlich</p>
-          }
-          @if (polygon().length >= 3) {
-            <div class="text-xs text-neutral-500 mt-1">
-              Fläche: {{ polygonArea() }} px² in 200×200 ViewBox
-              · Ziel-Aufteilung: <span class="font-mono">{{ targetFraction() }}:{{ 100 - targetFraction() }}</span>
+        }
+
+        <!-- Voting simulation for drawing/text-answer -->
+        @if (selectedTask(); as t) {
+          @if (t.type === 'drawing') {
+            <div class="mb-4 flex justify-center">
+              <app-drawing-voting
+                [task]="$any(t)"
+                [entries]="getVotingEntries()"
+                (voteSelected)="onVoteCast($event)"
+              />
             </div>
           }
-        </div>
-      }
+          @if (t.type === 'text-answer') {
+            <div class="mb-4 flex justify-center">
+              <app-text-answer-voting
+                [answers]="getTextAnswerEntries()"
+                (voteSelected)="onVoteCast($event)"
+              />
+            </div>
+          }
+        }
 
-      <!-- ═══ Text Answer: vote question ═══ -->
-      @if (selectedType() === 'text-answer') {
-        <div class="space-y-1">
-          <label class="text-sm font-semibold text-neutral-700">Abstimmungsfrage (Runde 2)</label>
-          <input type="text" [value]="voteQuestion()" (input)="voteQuestion.set(($any($event.target).value))"
-            class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" placeholder="z.B. Welches Gericht hat mehr Kalorien?" />
-        </div>
-      }
-
-      <!-- ═══ Thesis: option labels ═══ -->
-      @if (selectedType() === 'thesis') {
-        <div class="grid grid-cols-2 gap-3">
-          <div class="space-y-1">
-            <label class="text-xs text-neutral-500">Option A (links)</label>
-            <input type="text" [value]="thesisOptionA()" (input)="thesisOptionA.set(($any($event.target).value))"
-              class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" placeholder="Stimme zu" />
-          </div>
-          <div class="space-y-1">
-            <label class="text-xs text-neutral-500">Option B (rechts)</label>
-            <input type="text" [value]="thesisOptionB()" (input)="thesisOptionB.set(($any($event.target).value))"
-              class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" placeholder="Stimme nicht zu" />
-          </div>
-        </div>
-      }
-
-      <!-- ═══ Drawing: extra tasks ═══ -->
-      @if (selectedType() === 'drawing') {
-        <div class="space-y-1">
-          <label class="text-sm font-semibold text-neutral-700">Zusatzaufgaben (kommagetrennt)</label>
-          <input type="text" [value]="extraTasksStr()" (input)="extraTasksStr.set(($any($event.target).value))"
-            class="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2" placeholder="Pornostar, Seriös, Ü80" />
-          <p class="text-xs text-neutral-400">Diese werden als Pills unter dem Canvas angezeigt. Die Spieler müssen eine davon heimlich einbauen.</p>
-        </div>
-      }
-
-      <!-- JSON Preview -->
-      <div class="border-t border-neutral-200 pt-3">
-        <label class="text-sm font-semibold text-neutral-700 mb-1 block">Task JSON Vorschau</label>
-        <pre class="bg-neutral-50 border border-neutral-200 rounded-lg p-2 text-[10px] font-mono text-neutral-700 overflow-auto max-h-40">{{ taskJson() }}</pre>
-      </div>
-
-      <!-- Save button -->
-      <div class="flex gap-2">
-        <button (click)="save()" [disabled]="loading() || !title().trim()"
-          class="flex-1 bg-black text-white py-2.5 rounded-xl font-semibold disabled:opacity-40 active:scale-95 transition-transform">
-          {{ loading() ? 'Speichere...' : (isNew() ? 'Task anlegen' : 'Task aktualisieren') }}
-        </button>
-        <button (click)="togglePreview()"
-          class="px-4 py-2.5 rounded-xl font-semibold border border-neutral-300 bg-white text-neutral-700 active:scale-95 transition-transform">
-          {{ showPreview() ? 'Vorschau aus' : 'Vorschau' }}
-        </button>
-      </div>
-
-      <!-- ═══ Live Preview ═══ -->
-      @if (showPreview()) {
-        <div class="border-t border-neutral-200 pt-3">
-          <label class="text-sm font-semibold text-neutral-700 mb-2 block">Live-Vorschau</label>
-          <div class="bg-neutral-100 rounded-xl border border-neutral-200 overflow-hidden flex flex-col" style="height: 320px;">
-            @switch (previewTask()['type']) {
-              @case ('sticker-place') {
-                <app-sticker-board
-                  class="block w-full h-full"
-                  [backgroundSvg]="$any(previewTask())?.['backgroundSvg'] ?? null"
-                  [stickerNames]="$any(previewTask())?.['stickerSvgs'] ?? []"
-                />
-              }
-              @case ('drawing') {
-                <app-drawing-canvas-bg
-                  [baseImageUrl]="$any(previewTask())?.['backgroundSvg'] ?? null"
-                  [extraTasks]="$any(previewTask())?.['extraTasks'] ?? []"
-                />
-              }
-              @case ('choice') {
-                <app-minigame-choice
-                  class="block w-full h-full"
-                  [options]="previewTask()['options'] ?? []"
-                />
-              }
-              @case ('number') {
-                <app-minigame-number
-                  class="block w-full h-full"
-                  [min]="previewTask()['numberConfig']?.min ?? 1"
-                  [max]="previewTask()['numberConfig']?.max ?? 100"
-                  [default]="previewTask()['numberConfig']?.default ?? 50"
-                />
-              }
-              @case ('timer-stop') {
-                <app-minigame-timer
-                  class="block w-full h-full"
-                  [targetSec]="$any(previewTask())?.['targetSec'] ?? 5"
-                />
-              }
-              @case ('shape-split') {
-                <app-minigame-shape-split
-                  class="block w-full h-full"
-                  [polygon]="$any(previewTask())?.['polygon'] ?? undefined"
-                  [targetLabel]="targetLabel($any(previewTask())?.['targetFraction'] ?? 0.5)"
-                  [backgroundSvg]="$any(previewTask())?.['backgroundSvg'] ?? null"
-                />
-              }
-              @case ('text-answer') {
-                <div class="flex items-center justify-center h-full">
-                  <app-minigame-text-answer />
-                </div>
-              }
-              @case ('thesis') {
-                <div class="flex items-center justify-center h-full">
-                  <app-minigame-thesis
-                    [title]="$any(previewTask())?.['title'] ?? ''"
-                    [optionA]="$any(previewTask())?.['optionA'] ?? 'Stimme zu'"
-                    [optionB]="$any(previewTask())?.['optionB'] ?? 'Stimme nicht zu'"
-                  />
-                </div>
+        <!-- Result cards per minigame type -->
+        <div class="flex flex-wrap gap-4 justify-center">
+          @for (player of players(); track player.id) {
+            @if (submissions()[player.id]; as sub) {
+              @switch (selectedTask()?.type) {
+                @case ("sticker-place") {
+                  <app-sticker-place-result
+                    [submission]="$any(sub)" [task]="$any(selectedTask())"
+                    [placement]="getPlacement(player.id)" [isWinner]="isWinner(player.id)"
+                    [playerName]="player.name"/>
+                }
+                @case ("drawing") {
+                  <app-drawing-result
+                    [submission]="$any(sub)" [task]="$any(selectedTask())"
+                    [placement]="getPlacement(player.id)" [isWinner]="isWinner(player.id)"
+                    [playerName]="player.name"/>
+                }
+                @case ("choice") {
+                  <app-choice-result
+                    [submission]="$any(sub)" [task]="$any(selectedTask())"
+                    [placement]="getPlacement(player.id)" [isWinner]="isWinner(player.id)"
+                    [playerName]="player.name"/>
+                }
+                @case ("number") {
+                  <app-number-result
+                    [submission]="$any(sub)" [task]="$any(selectedTask())"
+                    [allSubmissions]="$any(getAllSubsForType('number'))"
+                    [placement]="getPlacement(player.id)" [isWinner]="isWinner(player.id)"
+                    [playerName]="player.name"/>
+                }
+                @case ("timer-stop") {
+                  <app-timer-stop-result
+                    [submission]="$any(sub)" [task]="$any(selectedTask())"
+                    [placement]="getPlacement(player.id)" [isWinner]="isWinner(player.id)"
+                    [playerName]="player.name"/>
+                }
+                @case ("shape-split") {
+                  <app-shape-split-result
+                    [submission]="$any(sub)" [task]="$any(selectedTask())"
+                    [placement]="getPlacement(player.id)" [isWinner]="isWinner(player.id)"
+                    [playerName]="player.name"/>
+                }
+                @case ("text-answer") {
+                  <app-text-answer-result
+                    [submission]="$any(sub)" [task]="$any(selectedTask())"
+                    [placement]="getPlacement(player.id)" [isWinner]="isWinner(player.id)"
+                    [playerName]="player.name"/>
+                }
+                @case ("thesis") {
+                  <app-thesis-result
+                    [submission]="$any(sub)" [task]="$any(selectedTask())"
+                    [allSubmissions]="$any(getAllSubsForType('thesis'))"
+                    [placement]="getPlacement(player.id)" [isWinner]="isWinner(player.id)"
+                    [playerName]="player.name"/>
+                }
               }
             }
-          </div>
+          }
         </div>
-      }
-
+      </div>
     </div>
-  </div>
+  }
 </div>

@@ -7,6 +7,7 @@ import {PlayerTimerService} from '../services/player-timer.service';
 import {PlayerScreen} from './player-screen.enum';
 import type {BuildingSkippedViewModel, BuildingSubmittedViewModel, BuildingViewModel, PlayerHeaderViewModel, ResultsViewModel, VotingDoneViewModel, VotingVariant, VotingViewModel,} from './player-view-models';
 import type {MinigameSubmission, MinigameTask} from '@birthday/shared';
+import {minigameRegistry} from '@birthday/shared';
 
 @Injectable()
 export class PlayerScreenDataService {
@@ -184,47 +185,8 @@ export class PlayerScreenDataService {
 
 function computeResultSummary(task: MinigameTask | null, submissions: MinigameSubmission[], myId: string): string {
     if (!task) return "Abstimmungsergebnis";
+    const handler = minigameRegistry.getHandlerForTask(task);
+    if (!handler) return "";
     const my = submissions.find(s => s.playerId === myId);
-
-    switch (task.type) {
-        case "thesis": {
-            const th = my as any;
-            if (!th) return "Keine Teilnahme";
-            const total = submissions.length;
-            const agreedCount = submissions.filter(s => s.type === "thesis" && (s as any).agreed).length;
-            const actualPct = total > 0 ? Math.round((agreedCount / total) * 100) : 50;
-            return `Du hast ${th.agreed ? "zugestimmt" : "abgelehnt"} und ${th.estimatedPercent}% geschätzt. Tatsächlich: ${actualPct}%. Abweichung: ${Math.abs(th.estimatedPercent - actualPct)}%`;
-        }
-        case "number": {
-            const num = my as any;
-            if (!num) return "Keine Teilnahme";
-            const values = submissions.filter(s => s.type === "number").map(s => (s as any).value as number);
-            const avg = values.length > 0 ? Math.round(values.reduce((a: number, b: number) => a + b, 0) / values.length) : 0;
-            return `Deine Zahl: ${num.value}. Durchschnitt: ${avg}. Abweichung: ${Math.abs(num.value - avg)}`;
-        }
-        case "timer-stop": {
-            const t = my as any;
-            if (!t) return "Keine Teilnahme";
-            const target = (task as any).targetSec ?? 5;
-            return `Du hast bei ${t.elapsedSec.toFixed(2)}s gestoppt. Ziel: ${target}s. Abweichung: ${Math.abs(t.elapsedSec - target).toFixed(2)}s`;
-        }
-        case "shape-split": {
-            const sp = my as any;
-            if (!sp) return "Keine Teilnahme";
-            const target = (task as any).targetFraction ?? 0.5;
-            const myPct = Math.round(sp.areaFraction * 100);
-            const targetPct = Math.round(target * 100);
-            return `Du hast ${myPct}:${100 - myPct} geteilt. Ziel: ${targetPct}:${100 - targetPct}. Abweichung: ${Math.abs(sp.areaFraction - target).toFixed(2)}`;
-        }
-        case "sticker-place":
-            return "Platzierung nach Abstand zum Durchschnitt";
-        case "choice":
-            return "Die beliebteste Wahl gewinnt";
-        case "drawing":
-            return my ? "Abstimmungsergebnis" : "Keine Teilnahme";
-        case "text-answer":
-            return my ? "Abstimmungsergebnis" : "Keine Teilnahme";
-        default:
-            return "";
-    }
+    return handler.getResultSummary(my as any, submissions as any, task as any);
 }

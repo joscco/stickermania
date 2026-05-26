@@ -1,99 +1,91 @@
 <div animGroup="opacity" class="h-full flex flex-col items-center">
-  <app-round-info
-    [roundIndex]="roundIndex()"
-    [title]="prompt()"
-    [task]="task()"
-  />
-
-  <div class="flex-1 flex flex-col items-center justify-center w-full">
-    @switch (task()?.type) {
-      @case ('sticker-place') {
-        @let svgs = $any(task())?.['stickerSvgs'] ?? [];
-        @let bg = $any(task())?.['backgroundSvg'];
-        <app-sticker-board
-          #stickerBoard
-          class="flex-1 min-h-0 w-full"
-          [backgroundSvg]="bg ?? null"
-          [stickerNames]="svgs"
-        />
+  @if (task(); as t) {
+    <app-minigame-shell
+      [task]="t"
+      [roundIndex]="roundIndex()"
+      (skipRound)="skipRound.emit()"
+      (submit)="submitCurrentTask()"
+    >
+      @switch (t.type) {
+        @case ('sticker-place') {
+          @let svgs = $any(t)['stickerSvgs'] ?? [];
+          @let bg = $any(t)['backgroundSvg'];
+          <app-sticker-board
+            #stickerBoard
+            class="w-full h-full"
+            [backgroundSvg]="bg ?? null"
+            [stickerNames]="svgs"
+          />
+        }
+        @case ('drawing') {
+          @let bg = $any(t)['backgroundSvg'];
+          <app-drawing-canvas-bg
+            #drawingCanvas
+            class="w-full h-full"
+            [baseImageUrl]="bg ?? null"
+            [extraTasks]="$any(t)['extraTasks'] ?? []"
+            (submitted)="onSubmitDrawing($event)"
+          />
+        }
+        @case ('choice') {
+          <app-minigame-choice
+            #choiceCmp
+            class="w-full h-full"
+            [options]="$any(t)['options'] ?? []"
+            (submitted)="onSubmitChoice($event)"
+          />
+        }
+        @case ('number') {
+          <app-minigame-number
+            #numberCmp
+            class="w-full h-full"
+            [min]="$any(t)['min'] ?? 1"
+            [max]="$any(t)['max'] ?? 100"
+            [default]="$any(t)['default'] ?? 50"
+            (submitted)="onSubmitNumber($event)"
+          />
+        }
+        @case ('timer-stop') {
+          <app-minigame-timer
+            #timerCmp
+            class="w-full h-full"
+            [targetSec]="$any(t)['targetSec'] ?? 5"
+            (submitted)="onSubmitTimer($event)"
+          />
+        }
+        @case ('shape-split') {
+          @let fraction = $any(t)['targetFraction'];
+          <app-minigame-shape-split
+            #splitCmp
+            class="w-full h-full"
+            [polygon]="$any(t)['polygon'] ?? undefined"
+            [targetLabel]="fraction ? (fraction * 100).toFixed(0) + ':' + ((1 - fraction) * 100).toFixed(0) : '50:50'"
+            [backgroundSvg]="$any(t)['backgroundSvg'] ?? null"
+            (submitted)="onSubmitShapeSplit($event)"
+          />
+        }
+        @case ('text-answer') {
+          <app-minigame-text-answer
+            #textCmp
+            class="w-full h-full"
+            (submitted)="onSubmitTextAnswer($event)"
+          />
+        }
+        @case ('thesis') {
+          <app-minigame-thesis
+            #thesisCmp
+            class="w-full h-full"
+            [title]="$any(t)['title'] ?? ''"
+            [optionA]="$any(t)['optionA'] ?? 'Stimme zu'"
+            [optionB]="$any(t)['optionB'] ?? 'Stimme nicht zu'"
+            (submitted)="onSubmitThesis($event)"
+          />
+        }
       }
-    @case ('drawing') {
-      @let bg = $any(task())?.['backgroundSvg'];
-      <app-drawing-canvas-bg
-        #drawingCanvas
-        [baseImageUrl]="bg ?? null"
-        [extraTasks]="$any(task())?.['extraTasks'] ?? []"
-        (submitted)="onSubmitDrawing($event)"
-      />
-      }
-      @case ('choice') {
-        <app-minigame-choice
-          #choiceCmp
-          class="w-full"
-          [options]="$any(task())?.['options'] ?? []"
-          (submitted)="onSubmitChoice($event)"
-        />
-      }
-      @case ('number') {
-        <app-minigame-number
-          #numberCmp
-          [min]="$any(task())?.['min'] ?? 1"
-          [max]="$any(task())?.['max'] ?? 100"
-          [default]="$any(task())?.['default'] ?? 50"
-          (submitted)="onSubmitNumber($event)"
-        />
-      }
-      @case ('timer-stop') {
-        <app-minigame-timer
-          #timerCmp
-          [targetSec]="$any(task())?.['targetSec'] ?? 5"
-          (submitted)="onSubmitTimer($event)"
-        />
-      }
-      @case ('shape-split') {
-        @let fraction = $any(task())?.['targetFraction'];
-        <app-minigame-shape-split
-          #splitCmp
-          [polygon]="$any(task())?.['polygon'] ?? undefined"
-          [targetLabel]="fraction ? (fraction * 100).toFixed(0) + ':' + ((1 - fraction) * 100).toFixed(0) : '50:50'"
-          [backgroundSvg]="$any(task())?.['backgroundSvg'] ?? null"
-          (submitted)="onSubmitShapeSplit($event)"
-        />
-      }
-      @case ('text-answer') {
-        <app-minigame-text-answer
-          #textCmp
-          (submitted)="onSubmitTextAnswer($event)"
-        />
-
-      }
-      @case ('thesis') {
-        <app-minigame-thesis
-          #thesisCmp
-          [title]="$any(task())?.['title'] ?? ''"
-          [optionA]="$any(task())?.['optionA'] ?? 'Stimme zu'"
-          [optionB]="$any(task())?.['optionB'] ?? 'Stimme nicht zu'"
-          (submitted)="onSubmitThesis($event)"
-        />
-      }
-      @default {
-        <div class="flex-1 flex items-center justify-center text-neutral-400 text-sm">
-          <p>Kein Minigame konfiguriert</p>
-        </div>
-      }
-    }
-  </div>
-
-  @if (task()) {
-    <div class="shrink-0 p-4 flex gap-3 w-full max-w-md">
-      <button (click)="skipRound.emit()"
-              class="flex-1 bg-white text-black py-2.5 rounded-xl font-semibold active:scale-95 transition-transform">
-        Überspringen
-      </button>
-      <button (click)="submitCurrentTask()"
-              class="flex-1 bg-black text-white py-2.5 rounded-xl font-semibold shadow active:scale-95 transition-transform">
-        Absenden
-      </button>
+    </app-minigame-shell>
+  } @else {
+    <div class="flex-1 flex items-center justify-center text-neutral-400 text-sm">
+      Kein Minigame konfiguriert
     </div>
   }
 </div>

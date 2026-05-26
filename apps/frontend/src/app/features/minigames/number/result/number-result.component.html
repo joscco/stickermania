@@ -1,0 +1,24 @@
+<div class="flex flex-col h-full"
+     [class.ring-2]="isWinner()" [class.ring-yellow-400]="isWinner()"
+     [class.border-yellow-400]="isWinner()" [class.border-neutral-200]="!isWinner()">
+  <div class="flex items-center gap-1.5 px-3 py-2 border-b shrink-0"
+       [class.bg-yellow-50]="isWinner()" [class.border-neutral-100]="!isWinner()" [class.border-yellow-300]="isWinner()">
+    @if (isWinner()) { <span>★</span> }
+    <span class="text-sm font-semibold truncate flex-1">{{ playerName() }}</span>
+    @if (placement(); as p) { <span class="text-xs text-neutral-400 font-medium">#{{ p }}</span> }
+  </div>
+  <div class="flex-1 flex flex-col items-center justify-center gap-3 p-4 min-h-0">
+    <div class="text-6xl font-black text-neutral-900">{{ submission().value }}</div>
+    <div class="text-sm text-neutral-400">Ø {{ average() }}</div>
+    <div class="px-4 py-1.5 rounded-full text-xs font-semibold"
+         [class.bg-green-100]="deviation() < 5"
+         [class.text-green-700]="deviation() < 5"
+         [class.bg-neutral-100]="deviation() >= 5"
+         [class.text-neutral-600]="deviation() >= 5">
+      Δ {{ deviation() }}
+    </div>
+  </div>
+  <div class="px-3 py-2 border-t border-neutral-100 shrink-0 text-center text-xs text-neutral-500">
+    Wer am nächsten am Durchschnitt liegt, gewinnt
+  </div>
+</div>

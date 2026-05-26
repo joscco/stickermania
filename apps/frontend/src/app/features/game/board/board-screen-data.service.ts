@@ -37,16 +37,14 @@ export class BoardScreenDataService {
     readonly currentTimerTotalSec = signal(0);
 
     private readonly _tick = signal(0);
+    private readonly _phaseStartClientMs = signal(0);
 
     readonly timerPercentElapsed = computed(() => {
         this._tick();
-        const endTime = this.currentTimerEndsAt();
         const totalSeconds = this.currentTimerTotalSec();
-        if (!endTime || !totalSeconds) {
-          return 0;
-        }
-        const remaining = Math.max(0, endTime - Date.now());
-        return Math.min(100, Math.max(0, (1 - remaining / (totalSeconds * 1000)) * 100));
+        if (!totalSeconds) return 0;
+        const elapsedMs = Date.now() - this._phaseStartClientMs();
+        return Math.min(100, Math.max(0, (elapsedMs / (totalSeconds * 1000)) * 100));
     });
 
     readonly timerActive = computed(() => 'BUILDING,VOTING'.includes(this.basePhase()));
@@ -85,6 +83,7 @@ export class BoardScreenDataService {
                     totalSec = gameState?.resultsDurationSec ?? 0;
                 }
                 this.currentTimerTotalSec.set(totalSec);
+                this._phaseStartClientMs.set(Date.now());
                 lastEndsAt = endsAt;
             }
 

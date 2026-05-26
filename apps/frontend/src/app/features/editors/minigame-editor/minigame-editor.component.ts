@@ -1,23 +1,30 @@
-import {Component, signal, computed, inject, OnInit, viewChild, ElementRef, AfterViewInit, OnDestroy} from "@angular/core";
+import {Component, signal, computed, inject, OnInit, viewChild} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import {HttpClient} from "@angular/common/http";
 import {firstValueFrom} from "rxjs";
-import {StickerBoardComponent} from "../../shared/sticker-board/sticker-board.component";
-import {DrawingCanvasBgComponent} from "../../shared/drawing-canvas-bg/drawing-canvas-bg.component";
-import {MinigameChoiceComponent} from "../../shared/minigame-choice/minigame-choice.component";
-import {MinigameNumberComponent} from "../../shared/minigame-number/minigame-number.component";
-import {MinigameTimerComponent} from "../../shared/minigame-timer/minigame-timer.component";
-import {MinigameShapeSplitComponent} from "../../shared/minigame-shape-split/minigame-shape-split.component";
-import {MinigameTextAnswerComponent} from "../../shared/minigame-text-answer/minigame-text-answer.component";
-import {MinigameThesisComponent} from "../../shared/minigame-thesis/minigame-thesis.component";
+import {minigameRegistry} from "@birthday/shared";
+import type {MinigameSubmission, StickerCollage, StickerCollageVoteResult} from "@birthday/shared";
+import {StickerBoardComponent} from "../../minigames/sticker-place/play/sticker-board.component";
+import {DrawingCanvasBgComponent} from "../../minigames/drawing/play/drawing-canvas-bg.component";
+import {MinigameChoiceComponent} from "../../minigames/choice/play/minigame-choice.component";
+import {MinigameNumberComponent} from "../../minigames/number/play/minigame-number.component";
+import {MinigameTimerComponent} from "../../minigames/timer-stop/play/minigame-timer.component";
+import {MinigameShapeSplitComponent} from "../../minigames/shape-split/play/minigame-shape-split.component";
+import {MinigameTextAnswerComponent} from "../../minigames/text-answer/play/minigame-text-answer.component";
+import {MinigameThesisComponent} from "../../minigames/thesis/play/minigame-thesis.component";
+import {DrawingVotingComponent} from "../../minigames/drawing/voting/drawing-voting.component";
+import {TextAnswerVotingComponent} from "../../minigames/text-answer/voting/text-answer-voting.component";
+import {StickerPlaceResultComponent} from "../../minigames/sticker-place/result/sticker-place-result.component";
+import {DrawingResultComponent} from "../../minigames/drawing/result/drawing-result.component";
+import {ChoiceResultComponent} from "../../minigames/choice/result/choice-result.component";
+import {NumberResultComponent} from "../../minigames/number/result/number-result.component";
+import {TimerStopResultComponent} from "../../minigames/timer-stop/result/timer-stop-result.component";
+import {ShapeSplitResultComponent} from "../../minigames/shape-split/result/shape-split-result.component";
+import {TextAnswerResultComponent} from "../../minigames/text-answer/result/text-answer-result.component";
+import {ThesisResultComponent} from "../../minigames/thesis/result/thesis-result.component";
 
-interface SpriteEntry {id: string; spriteRef: string}
-interface TaskItem {_index?: number; type: string; title: string; durationSec: number; [key: string]: any}
-interface OptionItem {label: string; emoji?: string}
-interface PointItem {x: number; y: number}
-const DEFAULT_POLYGON: PointItem[] = [
-  {x: 20, y: 20}, {x: 180, y: 20}, {x: 180, y: 180}, {x: 20, y: 180},
-];
+interface TaskItem {id: string; type: string; title: string; durationSec: number; [key: string]: any}
+interface SimPlayer {id: string; name: string}
 
 @Component({
   selector: "app-minigame-editor",
@@ -26,319 +33,343 @@ const DEFAULT_POLYGON: PointItem[] = [
     CommonModule,
     StickerBoardComponent, DrawingCanvasBgComponent,
     MinigameChoiceComponent, MinigameNumberComponent, MinigameTimerComponent,
-    MinigameShapeSplitComponent,
-    MinigameTextAnswerComponent, MinigameThesisComponent,
+    MinigameShapeSplitComponent, MinigameTextAnswerComponent, MinigameThesisComponent,
+    DrawingVotingComponent, TextAnswerVotingComponent,
+    StickerPlaceResultComponent, DrawingResultComponent, ChoiceResultComponent,
+    NumberResultComponent, TimerStopResultComponent, ShapeSplitResultComponent,
+    TextAnswerResultComponent, ThesisResultComponent,
   ],
   templateUrl: "./minigame-editor.component.html",
-  host: {"class": "h-dvh flex flex-col bg-neutral-50"},
+  host: {"class": "h-dvh flex flex-col bg-neutral-100"},
 })
-export class MinigameEditorComponent implements OnInit, AfterViewInit, OnDestroy {
+export class MinigameEditorComponent implements OnInit {
   private readonly http = inject(HttpClient);
 
-  readonly polyCanvasRef = viewChild<ElementRef<SVGSVGElement>>("polyCanvas");
-  readonly draggingPolyIndex = signal<number | null>(null);
-
-  private boundPolyPointerMove = (e: PointerEvent) => this.onPolyPointerMove(e);
-  private boundPolyPointerUp = () => this.onPolyPointerUp();
-
-  ngAfterViewInit(): void {
-    document.addEventListener("pointermove", this.boundPolyPointerMove);
-    document.addEventListener("pointerup", this.boundPolyPointerUp);
-  }
-
-  ngOnDestroy(): void {
-    document.removeEventListener("pointermove", this.boundPolyPointerMove);
-    document.removeEventListener("pointerup", this.boundPolyPointerUp);
-  }
-
-  // ─── State ──────────────────────────────────────────────────
   readonly tasks = signal<TaskItem[]>([]);
-  readonly sprites = signal<SpriteEntry[]>([]);
   readonly selectedIndex = signal<number | null>(null);
-  readonly selectedType = signal("choice");
-  readonly loading = signal(false);
-  readonly saved = signal(false);
-  readonly deleted = signal(false);
-  readonly error = signal<string | null>(null);
+  readonly loadingTasks = signal(false);
+  readonly taskError = signal<string | null>(null);
 
-  // Form state
-  readonly taskId = signal("");
-  readonly title = signal("");
-  readonly durationSec = signal(45);
-  readonly stickerSvgs = signal<string[]>([]);
-  readonly newStickerSvg = signal("");
-  readonly backgroundSvg = signal("");
-  readonly goal = signal("");
-  readonly voteQuestion = signal("");
-  readonly thesisOptionA = signal("");
-  readonly thesisOptionB = signal("");
-  readonly extraTasksStr = signal("");
-  readonly targetSec = signal(5);
-  readonly numberMin = signal(1);
-  readonly numberMax = signal(100);
-  readonly numberDefault = signal(50);
-  readonly options = signal<OptionItem[]>([]);
-  readonly targetFraction = signal(50);
-  readonly polygon = signal<PointItem[]>(DEFAULT_POLYGON);
+  readonly selectedTask = computed(() => {
+    const i = this.selectedIndex();
+    if (i === null) return null;
+    return this.tasks()[i] ?? null;
+  });
 
-  readonly newOptionLabel = signal("");
-  readonly newOptionEmoji = signal("");
+  readonly selectedHandler = computed(() => {
+    const t = this.selectedTask();
+    if (!t) return null;
+    return minigameRegistry.getHandler(t.type);
+  });
 
-  // ─── Computed ──────────────────────────────────────────────
-  readonly isNew = computed(() => this.selectedIndex() === null);
-  readonly taskJson = computed(() => JSON.stringify(this.buildTask(), null, 2));
+  readonly players = signal<SimPlayer[]>([
+    {id: "p1", name: "Alice"},
+    {id: "p2", name: "Bob"},
+  ]);
+  readonly activePlayerIndex = signal(0);
+  readonly renderKey = signal(1);
+  readonly newPlayerName = signal("");
+  readonly renamingIdx = signal<number | null>(null);
+  readonly renameValue = signal("");
 
-  // ─── Lifecycle ─────────────────────────────────────────────
+  readonly submissions = signal<Record<string, MinigameSubmission | null>>({});
+  readonly results = signal<StickerCollageVoteResult[] | null>(null);
+  readonly winnerId = signal<string | null>(null);
+  readonly tiedWinnerIds = signal<string[]>([]);
+
+  readonly activePlayer = computed(() => {
+    const i = this.activePlayerIndex();
+    const p = this.players();
+    return p[i >= 0 && i < p.length ? i : 0];
+  });
+
+  readonly hasSubmissionForActive = computed(() => {
+    const p = this.activePlayer();
+    if (!p) return false;
+    return this.submissions()[p.id] !== null && this.submissions()[p.id] !== undefined;
+  });
+
+  readonly submissionCount = computed(() => {
+    const subs = this.submissions();
+    return this.players().filter(p => subs[p.id] !== null && subs[p.id] !== undefined).length;
+  });
+
+  readonly board = viewChild<StickerBoardComponent>("stickerBoard");
+  readonly canvas = viewChild<DrawingCanvasBgComponent>("drawingCanvas");
+  readonly choice = viewChild<MinigameChoiceComponent>("choiceCmp");
+  readonly number = viewChild<MinigameNumberComponent>("numberCmp");
+  readonly timer = viewChild<MinigameTimerComponent>("timerCmp");
+  readonly split = viewChild<MinigameShapeSplitComponent>("splitCmp");
+  readonly text = viewChild<MinigameTextAnswerComponent>("textCmp");
+  readonly thesis = viewChild<MinigameThesisComponent>("thesisCmp");
+
   async ngOnInit() {
-    await Promise.all([this.loadTasks(), this.loadSprites()]);
+    await this.loadTasks();
   }
 
   async loadTasks() {
+    this.loadingTasks.set(true);
+    this.taskError.set(null);
     try {
       const data = await firstValueFrom(this.http.get<TaskItem[]>("/api/game-config/tasks"));
       this.tasks.set(data);
-    } catch { this.error.set("Tasks konnten nicht geladen werden"); }
-  }
-
-  async loadSprites() {
-    try {
-      const data = await firstValueFrom(this.http.get<SpriteEntry[]>("/api/sprite-ids"));
-      this.sprites.set(data);
-    } catch {}
-  }
-
-  toNum(v: any): number { return Number(v) || 0; }
-  targetLabel(fraction: number): string {
-    const pct = Math.round(fraction * 100);
-    return `${pct}:${100 - pct}`;
-  }
-
-  polygonArea(): number {
-    const pts = this.polygon();
-    if (pts.length < 3) return 0;
-    let area = 0;
-    for (let i = 0; i < pts.length; i++) {
-      const j = (i + 1) % pts.length;
-      area += pts[i].x * pts[j].y - pts[j].x * pts[i].y;
-    }
-    return Math.round(Math.abs(area) / 2);
-  }
-
-  readonly showPreview = signal(false);
-
-  readonly previewTask = computed(() => this.buildTask());
-
-  togglePreview() { this.showPreview.update(v => !v); }
-  selectTask(index: number) {
-    const task = this.tasks()[index];
-    if (!task) return;
-    this.selectedIndex.set(index);
-    this.taskId.set(task['id'] ?? String((task._index ?? index) + 1));
-    this.title.set(task['title'] ?? "");
-    this.durationSec.set(task['durationSec'] ?? 45);
-    this.selectedType.set(task['type'] ?? "choice");
-    this.stickerSvgs.set(
-      Array.isArray(task['stickerSvgs'])
-        ? task['stickerSvgs']
-        : (task['stickerSvg'] ? [task['stickerSvg']] : [])
-    );
-    this.backgroundSvg.set(task['backgroundSvg'] ?? "");
-    this.goal.set(task['goal'] ?? "");
-    this.voteQuestion.set(task['voteQuestion'] ?? "");
-    this.thesisOptionA.set(task['optionA'] ?? "");
-    this.thesisOptionB.set(task['optionB'] ?? "");
-    this.extraTasksStr.set((task['extraTasks'] ?? []).join(", "));
-    this.polygon.set(
-      Array.isArray(task['polygon']) && task['polygon'].length > 0
-        ? task['polygon']
-        : DEFAULT_POLYGON
-    );
-    this.targetSec.set(task['targetSec'] ?? 5);
-    this.numberMin.set(task['min'] ?? 1);
-    this.numberMax.set(task['max'] ?? 100);
-    this.numberDefault.set(task['default'] ?? 50);
-    this.options.set((task['options'] ?? []).map((o: any) => ({label: o.label ?? "", emoji: o.emoji})));
-    this.targetFraction.set(Math.round((task['targetFraction'] ?? 0.5) * 100));
-  }
-
-  newTask() {
-    this.selectedIndex.set(null);
-    this.taskId.set(String((this.tasks().length || 0) + 1));
-    this.title.set("");
-    this.durationSec.set(45);
-    this.selectedType.set("choice");
-    this.stickerSvgs.set([]);
-    this.newStickerSvg.set("");
-    this.backgroundSvg.set("");
-    this.goal.set("");
-    this.voteQuestion.set("");
-    this.thesisOptionA.set("");
-    this.thesisOptionB.set("");
-    this.extraTasksStr.set("");
-    this.polygon.set(DEFAULT_POLYGON);
-    this.targetSec.set(5);
-    this.numberMin.set(1);
-    this.numberMax.set(100);
-    this.numberDefault.set(50);
-    this.options.set([]);
-    this.targetFraction.set(50);
-    this.error.set(null);
-    this.saved.set(false);
-  }
-
-  // ─── Form helpers ──────────────────────────────────────────
-  onTypeChange(e: Event) { this.selectedType.set((e.target as HTMLSelectElement).value); }
-
-  addOption() {
-    const label = this.newOptionLabel().trim();
-    if (!label) return;
-    this.options.update(o => [...o, {label, emoji: this.newOptionEmoji().trim() || undefined}]);
-    this.newOptionLabel.set("");
-    this.newOptionEmoji.set("");
-  }
-
-  removeOption(i: number) { this.options.update(o => o.filter((_, idx) => idx !== i)); }
-
-  addStickerSvg() {
-    const s = this.newStickerSvg().trim();
-    if (!s) return;
-    this.stickerSvgs.update(arr => [...arr, s]);
-    this.newStickerSvg.set("");
-  }
-
-  removeStickerSvg(i: number) {
-    this.stickerSvgs.update(arr => arr.filter((_, idx) => idx !== i));
-  }
-
-  // ─── Polygon canvas ────────────────────────────────────────
-  private svgPointFromEvent(e: PointerEvent): PointItem | null {
-    const svg = this.polyCanvasRef()?.nativeElement;
-    if (!svg) return null;
-    const pt = svg.createSVGPoint();
-    pt.x = e.clientX;
-    pt.y = e.clientY;
-    const loc = pt.matrixTransform(svg.getScreenCTM()?.inverse());
-    return {x: Math.round(Math.max(0, Math.min(200, loc.x))), y: Math.round(Math.max(0, Math.min(200, loc.y)))};
-  }
-
-  onPolyCanvasClick(e: PointerEvent): void {
-    if ((e.target as HTMLElement).closest(".poly-point")) return;
-    if (this.draggingPolyIndex() !== null) return;
-    const pt = this.svgPointFromEvent(e);
-    if (!pt) return;
-    // Prevent points too close together
-    const tooClose = this.polygon().some(p => Math.hypot(p.x - pt.x, p.y - pt.y) < 4);
-    if (tooClose) return;
-    this.polygon.update(arr => [...arr, {x: Math.round(pt.x * 10) / 10, y: Math.round(pt.y * 10) / 10}]);
-  }
-
-  onPolyPointDown(index: number, e: PointerEvent): void {
-    e.preventDefault();
-    e.stopPropagation();
-    this.draggingPolyIndex.set(index);
-    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
-  }
-
-  onPolyPointDblClick(index: number, e: MouseEvent): void {
-    e.stopPropagation();
-    this.removePolygonPoint(index);
-  }
-
-  private onPolyPointerMove(e: PointerEvent): void {
-    const idx = this.draggingPolyIndex();
-    if (idx === null) return;
-    const pt = this.svgPointFromEvent(e);
-    if (!pt) return;
-    this.polygon.update(arr => {
-      const next = [...arr];
-      if (idx >= 0 && idx < next.length) next[idx] = pt;
-      return next;
-    });
-  }
-
-  private onPolyPointerUp(): void {
-    this.draggingPolyIndex.set(null);
-  }
-
-  removePolygonPoint(i: number) {
-    this.polygon.update(arr => {
-      if (arr.length <= 3) return arr;
-      return arr.filter((_, idx) => idx !== i);
-    });
-  }
-
-  // ─── Save / Delete ─────────────────────────────────────────
-  buildTask(): TaskItem {
-    const task: TaskItem = {
-      id: this.taskId().trim() || String((this.tasks().length || 0) + 1),
-      type: this.selectedType(),
-      title: this.title(),
-      durationSec: this.durationSec(),
-    };
-    if (this.selectedType() === "sticker-place") {
-      task['stickerSvgs'] = this.stickerSvgs();
-      if (this.goal()) task['goal'] = this.goal();
-    }
-    if (this.selectedType() === "sticker-place" || this.selectedType() === "drawing" || this.selectedType() === "shape-split") {
-      if (this.backgroundSvg()) task['backgroundSvg'] = this.backgroundSvg();
-    }
-    if (this.selectedType() === "drawing") {
-      const tasks = this.extraTasksStr().split(",").map(s => s.trim()).filter(s => s.length > 0);
-      if (tasks.length > 0) task['extraTasks'] = tasks;
-    }
-    if (this.selectedType() === "text-answer") {
-      task['voteQuestion'] = this.voteQuestion();
-    }
-    if (this.selectedType() === "thesis") {
-      if (this.thesisOptionA()) task['optionA'] = this.thesisOptionA();
-      if (this.thesisOptionB()) task['optionB'] = this.thesisOptionB();
-    }
-    if (this.selectedType() === "timer-stop") task['targetSec'] = this.targetSec();
-    if (this.selectedType() === "number") {
-      task['min'] = this.numberMin();
-      task['max'] = this.numberMax();
-      task['default'] = this.numberDefault();
-    }
-    if (this.selectedType() === "choice") {
-      task['options'] = this.options().map(o => ({label: o.label, ...(o.emoji ? {emoji: o.emoji} : {})}));
-    }
-    if (this.selectedType() === "shape-split") {
-      task['targetFraction'] = this.targetFraction() / 100;
-      task['polygon'] = this.polygon();
-    }
-    return task;
-  }
-
-  async save() {
-    this.error.set(null);
-    this.loading.set(true);
-    try {
-      const task = this.buildTask();
-      if (this.isNew()) {
-        await firstValueFrom(this.http.post("/api/game-config/tasks", {task}));
-      } else {
-        await firstValueFrom(this.http.put(`/api/game-config/tasks/${this.selectedIndex()}`, {task}));
-      }
-      this.saved.set(true);
-      setTimeout(() => this.saved.set(false), 2000);
-      await this.loadTasks();
-    } catch (err: any) {
-      this.error.set(err?.message ?? "Speichern fehlgeschlagen");
+    } catch {
+      this.taskError.set("Tasks konnten nicht geladen werden.");
     } finally {
-      this.loading.set(false);
+      this.loadingTasks.set(false);
     }
   }
 
-  async deleteTask(index: number) {
-    if (!confirm("Task wirklich löschen?")) return;
-    try {
-      await firstValueFrom(this.http.delete(`/api/game-config/tasks/${index}`));
-      await this.loadTasks();
-      if (this.selectedIndex() === index) this.newTask();
-      this.deleted.set(true);
-      setTimeout(() => this.deleted.set(false), 2000);
-    } catch (err: any) {
-      this.error.set(err?.message ?? "Löschen fehlgeschlagen");
+  selectTask(idx: number) {
+    this.selectedIndex.set(idx);
+    this.resetAllSubmissions();
+    this.renderKey.update(k => k + 1);
+  }
+
+  setActivePlayer(idx: number) {
+    if (idx === this.activePlayerIndex()) return;
+    this.activePlayerIndex.set(idx);
+    this.renderKey.update(k => k + 1);
+  }
+
+  addPlayer() {
+    const name = this.newPlayerName().trim() || `Spieler ${this.players().length + 1}`;
+    const id = `p${Date.now()}`;
+    this.players.update(p => [...p, {id, name}]);
+    this.newPlayerName.set("");
+  }
+
+  removePlayer(idx: number) {
+    const p = this.players();
+    if (p.length <= 1) return;
+    const player = p[idx];
+    this.players.update(arr => arr.filter((_, i) => i !== idx));
+    this.submissions.update(s => {
+      const copy = {...s};
+      delete copy[player.id];
+      return copy;
+    });
+    if (this.activePlayerIndex() >= this.players().length) {
+      this.activePlayerIndex.set(this.players().length - 1);
     }
+    this.renderKey.update(k => k + 1);
+  }
+
+  startRename(idx: number) {
+    this.renamingIdx.set(idx);
+    this.renameValue.set(this.players()[idx]?.name ?? "");
+  }
+
+  commitRename() {
+    const idx = this.renamingIdx();
+    if (idx === null) return;
+    const name = this.renameValue().trim();
+    if (name) {
+      this.players.update(p => p.map((pl, i) => i === idx ? {...pl, name} : pl));
+    }
+    this.renamingIdx.set(null);
+  }
+
+  cancelRename() {
+    this.renamingIdx.set(null);
+  }
+
+  submitForActivePlayer() {
+    const t = this.selectedTask();
+    const player = this.activePlayer();
+    if (!t || !player) return;
+
+    const submission = this.captureSubmission(t);
+    if (!submission) return;
+
+    this.submissions.update(s => ({...s, [player.id]: submission}));
+    this.renderKey.update(k => k + 1);
+  }
+
+  private captureSubmission(task: TaskItem): MinigameSubmission | null {
+    const player = this.activePlayer();
+    const now = Date.now();
+    const pid = player.id;
+
+    switch (task.type) {
+      case "sticker-place": {
+        const pos = this.board()?.getPositions();
+        if (!pos || pos.length === 0) return null;
+        return {type: "sticker-place", playerId: pid, roundIndex: 1, positions: pos, submittedAt: now};
+      }
+      case "drawing": {
+        const dataUrl = this.canvas()?.painter?.toDataURL();
+        if (!dataUrl) return null;
+        return {type: "drawing", playerId: pid, roundIndex: 1, imageDataUrl: dataUrl, submittedAt: now};
+      }
+      case "choice": {
+        const sel = this.choice()?.selected();
+        if (!sel || sel.length === 0) return null;
+        return {type: "choice", playerId: pid, roundIndex: 1, selectedIndices: sel, submittedAt: now};
+      }
+      case "number": {
+        const val = this.number()?.value();
+        if (val === undefined) return null;
+        return {type: "number", playerId: pid, roundIndex: 1, value: val, submittedAt: now};
+      }
+      case "timer-stop": {
+        const elapsed = this.lastTimerElapsed();
+        if (elapsed === null) return null;
+        this.lastTimerElapsed.set(null);
+        return {type: "timer-stop", playerId: pid, roundIndex: 1, elapsedSec: elapsed, submittedAt: now};
+      }
+      case "shape-split": {
+        const cmp = this.split();
+        if (!cmp) return null;
+        return {
+          type: "shape-split", playerId: pid, roundIndex: 1,
+          cutLine: {a: cmp.handleA(), b: cmp.handleB()},
+          areaFraction: cmp.areaFraction(), submittedAt: now,
+        };
+      }
+      case "text-answer": {
+        const ans = this.text()?.answer();
+        if (!ans || !ans.trim()) return null;
+        return {type: "text-answer", playerId: pid, roundIndex: 1, answer: ans.trim(), submittedAt: now};
+      }
+      case "thesis": {
+        const cmp = this.thesis();
+        if (!cmp || cmp.agreed() === null) return null;
+        return {
+          type: "thesis", playerId: pid, roundIndex: 1,
+          agreed: cmp.agreed()!, estimatedPercent: cmp.estimatedPercent(), submittedAt: now,
+        };
+      }
+      default: return null;
+    }
+  }
+
+  readonly lastTimerElapsed = signal<number | null>(null);
+
+  onTimerSubmitted(elapsedSec: number) {
+    this.lastTimerElapsed.set(elapsedSec);
+  }
+
+  onSubmitClick() {
+    const t = this.selectedTask();
+    if (!t) return;
+    switch (t.type) {
+      case "sticker-place": this.submitForActivePlayer(); break;
+      case "drawing": this.submitForActivePlayer(); break;
+      case "choice": this.choice()?.submit(); break;
+      case "number": this.number()?.submit(); break;
+      case "timer-stop": this.timer()?.submit(); break;
+      case "shape-split": this.submitForActivePlayer(); break;
+      case "text-answer": this.text()?.submit(); break;
+      case "thesis": this.submitForActivePlayer(); break;
+    }
+  }
+
+  onChildSubmitted(_data: any) {
+    this.submitForActivePlayer();
+  }
+
+  evaluate() {
+    const t = this.selectedTask();
+    const handler = this.selectedHandler();
+    if (!t || !handler) return;
+
+    const subs = this.submissions();
+    const validSubs = Object.values(subs).filter(s => s !== null) as MinigameSubmission[];
+    if (validSubs.length === 0) return;
+
+    const placeholderCollages: StickerCollage[] = validSubs.map(s => ({
+      id: `mg_${s.playerId}_1`,
+      playerId: s.playerId,
+      roundIndex: 1,
+      placements: [],
+      submittedAt: s.submittedAt,
+      snapshotUrl: handler.getSnapshotSvg(s) ?? undefined,
+    }));
+
+    const scored = handler.evaluateSubmissions(validSubs as any, placeholderCollages, t as any);
+    this.results.set(scored.results);
+    this.winnerId.set(scored.winnerId);
+    this.tiedWinnerIds.set(scored.tiedWinnerIds);
+  }
+
+  getResultText(playerId: string): string {
+    const t = this.selectedTask();
+    const handler = this.selectedHandler();
+    if (!t || !handler) return "";
+    const subs = this.submissions();
+    const allValid = Object.values(subs).filter(s => s !== null) as MinigameSubmission[];
+    const my = subs[playerId] ?? undefined;
+    return handler.getResultSummary(my as any, allValid as any, t as any);
+  }
+
+  getPlacement(playerId: string): number | null {
+    const r = this.results();
+    if (!r) return null;
+    return r.find(e => e.playerId === playerId)?.placement ?? null;
+  }
+
+  isWinner(playerId: string): boolean {
+    return this.winnerId() === playerId || this.tiedWinnerIds().includes(playerId);
+  }
+
+  resetAllSubmissions() {
+    this.submissions.set({});
+    this.results.set(null);
+    this.winnerId.set(null);
+    this.tiedWinnerIds.set([]);
+    this.lastTimerElapsed.set(null);
+  }
+
+  onPlayerNameInput(event: Event) {
+    this.newPlayerName.set((event.target as HTMLInputElement).value);
+  }
+
+  description(): string {
+    const t = this.selectedTask();
+    const h = this.selectedHandler();
+    if (!t || !h) return "";
+    return h.getDescription(t as any);
+  }
+
+  readonly simulatedVotes = signal<Record<string, string[]>>({});
+
+  getVotingEntries(): Array<{submission: MinigameSubmission; playerName: string; snapshotUrl: string | null}> {
+    const handler = this.selectedHandler();
+    if (!handler) return [];
+    const subs = this.submissions();
+    return this.players()
+      .filter(p => subs[p.id] !== null && subs[p.id] !== undefined)
+      .map(p => ({
+        submission: subs[p.id]!,
+        playerName: p.name,
+        snapshotUrl: handler.getSnapshotSvg(subs[p.id]!) ?? null,
+      }));
+  }
+
+  getTextAnswerEntries(): Array<{submission: any; playerName: string}> {
+    const subs = this.submissions();
+    return this.players()
+      .filter(p => subs[p.id] !== null && subs[p.id] !== undefined)
+      .filter(p => (subs[p.id] as any)?.type === 'text-answer')
+      .map(p => ({
+        submission: subs[p.id]!,
+        playerName: p.name,
+      }));
+  }
+
+  onVoteCast(playerId: string) {
+    this.simulatedVotes.update(v => {
+      const prev = v['simulated'] ?? [];
+      if (prev.includes(playerId)) {
+        return {...v, simulated: prev.filter(id => id !== playerId)};
+      }
+      return {...v, simulated: [...prev, playerId]};
+    });
+  }
+
+  getAllSubsForType(_type: string): MinigameSubmission[] {
+    const subs = this.submissions();
+    return Object.values(subs).filter(s => s !== null) as MinigameSubmission[];
   }
 }
