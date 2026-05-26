@@ -1,33 +1,14 @@
-import {signal, computed, inject, Injectable} from '@angular/core';
-import type {
-  SessionState,
-  StickerCollageGameState,
-  StickerCollage,
-  StickerCollageBuildingState,
-  StickerCollageVotingState,
-  StickerCollageResultsState,
-  MinigameTask,
-  StickerPlaceTask,
-  DrawingTask,
-  ChoiceTask,
-  NumberTask,
-  TimerStopTask,
-  ShapeSplitTask,
-} from '@birthday/shared';
-import {lobbyPhase, buildingPhase, votingPhase, resultsPhase, makeSessionState, MOCK_SUBMISSIONS} from './mock-data';
-import type {VotingViewModel, VotingVariant, ResultsViewModel} from '../features/game/player/player-view-models';
+import {computed, inject, Injectable, signal} from '@angular/core';
+import type {ChoiceTask, DrawingTask, MinigameTask, NumberTask, SessionState, ShapeSplitTask, StickerCollage, StickerCollageBuildingState, StickerCollageGameState, StickerCollageResultsState, StickerCollageVotingState, StickerPlaceTask, TimerStopTask,} from '@birthday/shared';
+import {buildingPhase, lobbyPhase, makeSessionState, MOCK_SUBMISSIONS, resultsPhase, votingPhase} from './mock-data';
+import {WorldStore} from '../core/world.store';
+import {GameSessionStore} from '../core/challenge.store';
 
 @Injectable({providedIn: 'root'})
 export class MockWorldStore {
   readonly sessionState = signal<SessionState | null>(makeSessionState(lobbyPhase()));
   readonly lastError = signal<string | null>(null);
   readonly players = computed(() => this.sessionState()?.players ?? {});
-  readonly allPlayers = computed(() => Object.values(this.players()));
-  readonly leaderboard = computed(() =>
-    Object.values(this.players())
-      .filter(p => p.name.trim().length > 0)
-      .sort((a, b) => b.score - a.score || a.joinedAt - b.joinedAt)
-  );
   readonly stickerCollageGameState = computed(() => this.sessionState()?.gameState ?? null);
   setSessionState(state: SessionState) { this.sessionState.set(state); this.lastError.set(null); }
   clearSessionState() { this.sessionState.set(null); }
@@ -157,7 +138,6 @@ export class MockStickerPlayerService {
     const myResult = r.find(r => r.playerId === playerId);
     return myResult?.placement ?? null;
   });
-  requestHand() {}
   skipRound() {}
   castVote(_collageId: string) {}
   doneVoting() {}
@@ -167,11 +147,6 @@ export class MockStickerPlayerService {
   endVotingEarly() {}
 
 }
-
-import {WorldStore} from '../core/world.store';
-import {GameSessionStore} from '../core/challenge.store';
-import {WebSocketService} from '../core/websocket.service';
-import {StickerPlayerService} from '../features/game/services/sticker-player.service';
 
 export type MockPhase = 'lobby' | 'building' | 'building-submitted' | 'building-skipped' | 'voting' | 'voting-done' | 'voting-all-done' | 'results';
 

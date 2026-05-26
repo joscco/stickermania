@@ -148,6 +148,4 @@ export class AudioService {
   public playClick(): void   { this.playBuffer(SFX_CLICK, 0.35); }
   public playAction(): void  { this.playBuffer(SFX_ACTION, 0.4); }
   public playStart(): void   { this.playBuffer(SFX_START, 0.45); }
-  public playSettle(): void  { this.playBuffer(SFX_SETTLE, 0.2); }
-  public playDelete(): void  { this.playBuffer(SFX_DELETE, 0.25); }
 }

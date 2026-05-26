@@ -40,15 +40,6 @@ export class ApiService {
     return firstValueFrom(this.httpClient.delete<void>(`/api/sessions/${encodeURIComponent(sessionId)}`));
   }
 
-  public uploadCollageImage(sessionId: string, playerId: string, collageId: string, imageDataUrl: string): Promise<{ok: boolean; publicUrl: string}> {
-    return firstValueFrom(
-      this.httpClient.post<{ok: boolean; publicUrl: string}>(
-        `/api/sessions/${encodeURIComponent(sessionId)}/collage-image`,
-        {playerId, collageId, imageDataUrl},
-      ),
-    );
-  }
-
   public getSessionAssets(sessionId: string): Promise<Array<{type: "avatar" | "collage"; filename: string; publicUrl: string}>> {
     return firstValueFrom(
       this.httpClient.get<Array<{type: "avatar" | "collage"; filename: string; publicUrl: string}>>(

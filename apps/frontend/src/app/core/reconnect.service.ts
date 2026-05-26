@@ -29,17 +29,6 @@ export class ReconnectService {
     localStorage.setItem(RECONNECT_STORAGE_KEY, JSON.stringify(payload));
   }
 
-  public update(partial: Partial<ReconnectPayload>): void {
-    const existing = this.load();
-    const updated: ReconnectPayload = {
-      playerId: partial.playerId ?? existing?.playerId ?? "",
-      sessionId: partial.sessionId ?? existing?.sessionId ?? "",
-    };
-    if (updated.playerId && updated.sessionId) {
-      this.save(updated);
-    }
-  }
-
   /** Remove all stored reconnect data (e.g. when the session is deleted). */
   public clear(): void {
     localStorage.removeItem(RECONNECT_STORAGE_KEY);

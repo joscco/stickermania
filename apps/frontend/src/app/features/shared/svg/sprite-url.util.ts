@@ -92,11 +92,15 @@ export async function preloadSprite(): Promise<void> {
  */
 export function getSpriteViewBox(imageUrl: string): { width: number; height: number } | null {
     const doc = getCachedSpriteDoc();
-    if (!doc) return null;
+    if (!doc) {
+      return null;
+    }
     const id = getSpriteId(imageUrl);
     const symbol = doc.getElementById(id);
     const vb = symbol?.getAttribute('viewBox');
-    if (!vb) return null;
+    if (!vb) {
+      return null;
+    }
     const parts = vb.trim().split(/[\s,]+/).map(Number);
     if (parts.length < 4 || parts[2] <= 0 || parts[3] <= 0) return null;
     return { width: parts[2], height: parts[3] };
