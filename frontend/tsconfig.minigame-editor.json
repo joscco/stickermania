@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/minigame-editor",
+    "types": []
+  },
+  "files": ["src/main.minigame-editor.ts"],
+  "include": [
+    "../minigames/_shared/minigame-stage/**/*.ts",
+    "../minigames/timer-stop/**/*.ts",
+    "../packages/shared/src/minigame.ts"
+  ]
+}

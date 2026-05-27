@@ -6,6 +6,11 @@
     "outDir": "./out-tsc/app",
     "types": []
   },
-  "include": ["src/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "../minigames/_shared/minigame-stage/**/*.ts",
+    "../minigames/timer-stop/**/*.ts",
+    "../packages/shared/src/**/*.ts"
+  ],
   "exclude": ["src/**/*.spec.ts"]
 }

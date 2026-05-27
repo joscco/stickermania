@@ -77,6 +77,20 @@
               "extractLicenses": false,
               "sourceMap": true,
               "browser": "src/main.dev.ts",
+              "tsConfig": "tsconfig.app.json",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.dev.ts"
+                }
+              ]
+            },
+            "minigame-editor": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "browser": "src/main.minigame-editor.ts",
+              "tsConfig": "tsconfig.minigame-editor.json",
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
@@ -103,6 +117,9 @@
             "dev-tools": {
               "buildTarget": "frontend:build:dev-tools",
               "proxyConfig": "proxy.conf.json"
+            },
+            "minigame-editor": {
+              "buildTarget": "frontend:build:minigame-editor"
             }
           },
           "defaultConfiguration": "development"
