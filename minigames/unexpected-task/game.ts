@@ -1,6 +1,6 @@
-import {Minigame, MinigameVariantData} from "../../packages/shared/src/minigame";
+import {Minigame, MinigamePlayerResult, MinigameVariantData} from "../../packages/shared/src/minigame";
 
-export type UnexpectedTaskGameVariantData = {
+export interface UnexpectedTaskGameVariantData extends MinigameVariantData {
     id: string;  // draw-george-hair
     title: string; // Male George eine Frisur
     firstRoundSeconds: number; // 30
@@ -13,8 +13,7 @@ export type UnexpectedTaskGameSubmission = {
     playerId: string;
 }
 
-export type UnexpectedTaskGamePlayerResult = {
-    playerId: string;
+export interface UnexpectedTaskGamePlayerResult extends MinigamePlayerResult {
 
 }
 
