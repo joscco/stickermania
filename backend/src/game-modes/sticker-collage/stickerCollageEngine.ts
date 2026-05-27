@@ -95,14 +95,7 @@ export class StickerCollageEngine implements GameEngine {
                 return endVotingPhaseEarly(state, this.config, now);
             case "advance-from-results":
                 return boardAdvancesToNextRound(state, this.config, this.config.minigame, now);
-            case "submit-sticker-place":
-            case "submit-drawing":
-            case "submit-choice":
-            case "submit-number":
-            case "submit-timer":
-            case "submit-shape-split":
-            case "submit-text-answer":
-            case "submit-thesis":
+            case "submit-minigame":
                 return submitMinigame(state, playerId, action as MinigameClientAction, now);
             default:
                 return {stateChanged: false, events: []};

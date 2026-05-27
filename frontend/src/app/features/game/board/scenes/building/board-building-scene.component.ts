@@ -35,7 +35,8 @@ export class BoardBuildingSceneComponent {
     public readonly submissionCount = computed(() => {
         const ms = this.gameState();
         if (!ms) return 0;
-        return (ms.submissions[ms.currentRoundIndex] ?? []).length;
+        return (ms.submissions[ms.currentRoundIndex] ?? []).length +
+            (ms.minigameSubmissions[ms.currentRoundIndex] ?? []).length;
     });
 
     public readonly playerStatus = (playerId: string): PlayerAvatarStatus => {
@@ -48,6 +49,7 @@ export class BoardBuildingSceneComponent {
     private hasSubmitted(playerId: string): boolean {
         const ms = this.gameState();
         if (!ms) return false;
-        return (ms.submissions[ms.currentRoundIndex] ?? []).some(s => s.playerId === playerId);
+        return (ms.submissions[ms.currentRoundIndex] ?? []).some(s => s.playerId === playerId) ||
+            (ms.minigameSubmissions[ms.currentRoundIndex] ?? []).some(s => s.playerId === playerId);
     }
 }

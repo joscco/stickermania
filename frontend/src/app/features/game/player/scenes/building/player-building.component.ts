@@ -1,123 +1,88 @@
-import {Component, input, output, ViewChild} from "@angular/core";
 import {CommonModule} from "@angular/common";
-import type {MinigameTask} from "@birthday/shared";
-import {AnimGroupDirective} from '../../../../shared/animations/anim-on-init.directive';
-import {MinigameShellComponent} from '../../../../minigames/_shared/minigame-shell.component';
-import {StickerBoardComponent} from '../../../../minigames/sticker-place/play/sticker-board.component';
-import {DrawingCanvasBgComponent} from '../../../../minigames/drawing/play/drawing-canvas-bg.component';
-import {MinigameChoiceComponent} from '../../../../minigames/choice/play/minigame-choice.component';
-import {MinigameNumberComponent} from '../../../../minigames/number/play/minigame-number.component';
-import {MinigameTimerComponent} from '../../../../minigames/timer-stop/play/minigame-timer.component';
-import {MinigameShapeSplitComponent} from '../../../../minigames/shape-split/play/minigame-shape-split.component';
-import {MinigameTextAnswerComponent} from '../../../../minigames/text-answer/play/minigame-text-answer.component';
-import {MinigameThesisComponent} from '../../../../minigames/thesis/play/minigame-thesis.component';
+import {Component, computed, input, output, signal} from "@angular/core";
+import type {MinigameClientAction, MinigameTask} from "@birthday/shared";
+import {AnimGroupDirective} from "../../../../shared/animations/anim-on-init.directive";
+import {MinigameStageComponent} from "../../../../../../../../minigames/_shared/minigame-stage/minigame-stage.component";
+import {TimerStopPhaseComponent} from "../../../../../../../../minigames/timer-stop/player-ui/phase-0-stop/timer-stop-phase.component";
+import {
+  TIMER_STOP_STAGE_SIZE,
+  TimerStopPlayerUiEvent,
+  TimerStopPlayerUiState,
+} from "../../../../../../../../minigames/timer-stop/player-ui/ui-contract";
 
-export type MinigameSubmitEvent =
-  | {type: "submit-sticker-place"; positions: Array<{stickerId: string; x: number; y: number}>}
-  | {type: "submit-drawing"; imageDataUrl: string}
-  | {type: "submit-choice"; selectedIndices: number[]}
-  | {type: "submit-number"; value: number}
-  | {type: "submit-timer"; elapsedSec: number}
-  | {type: "submit-shape-split"; cutLine: {a: {x: number; y: number}; b: {x: number; y: number}}; areaFraction: number}
-  | {type: "submit-text-answer"; answer: string}
-  | {type: "submit-thesis"; agreed: boolean; estimatedPercent: number};
+export type MinigameSubmitEvent = MinigameClientAction;
 
 @Component({
-    selector: "app-player-building",
-    standalone: true,
-    imports: [
-      CommonModule,
-      MinigameShellComponent, AnimGroupDirective,
-      StickerBoardComponent, DrawingCanvasBgComponent,
-      MinigameChoiceComponent, MinigameNumberComponent, MinigameTimerComponent,
-      MinigameShapeSplitComponent,
-      MinigameTextAnswerComponent, MinigameThesisComponent,
-    ],
-    templateUrl: "./player-building.component.html",
-    host: {"class": "h-full flex-1 flex flex-col"},
+  selector: "app-player-building",
+  standalone: true,
+  imports: [
+    CommonModule,
+    AnimGroupDirective,
+    MinigameStageComponent,
+    TimerStopPhaseComponent,
+  ],
+  templateUrl: "./player-building.component.html",
+  host: {"class": "h-full flex-1 flex flex-col"},
 })
 export class PlayerBuildingComponent {
-    public readonly roundIndex = input<number>(0);
-    public readonly prompt = input<string>('');
-    public readonly task = input<MinigameTask | null>(null);
+  public readonly roundIndex = input<number>(0);
+  public readonly prompt = input<string>("");
+  public readonly task = input<MinigameTask | null>(null);
 
-    public readonly skipRound = output<void>();
-    public readonly submitMinigame = output<MinigameSubmitEvent>();
+  public readonly skipRound = output<void>();
+  public readonly submitMinigame = output<MinigameSubmitEvent>();
 
-    @ViewChild("stickerBoard") stickerBoard?: StickerBoardComponent;
-    @ViewChild("drawingCanvas") drawingCanvas?: DrawingCanvasBgComponent;
-    @ViewChild("choiceCmp") choiceCmp?: MinigameChoiceComponent;
-    @ViewChild("numberCmp") numberCmp?: MinigameNumberComponent;
-    @ViewChild("timerCmp") timerCmp?: MinigameTimerComponent;
-    @ViewChild("splitCmp") splitCmp?: MinigameShapeSplitComponent;
-    @ViewChild("textCmp") textCmp?: MinigameTextAnswerComponent;
-    @ViewChild("thesisCmp") thesisCmp?: MinigameThesisComponent;
+  public readonly stageSize = TIMER_STOP_STAGE_SIZE;
+  public readonly timerDraftSeconds = signal<number | null>(null);
 
-    public submitCurrentTask(): void {
-      const t = this.task();
-      if (!t) return;
-      switch (t.type) {
-        case "sticker-place": {
-          const pos = this.stickerBoard?.getPositions();
-          if (pos) this.submitMinigame.emit({type: "submit-sticker-place", positions: pos});
-          break;
-        }
-        case "drawing":
-          this.drawingCanvas?.submit();
-          break;
-        case "choice":
-          this.choiceCmp?.submit();
-          break;
-        case "number":
-          this.numberCmp?.submit();
-          break;
-        case "timer-stop":
-          this.timerCmp?.submit();
-          break;
-        case "shape-split":
-          this.splitCmp?.submit();
-          break;
-        case "text-answer":
-          this.textCmp?.submit();
-          break;
-        case "thesis":
-          this.thesisCmp?.submit();
-          break;
-      }
+  public readonly canSubmit = computed(() => {
+    const task = this.task();
+    if (!task) return false;
+    if (task.type === "timer-stop") return this.timerDraftSeconds() !== null;
+    return false;
+  });
+
+  public timerState(): TimerStopPlayerUiState | null {
+    const task = this.task();
+    if (!task || task.type !== "timer-stop") return null;
+
+    const targetSeconds = Number(task["targetSec"] ?? 5);
+    const firstRoundSeconds = Number(task["durationSec"] ?? targetSeconds + 5);
+
+    return {
+      playerId: "local-player",
+      phase: "stop",
+      variantData: {
+        id: task.id,
+        title: task.title,
+        firstRoundSeconds,
+        targetSeconds,
+      },
+      draftStoppedAtSeconds: this.timerDraftSeconds() ?? undefined,
+      roundEndsAt: Date.now() + firstRoundSeconds * 1000,
+      serverNow: Date.now(),
+    };
+  }
+
+  public onTimerEvent(event: TimerStopPlayerUiEvent): void {
+    if (event.type === "draft-change") {
+      this.timerDraftSeconds.set(event.stoppedAtSeconds);
     }
+  }
 
-    // Kept for output compatibility — called from child components
-    public onSubmitStickerPlace(): void {
-        const positions = this.stickerBoard?.getPositions();
-        if (!positions || positions.length === 0) return;
-        this.submitMinigame.emit({type: "submit-sticker-place", positions});
-    }
+  public submitCurrentTask(): void {
+    const task = this.task();
+    if (!task) return;
 
-    public onSubmitDrawing(imageDataUrl: string): void {
-        this.submitMinigame.emit({type: "submit-drawing", imageDataUrl});
-    }
+    if (task.type === "timer-stop") {
+      const stoppedAtSeconds = this.timerDraftSeconds();
+      if (stoppedAtSeconds === null) return;
 
-    public onSubmitChoice(indices: number[]): void {
-        this.submitMinigame.emit({type: "submit-choice", selectedIndices: indices});
+      this.submitMinigame.emit({
+        type: "submit-minigame",
+        minigameType: "timer-stop",
+        payload: {stoppedAtSeconds},
+      });
     }
-
-    public onSubmitNumber(value: number): void {
-        this.submitMinigame.emit({type: "submit-number", value});
-    }
-
-    public onSubmitTimer(elapsedSec: number): void {
-        this.submitMinigame.emit({type: "submit-timer", elapsedSec});
-    }
-
-    public onSubmitShapeSplit(event: {cutLine: {a: {x: number; y: number}; b: {x: number; y: number}}; areaFraction: number}): void {
-        this.submitMinigame.emit({type: "submit-shape-split", cutLine: event.cutLine, areaFraction: event.areaFraction});
-    }
-
-    public onSubmitTextAnswer(answer: string): void {
-        this.submitMinigame.emit({type: "submit-text-answer", answer});
-    }
-
-    public onSubmitThesis(event: {agreed: boolean; estimatedPercent: number}): void {
-        this.submitMinigame.emit({type: "submit-thesis", agreed: event.agreed, estimatedPercent: event.estimatedPercent});
-    }
+  }
 }

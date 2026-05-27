@@ -56,13 +56,13 @@ async function main() {
 
     try {
         log("Building shared package...");
-        await run("npm run _build:shared", {cwd: process.cwd()});
+        await run("npm run build:shared", {cwd: process.cwd()});
 
         log("Building backend...");
         await run("npm run build -w @birthday/backend", {cwd: process.cwd()});
 
         log("Starting backend...");
-        const backend = spawn("node", ["apps/backend/dist/index.js"], {
+        const backend = spawn("node", ["backend/dist/index.js"], {
             cwd: process.cwd(),
             stdio: "inherit",
             env: {...process.env},

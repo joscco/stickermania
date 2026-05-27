@@ -4,12 +4,11 @@ import type {MinigameTask} from "@birthday/shared";
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {RoundInfoComponent} from '../../../../shared/round-info/round-info.component';
 import {PlayerStatusScreenComponent} from '../../player-status-screen/player-status-screen.component';
-import PlacementBadgeComponent from '../../../shared/placement-badge/placement-badge.component';
 
 @Component({
     selector: "app-player-results",
     standalone: true,
-    imports: [CommonModule, AnimOnInitDirective, PlayerStatusScreenComponent, RoundInfoComponent, PlacementBadgeComponent],
+    imports: [CommonModule, AnimOnInitDirective, PlayerStatusScreenComponent, RoundInfoComponent],
     templateUrl: "./player-results.component.html",
     host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })

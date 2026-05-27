@@ -1,4 +1,4 @@
-import type {SessionPlayer, SessionState, StickerCollageBuildingState, StickerCollageGameState, StickerCollageLobbyState, StickerCollageResultsState, StickerCollageVoteResult, StickerCollageVotingState,} from '@birthday/shared';
+import type {SessionPlayer, SessionState, StickerCollage, StickerCollageBuildingState, StickerCollageGameState, StickerCollageLobbyState, StickerCollageResultsState, StickerCollageVoteResult, StickerCollageVotingState,} from '@birthday/shared';
 
 export const MOCK_PLAYERS: Record<string, SessionPlayer> = {
   'player-1': { id: 'player-1', name: 'Anna', avatarUrl: 'assets/png/example_avatar_player_1.png', avatarAssetPath: null, score: 120, joinedAt: 0, connected: true, isHost: true, teamId: null },
@@ -10,6 +10,12 @@ const MOCK_VOTE_RESULTS: StickerCollageVoteResult[] = [
   { collageId: 'col-1', playerId: 'player-1', voteCount: 2, placement: 1 },
   { collageId: 'col-2', playerId: 'player-2', voteCount: 1, placement: 2 },
   { collageId: 'col-3', playerId: 'player-3', voteCount: 0, placement: 3 },
+];
+
+export const MOCK_SUBMISSIONS: StickerCollage[] = [
+  {id: 'col-1', playerId: 'player-1', roundIndex: 0, placements: [], submittedAt: Date.now()},
+  {id: 'col-2', playerId: 'player-2', roundIndex: 0, placements: [], submittedAt: Date.now()},
+  {id: 'col-3', playerId: 'player-3', roundIndex: 0, placements: [], submittedAt: Date.now()},
 ];
 
 // ── Phase state builders ────────────────────────────────────────────────────

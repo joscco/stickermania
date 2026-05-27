@@ -4,22 +4,26 @@
   "version": "0.1.0",
   "type": "module",
   "workspaces": [
-    "apps/*",
+    "frontend",
+    "backend",
     "packages/*"
   ],
   "scripts": {
-    "start": "npm run _build && node apps/backend/dist/index.js",
-    "dev": "npm run _build:dev && APP_MODE=dev node apps/backend/dist/index.js",
+    "start": "npm run build:dev && node backend/dist/index.js",
+    "dev": "npm run build:dev && APP_MODE=dev node backend/dist/index.js",
+    "dev:frontend": "npm run dev -w @birthday/frontend",
+    "dev:minigame-editor": "npm run dev:minigame-editor -w @birthday/frontend",
     "dev:catalog": "npm run dev:tools -w @birthday/frontend",
     "dev:live": "node scripts/dev-live.mjs",
     "wlan:qr": "node wlan/wlan-qr.mjs",
     "cloud:deploy": "node scripts/cloud-deploy.mjs",
     "cloud:start": "gcloud run deploy birthday-game --image europe-west1-docker.pkg.dev/birthday-game-2026/birthday-game/birthday-game:latest --region europe-west1 --project birthday-game-2026 --allow-unauthenticated --timeout 3600 --max-instances 1 --min-instances 1",
     "cloud:stop":  "node scripts/cloud-deploy-offline.mjs",
-    "_build": "npm run _build:shared && npm run build -w @birthday/frontend && npm run build -w @birthday/backend",
-    "_build:offline": "npm run _build:shared && npm run build:offline -w @birthday/frontend",
-    "_build:shared": "npm run build -w @birthday/shared",
-    "_build:dev": "npm run _build:shared && npm run build:dev-tools -w @birthday/frontend && npm run build -w @birthday/backend"
+    "build": "npm run build:dev",
+    "build:prod": "npm run build:shared && npm run build -w @birthday/frontend && npm run build -w @birthday/backend",
+    "build:offline": "npm run build:shared && npm run build:offline -w @birthday/frontend",
+    "build:shared": "npm run build -w @birthday/shared",
+    "build:dev": "npm run build:shared && npm run build:dev-tools -w @birthday/frontend && npm run build -w @birthday/backend"
   },
   "dependencies": {
     "gsap": "^3.14.2",

@@ -1,6 +1,6 @@
-import type {GameConfig, SessionState, StickerCollage, StickerCollageBuildingState, StickerCollageGameState, StickerCollageResultsState, StickerCollageServerEvent, StickerCollageVotingState, MinigameClientAction, MinigameConfig,} from "@birthday/shared";
-import {minigameRegistry} from "@birthday/shared";
+import type {GameConfig, SessionState, StickerCollage, StickerCollageBuildingState, StickerCollageGameState, StickerCollageResultsState, StickerCollageServerEvent, StickerCollageVotingState, MinigameClientAction, MinigameConfig, OpenMinigameSubmission,} from "@birthday/shared";
 import {shouldSkipVoting, transitionToBuilding, transitionToNextRound, transitionToResults, transitionToVoting} from "./roundManager.js";
+import {getMinigameHandler} from "./minigameHandlers.js";
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -97,21 +97,19 @@ export function submitMinigame(
     const task = gameState.currentTask;
     if (!task) return noChange;
 
-    const handler = minigameRegistry.getHandlerForTask(task);
+    const handler = getMinigameHandler(task.type);
     if (!handler) return noChange;
 
-    const submission = handler.createSubmission(playerId, currentRoundIndex, action, now);
+    const submission = handler.createSubmission({playerId, roundIndex: currentRoundIndex, task, action, now});
     if (!submission) return noChange;
 
     const existing = gameState.minigameSubmissions[currentRoundIndex] ?? [];
     gameState.minigameSubmissions[currentRoundIndex] = existing.filter(s => s.playerId !== playerId);
-    gameState.minigameSubmissions[currentRoundIndex].push(submission);
+    gameState.minigameSubmissions[currentRoundIndex].push(submission as OpenMinigameSubmission);
 
     const existingCollages = gameState.submissions[currentRoundIndex] ?? [];
     gameState.submissions[currentRoundIndex] = existingCollages.filter((sub: StickerCollage) => sub.playerId !== playerId);
     const collageId = `minigame_${playerId}_${currentRoundIndex}`;
-
-    const snapshotUrl = handler.getSnapshotSvg(submission) ?? undefined;
 
     const placeholderCollage: StickerCollage = {
         id: collageId,
@@ -119,7 +117,6 @@ export function submitMinigame(
         roundIndex: currentRoundIndex,
         placements: [],
         submittedAt: now,
-        snapshotUrl,
     };
     gameState.submissions[currentRoundIndex].push(placeholderCollage);
 

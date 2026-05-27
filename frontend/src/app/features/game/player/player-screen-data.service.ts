@@ -6,8 +6,7 @@ import {StickerPlayerService} from '../services/sticker-player.service';
 import {PlayerTimerService} from '../services/player-timer.service';
 import {PlayerScreen} from './player-screen.enum';
 import type {BuildingSkippedViewModel, BuildingSubmittedViewModel, BuildingViewModel, PlayerHeaderViewModel, ResultsViewModel, VotingDoneViewModel, VotingVariant, VotingViewModel,} from './player-view-models';
-import type {MinigameSubmission, MinigameTask} from '@birthday/shared';
-import {minigameRegistry} from '@birthday/shared';
+import type {MinigameTask, OpenMinigameSubmission, StickerCollageVoteResult} from '@birthday/shared';
 
 @Injectable()
 export class PlayerScreenDataService {
@@ -178,15 +177,24 @@ export class PlayerScreenDataService {
             winnerName: winnerId ? (this.worldStore.players()[winnerId]?.name ?? 'Gewinner') : '',
             lastVoteResults: stickerService.lastVoteResults(),
             currentTask: task,
-            resultSummary: computeResultSummary(task, minigames, myId),
+            resultSummary: computeResultSummary(task, minigames, myId, myResult),
         };
     });
 }
 
-function computeResultSummary(task: MinigameTask | null, submissions: MinigameSubmission[], myId: string): string {
+function computeResultSummary(
+    task: MinigameTask | null,
+    submissions: OpenMinigameSubmission[],
+    myId: string,
+    myResult: StickerCollageVoteResult | undefined,
+): string {
     if (!task) return "Abstimmungsergebnis";
-    const handler = minigameRegistry.getHandlerForTask(task);
-    if (!handler) return "";
     const my = submissions.find(s => s.playerId === myId);
-    return handler.getResultSummary(my as any, submissions as any, task as any);
+    if (task.type === "timer-stop" && my && myResult?.result) {
+        const result = myResult.result as {stoppedAtSeconds?: number; deviationSeconds?: number};
+        if (typeof result.stoppedAtSeconds === "number" && typeof result.deviationSeconds === "number") {
+            return `${result.stoppedAtSeconds.toFixed(2)}s gestoppt, ${result.deviationSeconds.toFixed(2)}s neben dem Ziel.`;
+        }
+    }
+    return "";
 }

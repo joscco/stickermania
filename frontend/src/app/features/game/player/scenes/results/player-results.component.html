@@ -7,7 +7,9 @@
 
   @if (myPlacement(); as placement) {
     <div animOnInit="medal" [animDelay]="0.15" class="flex flex-col items-center justify-center gap-3 py-4">
-      <app-placement-badge [placement]="placement" [count]="myVoteCount()"/>
+      <div class="grid h-24 w-24 place-items-center rounded-full bg-yellow-400 text-4xl font-black text-neutral-950 shadow-lg">
+        {{ placement }}.
+      </div>
 
       @if (currentTask(); as task) {
         <div class="text-xs text-neutral-400 text-center px-4">

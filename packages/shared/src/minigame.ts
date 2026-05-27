@@ -18,6 +18,13 @@ export type MinigameVariantData = {
 
 export type MinigameSubmission = {
     playerId: string;
+    type?: string;
+    [key: string]: unknown;
+}
+
+export type MinigameMessage = {
+    type: string;
+    payload?: unknown;
 }
 
 export type MinigameResult<TPlayerResult extends MinigamePlayerResult> = {

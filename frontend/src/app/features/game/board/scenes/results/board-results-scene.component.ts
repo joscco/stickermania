@@ -1,133 +1,51 @@
-import {AfterViewInit, Component, computed, ElementRef, input, OnDestroy, output, signal, ViewChild} from "@angular/core";
 import {CommonModule} from "@angular/common";
+import {Component, computed, input, output} from "@angular/core";
 import type {
-    StickerCollageGameState,
-    StickerCollageVoteResult,
-    StickerCollageResultsState,
-    StickerCollage,
-    SessionPlayer,
+  SessionPlayer,
+  StickerCollageGameState,
+  StickerCollageResultsState,
+  StickerCollageVoteResult,
 } from "@birthday/shared";
-import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
-import {BoardPlayerAvatarComponent} from '../../player-avatar/board-player-avatar.component';
-import {SvgComponent} from '../../../../shared/svg/svg.component';
-import {RoundInfoComponent} from '../../../../shared/round-info/round-info.component';
-import {StarsDisplayComponent} from '../../../shared/stars-display/stars-display.component';
-
-/** Approximate ideal pixel height needed to show the podium at scale 1 (3 columns with trophies). */
-const PODIUM_IDEAL_H = 420;
-
-interface PodiumSlot {
-    placement: number;
-    result: StickerCollageVoteResult;
-    medalIcon: string;
-    medalW: number;
-    imgSizeClass: string;
-    borderClass: string;
-    shadowClass: string;
-    barHeightClass: string;
-    barColorClass: string;
-    starSize: number;
-    starColor: string;
-    camW: number;
-    isTied: boolean;
-}
+import {AnimOnInitDirective} from "../../../../shared/animations/anim-on-init.directive";
+import {BoardPlayerAvatarComponent} from "../../player-avatar/board-player-avatar.component";
+import {RoundInfoComponent} from "../../../../shared/round-info/round-info.component";
 
 @Component({
-    selector: "app-board-results-scene",
-    standalone: true,
-    imports: [CommonModule, AnimOnInitDirective, BoardPlayerAvatarComponent, SvgComponent, RoundInfoComponent, StarsDisplayComponent],
-    templateUrl: "./board-results-scene.component.html",
+  selector: "app-board-results-scene",
+  standalone: true,
+  imports: [CommonModule, AnimOnInitDirective, BoardPlayerAvatarComponent, RoundInfoComponent],
+  templateUrl: "./board-results-scene.component.html",
 })
-export class BoardResultsSceneComponent implements AfterViewInit, OnDestroy {
-    public readonly gameState = input<StickerCollageGameState | null>(null);
-    public readonly players = input<Record<string, SessionPlayer>>({});
-    public readonly advanceFromResults = output<void>();
+export class BoardResultsSceneComponent {
+  public readonly gameState = input<StickerCollageGameState | null>(null);
+  public readonly players = input<Record<string, SessionPlayer>>({});
+  public readonly advanceFromResults = output<void>();
 
-    // ── Podium proportional scaling ──────────────────────────────
+  private readonly resultsState = computed<StickerCollageResultsState | null>(() => {
+    const phaseState = this.gameState()?.phaseState;
+    return phaseState?.phase === "RESULTS" ? phaseState : null;
+  });
 
-    @ViewChild('podiumArea') private podiumArea!: ElementRef<HTMLDivElement>;
+  public readonly results = computed<StickerCollageVoteResult[]>(() =>
+    [...(this.resultsState()?.lastVoteResults ?? [])].sort(
+      (a, b) => a.placement - b.placement || a.playerId.localeCompare(b.playerId),
+    ),
+  );
 
-    /** Scale factor (0–1) that shrinks the whole podium when vertical space is tight. */
-    public readonly podiumScale = signal(1);
+  public readonly winnerId = computed(() => this.resultsState()?.winnerId ?? null);
+  public readonly readyToAdvanceCount = computed(() => this.resultsState()?.readyToAdvanceIds.length ?? 0);
+  public readonly currentTask = computed(() => this.gameState()?.currentTask ?? null);
 
-    private resizeObserver: ResizeObserver | null = null;
+  public getPlayer(playerId: string): SessionPlayer | undefined {
+    return this.players()[playerId];
+  }
 
-    ngAfterViewInit(): void {
-        const el = this.podiumArea?.nativeElement;
-        if (!el) return;
-        const update = () => {
-            const h = el.clientHeight;
-            this.podiumScale.set(Math.max(0.3, Math.min(1, h / PODIUM_IDEAL_H)));
-        };
-        // Wait one frame so the flex layout has settled
-        requestAnimationFrame(update);
-        this.resizeObserver = new ResizeObserver(update);
-        this.resizeObserver.observe(el);
+  public resultDetail(result: StickerCollageVoteResult): string {
+    const detail = result.result as {stoppedAtSeconds?: number; deviationSeconds?: number} | undefined;
+    if (typeof detail?.stoppedAtSeconds === "number" && typeof detail.deviationSeconds === "number") {
+      return `${detail.stoppedAtSeconds.toFixed(2)}s · ${detail.deviationSeconds.toFixed(2)}s daneben`;
     }
 
-    ngOnDestroy(): void {
-        this.resizeObserver?.disconnect();
-    }
-
-    // ── Data helpers ─────────────────────────────────────────────
-
-    private get resultsPs(): StickerCollageResultsState | null {
-        const ps = this.gameState()?.phaseState;
-        return ps?.phase === "RESULTS" ? ps : null;
-    }
-
-    public readonly podiumSlots = computed<PodiumSlot[]>(() => {
-        const allResults = this.resultsPs?.lastVoteResults ?? [];
-        if (!allResults.length) return [];
-
-        const medalConfig: Record<number, Omit<PodiumSlot, 'placement' | 'result' | 'isTied'>> = {
-            1: {medalIcon: 'icon-medal-gold-lg', medalW: 65, imgSizeClass: 'w-28 sm:w-36 md:w-44', borderClass: 'border-yellow-400', shadowClass: 'shadow-xl', barColorClass: 'bg-yellow-400', barHeightClass: 'h-8', starSize: 16, starColor: 'text-amber-500', camW: 60},
-            2: {medalIcon: 'icon-medal-silver-lg', medalW: 60, imgSizeClass: 'w-24 sm:w-32 md:w-36', borderClass: 'border-neutral-400', shadowClass: 'shadow-lg', barColorClass: 'bg-neutral-300', barHeightClass: 'h-5', starSize: 14, starColor: 'text-neutral-400', camW: 50},
-            3: {medalIcon: 'icon-medal-bronze-lg', medalW: 55, imgSizeClass: 'w-24 sm:w-32 md:w-36', borderClass: 'border-amber-700', shadowClass: 'shadow-lg', barColorClass: 'bg-amber-700', barHeightClass: 'h-3', starSize: 14, starColor: 'text-neutral-400', camW: 50},
-        };
-
-        const grouped = new Map<number, StickerCollageVoteResult[]>();
-        for (const r of allResults) {
-            if (!grouped.has(r.placement)) grouped.set(r.placement, []);
-            grouped.get(r.placement)!.push(r);
-        }
-
-        const slots: PodiumSlot[] = [];
-        const placements = [...grouped.keys()].sort((a, b) => a - b);
-        for (const placement of placements) {
-            if (slots.length >= 5) break;
-            const results = grouped.get(placement)!;
-            const isTied = results.length > 1;
-            const cfg = medalConfig[placement] ?? medalConfig[3];
-            for (const result of results) {
-                if (slots.length >= 5) break;
-                slots.push({placement, result, isTied, ...cfg});
-            }
-        }
-        return slots;
-    });
-
-    public readonly winnerId = computed(() => this.resultsPs?.winnerId ?? null);
-
-    public readonly readyToAdvanceCount = computed(() => this.resultsPs?.readyToAdvanceIds.length ?? 0);
-
-    public readonly currentRoundSubmissions = computed<StickerCollage[]>(() => {
-        const ms = this.gameState();
-        if (!ms) return [];
-        return ms.submissions[ms.currentRoundIndex] ?? [];
-    });
-
-    public readonly currentTask = computed(() => this.gameState()?.currentTask ?? null);
-
-    public readonly isDrawingTask = computed(() => this.currentTask()?.type === "drawing");
-
-    public getSnapshotUrl(playerId: string): string | null {
-        const subs = this.currentRoundSubmissions();
-        const sub = subs.find(s => s.playerId === playerId);
-        return sub?.snapshotUrl ?? null;
-    }
-
-    public getPlayer(playerId: string): SessionPlayer | undefined {
-        return this.players()[playerId];
-    }
+    return `${result.voteCount} Stimmen`;
+  }
 }

@@ -5,7 +5,7 @@
 FROM node:20-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.base.json ./
-COPY apps/frontend/package.json apps/frontend/package.json
+COPY frontend/package.json frontend/package.json
 COPY packages/shared/package.json packages/shared/package.json
 RUN npm ci
 
@@ -15,14 +15,14 @@ WORKDIR /app
 COPY tsconfig.base.json ./
 # shared/src is needed for the @birthday/shared path alias in tsconfig.offline.json
 COPY packages/shared/src/ packages/shared/src/
-COPY apps/frontend/ apps/frontend/
+COPY frontend/ frontend/
 RUN npm run build:offline -w @birthday/frontend
 
 # ── Serve with nginx on port 8080 ────────────────────────────────────────────
 FROM nginx:alpine
 RUN rm -rf /usr/share/nginx/html/*
 
-COPY --from=build /app/apps/frontend/dist/offline /tmp/dist
+COPY --from=build /app/frontend/dist/offline /tmp/dist
 RUN if [ -d /tmp/dist/browser ]; then \
       cp -r /tmp/dist/browser/. /usr/share/nginx/html/; \
     else \

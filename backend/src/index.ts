@@ -43,8 +43,8 @@ await app.register(fastifyStatic, {
 
 // Serve Angular frontend from dist directory
 function resolveFrontendDistPath(): string {
-    const withoutBrowser = path.resolve(process.cwd(), "apps/frontend/dist/frontend");
-    const withBrowser = path.resolve(process.cwd(), "apps/frontend/dist/frontend/browser");
+    const withoutBrowser = path.resolve(process.cwd(), "frontend/dist/frontend");
+    const withBrowser = path.resolve(process.cwd(), "frontend/dist/frontend/browser");
     if (fs.existsSync(path.resolve(withBrowser, "index.html"))) {
         return withBrowser;
     }

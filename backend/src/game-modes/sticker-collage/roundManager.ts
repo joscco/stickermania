@@ -1,5 +1,5 @@
-import {minigameRegistry} from "@birthday/shared";
 import type {MinigameConfig, SessionState, StickerCollage, StickerCollageGameState, StickerCollageVoteResult,} from "@birthday/shared";
+import {getMinigameHandler} from "./minigameHandlers.js";
 
 function pickRandomTask(minigameConfig: MinigameConfig): import("@birthday/shared").MinigameTask | null {
     if (minigameConfig.tasks.length === 0) return null;
@@ -47,8 +47,8 @@ export function shouldSkipVoting(gameState: StickerCollageGameState): boolean {
 
     const task = gameState.currentTask;
     if (task) {
-        const handler = minigameRegistry.getHandlerForTask(task);
-        if (handler && handler.requiresVoting()) return false;
+        const handler = getMinigameHandler(task.type);
+        if (handler && handler.requiresVoting(task)) return false;
         return true;
     }
     return false;
@@ -84,8 +84,8 @@ export function transitionToResults(
     let tiedWinnerIds: string[] = [];
 
     const task = gameState.currentTask;
-    const handler = task ? minigameRegistry.getHandlerForTask(task) : undefined;
-    const useVoting = !task || (handler ? handler.requiresVoting() : false);
+    const handler = task ? getMinigameHandler(task.type) : undefined;
+    const useVoting = !task || (handler ? handler.requiresVoting(task) : false);
 
     if (useVoting && currentSubmissions.length > 0) {
         const voteCounts = new Map<string, number>();
@@ -111,8 +111,8 @@ export function transitionToResults(
         winnerId = topPlayers[Math.floor(Math.random() * topPlayers.length)]?.playerId ?? null;
         tiedWinnerIds = topPlayers.filter(e => e.playerId !== winnerId).map(e => e.playerId);
     } else if (currentMinigames.length > 0 && task && handler) {
-        const scored = handler.evaluateSubmissions(currentMinigames, currentSubmissions, task);
-        lastVoteResults = scored.results;
+        const scored = handler.evaluateSubmissions({task, submissions: currentMinigames});
+        lastVoteResults = scored.voteResults;
         winnerId = scored.winnerId;
         tiedWinnerIds = scored.tiedWinnerIds;
     }
