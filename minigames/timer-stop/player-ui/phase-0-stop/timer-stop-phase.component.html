@@ -1,11 +1,18 @@
-<section class="flex h-full w-full flex-col items-center justify-center gap-3 bg-white p-8 text-center">
-    <p class="text-[10px] font-bold uppercase leading-tight text-neutral-400">
-        Stoppe die Uhr so nah wie moeglich am Ziel. <br> Wer am nächsten dran ist, gewinnt.
-    </p>
+<section class="flex h-full w-full flex-col items-center justify-center gap-4 bg-white p-8 text-center">
+    <div class="grid gap-2">
+        <p class="text-[10px] font-black uppercase leading-none tracking-wide text-neutral-400">
+            Timergefühl
+        </p>
 
-    <p class="text-xs leading-none text-neutral-500">
-        Ziel: {{ state().variantData.targetSeconds | number: "1.0-2" }} Sekunden
-    </p>
+        <div class="rounded-xl bg-neutral-100 px-4 py-3">
+            <p class="text-sm font-black leading-tight text-neutral-950">
+                Stoppe bei {{ state().variantData.targetSeconds | number: "1.0-2" }} Sekunden
+            </p>
+            <p class="mt-1 text-[10px] font-bold leading-tight text-neutral-500">
+                Kleinste Abweichung gewinnt
+            </p>
+        </div>
+    </div>
 
     <div class="flex h-16 w-full items-center justify-center">
         <div class="relative flex h-16 w-16 items-center justify-center">

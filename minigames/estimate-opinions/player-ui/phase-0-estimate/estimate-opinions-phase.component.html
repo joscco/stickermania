@@ -1,28 +1,33 @@
-<section class="flex h-full w-full flex-col bg-white p-7 text-center">
-  <div class="grid shrink-0 gap-1">
-    <p class="text-[10px] font-bold uppercase leading-tight text-neutral-400">
-      Waehle eine Antwort und schaetze danach, wie viele deine Meinung teilen.
+<section class="flex h-full w-full flex-col gap-5 bg-white p-9 text-center">
+  <div class="grid shrink-0 gap-2">
+    <p class="text-[10px] font-black uppercase leading-none tracking-wide text-neutral-400">
+      Meinungscheck
     </p>
 
-    <p class="text-[10px] leading-tight text-neutral-500">
-      Gewinner ist, wer die eigene Zustimmungsgruppe am besten einschaetzt.
-    </p>
+    <div class="rounded-xl bg-neutral-100 px-4 py-3">
+      <p class="text-xs font-black leading-tight text-neutral-950">
+        Waehle eine Seite
+      </p>
+      <p class="mt-1 text-[10px] font-bold leading-tight text-neutral-500">
+        Beste Schaetzung der eigenen Gruppe gewinnt
+      </p>
+    </div>
   </div>
 
-  <div class="flex min-h-0 flex-1 flex-col justify-center gap-5">
-    <h2 class="text-xl font-black leading-tight text-neutral-950">
+  <div class="flex min-h-0 flex-1 flex-col justify-center gap-6">
+    <h2 class="px-2 text-xl font-black leading-tight text-neutral-950">
       {{ state().variantData.question }}
     </h2>
 
-    <div class="mx-auto grid w-full max-w-72 grid-cols-2 gap-3">
+    <div class="mx-auto grid w-full max-w-80 grid-cols-2 gap-4">
       <button
         type="button"
-        class="min-h-20 rounded-xl border px-4 text-lg font-black leading-tight"
+        class="min-h-24 rounded-xl border px-4 py-4 text-lg font-black leading-tight shadow-sm active:scale-[0.98]"
         [class.border-neutral-950]="draft().choseOptionA === true"
         [class.bg-neutral-950]="draft().choseOptionA === true"
         [class.text-white]="draft().choseOptionA === true"
         [class.border-neutral-200]="draft().choseOptionA !== true"
-        [class.bg-neutral-100]="draft().choseOptionA !== true"
+        [class.bg-white]="draft().choseOptionA !== true"
         [class.text-neutral-950]="draft().choseOptionA !== true"
         (click)="chooseOption(true)"
       >
@@ -31,12 +36,12 @@
 
       <button
         type="button"
-        class="min-h-20 rounded-xl border px-4 text-lg font-black leading-tight"
+        class="min-h-24 rounded-xl border px-4 py-4 text-lg font-black leading-tight shadow-sm active:scale-[0.98]"
         [class.border-neutral-950]="draft().choseOptionA === false"
         [class.bg-neutral-950]="draft().choseOptionA === false"
         [class.text-white]="draft().choseOptionA === false"
         [class.border-neutral-200]="draft().choseOptionA !== false"
-        [class.bg-neutral-100]="draft().choseOptionA !== false"
+        [class.bg-white]="draft().choseOptionA !== false"
         [class.text-neutral-950]="draft().choseOptionA !== false"
         (click)="chooseOption(false)"
       >
@@ -45,22 +50,30 @@
     </div>
   </div>
 
-  <div class="grid shrink-0 gap-2 rounded-xl bg-yellow-100 p-4 text-left">
+  <div class="grid shrink-0 gap-3 rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-left">
     <div class="flex items-end justify-between gap-3">
-      <span class="text-xs font-bold uppercase text-yellow-900">Gleiche Meinung</span>
+      <span class="text-xs font-black uppercase text-neutral-500">Gleiche Meinung</span>
       <span class="text-2xl font-black tabular-nums text-neutral-950">
         {{ draft().estimatedPercentageWithSameOpinion * 100 | number: "1.0-0" }}%
       </span>
     </div>
 
-    <input
-      class="w-full accent-neutral-950"
-      type="range"
-      min="0"
-      max="100"
-      step="1"
-      [value]="draft().estimatedPercentageWithSameOpinion * 100"
-      (input)="setEstimate($event)"
-    />
+    <div class="grid gap-2">
+      <input
+        class="h-2 w-full cursor-pointer appearance-none rounded-full bg-neutral-200 accent-neutral-950"
+        type="range"
+        min="0"
+        max="100"
+        step="1"
+        [value]="draft().estimatedPercentageWithSameOpinion * 100"
+        (input)="setEstimate($event)"
+      />
+
+      <div class="flex justify-between text-[10px] font-bold text-neutral-400">
+        <span>0%</span>
+        <span>50%</span>
+        <span>100%</span>
+      </div>
+    </div>
   </div>
 </section>
