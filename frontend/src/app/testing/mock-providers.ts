@@ -1,6 +1,6 @@
 import {computed, inject, Injectable, signal} from '@angular/core';
-import type {ChoiceTask, DrawingTask, MinigameTask, NumberTask, SessionState, ShapeSplitTask, RoundSubmission, PartyBuildingState, PartyGameState, PartyResultsState, PartyVotingState, StickerPlaceTask, TimerStopTask,} from '@birthday/shared';
-import {buildingPhase, lobbyPhase, makeSessionState, MOCK_SUBMISSIONS, resultsPhase, votingPhase} from './mock-data';
+import type {ChoiceTask, DrawingTask, MinigameTask, NumberTask, SessionState, ShapeSplitTask, RoundSubmission, PartyGameState, PartyRoundActiveState, PartyRoundResultsState, StickerPlaceTask, TimerStopTask,} from '@birthday/shared';
+import {roundActivePhase, lobbyPhase, makeSessionState, MOCK_SUBMISSIONS, resultsPhase} from './mock-data';
 import {WorldStore} from '../core/world.store';
 import {GameSessionStore} from '../core/challenge.store';
 
@@ -53,17 +53,13 @@ export class MockPartyPlayerService {
     this.worldStore.partyGameState()
   );
 
-  private readonly buildingState = computed<PartyBuildingState | null>(() => {
+  private readonly roundActiveState = computed<PartyRoundActiveState | null>(() => {
     const ps = this.gameState()?.phaseState;
-    return ps?.phase === 'BUILDING' ? ps as PartyBuildingState : null;
+    return ps?.phase === 'ROUND_ACTIVE' ? ps as PartyRoundActiveState : null;
   });
-  private readonly votingState = computed<PartyVotingState | null>(() => {
+  private readonly resultsState = computed<PartyRoundResultsState | null>(() => {
     const ps = this.gameState()?.phaseState;
-    return ps?.phase === 'VOTING' ? ps as PartyVotingState : null;
-  });
-  private readonly resultsState = computed<PartyResultsState | null>(() => {
-    const ps = this.gameState()?.phaseState;
-    return ps?.phase === 'RESULTS' ? ps as PartyResultsState : null;
+    return ps?.phase === 'ROUND_RESULTS' ? ps as PartyRoundResultsState : null;
   });
 
   readonly currentPrompt = computed(() => this.gameState()?.currentPrompt ?? '');
@@ -81,11 +77,11 @@ export class MockPartyPlayerService {
   readonly hasSkippedThisRound = computed(() => {
     const playerId = this.sessionStore.playerId();
     if (!playerId) return false;
-    return this.buildingState()?.skippedPlayerIds.includes(playerId) ?? false;
+    return this.roundActiveState()?.skippedPlayerIds.includes(playerId) ?? false;
   });
   readonly allPlayersDone = computed(() => {
     const ms = this.gameState();
-    const ps = this.buildingState();
+    const ps = this.roundActiveState();
     const players = this.worldStore.players();
     if (!ms || !ps) return false;
     const activeIds = ms.roundParticipantIds.filter(id => players[id]?.connected);
@@ -105,25 +101,7 @@ export class MockPartyPlayerService {
     if (!ms) return [];
     return ms.minigameSubmissions[this.currentRoundIndex()] ?? [];
   });
-  readonly myVotes = computed<string[]>(() => {
-    const playerId = this.sessionStore.playerId();
-    if (!playerId) return [];
-    return this.votingState()?.currentVotes[playerId] ?? [];
-  });
-  readonly myDoneVoting = computed(() => {
-    const playerId = this.sessionStore.playerId();
-    if (!playerId) return false;
-    return this.votingState()?.doneVotingIds.includes(playerId) ?? false;
-  });
-  readonly allVotingDone = computed(() => {
-    const ms = this.gameState();
-    const ps = this.votingState();
-    const players = this.worldStore.players();
-    if (!ms || !ps) return false;
-    const connectedIds = ms.roundParticipantIds.filter(id => players[id]?.connected);
-    return connectedIds.length > 0 && connectedIds.every(id => ps.doneVotingIds.includes(id));
-  });
-  readonly lastVoteResults = computed(() => this.resultsState()?.lastVoteResults ?? []);
+  readonly lastResults = computed(() => this.resultsState()?.lastResults ?? []);
   readonly winnerId = computed(() => this.resultsState()?.winnerId ?? null);
   readonly isWinner = computed(() => this.sessionStore.playerId() === this.winnerId());
   readonly isTiedWinner = computed(() => {
@@ -133,22 +111,19 @@ export class MockPartyPlayerService {
   });
   readonly myPlacement = computed<number | null>(() => {
     const playerId = this.sessionStore.playerId();
-    const r = this.lastVoteResults();
+    const r = this.lastResults();
     if (!playerId || r.length === 0) return null;
     const myResult = r.find(r => r.playerId === playerId);
     return myResult?.placement ?? null;
   });
   skipRound() {}
-  castVote(_submissionId: string) {}
-  doneVoting() {}
   readyToAdvance() {}
   startGame() {}
   endRoundEarly() {}
-  endVotingEarly() {}
 
 }
 
-export type MockPhase = 'lobby' | 'building' | 'building-submitted' | 'building-skipped' | 'voting' | 'voting-done' | 'voting-all-done' | 'results';
+export type MockPhase = 'lobby' | 'round-active' | 'round-submitted' | 'round-skipped' | 'round-results';
 
 export const MOCK_TASKS: Record<string, MinigameTask> = {
   stickerPlace: {id: 'mock-sticker', type: 'sticker-place', title: 'Platziere das Herz!', durationSec: 30, stickerSvgs: ['sticker-shapes-heart']} as StickerPlaceTask,
@@ -167,30 +142,15 @@ export function makeMockSessionState(phase: MockPhase, taskKey?: keyof typeof MO
   switch (phase) {
     case 'lobby':
       return makeSessionState(lobbyPhase());
-    case 'building':
-      return makeSessionState(buildingPhase(), undefined, task ? {currentTask: task, currentPrompt: task['title']} : undefined);
-    case 'building-submitted': {
+    case 'round-active':
+      return makeSessionState(roundActivePhase(), undefined, task ? {currentTask: task, currentPrompt: task['title']} : undefined);
+    case 'round-submitted': {
       const overrides: any = task ? {currentTask: task, currentPrompt: task['title']} : undefined;
-      return makeSessionState(buildingPhase(), undefined, overrides ? {...overrides, submissions} : {submissions});
+      return makeSessionState(roundActivePhase(), undefined, overrides ? {...overrides, submissions} : {submissions});
     }
-    case 'building-skipped':
-      return makeSessionState(buildingPhase({skippedPlayerIds: ['player-1']}), undefined, task ? {currentTask: task, currentPrompt: task['title']} : undefined);
-    case 'voting': {
-      const overrides: any = { submissions };
-      if (task) { overrides.currentTask = task; overrides.currentPrompt = task['title']; }
-      return makeSessionState(votingPhase({currentVotes: {'player-1': ['col-2'], 'player-2': ['col-1']}, doneVotingIds: []}), undefined, overrides);
-    }
-    case 'voting-done': {
-      const overrides: any = { submissions };
-      if (task) { overrides.currentTask = task; overrides.currentPrompt = task['title']; }
-      return makeSessionState(votingPhase({currentVotes: {'player-1': ['col-2', 'col-3']}, doneVotingIds: ['player-1']}), undefined, overrides);
-    }
-    case 'voting-all-done': {
-      const overrides: any = { submissions };
-      if (task) { overrides.currentTask = task; overrides.currentPrompt = task['title']; }
-      return makeSessionState(votingPhase({currentVotes: {'player-1': ['col-2', 'col-3'], 'player-2': ['col-1'], 'player-3': ['col-1', 'col-2']}, doneVotingIds: ['player-1', 'player-2', 'player-3']}), undefined, overrides);
-    }
-    case 'results': {
+    case 'round-skipped':
+      return makeSessionState(roundActivePhase({skippedPlayerIds: ['player-1']}), undefined, task ? {currentTask: task, currentPrompt: task['title']} : undefined);
+    case 'round-results': {
       const overrides: any = { submissions };
       if (task) { overrides.currentTask = task; overrides.currentPrompt = task['title']; }
       return makeSessionState(resultsPhase(), undefined, overrides);

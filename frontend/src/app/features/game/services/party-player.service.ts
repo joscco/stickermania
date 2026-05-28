@@ -1,7 +1,7 @@
 import {inject, Injectable, computed} from "@angular/core";
 import type {
   PartyGameClientAction, PartyGameState, RoundSubmission,
-  PartyBuildingState, PartyVotingState, PartyResultsState,
+  PartyRoundActiveState, PartyRoundResultsState,
   MinigameClientAction, MinigameTask,
 } from "@birthday/shared";
 import {GameSessionStore} from '../../../core/challenge.store';
@@ -20,17 +20,13 @@ export class PartyPlayerService {
 
   // ─── Phase helpers ───────────────────────────────────────────
 
-  private readonly buildingState = computed<PartyBuildingState | null>(() => {
+  private readonly roundActiveState = computed<PartyRoundActiveState | null>(() => {
     const ps = this.gameState()?.phaseState;
-    return ps?.phase === "BUILDING" ? ps : null;
+    return ps?.phase === "ROUND_ACTIVE" ? ps : null;
   });
-  private readonly votingState = computed<PartyVotingState | null>(() => {
+  private readonly resultsState = computed<PartyRoundResultsState | null>(() => {
     const ps = this.gameState()?.phaseState;
-    return ps?.phase === "VOTING" ? ps : null;
-  });
-  private readonly resultsState = computed<PartyResultsState | null>(() => {
-    const ps = this.gameState()?.phaseState;
-    return ps?.phase === "RESULTS" ? ps : null;
+    return ps?.phase === "ROUND_RESULTS" ? ps : null;
   });
 
   // ─── General state ───────────────────────────────────────────
@@ -44,7 +40,7 @@ export class PartyPlayerService {
   public readonly currentRoundIndex = computed(() => this.gameState()?.currentRoundIndex ?? 0);
   public readonly phase = computed(() => this.gameState()?.phaseState.phase ?? "LOBBY");
 
-  // ─── Building phase ──────────────────────────────────────────
+  // ─── Active round phase ──────────────────────────────────────
 
   public readonly hasSubmittedThisRound = computed<boolean>(() => {
     const playerId = this.sessionStore.playerId();
@@ -58,13 +54,13 @@ export class PartyPlayerService {
   public readonly hasSkippedThisRound = computed<boolean>(() => {
     const playerId = this.sessionStore.playerId();
     if (!playerId) return false;
-    return this.buildingState()?.skippedPlayerIds.includes(playerId) ?? false;
+    return this.roundActiveState()?.skippedPlayerIds.includes(playerId) ?? false;
   });
 
   /** True when every connected round participant has submitted or skipped — shows "Runde schließen" button. */
   public readonly allPlayersDone = computed<boolean>(() => {
     const ms = this.gameState();
-    const ps = this.buildingState();
+    const ps = this.roundActiveState();
     const players = this.worldStore.players();
     if (!ms || !ps) return false;
     const activeIds = ms.roundParticipantIds.filter(id => players[id]?.connected);
@@ -75,7 +71,7 @@ export class PartyPlayerService {
     return activeIds.every(id => submittedIds.has(id) || minigameIds.has(id) || skippedIds.has(id));
   });
 
-  // ─── Voting phase ────────────────────────────────────────────
+  // ─── Round data ──────────────────────────────────────────────
 
   public readonly currentRoundSubmissions = computed<RoundSubmission[]>(() => {
     const ms = this.gameState();
@@ -89,31 +85,9 @@ export class PartyPlayerService {
     return ms.minigameSubmissions[this.currentRoundIndex()] ?? [];
   });
 
-  public readonly myVotes = computed<string[]>(() => {
-    const playerId = this.sessionStore.playerId();
-    if (!playerId) return [];
-    return this.votingState()?.currentVotes[playerId] ?? [];
-  });
-
-  public readonly myDoneVoting = computed<boolean>(() => {
-    const playerId = this.sessionStore.playerId();
-    if (!playerId) return false;
-    return this.votingState()?.doneVotingIds.includes(playerId) ?? false;
-  });
-
-  /** True when all currently connected round participants have signalled done-voting. */
-  public readonly allVotingDone = computed<boolean>(() => {
-    const ms = this.gameState();
-    const ps = this.votingState();
-    const players = this.worldStore.players();
-    if (!ms || !ps) return false;
-    const connectedIds = ms.roundParticipantIds.filter(id => players[id]?.connected);
-    return connectedIds.length > 0 && connectedIds.every(id => ps.doneVotingIds.includes(id));
-  });
-
   // ─── Results phase ───────────────────────────────────────────
 
-  public readonly lastVoteResults = computed(() => this.resultsState()?.lastVoteResults ?? []);
+  public readonly lastResults = computed(() => this.resultsState()?.lastResults ?? []);
   public readonly winnerId = computed(() => this.resultsState()?.winnerId ?? null);
 
   public readonly isWinner = computed(() => {
@@ -129,7 +103,7 @@ export class PartyPlayerService {
 
   public readonly myPlacement = computed<number | null>(() => {
     const playerId = this.sessionStore.playerId();
-    const r = this.lastVoteResults();
+    const r = this.lastResults();
     if (!playerId || r.length === 0) return null;
     const myResult = r.find(r => r.playerId === playerId);
     return myResult?.placement ?? null;
@@ -144,14 +118,6 @@ export class PartyPlayerService {
     this.sendAction({type: "skip-round"});
   }
 
-  public castVote(submissionId: string): void {
-    this.sendAction({type: "cast-vote", submissionId});
-  }
-
-  public doneVoting(): void {
-    this.sendAction({type: "done-voting"});
-  }
-
   public readyToAdvance(): void {
     this.sendAction({type: "ready-to-advance"});
   }
@@ -162,10 +128,6 @@ export class PartyPlayerService {
 
   public endRoundEarly(): void {
     this.sendAction({type: "end-round-early"});
-  }
-
-  public endVotingEarly(): void {
-    this.sendAction({type: "end-voting-early"});
   }
 
   private sendAction(action: PartyGameClientAction): void {

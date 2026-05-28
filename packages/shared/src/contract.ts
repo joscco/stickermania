@@ -92,33 +92,25 @@ export interface PartyLobbyState {
   phase: "LOBBY";
 }
 
-export interface PartyBuildingState {
-  phase: "BUILDING";
+export interface PartyRoundActiveState {
+  phase: "ROUND_ACTIVE";
   roundEndsAt: number;
   skippedPlayerIds: string[];
 }
 
-export interface PartyVotingState {
-  phase: "VOTING";
-  votingEndsAt: number;
-  currentVotes: Record<string, string[]>;
-  doneVotingIds: string[];
-}
-
-export interface PartyResultsState {
-  phase: "RESULTS";
+export interface PartyRoundResultsState {
+  phase: "ROUND_RESULTS";
   resultsEndsAt: number;
   winnerId: string | null;
   tiedWinnerIds: string[];
   readyToAdvanceIds: string[];
-  lastVoteResults: RoundVoteResult[];
+  lastResults: RoundVoteResult[];
 }
 
 export type GameSubState =
   | PartyLobbyState
-  | PartyBuildingState
-  | PartyVotingState
-  | PartyResultsState;
+  | PartyRoundActiveState
+  | PartyRoundResultsState;
 
 // ─── Game state ─────────────────────────────────────────────────
 
@@ -133,7 +125,6 @@ export interface PartyGameState {
   roundParticipantIds: string[];
   phaseState: GameSubState;
   roundDurationSec: number;
-  votingDurationSec: number;
   resultsDurationSec: number;
 }
 
@@ -227,12 +218,9 @@ export type MinigameClientAction =
 
 export type PartyGameClientAction =
   | { type: "skip-round" }
-  | { type: "cast-vote"; submissionId: string }
-  | { type: "done-voting" }
   | { type: "ready-to-advance" }
   | { type: "start-game" }
   | { type: "end-round-early" }
-  | { type: "end-voting-early" }
   | { type: "advance-from-results" };
 
 export type GameClientAction = PartyGameClientAction | MinigameClientAction;
@@ -241,9 +229,6 @@ export type PartyGameServerEvent =
   | { type: "game-started" }
   | { type: "round-started"; roundIndex: number; prompt: string; endsAt: number }
   | { type: "submission-submitted"; playerId: string; submissionId: string }
-  | { type: "voting-started"; votingEndsAt: number }
-  | { type: "vote-registered"; voterId: string; submissionId: string }
-  | { type: "vote-unregistered"; voterId: string; submissionId: string }
   | { type: "results-ready"; winnerId: string | null; results: RoundVoteResult[] };
 
 export type GameClientEnvelope = {

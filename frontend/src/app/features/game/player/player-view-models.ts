@@ -1,18 +1,16 @@
-import type {RoundSubmission, SessionPlayer, MinigameTask, MinigameSubmission, RoundVoteResult, OpenMinigameSubmission} from '@birthday/shared';
+import type {SessionPlayer, MinigameTask, RoundVoteResult, OpenMinigameSubmission, RoundSubmission, MinigameSubmission} from '@birthday/shared';
 
-export type VotingVariant = 'active' | 'done' | 'all-done';
+export type MinigameVotingVariant = 'active' | 'done' | 'all-done';
 
-export interface VotingViewModel {
-  variant: VotingVariant;
+export interface MinigameVotingViewModel {
+  variant: MinigameVotingVariant;
   prompt: string;
   submissions: RoundSubmission[];
   myVotes: string[];
   votesRemaining: number;
   players: Record<string, SessionPlayer>;
   myPlayerId: string;
-  /** The current minigame task, for minigame-specific voting UI */
   currentTask: MinigameTask | null;
-  /** Minigame submissions for the current round */
   minigameSubmissions: MinigameSubmission[];
 }
 
@@ -36,13 +34,6 @@ export interface BuildingSkippedViewModel {
   submittedPlayerIds: Set<string>;
 }
 
-export interface VotingDoneViewModel {
-  allVotingDone: boolean;
-  players: Record<string, SessionPlayer>;
-  roundParticipantIds: string[];
-  doneVotingIds: string[];
-}
-
 export interface ResultsViewModel {
   myPlacement: number | null;
   myVoteCount: number;
@@ -50,7 +41,7 @@ export interface ResultsViewModel {
   isTiedWinner: boolean;
   winnerId: string | null;
   winnerName: string;
-  lastVoteResults: RoundVoteResult[];
+  lastResults: RoundVoteResult[];
   currentTask: MinigameTask | null;
   myPlayerId: string;
   myMinigameSubmission: OpenMinigameSubmission | null;

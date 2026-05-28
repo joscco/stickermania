@@ -6,7 +6,6 @@ import * as QRCode from "qrcode";
 import {Subscription} from "rxjs";
 import {BoardLobbySceneComponent} from './scenes/lobby/board-lobby-scene.component';
 import {BoardBuildingSceneComponent} from './scenes/building/board-building-scene.component';
-import {BoardVotingSceneComponent} from './scenes/voting/board-voting-scene.component';
 import {BoardResultsSceneComponent} from './scenes/results/board-results-scene.component';
 import {BoardQrPanelComponent} from './qr-panel/board-qr-panel.component';
 import {BoardScreenDataService} from './board-screen-data.service';
@@ -25,7 +24,7 @@ import {BoardLobbyComponent} from './scenes/board-lobby/board-lobby.component';
   imports: [
     CommonModule, BoardLobbyComponent,
     BoardLobbySceneComponent, BoardBuildingSceneComponent,
-    BoardVotingSceneComponent, BoardResultsSceneComponent,
+    BoardResultsSceneComponent,
     BoardQrPanelComponent, BoardHeaderComponent,
     AnimOnInitDirective, TimerFillComponent,
   ],
@@ -119,12 +118,6 @@ export class BoardComponent implements OnInit, OnDestroy {
   public endRoundEarly(): void {
     this.audio.playClick();
     const action: PartyGameClientAction = {type: "end-round-early"};
-    this.wsService.send({type: "game-action", action});
-  }
-
-  public endVotingEarly(): void {
-    this.audio.playClick();
-    const action: PartyGameClientAction = {type: "end-voting-early"};
     this.wsService.send({type: "game-action", action});
   }
 

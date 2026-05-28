@@ -22,13 +22,10 @@ export class BoardScreenDataService {
         if (!ps) {
           return 0;
         }
-        if (ps.phase === 'BUILDING') {
+        if (ps.phase === 'ROUND_ACTIVE') {
           return ps.roundEndsAt;
         }
-        if (ps.phase === 'VOTING') {
-          return ps.votingEndsAt;
-        }
-        if (ps.phase === 'RESULTS') {
+        if (ps.phase === 'ROUND_RESULTS') {
           return ps.resultsEndsAt;
         }
         return 0;
@@ -47,7 +44,7 @@ export class BoardScreenDataService {
         return Math.min(100, Math.max(0, (elapsedMs / (totalSeconds * 1000)) * 100));
     });
 
-    readonly timerActive = computed(() => 'BUILDING,VOTING'.includes(this.basePhase()));
+    readonly timerActive = computed(() => this.basePhase() === 'ROUND_ACTIVE');
 
     private timerInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -73,13 +70,11 @@ export class BoardScreenDataService {
                 const gameState = this.worldStore.partyGameState();
                 const phase = gameState?.phaseState.phase;
                 let totalSec = 0;
-                if (phase === 'BUILDING') {
+                if (phase === 'ROUND_ACTIVE') {
                     totalSec = gameState?.roundStartedAt
                         ? Math.ceil((endsAt - gameState.roundStartedAt) / 1000)
                         : (gameState?.roundDurationSec || 0);
-                } else if (phase === 'VOTING') {
-                    totalSec = gameState?.votingDurationSec ?? 0;
-                } else if (phase === 'RESULTS') {
+                } else if (phase === 'ROUND_RESULTS') {
                     totalSec = gameState?.resultsDurationSec ?? 0;
                 }
                 this.currentTimerTotalSec.set(totalSec);

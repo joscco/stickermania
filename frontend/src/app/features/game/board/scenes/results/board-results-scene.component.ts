@@ -3,7 +3,7 @@ import {Component, computed, input, output} from "@angular/core";
 import type {
   SessionPlayer,
   PartyGameState,
-  PartyResultsState,
+  PartyRoundResultsState,
   RoundVoteResult,
 } from "@birthday/shared";
 import {AnimOnInitDirective} from "../../../../shared/animations/anim-on-init.directive";
@@ -21,13 +21,13 @@ export class BoardResultsSceneComponent {
   public readonly players = input<Record<string, SessionPlayer>>({});
   public readonly advanceFromResults = output<void>();
 
-  private readonly resultsState = computed<PartyResultsState | null>(() => {
+  private readonly resultsState = computed<PartyRoundResultsState | null>(() => {
     const phaseState = this.gameState()?.phaseState;
-    return phaseState?.phase === "RESULTS" ? phaseState : null;
+    return phaseState?.phase === "ROUND_RESULTS" ? phaseState : null;
   });
 
   public readonly results = computed<RoundVoteResult[]>(() =>
-    [...(this.resultsState()?.lastVoteResults ?? [])].sort(
+    [...(this.resultsState()?.lastResults ?? [])].sort(
       (a, b) => a.placement - b.placement || a.playerId.localeCompare(b.playerId),
     ),
   );

@@ -1,6 +1,6 @@
 import {Component, computed, input, output} from "@angular/core";
 import {CommonModule} from "@angular/common";
-import type {PartyGameState, SessionPlayer, PartyBuildingState} from "@birthday/shared";
+import type {PartyGameState, SessionPlayer, PartyRoundActiveState} from "@birthday/shared";
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {RoundInfoComponent} from '../../../../shared/round-info/round-info.component';
 import {BoardPlayerAvatarComponent, type PlayerAvatarStatus} from '../../player-avatar/board-player-avatar.component';
@@ -16,9 +16,9 @@ export class BoardBuildingSceneComponent {
     public readonly players = input<Record<string, SessionPlayer>>({});
     public readonly endRoundEarly = output<void>();
 
-    private get buildingPs(): PartyBuildingState | null {
+    private get roundActivePhase(): PartyRoundActiveState | null {
         const ps = this.gameState()?.phaseState;
-        return ps?.phase === "BUILDING" ? ps : null;
+        return ps?.phase === "ROUND_ACTIVE" ? ps : null;
     }
 
     public readonly roundParticipants = computed<SessionPlayer[]>(() => {
@@ -42,7 +42,7 @@ export class BoardBuildingSceneComponent {
     public readonly playerStatus = (playerId: string): PlayerAvatarStatus => {
         if (!this.players()[playerId]?.connected) return 'offline';
         if (this.hasSubmitted(playerId)) return 'submitted';
-        if (this.buildingPs?.skippedPlayerIds.includes(playerId)) return 'skipped';
+        if (this.roundActivePhase?.skippedPlayerIds.includes(playerId)) return 'skipped';
         return 'drawing';
     };
 

@@ -4,11 +4,9 @@
   "scripts": {
     "sprite": "node scripts/build-sprite.mjs",
     "sprite:watch": "node scripts/build-sprite.mjs --watch",
-    "check-stickers": "node scripts/check-sticker-assets.mjs",
     "prebuild": "node scripts/build-sprite.mjs && node scripts/check-sticker-assets.mjs",
     "dev": "ng serve --project frontend --configuration dev-tools",
-    "build": "ng build --project frontend --configuration production --progress=false",
-    "build:offline": "ng build --project offline --progress=false"
+    "build": "ng build --project frontend --configuration production --progress=false"
   },
   "private": true,
   "packageManager": "npm@10.9.2",

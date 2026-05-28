@@ -16,8 +16,7 @@ export class PlayerTimerService {
   public readonly endsAt = computed(() => {
     const ps = this.worldStore.partyGameState()?.phaseState;
     if (!ps) return 0;
-    if (ps.phase === "BUILDING") return ps.roundEndsAt;
-    if (ps.phase === "VOTING") return ps.votingEndsAt;
+    if (ps.phase === "ROUND_ACTIVE") return ps.roundEndsAt;
     return 0;
   });
 
@@ -39,12 +38,10 @@ export class PlayerTimerService {
       const gameState = this.worldStore.partyGameState();
       const phase = gameState?.phaseState.phase;
       let totalSec = 0;
-      if (phase === "BUILDING") {
+      if (phase === "ROUND_ACTIVE") {
         totalSec = gameState?.roundStartedAt
           ? Math.ceil((e - gameState.roundStartedAt) / 1000)
           : (gameState?.roundDurationSec || 0);
-      } else if (phase === "VOTING") {
-        totalSec = gameState?.votingDurationSec ?? 0;
       }
       this.totalDurationSec.set(totalSec);
 

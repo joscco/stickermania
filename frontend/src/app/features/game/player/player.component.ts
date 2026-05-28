@@ -7,8 +7,6 @@ import {PlayerLobbyWaitingComponent} from './scenes/lobby-waiting/player-lobby-w
 import {MinigameSubmitEvent, PlayerBuildingComponent} from './scenes/building/player-building.component';
 import {PlayerBuildingSubmittedComponent} from './scenes/building-submitted/player-building-submitted.component';
 import {PlayerBuildingSkippedComponent} from './scenes/building-skipped/player-building-skipped.component';
-import {PlayerVotingComponent} from './scenes/voting/player-voting.component';
-import {PlayerVotingDoneComponent} from './scenes/voting/player-voting-done.component';
 import {PlayerResultsComponent} from './scenes/results/player-results.component';
 import {PlayerScreenDataService} from './player-screen-data.service';
 import {PartyPlayerService} from '../services/party-player.service';
@@ -41,8 +39,6 @@ import {AnimPresenceDirective} from '../../shared/animations/anim-on-init.direct
     PlayerBuildingComponent,
     PlayerBuildingSubmittedComponent,
     PlayerBuildingSkippedComponent,
-    PlayerVotingComponent,
-    PlayerVotingDoneComponent,
     PlayerResultsComponent,
     PlayerHeaderComponent,
     TimerFillComponent, TimerNotificationComponent,
@@ -175,8 +171,5 @@ export class PlayerComponent implements OnInit, OnDestroy {
   public startGameWithSound(): void { this.audio.playClick(); this.partyService.startGame(); }
   public skipRoundWithSound(): void { this.audio.playClick(); this.partyService.skipRound(); }
   public endRoundEarlyWithSound(): void { this.audio.playClick(); this.partyService.endRoundEarly(); }
-  public castVoteWithSound(submissionId: string): void { this.audio.playClick(); this.partyService.castVote(submissionId); }
-  public doneVotingWithSound(): void { this.audio.playClick(); this.partyService.doneVoting(); }
-  public endVotingEarlyWithSound(): void { this.audio.playClick(); this.partyService.endVotingEarly(); }
   public readyToAdvanceWithSound(): void { this.audio.playAction(); this.partyService.readyToAdvance(); }
 }

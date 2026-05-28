@@ -7,7 +7,6 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json -w",
-    "lint": "node -e \"console.log('no lint configured')\""
+    "dev": "tsc -p tsconfig.json -w"
   }
 }

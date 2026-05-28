@@ -50,7 +50,7 @@
           (startGame)="startGameWithSound()"
         />
       }
-      @case (PlayerScreen.BUILDING) {
+      @case (PlayerScreen.ROUND_ACTIVE) {
         <app-player-building
           [roundIndex]="screenData.buildingVm().roundIndex"
           [prompt]="screenData.buildingVm().prompt"
@@ -59,7 +59,7 @@
           (submitMinigame)="onSubmitMinigame($event)"
         />
       }
-      @case (PlayerScreen.BUILDING_SUBMITTED) {
+      @case (PlayerScreen.ROUND_SUBMITTED) {
         <app-player-building-submitted
           [allPlayersDone]="screenData.buildingSubmittedVm().allPlayersDone"
           [players]="screenData.buildingSubmittedVm().players"
@@ -68,7 +68,7 @@
           (endRoundEarly)="endRoundEarlyWithSound()"
         />
       }
-      @case (PlayerScreen.BUILDING_SKIPPED) {
+      @case (PlayerScreen.ROUND_SKIPPED) {
         <app-player-building-skipped
           [allPlayersDone]="screenData.buildingSkippedVm().allPlayersDone"
           [players]="screenData.buildingSkippedVm().players"
@@ -77,33 +77,7 @@
           (endRoundEarly)="endRoundEarlyWithSound()"
         />
       }
-      @case (PlayerScreen.VOTING) {
-        <app-player-voting
-          [vm]="screenData.votingVm()"
-          (castVote)="castVoteWithSound($event)"
-          (doneVoting)="doneVotingWithSound()"
-          (endVotingEarly)="endVotingEarlyWithSound()"
-        />
-      }
-      @case (PlayerScreen.VOTING_DONE) {
-        <app-player-voting-done
-          [allVotingDone]="false"
-          [players]="screenData.votingDoneVm().players"
-          [roundParticipantIds]="screenData.votingDoneVm().roundParticipantIds"
-          [doneVotingIds]="screenData.votingDoneVm().doneVotingIds"
-          (endVotingEarly)="endVotingEarlyWithSound()"
-        />
-      }
-      @case (PlayerScreen.VOTING_ALL_DONE) {
-        <app-player-voting-done
-          [allVotingDone]="true"
-          [players]="screenData.votingDoneVm().players"
-          [roundParticipantIds]="screenData.votingDoneVm().roundParticipantIds"
-          [doneVotingIds]="screenData.votingDoneVm().doneVotingIds"
-          (endVotingEarly)="endVotingEarlyWithSound()"
-        />
-      }
-      @case (PlayerScreen.RESULTS) {
+      @case (PlayerScreen.ROUND_RESULTS) {
         <app-player-results
           [myPlacement]="screenData.resultsVm().myPlacement"
           [myVoteCount]="screenData.resultsVm().myVoteCount"

@@ -39,15 +39,11 @@
                   (startGame)="startGame()"
                 />
               }
-              @case ("BUILDING") {
+              @case ("ROUND_ACTIVE") {
                 <app-board-building-scene [gameState]="gameState()" [players]="screenData.players()"
                                           (endRoundEarly)="endRoundEarly()"/>
               }
-              @case ("VOTING") {
-                <app-board-voting-scene [gameState]="gameState()"
-                                        (endVotingEarly)="endVotingEarly()"/>
-              }
-              @case ("RESULTS") {
+              @case ("ROUND_RESULTS") {
                 <app-board-results-scene [gameState]="gameState()" [players]="screenData.players()"
                                          (advanceFromResults)="advanceFromResults()"/>
               }

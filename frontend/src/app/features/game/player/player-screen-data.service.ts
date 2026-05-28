@@ -5,7 +5,7 @@ import {WebSocketService} from '../../../core/websocket.service';
 import {PartyPlayerService} from '../services/party-player.service';
 import {PlayerTimerService} from '../services/player-timer.service';
 import {PlayerScreen} from './player-screen.enum';
-import type {BuildingSkippedViewModel, BuildingSubmittedViewModel, BuildingViewModel, PlayerHeaderViewModel, ResultsViewModel, VotingDoneViewModel, VotingVariant, VotingViewModel,} from './player-view-models';
+import type {BuildingSkippedViewModel, BuildingSubmittedViewModel, BuildingViewModel, PlayerHeaderViewModel, ResultsViewModel,} from './player-view-models';
 import type {MinigameTask, OpenMinigameSubmission, RoundVoteResult} from '@birthday/shared';
 
 @Injectable()
@@ -45,19 +45,12 @@ export class PlayerScreenDataService {
         const phase = this.worldStore.partyGameState()?.phaseState.phase ?? 'LOBBY';
         switch (phase) {
             case 'LOBBY':            return PlayerScreen.LOBBY_WAITING;
-            case 'BUILDING': {
-                if (this.partyService.hasSubmittedThisRound()) return PlayerScreen.BUILDING_SUBMITTED;
-                if (this.partyService.hasSkippedThisRound()) return PlayerScreen.BUILDING_SKIPPED;
-                return PlayerScreen.BUILDING;
+            case 'ROUND_ACTIVE': {
+                if (this.partyService.hasSubmittedThisRound()) return PlayerScreen.ROUND_SUBMITTED;
+                if (this.partyService.hasSkippedThisRound()) return PlayerScreen.ROUND_SKIPPED;
+                return PlayerScreen.ROUND_ACTIVE;
             }
-            case 'VOTING': {
-                if (this.partyService.myDoneVoting()) {
-                    if (this.partyService.allVotingDone()) return PlayerScreen.VOTING_ALL_DONE;
-                    return PlayerScreen.VOTING_DONE;
-                }
-                return PlayerScreen.VOTING;
-            }
-            case 'RESULTS':          return PlayerScreen.RESULTS;
+            case 'ROUND_RESULTS':    return PlayerScreen.ROUND_RESULTS;
             default:                 return PlayerScreen.LOBBY_WAITING;
         }
     });
@@ -82,36 +75,13 @@ export class PlayerScreenDataService {
     readonly timerTimeLeft = computed(() => this.timerService.timeLeft());
     readonly timerActive = computed(() => {
         const phase = this.partyService.phase();
-        return phase === 'BUILDING' || phase === 'VOTING';
+        return phase === 'ROUND_ACTIVE';
     });
     readonly showTimerNotifications = computed(() => {
         return this.timerActive() && !this.partyService.hasSubmittedThisRound() && !this.partyService.hasSkippedThisRound();
     });
     readonly timerNotification = computed(() => this.timerService.notification());
     readonly timerTimeUp = computed(() => this.timerService.timeUp() && this.showTimerNotifications());
-
-    public readonly votingVm = computed<VotingViewModel>(() => {
-        const gameState = this.partyService.gameState();
-        const votingState = gameState?.phaseState;
-        const variant: VotingVariant = (() => {
-            if (!votingState || votingState.phase !== 'VOTING') return 'active';
-            if (this.partyService.allVotingDone()) return 'all-done';
-            if (this.partyService.myDoneVoting()) return 'done';
-            return 'active';
-        })();
-
-        return {
-            variant,
-            prompt: this.partyService.currentPrompt(),
-            submissions: this.partyService.currentRoundSubmissions(),
-            myVotes: this.partyService.myVotes(),
-            votesRemaining: 1 - this.partyService.myVotes().length,
-            players: this.worldStore.players(),
-            myPlayerId: this.sessionStore.playerId() ?? '',
-            currentTask: this.partyService.currentTask(),
-            minigameSubmissions: this.partyService.currentRoundMinigameSubmissions(),
-        };
-    });
 
     public readonly buildingVm = computed<BuildingViewModel>(() => ({
         roundIndex: this.partyService.currentRoundIndex(),
@@ -149,21 +119,10 @@ export class PlayerScreenDataService {
         };
     });
 
-    public readonly votingDoneVm = computed<VotingDoneViewModel>(() => {
-        const gameState = this.partyService.gameState();
-        const vs = gameState?.phaseState;
-        return {
-            allVotingDone: this.partyService.allVotingDone(),
-            players: this.worldStore.players(),
-            roundParticipantIds: gameState?.roundParticipantIds ?? [],
-            doneVotingIds: (vs?.phase === 'VOTING' ? vs.doneVotingIds : []),
-        };
-    });
-
     public readonly resultsVm = computed<ResultsViewModel>(() => {
         const partyService = this.partyService;
         const winnerId = partyService.winnerId();
-        const myResult = partyService.lastVoteResults().find(r => r.playerId === (this.sessionStore.playerId() ?? ''));
+        const myResult = partyService.lastResults().find(r => r.playerId === (this.sessionStore.playerId() ?? ''));
         const task = partyService.currentTask();
         const myId = this.sessionStore.playerId() ?? '';
         const minigames = partyService.currentRoundMinigameSubmissions();
@@ -176,7 +135,7 @@ export class PlayerScreenDataService {
             isTiedWinner: partyService.isTiedWinner(),
             winnerId,
             winnerName: winnerId ? (this.worldStore.players()[winnerId]?.name ?? 'Gewinner') : '',
-            lastVoteResults: partyService.lastVoteResults(),
+            lastResults: partyService.lastResults(),
             currentTask: task,
             myPlayerId: myId,
             myMinigameSubmission,

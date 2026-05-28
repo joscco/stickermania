@@ -33,17 +33,14 @@ type ScreenKey =
   | 'lobby-name'
   | 'lobby-avatar'
   | 'lobby-waiting'
-  | 'building'
-  | 'building-submitted'
-  | 'building-skipped'
-  | 'voting'
-  | 'voting-done'
-  | 'results'
+  | 'round-active'
+  | 'round-submitted'
+  | 'round-skipped'
+  | 'round-results'
   | 'board-lobby'
   | 'board-lobby-scene'
-  | 'board-building'
-  | 'board-voting'
-  | 'board-results';
+  | 'board-round-active'
+  | 'board-round-results';
 
 @Component({
   selector: 'app-catalog',
@@ -98,15 +95,12 @@ export class CatalogComponent implements OnInit {
     const screen = this.currentScreen();
     if (screen === 'landing' || screen === 'offline') return null;
     if (screen.startsWith('board-')) return null;
-    if (screen === 'building') return PlayerScreen.BUILDING;
     return screen as PlayerScreen;
   });
 
   public readonly showTaskSelector = computed(() =>
-    this.currentScreen() === 'building' ||
-    this.currentScreen() === 'voting' ||
-    this.currentScreen() === 'voting-done' ||
-    this.currentScreen() === 'results'
+    this.currentScreen() === 'round-active' ||
+    this.currentScreen() === 'round-results'
   );
 
   public readonly boardPhase = computed<string | null>(() => {
@@ -114,9 +108,8 @@ export class CatalogComponent implements OnInit {
     switch (screen) {
       case 'board-lobby': return 'LOBBY';
       case 'board-lobby-scene': return 'LOBBY';
-      case 'board-building': return 'BUILDING';
-      case 'board-voting': return 'VOTING';
-      case 'board-results': return 'RESULTS';
+      case 'board-round-active': return 'ROUND_ACTIVE';
+      case 'board-round-results': return 'ROUND_RESULTS';
       default: return null;
     }
   });
@@ -136,17 +129,14 @@ export class CatalogComponent implements OnInit {
     {key: 'lobby-name', label: 'Lobby: Name', group: 'Player'},
     {key: 'lobby-avatar', label: 'Lobby: Avatar', group: 'Player'},
     {key: 'lobby-waiting', label: 'Lobby Waiting', group: 'Player'},
-    {key: 'building', label: 'Building (Minigame)', group: 'Player'},
-    {key: 'building-submitted', label: 'Building (submitted)', group: 'Player'},
-    {key: 'building-skipped', label: 'Building (skipped)', group: 'Player'},
-    {key: 'voting', label: 'Voting', group: 'Player'},
-    {key: 'voting-done', label: 'Voting (done)', group: 'Player'},
-    {key: 'results', label: 'Results', group: 'Player'},
+    {key: 'round-active', label: 'Round active (Minigame)', group: 'Player'},
+    {key: 'round-submitted', label: 'Round active (submitted)', group: 'Player'},
+    {key: 'round-skipped', label: 'Round active (skipped)', group: 'Player'},
+    {key: 'round-results', label: 'Round results', group: 'Player'},
     {key: 'board-lobby', label: 'Board Lobby (session list)', group: 'Board'},
     {key: 'board-lobby-scene', label: 'Board Lobby (game)', group: 'Board'},
-    {key: 'board-building', label: 'Building', group: 'Board'},
-    {key: 'board-voting', label: 'Voting', group: 'Board'},
-    {key: 'board-results', label: 'Results', group: 'Board'},
+    {key: 'board-round-active', label: 'Round active', group: 'Board'},
+    {key: 'board-round-results', label: 'Round results', group: 'Board'},
   ];
 
   // ── Screen change ───────────────────────────────────────────
@@ -173,23 +163,20 @@ export class CatalogComponent implements OnInit {
       'lobby-waiting': 'lobby',
       'landing': 'lobby',
       'offline': 'lobby',
-      'building': 'building',
-      'building-submitted': 'building-submitted',
-      'building-skipped': 'building-skipped',
-      'voting': 'voting',
-      'voting-done': 'voting-done',
-      'results': 'results',
+      'round-active': 'round-active',
+      'round-submitted': 'round-submitted',
+      'round-skipped': 'round-skipped',
+      'round-results': 'round-results',
       'board-lobby': 'lobby',
       'board-lobby-scene': 'lobby',
-      'board-building': 'building',
-      'board-voting': 'voting',
-      'board-results': 'results',
+      'board-round-active': 'round-active',
+      'board-round-results': 'round-results',
     };
     const phase = phaseMap[screen] ?? 'lobby';
 
-    // If a task is selected, pass it for building, voting, and results screens
+    // If a task is selected, pass it for round screens.
     const taskId = this.selectedTaskId();
-    const minigameScreens = ['building', 'voting', 'voting-done', 'results'];
+    const minigameScreens = ['round-active', 'round-results'];
     const customTask = (minigameScreens.includes(screen) && taskId)
       ? this.tasks().find(t => t.id === taskId)
       : undefined;

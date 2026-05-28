@@ -1,4 +1,4 @@
-import type {SessionPlayer, SessionState, RoundSubmission, PartyBuildingState, PartyGameState, PartyLobbyState, PartyResultsState, RoundVoteResult, PartyVotingState,} from '@birthday/shared';
+import type {SessionPlayer, SessionState, RoundSubmission, PartyGameState, PartyLobbyState, PartyRoundActiveState, PartyRoundResultsState, RoundVoteResult,} from '@birthday/shared';
 
 export const MOCK_PLAYERS: Record<string, SessionPlayer> = {
   'player-1': { id: 'player-1', name: 'Anna', avatarUrl: 'assets/png/example_avatar_player_1.png', avatarAssetPath: null, score: 120, joinedAt: 0, connected: true, isHost: true, teamId: null },
@@ -24,33 +24,21 @@ export function lobbyPhase(): PartyLobbyState {
   return { phase: 'LOBBY' };
 }
 
-export function buildingPhase(opts?: {
+export function roundActivePhase(opts?: {
   skippedPlayerIds?: string[];
-}): PartyBuildingState {
+}): PartyRoundActiveState {
   return {
-    phase: 'BUILDING',
+    phase: 'ROUND_ACTIVE',
     roundEndsAt: Date.now() + 20_000,
     skippedPlayerIds: opts?.skippedPlayerIds ?? [],
   };
 }
 
-export function votingPhase(opts?: {
-  currentVotes?: Record<string, string[]>;
-  doneVotingIds?: string[];
-}): PartyVotingState {
+export function resultsPhase(): PartyRoundResultsState {
   return {
-    phase: 'VOTING',
-    votingEndsAt: Date.now() + 120_000,
-    currentVotes: opts?.currentVotes ?? {},
-    doneVotingIds: opts?.doneVotingIds ?? [],
-  };
-}
-
-export function resultsPhase(): PartyResultsState {
-  return {
-    phase: 'RESULTS',
+    phase: 'ROUND_RESULTS',
     resultsEndsAt: Date.now() + 60_000,
-    lastVoteResults: MOCK_VOTE_RESULTS,
+    lastResults: MOCK_VOTE_RESULTS,
     winnerId: 'player-1',
     tiedWinnerIds: [],
     readyToAdvanceIds: [],
@@ -60,7 +48,7 @@ export function resultsPhase(): PartyResultsState {
 // ── Game state builder ───────────────────────────────────────────────────────
 
 export function makeGameState(
-  phaseState: PartyBuildingState | PartyVotingState | PartyResultsState | PartyLobbyState,
+  phaseState: PartyRoundActiveState | PartyRoundResultsState | PartyLobbyState,
   overrides?: Partial<PartyGameState>,
 ): PartyGameState {
   const base: PartyGameState = {
@@ -74,7 +62,6 @@ export function makeGameState(
     roundParticipantIds: ['player-1', 'player-2', 'player-3'],
     phaseState,
     roundDurationSec: 20,
-    votingDurationSec: 120,
     resultsDurationSec: 60,
   };
   return overrides ? { ...base, ...overrides } : base;
@@ -83,7 +70,7 @@ export function makeGameState(
 // ── Session state builder ────────────────────────────────────────────────────
 
 export function makeSessionState(
-  phaseState: PartyBuildingState | PartyVotingState | PartyResultsState | PartyLobbyState,
+  phaseState: PartyRoundActiveState | PartyRoundResultsState | PartyLobbyState,
   players?: Record<string, SessionPlayer>,
   gameStateOverrides?: Partial<PartyGameState>,
 ): SessionState {

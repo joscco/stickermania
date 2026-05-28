@@ -1,7 +1,14 @@
 import type {GameConfig, MinigameClientAction, SessionState, PartyGameState,} from "@birthday/shared";
 import type {GameActionResult, GameEngine} from "../gameModeEngine.js";
-import {shouldSkipVoting, transitionToNextRound, transitionToResults, transitionToVoting} from "./roundManager.js";
-import {advanceToNextRound, boardAdvancesToNextRound, castVote, endBuildingPhaseEarly, endVotingPhaseEarly, markPlayerDoneVoting, skipRound, startGame, submitMinigame,} from "./actionHandlers.js";
+import {transitionToNextRound, transitionToRoundResults} from "./roundManager.js";
+import {
+    advanceToNextRound,
+    boardAdvancesToNextRound,
+    endRoundEarly,
+    skipRound,
+    startGame,
+    submitMinigame,
+} from "./actionHandlers.js";
 
 export class PartyGameEngine implements GameEngine {
     public constructor(private readonly config: GameConfig) {
@@ -19,7 +26,6 @@ export class PartyGameEngine implements GameEngine {
             roundParticipantIds: [],
             phaseState: {phase: "LOBBY"},
             roundDurationSec: 60,
-            votingDurationSec: 60,
             resultsDurationSec: 60
         };
     }
@@ -81,18 +87,12 @@ export class PartyGameEngine implements GameEngine {
         switch (action.type) {
             case "skip-round":
                 return skipRound(state, playerId);
-            case "cast-vote":
-                return castVote(state, playerId, "submissionId" in action ? action.submissionId : (action as any).submissionId ?? "", this.config);
-            case "done-voting":
-                return markPlayerDoneVoting(state, playerId);
             case "ready-to-advance":
                 return advanceToNextRound(state, playerId, this.config, this.config.minigame, now);
             case "start-game":
                 return startGame(state, this.config, this.config.minigame, now);
             case "end-round-early":
-                return endBuildingPhaseEarly(state, this.config, now);
-            case "end-voting-early":
-                return endVotingPhaseEarly(state, this.config, now);
+                return endRoundEarly(state, this.config, now);
             case "advance-from-results":
                 return boardAdvancesToNextRound(state, this.config, this.config.minigame, now);
             case "submit-minigame":
@@ -109,13 +109,10 @@ export class PartyGameEngine implements GameEngine {
         const {phaseState} = args.sessionState.gameState;
         const {now} = args;
 
-        if (phaseState.phase === "BUILDING" && now < phaseState.roundEndsAt) {
+        if (phaseState.phase === "ROUND_ACTIVE" && now < phaseState.roundEndsAt) {
             return phaseState.roundEndsAt;
         }
-        if (phaseState.phase === "VOTING" && now < phaseState.votingEndsAt) {
-            return phaseState.votingEndsAt;
-        }
-        if (phaseState.phase === "RESULTS" && now < phaseState.resultsEndsAt) {
+        if (phaseState.phase === "ROUND_RESULTS" && now < phaseState.resultsEndsAt) {
             return phaseState.resultsEndsAt;
         }
         return null;
@@ -129,49 +126,26 @@ export class PartyGameEngine implements GameEngine {
         const {gameState} = sessionState;
         const {phaseState} = gameState;
 
-        if (phaseState.phase === "BUILDING") {
-            if (shouldSkipVoting(gameState)) {
-                const roundSubmissions = gameState.submissions[gameState.currentRoundIndex] ?? [];
-                if (roundSubmissions.length === 0) {
-                    gameState.phaseState = {phase: "LOBBY"};
-                    return {stateChanged: true, emittedEvents: []};
-                }
-                transitionToVoting(sessionState, now);
-                transitionToResults(sessionState, now);
-                const newPhase = gameState.phaseState;
-                if (newPhase.phase !== "RESULTS") {
-                    return {stateChanged: false, emittedEvents: []};
-                }
-                return {
-                    stateChanged: true,
-                    emittedEvents: [
-                        {type: "results-ready", winnerId: newPhase.winnerId, results: newPhase.lastVoteResults},
-                    ],
-                };
+        if (phaseState.phase === "ROUND_ACTIVE") {
+            const roundSubmissions = gameState.submissions[gameState.currentRoundIndex] ?? [];
+            if (roundSubmissions.length === 0) {
+                gameState.phaseState = {phase: "LOBBY"};
+                return {stateChanged: true, emittedEvents: []};
             }
-            transitionToVoting(sessionState, now);
+            transitionToRoundResults(sessionState, now);
             const newPhase = gameState.phaseState;
-            if (newPhase.phase !== "VOTING") {
-                return {stateChanged: false, emittedEvents: []};
-            }
-            return {stateChanged: true, emittedEvents: [{type: "voting-started", votingEndsAt: newPhase.votingEndsAt}]};
-        }
-
-        if (phaseState.phase === "VOTING") {
-            transitionToResults(sessionState, now);
-            const newPhase = gameState.phaseState;
-            if (newPhase.phase !== "RESULTS") {
+            if (newPhase.phase !== "ROUND_RESULTS") {
                 return {stateChanged: false, emittedEvents: []};
             }
             return {
                 stateChanged: true,
                 emittedEvents: [
-                    {type: "results-ready", winnerId: newPhase.winnerId, results: newPhase.lastVoteResults},
+                    {type: "results-ready", winnerId: newPhase.winnerId, results: newPhase.lastResults},
                 ],
             };
         }
 
-        if (phaseState.phase === "RESULTS") {
+        if (phaseState.phase === "ROUND_RESULTS") {
             const roundSubmissions = gameState.submissions[gameState.currentRoundIndex] ?? [];
             if (roundSubmissions.length === 0) {
                 gameState.phaseState = {phase: "LOBBY"};
@@ -179,7 +153,7 @@ export class PartyGameEngine implements GameEngine {
             }
             transitionToNextRound(sessionState, this.config.minigame, now);
             const newPhase = gameState.phaseState;
-            if (newPhase.phase !== "BUILDING") {
+            if (newPhase.phase !== "ROUND_ACTIVE") {
                 return {stateChanged: false, emittedEvents: []};
             }
             return {
