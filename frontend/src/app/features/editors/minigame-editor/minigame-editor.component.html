@@ -38,22 +38,17 @@
       <section class="grid gap-2">
         <h2 class="text-xs font-black uppercase text-neutral-500">Minigame</h2>
 
-        <div class="grid gap-2">
+        <select
+          class="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-bold text-neutral-950 outline-none focus:border-neutral-950"
+          [value]="selectedDefinitionIndex()"
+          (change)="selectDefinitionFromEvent($event)"
+        >
           @for (entry of definitions; track entry.type; let definitionIndex = $index) {
-            <button
-              type="button"
-              class="rounded-lg border px-3 py-2 text-left text-sm font-bold"
-              [class.border-neutral-950]="selectedDefinitionIndex() === definitionIndex"
-              [class.bg-neutral-950]="selectedDefinitionIndex() === definitionIndex"
-              [class.text-white]="selectedDefinitionIndex() === definitionIndex"
-              [class.border-neutral-200]="selectedDefinitionIndex() !== definitionIndex"
-              [class.bg-white]="selectedDefinitionIndex() !== definitionIndex"
-              (click)="selectDefinition(definitionIndex)"
-            >
+            <option [value]="definitionIndex">
               {{ entry.label }}
-            </button>
+            </option>
           }
-        </div>
+        </select>
       </section>
 
       <section class="grid gap-2">
@@ -75,6 +70,24 @@
           </button>
         }
       </section>
+
+      @if (editorPhaseOptions().length > 1) {
+        <section class="grid gap-2">
+          <h2 class="text-xs font-black uppercase text-neutral-500">Spielphase</h2>
+
+          <select
+            class="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-bold text-neutral-950 outline-none focus:border-neutral-950"
+            [value]="selectedEditorPhaseKey()"
+            (change)="selectEditorPhase($event)"
+          >
+            @for (option of editorPhaseOptions(); track option.key) {
+              <option [value]="option.key" [disabled]="option.disabled">
+                {{ option.label }}{{ option.disabled ? " - Antworten fehlen" : "" }}
+              </option>
+            }
+          </select>
+        </section>
+      }
 
       <section class="grid max-w-full gap-2">
         <div class="flex items-center justify-between">
@@ -127,6 +140,16 @@
         >
           Runde zurücksetzen
         </button>
+
+        @if (definition().createEditorFollowUpTask && canStartFollowUp()) {
+          <button
+            type="button"
+            class="rounded-lg bg-neutral-950 px-4 py-2 text-sm font-bold text-white active:bg-neutral-700 disabled:opacity-40"
+            (click)="startFollowUpRound()"
+          >
+            Bewertungsphase starten
+          </button>
+        }
       </section>
     </aside>
 
@@ -164,7 +187,7 @@
               @if (phase() === "play") {
                 <sm-minigame-component-host
                   class="block h-full w-full"
-                  [componentType]="definition().phaseComponent"
+                  [componentType]="phaseComponentForCurrentTask()"
                   [state]="playStateFor(player)"
                   (playerEvent)="onMinigameEvent(player.id, $event)"
                 />

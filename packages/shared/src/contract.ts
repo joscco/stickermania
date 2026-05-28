@@ -247,5 +247,10 @@ export interface MinigameHandler<
     winnerId: string | null;
     tiedWinnerIds: string[];
   };
+  createNextTaskAfterResults?(args: {
+    task: TTask;
+    submissions: TSubmission[];
+    nextRoundIndex: number;
+  }): MinigameTask | null;
   getResultSummary?(args: {task: TTask; submission: TSubmission | undefined; result: MinigamePlayerResult | undefined}): string;
 }

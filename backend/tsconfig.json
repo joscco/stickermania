@@ -16,6 +16,7 @@
     "src/**/*",
     "../minigames/registry.ts",
     "../minigames/timer-stop/server-handler.ts",
-    "../minigames/estimate-opinions/server-handler.ts"
+    "../minigames/estimate-opinions/server-handler.ts",
+    "../minigames/unexpected-task/server-handler.ts"
   ]
 }

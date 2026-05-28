@@ -43,7 +43,7 @@ export class PlayerBuildingComponent {
 
   public readonly canSubmit = computed(() => {
     const definition = this.minigameDefinition();
-    return definition ? definition.canSubmit(this.currentDraft()) : false;
+    return definition ? definition.canSubmit(this.currentDraft(), this.task() ?? undefined) : false;
   });
 
   public readonly minigameState = computed(() => {
@@ -61,6 +61,13 @@ export class PlayerBuildingComponent {
     });
   });
 
+  public readonly minigamePhaseComponent = computed(() => {
+    const definition = this.minigameDefinition();
+    const task = this.task();
+    if (!definition || !task) return null;
+    return definition.phaseComponentForTask?.(task) ?? definition.phaseComponent;
+  });
+
   public onMinigameEvent(event: unknown): void {
     const definition = this.minigameDefinition();
     if (!definition) return;
@@ -71,12 +78,12 @@ export class PlayerBuildingComponent {
   public submitCurrentTask(): void {
     const task = this.task();
     const definition = this.minigameDefinition();
-    if (!task || !definition || !definition.canSubmit(this.currentDraft())) return;
+    if (!task || !definition || !definition.canSubmit(this.currentDraft(), task)) return;
 
     this.submitMinigame.emit({
       type: "submit-minigame",
       minigameType: definition.type,
-      payload: definition.createSubmitPayload(this.currentDraft()),
+      payload: definition.createSubmitPayload(this.currentDraft(), task),
     });
   }
 

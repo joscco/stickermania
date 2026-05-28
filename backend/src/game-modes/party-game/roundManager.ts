@@ -7,6 +7,22 @@ function pickRandomTask(minigameConfig: MinigameConfig): import("@birthday/share
     return runnableTasks[Math.floor(Math.random() * runnableTasks.length)] ?? null;
 }
 
+function pickNextTask(
+    state: SessionState,
+    minigameConfig: MinigameConfig,
+): import("@birthday/shared").MinigameTask | null {
+    const currentTask = state.gameState.currentTask;
+    const handler = currentTask ? getMinigameHandler(currentTask.type) : null;
+    const currentSubmissions = state.gameState.minigameSubmissions[state.gameState.currentRoundIndex] ?? [];
+    const followUpTask = handler?.createNextTaskAfterResults?.({
+        task: currentTask!,
+        submissions: currentSubmissions,
+        nextRoundIndex: state.gameState.currentRoundIndex + 1,
+    });
+
+    return followUpTask ?? pickRandomTask(minigameConfig);
+}
+
 export function transitionToRoundActive(
     state: SessionState,
     minigameConfig: MinigameConfig,
@@ -17,7 +33,7 @@ export function transitionToRoundActive(
     gameState.currentRoundIndex += 1;
     gameState.roundStartedAt = now;
 
-    const task = pickRandomTask(minigameConfig);
+    const task = pickNextTask(state, minigameConfig);
     gameState.currentTask = task;
     gameState.currentPrompt = task?.title ?? "Neue Runde";
     gameState.promptHistory[gameState.currentRoundIndex] = gameState.currentPrompt;

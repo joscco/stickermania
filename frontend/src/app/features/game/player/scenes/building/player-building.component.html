@@ -3,16 +3,18 @@
     <div class="w-full" [style.max-width]="stageContainerMaxWidth">
       @if (minigameDefinition(); as definition) {
         @if (minigameState(); as state) {
-          <sm-minigame-stage
-            class="block w-full overflow-hidden border border-neutral-200 bg-white shadow-sm"
-          >
-            <sm-minigame-component-host
-              class="block h-full w-full"
-              [componentType]="definition.phaseComponent"
-              [state]="state"
-              (playerEvent)="onMinigameEvent($event)"
-            />
-          </sm-minigame-stage>
+          @if (minigamePhaseComponent(); as phaseComponent) {
+            <sm-minigame-stage
+              class="block w-full overflow-hidden border border-neutral-200 bg-white shadow-sm"
+            >
+              <sm-minigame-component-host
+                class="block h-full w-full"
+                [componentType]="phaseComponent"
+                [state]="state"
+                (playerEvent)="onMinigameEvent($event)"
+              />
+            </sm-minigame-stage>
+          }
         }
       } @else {
         <div

@@ -21,6 +21,9 @@ export interface MinigameFrontendDefinition<
   // Angular component for the interactive player phase. It must accept a `state` input and may emit `playerEvent`.
   phaseComponent: Type<unknown>;
 
+  // Optional task-aware component selection for minigames with multiple interactive phases.
+  phaseComponentForTask?(task: MinigameTask): Type<unknown>;
+
   // Angular component for the player result view. It must accept a `state` input.
   resultComponent: Type<unknown>;
 
@@ -43,19 +46,39 @@ export interface MinigameFrontendDefinition<
   reducePlayerEvent(event: unknown, currentDraft: TDraft): TDraft;
 
   // Whether the current draft is complete enough for the Shell Submit button.
-  canSubmit(draft: TDraft): boolean;
+  canSubmit(draft: TDraft, task?: MinigameTask): boolean;
 
   // Converts the current draft into the payload sent with submit-minigame.
-  createSubmitPayload(draft: TDraft): unknown;
+  createSubmitPayload(draft: TDraft, task?: MinigameTask): unknown;
 
   // Creates a local editor submission from a draft, or null when the draft is incomplete.
-  createEditorSubmission(playerId: string, draft: TDraft): TSubmission | null;
+  createEditorSubmission(playerId: string, draft: TDraft, task?: MinigameTask): TSubmission | null;
 
   // Creates deterministic sample data for one simulated editor player.
-  createSampleSubmission(playerId: string, playerIndex: number): TSubmission;
+  createSampleSubmission(playerId: string, playerIndex: number, task?: MinigameTask): TSubmission;
 
   // Runs local editor scoring for this minigame.
-  calculateResults(submissions: TSubmission[], variant: TVariant): MinigameResult<TResult>;
+  calculateResults(submissions: TSubmission[], variant: TVariant, task?: MinigameTask): MinigameResult<TResult>;
+
+  // Optional editor-only follow-up task generated from the current task's submitted data.
+  createEditorFollowUpTask?(args: {
+    task: MinigameTask;
+    submissions: TSubmission[];
+    variant: TVariant;
+    nextRoundIndex: number;
+  }): MinigameTask | null;
+
+  // Optional editor phase controls for minigames that expose multiple playable tasks.
+  editorPhaseOptions?(args: {
+    task: MinigameTask;
+    variant: TVariant;
+    submissions: TSubmission[];
+  }): Array<{
+    key: string;
+    label: string;
+    task: MinigameTask;
+    disabled?: boolean;
+  }>;
 
   // Builds the exact state object expected by phaseComponent.
   createPlayState(args: {

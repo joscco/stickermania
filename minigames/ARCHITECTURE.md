@@ -74,6 +74,7 @@ Eine Definition liefert unter anderem:
 - `createSubmitPayload`
 - `createPlayState`
 - `createResultState`
+- optional `createEditorFollowUpTask`
 - `scoringInfo`
 - `resultSummary`
 - Editor-Labels und Sample-Submissions
@@ -92,6 +93,8 @@ Backend-Handler kapseln:
 - Task-Erzeugung aus `variants.ts`
 
 Die globale Rundenlogik ruft nur generische Handler-Methoden auf.
+
+Mehrphasige Minigames koennen optional `createNextTaskAfterResults()` im Backend-Handler bereitstellen. Die Engine fragt diese Methode nach einer Ergebnisphase generisch ab und startet den gelieferten Folge-Task statt eines zufaelligen neuen Tasks. Die konkrete Phasenlogik bleibt dabei im jeweiligen Minigame.
 
 ## Shared Contract
 

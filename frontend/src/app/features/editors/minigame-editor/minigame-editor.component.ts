@@ -1,5 +1,6 @@
 import {CommonModule} from "@angular/common";
-import {Component, computed, signal} from "@angular/core";
+import {Component, Type, computed, signal} from "@angular/core";
+import type {MinigameTask} from "@birthday/shared";
 import type {MinigamePlayerResult, MinigameSubmission} from "../../../../../../packages/shared/src/minigame";
 import {MinigameComponentHostComponent} from "../../../../../../minigames/_shared/minigame-component-host/minigame-component-host.component";
 import {MinigameStageComponent} from "../../../../../../minigames/_shared/minigame-stage/minigame-stage.component";
@@ -30,6 +31,7 @@ export class MinigameEditorComponent {
   public readonly definitions = getMinigameFrontendDefinitions();
   public readonly selectedDefinitionIndex = signal(0);
   public readonly selectedVariantIndex = signal(0);
+  public readonly editorTaskOverride = signal<MinigameTask | null>(null);
   public readonly phase = signal<EditorPhase>("play");
   public readonly players = signal<SimPlayer[]>([
     {id: "p1", name: "Alice"},
@@ -47,7 +49,7 @@ export class MinigameEditorComponent {
     () => this.definition().variants[this.selectedVariantIndex()] ?? this.definition().variants[0],
   );
   public readonly selectedTask = computed(() =>
-    this.definition().taskFromVariant(this.selectedVariant()),
+    this.editorTaskOverride() ?? this.definition().taskFromVariant(this.selectedVariant()),
   );
   public readonly result = computed(() => {
     const submissions = Object.values(this.submissionsByPlayerId());
@@ -56,12 +58,51 @@ export class MinigameEditorComponent {
     return this.definition().calculateResults(
       submissions,
       this.selectedVariant(),
+      this.selectedTask(),
     );
   });
   public readonly submittedCount = computed(
     () => Object.keys(this.submissionsByPlayerId()).length,
   );
   public readonly canEvaluate = computed(() => this.submittedCount() > 0);
+  public readonly canStartFollowUp = computed(() => {
+    const definition = this.definition();
+    return this.submittedCount() > 0 &&
+      !!definition.createEditorFollowUpTask?.({
+        task: this.selectedTask(),
+        submissions: Object.values(this.submissionsByPlayerId()),
+        variant: this.selectedVariant(),
+        nextRoundIndex: 1,
+      });
+  });
+  public readonly editorPhaseOptions = computed(() => {
+    const definition = this.definition();
+    const overrideTask = this.editorTaskOverride();
+
+    if (overrideTask) {
+      return [
+        {
+          key: "answer",
+          label: "1. Antwortphase",
+          task: definition.taskFromVariant(this.selectedVariant()),
+        },
+        {
+          key: "rate",
+          label: "2. Bewertungsphase",
+          task: overrideTask,
+        },
+      ];
+    }
+
+    return definition.editorPhaseOptions?.({
+      task: this.selectedTask(),
+      submissions: Object.values(this.submissionsByPlayerId()),
+      variant: this.selectedVariant(),
+    }) ?? [];
+  });
+  public readonly selectedEditorPhaseKey = computed(() =>
+    String(this.selectedTask()["phase"] ?? "default"),
+  );
   public readonly rankedResults = computed(() => {
     const result = this.result();
     if (!result) return [];
@@ -77,9 +118,24 @@ export class MinigameEditorComponent {
     this.resetRound();
   }
 
+  public selectDefinitionFromEvent(event: Event): void {
+    this.selectDefinition(Number((event.target as HTMLSelectElement).value));
+  }
+
   public selectVariant(index: number): void {
     this.selectedVariantIndex.set(index);
     this.resetRound();
+  }
+
+  public selectEditorPhase(event: Event): void {
+    const selectedKey = (event.target as HTMLSelectElement).value;
+    const option = this.editorPhaseOptions().find((entry) => entry.key === selectedKey);
+    if (!option || option.disabled) return;
+
+    this.editorTaskOverride.set(selectedKey === "answer" ? null : option.task);
+    this.submissionsByPlayerId.set({});
+    this.draftsByPlayerId.set({});
+    this.phase.set("play");
   }
 
   public setPhase(phase: EditorPhase): void {
@@ -118,7 +174,7 @@ export class MinigameEditorComponent {
       Object.fromEntries(
         this.players().map((player, index) => [
           player.id,
-          this.definition().createSampleSubmission(player.id, index),
+          this.definition().createSampleSubmission(player.id, index, this.selectedTask()),
         ]),
       ),
     );
@@ -134,6 +190,7 @@ export class MinigameEditorComponent {
     const submission = this.definition().createEditorSubmission(
       playerId,
       this.draftFor(playerId),
+      this.selectedTask(),
     );
     if (!submission) return;
 
@@ -148,6 +205,22 @@ export class MinigameEditorComponent {
   }
 
   public resetRound(): void {
+    this.submissionsByPlayerId.set({});
+    this.draftsByPlayerId.set({});
+    this.editorTaskOverride.set(null);
+    this.phase.set("play");
+  }
+
+  public startFollowUpRound(): void {
+    const followUpTask = this.definition().createEditorFollowUpTask?.({
+      task: this.selectedTask(),
+      submissions: Object.values(this.submissionsByPlayerId()),
+      variant: this.selectedVariant(),
+      nextRoundIndex: 1,
+    });
+    if (!followUpTask) return;
+
+    this.editorTaskOverride.set(followUpTask);
     this.submissionsByPlayerId.set({});
     this.draftsByPlayerId.set({});
     this.phase.set("play");
@@ -170,6 +243,11 @@ export class MinigameEditorComponent {
       roundEndsAt: Date.now() + Number(this.selectedTask().durationSec ?? 60) * 1000,
       serverNow: Date.now(),
     });
+  }
+
+  public phaseComponentForCurrentTask(): Type<unknown> {
+    const definition = this.definition();
+    return definition.phaseComponentForTask?.(this.selectedTask()) ?? definition.phaseComponent;
   }
 
   public resultStateFor(player: SimPlayer): unknown {
@@ -202,7 +280,7 @@ export class MinigameEditorComponent {
   }
 
   public canSubmitPlayer(playerId: string): boolean {
-    return this.definition().canSubmit(this.draftFor(playerId));
+    return this.definition().canSubmit(this.draftFor(playerId), this.selectedTask());
   }
 
   public resultDetail(result: MinigamePlayerResult): string {
