@@ -7,14 +7,6 @@
 
   <app-timer-notification [animPresence]="screenData.showTimerNotifications()" [text]="screenData.timerNotification()"/>
 
-  <!-- Time's up -->
-  <div [animPresence]="screenData.timerTimeUp()"
-       class="absolute inset-0 z-50 flex items-center justify-center bg-white">
-    <div class="text-center">
-      <div class="text-5xl font-bold text-black mb-4">Zeit ist um!</div>
-    </div>
-  </div>
-
   <app-player-header
     [vm]="screenData.headerVm()"
     [timerPercent]="screenData.timerActive() ? screenData.timerPercentLeft() : 100"
@@ -55,6 +47,7 @@
           [roundIndex]="screenData.buildingVm().roundIndex"
           [prompt]="screenData.buildingVm().prompt"
           [task]="screenData.buildingVm().task"
+          [timeUp]="screenData.timerTimeUp()"
           (skipRound)="skipRoundWithSound()"
           (submitMinigame)="onSubmitMinigame($event)"
         />

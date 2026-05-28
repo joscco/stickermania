@@ -1,9 +1,0 @@
-<app-stars-display [count]="count()"/>
-<div class="flex items-center justify-center">
-  @if (medalIcon(); as icon) {
-    <app-svg [name]="icon" [w]="70" class="mx-auto" [class]="iconColorClass()"/>
-  }
-  <p [class]="textClass()">{{ label() }}</p>
-</div>
-
-

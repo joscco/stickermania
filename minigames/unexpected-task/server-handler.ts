@@ -110,10 +110,36 @@ export class UnexpectedTaskHandler
     submissions: UnexpectedTaskOpenSubmission[];
   }) {
     if (args.task.phase === "answer") {
+      const answerSubmissions = args.submissions.filter(
+        (submission) => submission.payload.phase === "answer",
+      );
+      if (answerSubmissions.length !== 1) {
+        return {
+          result: {resultsByPlayerId: {}},
+          voteResults: [],
+          winnerId: null,
+          tiedWinnerIds: [],
+        };
+      }
+
+      const answerSubmission = answerSubmissions[0]!;
+      const result: UnexpectedTaskPlayerResult = {
+        playerId: answerSubmission.playerId,
+        placement: 1,
+        answer: answerSubmission.payload.phase === "answer" ? answerSubmission.payload.answer : "",
+        ratingCount: 0,
+      };
+
       return {
-        result: {resultsByPlayerId: {}},
-        voteResults: [],
-        winnerId: null,
+        result: {resultsByPlayerId: {[answerSubmission.playerId]: result}},
+        voteResults: [{
+          submissionId: `minigame_${answerSubmission.playerId}_${answerSubmission.roundIndex}`,
+          playerId: answerSubmission.playerId,
+          voteCount: 0,
+          placement: 1,
+          result,
+        }],
+        winnerId: answerSubmission.playerId,
         tiedWinnerIds: [],
       };
     }
@@ -169,7 +195,8 @@ export class UnexpectedTaskHandler
       args.nextRoundIndex,
     );
 
-    if (!answerOptions.some((answerOption) => answerOption.isPlayerAnswer)) return null;
+    const playerAnswerOptions = answerOptions.filter((answerOption) => answerOption.isPlayerAnswer);
+    if (playerAnswerOptions.length < 2) return null;
 
     return {
       id: `${args.task.variantData.id}:rate:${args.nextRoundIndex}`,

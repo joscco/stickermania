@@ -138,10 +138,7 @@ export const UNEXPECTED_TASK_FRONTEND_DEFINITION: MinigameFrontendDefinition<
     };
   },
   calculateResults: (submissions, variant, task) =>
-    new UnexpectedTaskGame(
-      variant,
-      ((task as UnexpectedTaskTask | undefined)?.answerOptions ?? []),
-    ).calculateResults(submissions),
+    calculateUnexpectedTaskEditorResults(submissions, variant, task as UnexpectedTaskTask | undefined),
   createEditorFollowUpTask: ({task, submissions, variant, nextRoundIndex}) => {
     const currentTask = task as UnexpectedTaskTask;
     if ((currentTask.phase ?? "answer") !== "answer") return null;
@@ -258,7 +255,8 @@ function createFollowUpTask(args: {
   if ((currentTask.phase ?? "answer") !== "answer") return null;
 
   const answerOptions = buildAnswerOptions(args.submissions, args.variant, args.nextRoundIndex);
-  if (!answerOptions.some((answerOption) => answerOption.isPlayerAnswer)) return null;
+  const playerAnswerOptions = answerOptions.filter((answerOption) => answerOption.isPlayerAnswer);
+  if (playerAnswerOptions.length < 2) return null;
 
   return {
     id: `${args.variant.id}:rate:editor-${args.nextRoundIndex}`,
@@ -318,6 +316,34 @@ function buildAnswerOptions(
 
 function normalizeAnswer(answer: string): string {
   return answer.trim().toLocaleLowerCase();
+}
+
+function calculateUnexpectedTaskEditorResults(
+  submissions: UnexpectedTaskSubmission[],
+  variant: UnexpectedTaskVariantData,
+  task: UnexpectedTaskTask | undefined,
+) {
+  const phase = task?.phase ?? "answer";
+  if (phase !== "answer") {
+    return new UnexpectedTaskGame(variant, task?.answerOptions ?? []).calculateResults(submissions);
+  }
+
+  const answerSubmissions = submissions.filter((submission) => submission.phase === "answer");
+  if (answerSubmissions.length !== 1) {
+    return {resultsByPlayerId: {}};
+  }
+
+  const answerSubmission = answerSubmissions[0]!;
+  return {
+    resultsByPlayerId: {
+      [answerSubmission.playerId]: {
+        playerId: answerSubmission.playerId,
+        placement: 1,
+        answer: answerSubmission.answer,
+        ratingCount: 0,
+      },
+    },
+  };
 }
 
 function pickComparisonForPlayer(

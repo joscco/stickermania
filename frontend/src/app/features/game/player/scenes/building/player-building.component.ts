@@ -1,5 +1,5 @@
 import {CommonModule} from "@angular/common";
-import {Component, computed, input, output, signal} from "@angular/core";
+import {Component, computed, effect, input, output, signal} from "@angular/core";
 import type {MinigameClientAction, MinigameTask} from "@birthday/shared";
 import {AnimGroupDirective} from "../../../../shared/animations/anim-on-init.directive";
 import {MinigameComponentHostComponent} from "../../../../../../../../minigames/_shared/minigame-component-host/minigame-component-host.component";
@@ -31,11 +31,13 @@ export class PlayerBuildingComponent {
   public readonly roundIndex = input<number>(0);
   public readonly prompt = input<string>("");
   public readonly task = input<MinigameTask | null>(null);
+  public readonly timeUp = input<boolean>(false);
 
   public readonly skipRound = output<void>();
   public readonly submitMinigame = output<MinigameSubmitEvent>();
 
   public readonly draft = signal<unknown>(null);
+  private readonly autoSubmittedRoundKey = signal<string | null>(null);
 
   public readonly minigameDefinition = computed(() =>
     getMinigameFrontendDefinition(this.task()?.type),
@@ -67,6 +69,21 @@ export class PlayerBuildingComponent {
     if (!definition || !task) return null;
     return definition.phaseComponentForTask?.(task) ?? definition.phaseComponent;
   });
+
+  public constructor() {
+    effect(() => {
+      if (!this.timeUp() || !this.canSubmit()) return;
+
+      const task = this.task();
+      if (!task) return;
+
+      const roundKey = `${this.roundIndex()}:${task.id}`;
+      if (this.autoSubmittedRoundKey() === roundKey) return;
+
+      this.autoSubmittedRoundKey.set(roundKey);
+      this.submitCurrentTask();
+    });
+  }
 
   public onMinigameEvent(event: unknown): void {
     const definition = this.minigameDefinition();
