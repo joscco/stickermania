@@ -6,13 +6,11 @@
       </div>
 
       @if (timeLeft()) {
-        <div class="flex-1 flex items-center gap-2">
-          <div class="flex-1 h-4 bg-black/10 rounded overflow-hidden">
-            <div class="h-full bg-yellow-400 rounded transition-[width] duration-1000 ease-linear"
-                 [style.width.%]="100 - timerPercent()"></div>
-          </div>
-          <span class="text-xs font-mono text-black/60 w-10 text-right">{{ timeLeft() }}</span>
-        </div>
+        <app-countdown-bar
+          class="flex-1"
+          [timeLeft]="timeLeft()"
+          [percentLeft]="timerPercent()"
+        />
       }
 
       <div class="flex items-center justify-center gap-2 shrink-0">

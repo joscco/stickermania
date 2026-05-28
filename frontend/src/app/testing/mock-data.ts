@@ -18,6 +18,9 @@ export const MOCK_SUBMISSIONS: RoundSubmission[] = [
   {id: 'col-3', playerId: 'player-3', roundIndex: 0, placements: [], submittedAt: Date.now()},
 ];
 
+const MOCK_ROUND_DURATION_SEC = 20;
+const MOCK_RESULTS_DURATION_SEC = 60;
+
 // ── Phase state builders ────────────────────────────────────────────────────
 
 export function lobbyPhase(): PartyLobbyState {
@@ -29,7 +32,7 @@ export function roundActivePhase(opts?: {
 }): PartyRoundActiveState {
   return {
     phase: 'ROUND_ACTIVE',
-    roundEndsAt: Date.now() + 20_000,
+    roundEndsAt: Date.now() + MOCK_ROUND_DURATION_SEC * 1000,
     skippedPlayerIds: opts?.skippedPlayerIds ?? [],
   };
 }
@@ -37,7 +40,7 @@ export function roundActivePhase(opts?: {
 export function resultsPhase(): PartyRoundResultsState {
   return {
     phase: 'ROUND_RESULTS',
-    resultsEndsAt: Date.now() + 60_000,
+    resultsEndsAt: Date.now() + MOCK_RESULTS_DURATION_SEC * 1000,
     lastResults: MOCK_VOTE_RESULTS,
     winnerId: 'player-1',
     tiedWinnerIds: [],
@@ -51,18 +54,22 @@ export function makeGameState(
   phaseState: PartyRoundActiveState | PartyRoundResultsState | PartyLobbyState,
   overrides?: Partial<PartyGameState>,
 ): PartyGameState {
+  const roundStartedAt = phaseState.phase === 'ROUND_ACTIVE'
+    ? phaseState.roundEndsAt - MOCK_ROUND_DURATION_SEC * 1000
+    : Date.now();
+
   const base: PartyGameState = {
     currentRoundIndex: 0,
     currentPrompt: 'Das schönste Geburtstagsmonster',
     currentTask: null,
-    roundStartedAt: Date.now() - 60_000,
+    roundStartedAt,
     submissions: {},
     minigameSubmissions: {},
     promptHistory: { 0: 'Das schönste Geburtstagsmonster' },
     roundParticipantIds: ['player-1', 'player-2', 'player-3'],
     phaseState,
-    roundDurationSec: 20,
-    resultsDurationSec: 60,
+    roundDurationSec: MOCK_ROUND_DURATION_SEC,
+    resultsDurationSec: MOCK_RESULTS_DURATION_SEC,
   };
   return overrides ? { ...base, ...overrides } : base;
 }

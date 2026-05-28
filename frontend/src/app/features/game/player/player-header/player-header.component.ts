@@ -1,10 +1,11 @@
 import {Component, input, output} from '@angular/core';
 import {PlayerHeaderViewModel} from '../player-view-models';
+import {CountdownBarComponent} from '../../../shared/countdown-bar/countdown-bar.component';
 
 @Component({
     selector: 'app-player-header',
     standalone: true,
-  imports: [],
+  imports: [CountdownBarComponent],
     templateUrl: './player-header.component.html',
 })
 export class PlayerHeaderComponent {
