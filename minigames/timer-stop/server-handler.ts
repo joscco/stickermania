@@ -28,10 +28,6 @@ type TimerStopSubmission = OpenMinigameSubmission & {
 export class TimerStopHandler implements MinigameHandler<TimerStopTask, TimerStopSubmission> {
   public readonly type = "timer-stop";
 
-  public requiresVoting(): boolean {
-    return false;
-  }
-
   public createSubmission(args: {
     playerId: string;
     roundIndex: number;

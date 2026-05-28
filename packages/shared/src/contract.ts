@@ -252,7 +252,6 @@ export interface MinigameHandler<
   TSubmission extends OpenMinigameSubmission = OpenMinigameSubmission,
 > {
   readonly type: string;
-  requiresVoting(task: TTask): boolean;
   createSubmission(args: {
     playerId: string;
     roundIndex: number;
