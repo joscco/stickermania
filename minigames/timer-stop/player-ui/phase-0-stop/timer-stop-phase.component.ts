@@ -11,11 +11,12 @@ import {
   TimerStopPlayerUiEvent,
   TimerStopPlayerUiState,
 } from "../ui-contract";
+import {AnimPresenceDirective} from "../../../../frontend/src/app/features/shared/animations/anim-on-init.directive";
 
 @Component({
   selector: "sm-timer-stop-phase",
   standalone: true,
-  imports: [CommonModule],
+    imports: [CommonModule, AnimPresenceDirective],
   templateUrl: "./timer-stop-phase.component.html",
 })
 export class TimerStopPhaseComponent implements OnDestroy {
