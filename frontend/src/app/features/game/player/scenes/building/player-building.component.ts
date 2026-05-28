@@ -1,7 +1,7 @@
 import {CommonModule} from "@angular/common";
 import {Component, computed, effect, input, output, signal} from "@angular/core";
 import type {MinigameClientAction, MinigameTask} from "@birthday/shared";
-import {AnimGroupDirective} from "../../../../shared/animations/anim-on-init.directive";
+import {AnimGroupDirective, AnimOnInitDirective} from "../../../../shared/animations/anim-on-init.directive";
 import {MinigameComponentHostComponent} from "../../../../../../../../minigames/_shared/minigame-component-host/minigame-component-host.component";
 import {MinigameStageComponent} from "../../../../../../../../minigames/_shared/minigame-stage/minigame-stage.component";
 import {
@@ -20,12 +20,13 @@ export type MinigameSubmitEvent = MinigameClientAction;
     AnimGroupDirective,
     MinigameStageComponent,
     MinigameComponentHostComponent,
+    AnimOnInitDirective,
   ],
   templateUrl: "./player-building.component.html",
   host: {"class": "h-full flex-1 flex flex-col"},
 })
 export class PlayerBuildingComponent {
-  public readonly stageContainerMaxWidth = `min(100%, calc((100dvh - 9rem) * ${MINIGAME_STAGE_WIDTH} / ${MINIGAME_STAGE_HEIGHT}))`;
+  public readonly stageContainerMaxWidth = `min(100%, 420px, calc((100dvh - 12rem) * ${MINIGAME_STAGE_WIDTH} / ${MINIGAME_STAGE_HEIGHT}))`;
   public readonly stageAspectRatio = `${MINIGAME_STAGE_WIDTH} / ${MINIGAME_STAGE_HEIGHT}`;
 
   public readonly roundIndex = input<number>(0);

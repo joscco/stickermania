@@ -9,7 +9,6 @@ import {
 } from "../../../../../../../../minigames/_shared/minigame-stage-size";
 import {getMinigameFrontendDefinition} from "../../../../../../../../minigames/frontend-registry";
 import {AnimOnInitDirective} from "../../../../shared/animations/anim-on-init.directive";
-import {RoundInfoComponent} from "../../../../shared/round-info/round-info.component";
 import {PlayerStatusScreenComponent} from "../../player-status-screen/player-status-screen.component";
 
 @Component({
@@ -19,7 +18,6 @@ import {PlayerStatusScreenComponent} from "../../player-status-screen/player-sta
         CommonModule,
         AnimOnInitDirective,
         PlayerStatusScreenComponent,
-        RoundInfoComponent,
         MinigameStageComponent,
         MinigameComponentHostComponent,
     ],

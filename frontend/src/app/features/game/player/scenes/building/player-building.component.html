@@ -1,6 +1,6 @@
 <div animGroup="opacity" class="flex h-full flex-col items-center justify-center gap-4 p-4">
   @if (task(); as t) {
-    <div class="w-full" [style.max-width]="stageContainerMaxWidth">
+    <div animOnInit="opacity" class="w-full" [style.max-width]="stageContainerMaxWidth">
       @if (minigameDefinition(); as definition) {
         @if (minigameState(); as state) {
           @if (minigamePhaseComponent(); as phaseComponent) {
