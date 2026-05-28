@@ -1,7 +1,7 @@
 import {inject, Injectable, computed} from "@angular/core";
 import type {
-  StickerCollageClientAction, StickerCollageGameState, StickerCollage,
-  StickerCollageBuildingState, StickerCollageVotingState, StickerCollageResultsState,
+  PartyGameClientAction, PartyGameState, RoundSubmission,
+  PartyBuildingState, PartyVotingState, PartyResultsState,
   MinigameClientAction, MinigameTask,
 } from "@birthday/shared";
 import {GameSessionStore} from '../../../core/challenge.store';
@@ -9,26 +9,26 @@ import {WorldStore} from '../../../core/world.store';
 import {WebSocketService} from '../../../core/websocket.service';
 
 @Injectable()
-export class StickerPlayerService {
+export class PartyPlayerService {
   private readonly sessionStore = inject(GameSessionStore);
   private readonly worldStore = inject(WorldStore);
   private readonly wsService = inject(WebSocketService);
 
-  public readonly gameState = computed<StickerCollageGameState | null>(() =>
-    this.worldStore.stickerCollageGameState()
+  public readonly gameState = computed<PartyGameState | null>(() =>
+    this.worldStore.partyGameState()
   );
 
   // ─── Phase helpers ───────────────────────────────────────────
 
-  private readonly buildingState = computed<StickerCollageBuildingState | null>(() => {
+  private readonly buildingState = computed<PartyBuildingState | null>(() => {
     const ps = this.gameState()?.phaseState;
     return ps?.phase === "BUILDING" ? ps : null;
   });
-  private readonly votingState = computed<StickerCollageVotingState | null>(() => {
+  private readonly votingState = computed<PartyVotingState | null>(() => {
     const ps = this.gameState()?.phaseState;
     return ps?.phase === "VOTING" ? ps : null;
   });
-  private readonly resultsState = computed<StickerCollageResultsState | null>(() => {
+  private readonly resultsState = computed<PartyResultsState | null>(() => {
     const ps = this.gameState()?.phaseState;
     return ps?.phase === "RESULTS" ? ps : null;
   });
@@ -50,9 +50,9 @@ export class StickerPlayerService {
     const playerId = this.sessionStore.playerId();
     const ms = this.gameState();
     if (!playerId || !ms) return false;
-    const collages = (ms.submissions[ms.currentRoundIndex] ?? []).some(s => s.playerId === playerId);
+    const submissions = (ms.submissions[ms.currentRoundIndex] ?? []).some(s => s.playerId === playerId);
     const minigames = (ms.minigameSubmissions[ms.currentRoundIndex] ?? []).some(s => s.playerId === playerId);
-    return collages || minigames;
+    return submissions || minigames;
   });
 
   public readonly hasSkippedThisRound = computed<boolean>(() => {
@@ -77,7 +77,7 @@ export class StickerPlayerService {
 
   // ─── Voting phase ────────────────────────────────────────────
 
-  public readonly currentRoundSubmissions = computed<StickerCollage[]>(() => {
+  public readonly currentRoundSubmissions = computed<RoundSubmission[]>(() => {
     const ms = this.gameState();
     if (!ms) return [];
     return ms.submissions[ms.currentRoundIndex] ?? [];
@@ -144,8 +144,8 @@ export class StickerPlayerService {
     this.sendAction({type: "skip-round"});
   }
 
-  public castVote(collageId: string): void {
-    this.sendAction({type: "cast-vote", collageId});
+  public castVote(submissionId: string): void {
+    this.sendAction({type: "cast-vote", submissionId});
   }
 
   public doneVoting(): void {
@@ -168,7 +168,7 @@ export class StickerPlayerService {
     this.sendAction({type: "end-voting-early"});
   }
 
-  private sendAction(action: StickerCollageClientAction): void {
+  private sendAction(action: PartyGameClientAction): void {
     this.wsService.send({type: "game-action", action});
   }
 }

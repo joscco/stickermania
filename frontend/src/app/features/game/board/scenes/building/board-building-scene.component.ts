@@ -1,6 +1,6 @@
 import {Component, computed, input, output} from "@angular/core";
 import {CommonModule} from "@angular/common";
-import type {StickerCollageGameState, SessionPlayer, StickerCollageBuildingState} from "@birthday/shared";
+import type {PartyGameState, SessionPlayer, PartyBuildingState} from "@birthday/shared";
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {RoundInfoComponent} from '../../../../shared/round-info/round-info.component';
 import {BoardPlayerAvatarComponent, type PlayerAvatarStatus} from '../../player-avatar/board-player-avatar.component';
@@ -12,11 +12,11 @@ import {BoardPlayerAvatarComponent, type PlayerAvatarStatus} from '../../player-
     templateUrl: "./board-building-scene.component.html",
 })
 export class BoardBuildingSceneComponent {
-    public readonly gameState = input<StickerCollageGameState | null>(null);
+    public readonly gameState = input<PartyGameState | null>(null);
     public readonly players = input<Record<string, SessionPlayer>>({});
     public readonly endRoundEarly = output<void>();
 
-    private get buildingPs(): StickerCollageBuildingState | null {
+    private get buildingPs(): PartyBuildingState | null {
         const ps = this.gameState()?.phaseState;
         return ps?.phase === "BUILDING" ? ps : null;
     }

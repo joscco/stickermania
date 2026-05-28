@@ -14,7 +14,7 @@ export class PlayerTimerService {
   public readonly notification = signal<string>("");
   public readonly timeUp = signal(false);
   public readonly endsAt = computed(() => {
-    const ps = this.worldStore.stickerCollageGameState()?.phaseState;
+    const ps = this.worldStore.partyGameState()?.phaseState;
     if (!ps) return 0;
     if (ps.phase === "BUILDING") return ps.roundEndsAt;
     if (ps.phase === "VOTING") return ps.votingEndsAt;
@@ -36,7 +36,7 @@ export class PlayerTimerService {
         return;
       }
 
-      const gameState = this.worldStore.stickerCollageGameState();
+      const gameState = this.worldStore.partyGameState();
       const phase = gameState?.phaseState.phase;
       let totalSec = 0;
       if (phase === "BUILDING") {
@@ -48,18 +48,15 @@ export class PlayerTimerService {
       }
       this.totalDurationSec.set(totalSec);
 
-      const phaseStartClientMs = Date.now();
-
       const tick = () => {
-        const elapsedMs = Date.now() - phaseStartClientMs;
-        const remaining = Math.max(0, totalSec * 1000 - elapsedMs);
+        const remaining = Math.max(0, e - Date.now());
         const s = Math.ceil(remaining / 1000);
         const min = Math.floor(s / 60);
         const sec = s % 60;
         this.timeLeft.set(`${min}:${String(sec).padStart(2, "0")}`);
 
         if (totalSec > 0) {
-          this.percentLeft.set(Math.min(100, Math.max(0, (s / totalSec) * 100)));
+          this.percentLeft.set(Math.min(100, Math.max(0, (remaining / (totalSec * 1000)) * 100)));
         } else {
           this.percentLeft.set(100);
         }

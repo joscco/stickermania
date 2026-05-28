@@ -8,14 +8,14 @@ import {
   MockWorldStore,
   MockGameSessionStore,
   MockWebSocketService,
-  MockStickerPlayerService,
+  MockPartyPlayerService,
   type MockPhase,
   makeMockSessionState,
 } from '../../testing/mock-providers';
 import {WorldStore} from '../../core/world.store';
 import {GameSessionStore} from '../../core/challenge.store';
 import {WebSocketService} from '../../core/websocket.service';
-import {StickerPlayerService} from '../game/services/sticker-player.service';
+import {PartyPlayerService} from '../game/services/party-player.service';
 import {PlayerComponent} from '../game/player/player.component';
 import {BoardComponent} from '../game/board/board.component';
 import {LandingComponent} from '../game/board/scenes/landing/landing.component';
@@ -60,7 +60,7 @@ type ScreenKey =
     {provide: WorldStore, useClass: MockWorldStore},
     {provide: GameSessionStore, useClass: MockGameSessionStore},
     {provide: WebSocketService, useClass: MockWebSocketService},
-    {provide: StickerPlayerService, useClass: MockStickerPlayerService},
+    {provide: PartyPlayerService, useClass: MockPartyPlayerService},
   ],
   templateUrl: './catalog.component.html',
   host: {class: 'h-dvh text-neutral-900 flex flex-col'},

@@ -42,12 +42,12 @@ export class LocalAssetRepository implements AssetRepository {
     };
   }
 
-  public async saveCollage(args: { sessionId: string; playerId: string; playerName: string; collageId: string; prompt: string; imageDataUrl: string }): Promise<SavedAsset> {
+  public async saveSubmissionImage(args: { sessionId: string; playerId: string; playerName: string; submissionId: string; prompt: string; imageDataUrl: string }): Promise<SavedAsset> {
     const relativePath = path.posix.join(
       "assets",
       args.sessionId,
-      "collages",
-      `collage_${sanitize(args.playerName)}_${sanitize(args.prompt)}_${args.collageId}.png`,
+      "submissions",
+      `submission_${sanitize(args.playerName)}_${sanitize(args.prompt)}_${args.submissionId}.png`,
     );
     await this.writeBuffer(relativePath, decodePngDataUrl(args.imageDataUrl));
     return {

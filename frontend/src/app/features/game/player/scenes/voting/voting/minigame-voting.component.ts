@@ -1,9 +1,9 @@
 import {Component, input, output, computed, signal} from "@angular/core";
 import {CommonModule} from "@angular/common";
-import type {StickerCollage, SessionPlayer, MinigameTask, MinigameSubmission, DrawingSubmission, TextAnswerSubmission} from '@birthday/shared';
+import type {RoundSubmission, SessionPlayer, MinigameTask, MinigameSubmission, DrawingSubmission, TextAnswerSubmission} from '@birthday/shared';
 
 interface VotingEntry {
-  collageId: string;
+  submissionId: string;
   playerId: string;
   playerName: string;
   snapshotUrl?: string;
@@ -19,7 +19,7 @@ interface VotingEntry {
   host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })
 export class MinigameVotingComponent {
-  readonly submissions = input.required<StickerCollage[]>();
+  readonly submissions = input.required<RoundSubmission[]>();
   readonly minigameSubmissions = input<MinigameSubmission[]>([]);
   readonly currentTask = input<MinigameTask | null>(null);
   readonly players = input<Record<string, SessionPlayer>>({});
@@ -50,7 +50,7 @@ export class MinigameVotingComponent {
         const player = players[s.playerId];
         const mg = minigames.find(m => m.playerId === s.playerId);
         const entry: VotingEntry = {
-          collageId: s.id,
+          submissionId: s.id,
           playerId: s.playerId,
           playerName: player?.name ?? s.playerId,
           snapshotUrl: s.snapshotUrl,
@@ -68,19 +68,19 @@ export class MinigameVotingComponent {
       });
   });
 
-  /** Guesses for drawing: per collageId → guessed extra task */
+  /** Guesses for drawing: per submissionId → guessed extra task */
   readonly selectedGuesses = new Map<string, string>();
 
-  vote(collageId: string): void {
-    this.voteClicked.emit(collageId);
+  vote(submissionId: string): void {
+    this.voteClicked.emit(submissionId);
   }
 
-  guessExtraTask(collageId: string, task: string): void {
-    this.selectedGuesses.set(collageId, task);
-    this.vote(collageId);
+  guessExtraTask(submissionId: string, task: string): void {
+    this.selectedGuesses.set(submissionId, task);
+    this.vote(submissionId);
   }
 
-  getGuess(collageId: string): string | undefined {
-    return this.selectedGuesses.get(collageId);
+  getGuess(submissionId: string): string | undefined {
+    return this.selectedGuesses.get(submissionId);
   }
 }

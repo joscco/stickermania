@@ -40,9 +40,9 @@ export class ApiService {
     return firstValueFrom(this.httpClient.delete<void>(`/api/sessions/${encodeURIComponent(sessionId)}`));
   }
 
-  public getSessionAssets(sessionId: string): Promise<Array<{type: "avatar" | "collage"; filename: string; publicUrl: string}>> {
+  public getSessionAssets(sessionId: string): Promise<Array<{type: "avatar" | "submission"; filename: string; publicUrl: string}>> {
     return firstValueFrom(
-      this.httpClient.get<Array<{type: "avatar" | "collage"; filename: string; publicUrl: string}>>(
+      this.httpClient.get<Array<{type: "avatar" | "submission"; filename: string; publicUrl: string}>>(
         `/api/sessions/${encodeURIComponent(sessionId)}/assets`,
       ),
     );

@@ -2,7 +2,7 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "..",
     "sourceMap": true,
 
     "module": "NodeNext",
@@ -12,5 +12,5 @@
     "lib": ["ES2022"],
     "skipLibCheck": true
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "../minigames/registry.ts", "../minigames/timer-stop/server-handler.ts"]
 }

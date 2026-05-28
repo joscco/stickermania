@@ -1,13 +1,13 @@
-import type {GameConfig, MinigameClientAction, SessionState, StickerCollageGameState,} from "@birthday/shared";
+import type {GameConfig, MinigameClientAction, SessionState, PartyGameState,} from "@birthday/shared";
 import type {GameActionResult, GameEngine} from "../gameModeEngine.js";
 import {shouldSkipVoting, transitionToNextRound, transitionToResults, transitionToVoting} from "./roundManager.js";
 import {advanceToNextRound, boardAdvancesToNextRound, castVote, endBuildingPhaseEarly, endVotingPhaseEarly, markPlayerDoneVoting, skipRound, startGame, submitMinigame,} from "./actionHandlers.js";
 
-export class StickerCollageEngine implements GameEngine {
+export class PartyGameEngine implements GameEngine {
     public constructor(private readonly config: GameConfig) {
     }
 
-    public createInitialState(): StickerCollageGameState {
+    public createInitialState(): PartyGameState {
         return {
             currentRoundIndex: 0,
             currentPrompt: "",
@@ -82,7 +82,7 @@ export class StickerCollageEngine implements GameEngine {
             case "skip-round":
                 return skipRound(state, playerId);
             case "cast-vote":
-                return castVote(state, playerId, "collageId" in action ? action.collageId : (action as any).submissionId ?? "", this.config);
+                return castVote(state, playerId, "submissionId" in action ? action.submissionId : (action as any).submissionId ?? "", this.config);
             case "done-voting":
                 return markPlayerDoneVoting(state, playerId);
             case "ready-to-advance":

@@ -3,7 +3,7 @@
  * Builds the offline placeholder image locally and deploys it to Cloud Run.
  * This replaces the running game with a static "Stickermania ist offline" page.
  *
- * Usage: npm run cloud:deploy-offline
+ * Usage: npm run cloud:stop
  * To restore the game: npm run cloud:deploy
  */
 
@@ -57,4 +57,3 @@ function run(cmd) {
     console.log(`$ ${cmd}\n`);
     execSync(cmd, {stdio: "inherit", cwd: root});
 }
-

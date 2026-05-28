@@ -55,7 +55,7 @@ export interface SessionState {
   sessionId: string;
   sessionCode: string;
   players: Record<string, SessionPlayer>;
-  gameState: StickerCollageGameState;
+  gameState: PartyGameState;
   revision: number;
   updatedAt: number;
   createdAt: number;
@@ -88,46 +88,46 @@ export type SessionServerToClientMessage =
 
 // ─── Phase state ────────────────────────────────────────────────
 
-export interface StickerCollageLobbyState {
+export interface PartyLobbyState {
   phase: "LOBBY";
 }
 
-export interface StickerCollageBuildingState {
+export interface PartyBuildingState {
   phase: "BUILDING";
   roundEndsAt: number;
   skippedPlayerIds: string[];
 }
 
-export interface StickerCollageVotingState {
+export interface PartyVotingState {
   phase: "VOTING";
   votingEndsAt: number;
   currentVotes: Record<string, string[]>;
   doneVotingIds: string[];
 }
 
-export interface StickerCollageResultsState {
+export interface PartyResultsState {
   phase: "RESULTS";
   resultsEndsAt: number;
   winnerId: string | null;
   tiedWinnerIds: string[];
   readyToAdvanceIds: string[];
-  lastVoteResults: StickerCollageVoteResult[];
+  lastVoteResults: RoundVoteResult[];
 }
 
 export type GameSubState =
-  | StickerCollageLobbyState
-  | StickerCollageBuildingState
-  | StickerCollageVotingState
-  | StickerCollageResultsState;
+  | PartyLobbyState
+  | PartyBuildingState
+  | PartyVotingState
+  | PartyResultsState;
 
 // ─── Game state ─────────────────────────────────────────────────
 
-export interface StickerCollageGameState {
+export interface PartyGameState {
   currentRoundIndex: number;
   currentPrompt: string;
   currentTask: MinigameTask | null;
   roundStartedAt: number | null;
-  submissions: Record<number, StickerCollage[]>;
+  submissions: Record<number, RoundSubmission[]>;
   minigameSubmissions: Record<number, OpenMinigameSubmission[]>;
   promptHistory: Record<number, string>;
   roundParticipantIds: string[];
@@ -137,7 +137,7 @@ export interface StickerCollageGameState {
   resultsDurationSec: number;
 }
 
-export interface StickerCollage {
+export interface RoundSubmission {
   id: string;
   playerId: string;
   roundIndex: number;
@@ -146,8 +146,8 @@ export interface StickerCollage {
   snapshotUrl?: string;
 }
 
-export interface StickerCollageVoteResult {
-  collageId: string;
+export interface RoundVoteResult {
+  submissionId: string;
   playerId: string;
   voteCount: number;
   placement: number;
@@ -225,9 +225,9 @@ export type MinigameClientAction =
       payload: unknown;
     };
 
-export type StickerCollageClientAction =
+export type PartyGameClientAction =
   | { type: "skip-round" }
-  | { type: "cast-vote"; collageId: string }
+  | { type: "cast-vote"; submissionId: string }
   | { type: "done-voting" }
   | { type: "ready-to-advance" }
   | { type: "start-game" }
@@ -235,16 +235,16 @@ export type StickerCollageClientAction =
   | { type: "end-voting-early" }
   | { type: "advance-from-results" };
 
-export type GameClientAction = StickerCollageClientAction | MinigameClientAction;
+export type GameClientAction = PartyGameClientAction | MinigameClientAction;
 
-export type StickerCollageServerEvent =
+export type PartyGameServerEvent =
   | { type: "game-started" }
   | { type: "round-started"; roundIndex: number; prompt: string; endsAt: number }
-  | { type: "collage-submitted"; playerId: string; collageId: string }
+  | { type: "submission-submitted"; playerId: string; submissionId: string }
   | { type: "voting-started"; votingEndsAt: number }
-  | { type: "vote-registered"; voterId: string; collageId: string }
-  | { type: "vote-unregistered"; voterId: string; collageId: string }
-  | { type: "results-ready"; winnerId: string | null; results: StickerCollageVoteResult[] };
+  | { type: "vote-registered"; voterId: string; submissionId: string }
+  | { type: "vote-unregistered"; voterId: string; submissionId: string }
+  | { type: "results-ready"; winnerId: string | null; results: RoundVoteResult[] };
 
 export type GameClientEnvelope = {
   type: "game-action";
@@ -253,7 +253,7 @@ export type GameClientEnvelope = {
 
 export type GameServerEnvelope = {
   type: "game-event";
-  event: StickerCollageServerEvent;
+  event: PartyGameServerEvent;
   targetPlayerId?: string;
 };
 
@@ -280,7 +280,7 @@ export interface MinigameHandler<
     submissions: TSubmission[];
   }): {
     result: MinigameResult<MinigamePlayerResult>;
-    voteResults: StickerCollageVoteResult[];
+    voteResults: RoundVoteResult[];
     winnerId: string | null;
     tiedWinnerIds: string[];
   };

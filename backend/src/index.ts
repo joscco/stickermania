@@ -32,7 +32,7 @@ if (!devMode) {
     await app.register(fastifyWebSocket);
 }
 
-// Serve user-generated assets (avatars, drawings, collages) from data directory
+// Serve user-generated assets (avatars, drawings, submissions) from data directory
 const assetsRoot = path.resolve(backendConfig.dataRoot, "assets");
 fs.mkdirSync(assetsRoot, {recursive: true}); // ensure it exists before registering
 await app.register(fastifyStatic, {
@@ -109,8 +109,7 @@ console.log(`[backend] listening on port ${backendConfig.gameConfig.port}`);
 
 if (devMode) {
     console.log(`\nEditors available at:`);
-    console.log(`  http://localhost:${backendConfig.gameConfig.port}/editor`);
-    console.log(`  http://localhost:${backendConfig.gameConfig.port}/hitbox-editor`);
+    console.log(`  http://localhost:${backendConfig.gameConfig.port}`);
 } else {
     console.log(`[backend] sessions stored in: ${backendConfig.sessionsPath}`);
     console.log(`[backend] assets stored in: ${backendConfig.assetsPath}`);

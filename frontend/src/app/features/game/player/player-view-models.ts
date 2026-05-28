@@ -1,11 +1,11 @@
-import type {StickerCollage, SessionPlayer, MinigameTask, MinigameSubmission, StickerCollageVoteResult} from '@birthday/shared';
+import type {RoundSubmission, SessionPlayer, MinigameTask, MinigameSubmission, RoundVoteResult, OpenMinigameSubmission} from '@birthday/shared';
 
 export type VotingVariant = 'active' | 'done' | 'all-done';
 
 export interface VotingViewModel {
   variant: VotingVariant;
   prompt: string;
-  submissions: StickerCollage[];
+  submissions: RoundSubmission[];
   myVotes: string[];
   votesRemaining: number;
   players: Record<string, SessionPlayer>;
@@ -50,8 +50,11 @@ export interface ResultsViewModel {
   isTiedWinner: boolean;
   winnerId: string | null;
   winnerName: string;
-  lastVoteResults: StickerCollageVoteResult[];
+  lastVoteResults: RoundVoteResult[];
   currentTask: MinigameTask | null;
+  myPlayerId: string;
+  myMinigameSubmission: OpenMinigameSubmission | null;
+  myMinigameResult: RoundVoteResult | null;
   /** Human-readable summary of the player's performance for this task */
   resultSummary: string;
 }

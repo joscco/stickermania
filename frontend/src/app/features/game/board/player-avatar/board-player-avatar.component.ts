@@ -8,7 +8,7 @@ import {SvgComponent} from '../../../shared/svg/svg.component';
  *
  * - `idle`      — in round, nothing done yet (building phase, hand not requested)
  * - `drawing`   — has received a hand, currently building
- * - `submitted` — has submitted their collage
+ * - `submitted` — has submitted their submission
  * - `skipped`   — has opted to skip the round
  * - `offline`   — was a round participant but is currently disconnected
  * - `connected` — generic "online" state (lobby)

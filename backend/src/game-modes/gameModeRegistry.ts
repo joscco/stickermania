@@ -1,4 +1,4 @@
-import type {StickerCollageGameState} from "@birthday/shared";
+import type {PartyGameState} from "@birthday/shared";
 import type {GameEngine} from "./gameModeEngine.js";
 
 export class GameEngineRegistry {
@@ -15,7 +15,7 @@ export class GameEngineRegistry {
         return this.engine;
     }
 
-    public createInitialGameState(): StickerCollageGameState {
+    public createInitialGameState(): PartyGameState {
         return this.get().createInitialState();
     }
 }

@@ -86,7 +86,7 @@ export class PlayerMessageHandler {
       return;
     }
 
-    this.sessionStore.clearTask("STICKER_COLLAGE");
+    this.sessionStore.clearTask("PARTY_GAME");
   }
 
   // ─── Error handling ─────────────────────────────────────────

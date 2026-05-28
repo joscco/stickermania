@@ -11,17 +11,7 @@ export interface BackendConfig {
 }
 
 export function loadBackendConfig(args: { argv: string[]; cwd: string }): BackendConfig {
-    // 1. Load public config (committed, all game settings, no secrets)
-    const publicConfigPath = path.resolve(args.cwd, "game.config.public.json");
-    let rawPublic: Record<string, unknown> = {};
-    try {
-        rawPublic = JSON.parse(fs.readFileSync(publicConfigPath, "utf-8"));
-        console.log(`[config] loaded game.config.public.json`);
-    } catch {
-        console.warn(`[config] game.config.public.json not found at ${publicConfigPath}, using defaults`);
-    }
-
-    // 2. Load private config (gitignored, only adminPassword locally)
+    // 1. Load game config (gitignored, only adminPassword locally)
     const privateConfigPath = path.resolve(args.cwd, "game.config.json");
     let rawPrivate: Record<string, unknown> = {};
     try {
@@ -31,11 +21,10 @@ export function loadBackendConfig(args: { argv: string[]; cwd: string }): Backen
         // Fine in Cloud — password comes from ADMIN_PASSWORD env var
     }
 
-    // 3. Merge: public base, private overrides (private wins for any shared keys)
-    const merged = { ...rawPublic, ...rawPrivate };
-    const gameConfig = parseGameConfig(merged);
+    // 2. Merge: public base, private overrides (private wins for any shared keys)
+    const gameConfig = parseGameConfig(rawPrivate);
 
-    // 4. Load minigame config (separate JSON file)
+    // 3. Load minigame config (separate JSON file)
     const minigameConfigPath = path.resolve(args.cwd, "minigame.config.json");
     try {
         const rawMinigame = JSON.parse(fs.readFileSync(minigameConfigPath, "utf-8"));

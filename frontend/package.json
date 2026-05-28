@@ -6,15 +6,9 @@
     "sprite:watch": "node scripts/build-sprite.mjs --watch",
     "check-stickers": "node scripts/check-sticker-assets.mjs",
     "prebuild": "node scripts/build-sprite.mjs && node scripts/check-sticker-assets.mjs",
-    "start": "ng serve --project frontend --configuration dev-tools",
-    "dev": "ng serve --project frontend --configuration development",
-    "dev:tools": "ng serve --project frontend --configuration dev-tools",
-    "dev:minigame-editor": "ng serve --project frontend --configuration minigame-editor",
+    "dev": "ng serve --project frontend --configuration dev-tools",
     "build": "ng build --project frontend --configuration production --progress=false",
-    "build:offline": "ng build --project offline --progress=false",
-    "build:dev-tools": "ng build --project frontend --configuration dev-tools --progress=false",
-    "build:minigame-editor": "ng build --project frontend --configuration minigame-editor --progress=false",
-    "test": "ng test"
+    "build:offline": "ng build --project offline --progress=false"
   },
   "private": true,
   "packageManager": "npm@10.9.2",

@@ -1,10 +1,10 @@
 # Stickermania
 
-Session-basiertes Party-Spiel: Spieler erstellen gemeinsam lustige Sticker-Collagen und stimmen über die besten ab.
+Session-basiertes Party-Spiel: Spieler erstellen gemeinsam lustige Rundenbilder und stimmen über die besten ab.
 
 - Gäste treten einer **Session** per QR-Code bei
-- Jede Runde gibt es einen **Prompt** — Spieler bauen auf ihrem Handy eine Collage aus Stickern
-- Danach wird **abgestimmt**, wer die beste Collage hat
+- Jede Runde gibt es einen **Prompt** — Spieler bauen auf ihrem Handy eine Einsendung aus Stickern
+- Danach wird **abgestimmt**, wer die beste Einsendung hat
 - Der **Gewinner** wählt Prompt, Sticker-Pack und Garantie-Pack für die nächste Runde
 - Sticker-Packs werden Runde für Runde **freigeschaltet**
 
@@ -34,11 +34,11 @@ cp game.config.example.json game.config.json
 # Spiel-Modus — baut alles und startet den Server
 npm run start
 
-# Dev-Modus — nur Editoren
+# Dev-Modus — Backend, Editoren, Catalog, Minigame-Editor und Sprite-Watch mit Hot Reload
 npm run dev
 
-# Dev mit Live-Reload (Frontend HMR + Backend)
-npm run dev:live
+# Sprite-Sheet einmalig bauen
+npm run sprite
 ```
 
 ### Lokaler Modus
@@ -54,7 +54,7 @@ npm run dev:live
 ```bash
 cp wlan/wlan-config.example.json wlan/wlan-config.json
 # WLAN-Daten eintragen, dann:
-npm run wlan:qr
+node wlan/wlan-qr.mjs
 # → wlan/wlan-qr.png (drucken & aufhängen)
 ```
 
@@ -79,8 +79,9 @@ Nur die Editoren, kein Spiel:
 
 ```bash
 npm run dev
-# → http://localhost:3001/#/editor        (Sticker-Editor)
-# → http://localhost:3001/#/hitbox-editor  (Hitbox-Editor)
+# → http://localhost:4200                  (Dev Landing)
+# → http://localhost:4200/catalog          (Screen-Katalog)
+# → http://localhost:4200/minigame-editor  (Minigame-Editor)
 ```
 
 ---
@@ -108,15 +109,15 @@ LOBBY → BUILDING → VOTING → RESULTS → BUILDING → ...
 ```
 
 1. **Lobby** — Spieler treten per QR-Code bei, zeichnen Avatar, wählen Namen
-2. **Building** — Jeder bekommt eine Hand aus Stickern und baut eine Collage zum Prompt
-3. **Voting** — Alle sehen die Collagen und stimmen ab (max. 3 Stimmen)
+2. **Building** — Jeder bekommt eine Hand aus Stickern und baut eine Einsendung zum Prompt
+3. **Voting** — Alle sehen die Rundenbilder und stimmen ab (max. 3 Stimmen)
 4. **Results** — Siegertreppchen + Punkte. Der Gewinner wählt:
    - 🎯 Nächsten **Prompt** (aus 3 zufälligen)
    - 🔓 Ein neues **Sticker-Pack** freischalten
    - ⭐ Ein **"Auf jeden Fall dabei"-Pack** (garantiert 1 Sticker davon in jeder Hand)
 5. Zurück zu Schritt 2
 
-Nach der Session: Im Board auf **"Alle Avatare & Collagen herunterladen"** klicken, um alle Bilder als ZIP zu speichern.
+Nach der Session: Im Board auf **"Alle Avatare & Rundenbilder herunterladen"** klicken, um alle Bilder als ZIP zu speichern.
 
 ---
 
@@ -125,13 +126,11 @@ Nach der Session: Im Board auf **"Alle Avatare & Collagen herunterladen"** klick
 | Script | Beschreibung |
 |---|---|
 | `npm run start` | **Spiel-Modus**: Baut alles, startet Server (LAN auf Port 3001, Cloud auf Port 8080) |
-| `npm run dev` | **Dev-Modus**: Baut Editoren-Frontend, startet Server (nur Editor-APIs) |
-| `npm run dev:live` | **Dev + HMR**: Backend + `ng serve` parallel mit Live-Reload |
-| `npm run wlan:qr` | WLAN-QR-Code als PNG generieren (aus `wlan/wlan-config.json`) |
+| `npm run dev` | **Dev + HMR**: Backend-Editor-APIs, Angular-Editoren, Catalog, Minigame-Editor und Sprite-Watch |
+| `npm run sprite` | Sprite-Sheet einmalig aus den Sticker-Assets bauen |
 | `npm run cloud:deploy` | Quellcode an Cloud Build schicken, Image bauen & auf Cloud Run deployen |
 | `npm run cloud:start` | Cloud-Run-Service hochfahren (Ingress auf `all`, min. 1 Instanz) |
 | `npm run cloud:stop` | Cloud-Run-Service herunterfahren (Ingress auf `internal`, 0 Instanzen) |
-| `npm run screenshots` | Baut die App, startet Server, schießt Screenshots aller Screens, stoppt Server |
 
 > Admin-Passwort lokal: `ADMIN_PASSWORD="geheim" npm run start`
 
@@ -142,7 +141,7 @@ Nach der Session: Im Board auf **"Alle Avatare & Collagen herunterladen"** klick
 Gespeicherte Dateien in `.data/assets/<sessionId>/`:
 
 - **Avatare**: `avatar_<spielername>_<playerId>.png`
-- **Collagen**: `collage_<spielername>_<prompt>_<collageId>.png`
+- **Rundenbilder**: `submission_<spielername>_<prompt>_<submissionId>.png`
 
 Spieler- und Prompt-Namen werden sanitiert (Sonderzeichen → `_`, max. 60 Zeichen). Die IDs am Ende verhindern Namenskollisionen.
 
@@ -173,14 +172,6 @@ Das Frontend navigiert ganz normal zu `/#/player?session=MOCK`, löst den Code p
 **Kein Frontend-Code für Mock nötig.** Die gesamte Logik sitzt in:
 - `scripts/mock-server.mjs` — HTTP + WebSocket, Fixture-Daten, State-Aufbau pro Screen
 - `scripts/screenshots.mjs` — baut Frontend, startet Mock-Server, schießt Screenshots, stoppt Server
-
-```bash
-# Alles in einem Schritt:
-npm run screenshots
-
-# Mock-Server gegen bereits laufendes Frontend (überspringt Build):
-SCREENSHOT_BASE_URL=http://localhost:3001 npm run screenshots
-```
 
 Screenshots landen in `./screenshots/`.
 
@@ -235,7 +226,7 @@ Die Entscheidung wird live per `ResizeObserver` neu berechnet — passt sich als
 ### Player-Ansicht
 
 - Feedback (verbleibende Stimmen / alle Stimmen abgegeben) ist **klein und unauffällig im Header** untergebracht, nicht als großes Banner
-- Eigene Collage ist mit einem lila Badge „Deine" markiert und kann nicht gewählt werden
+- Eigene Einsendung ist mit einem lila Badge „Deine" markiert und kann nicht gewählt werden
 - Bereits abgegebene Stimmen sind mit ⭐ markiert
 
 ---
@@ -252,9 +243,9 @@ Die Entscheidung wird live per `ResizeObserver` neu berechnet — passt sich als
 | `GET` | `/api/sessions/:id/state` | — | Session-State abrufen |
 | `POST` | `/api/sessions/:id/reset` | ✅ Cookie | Session zurücksetzen |
 | `DELETE` | `/api/sessions/:id` | ✅ Cookie | Session löschen |
-| `POST` | `/api/sessions/:id/collage-image` | — | Collage-PNG hochladen |
+| `POST` | `/api/sessions/:id/submission-image` | — | Einsendung-PNG hochladen |
 | `GET` | `/api/sessions/:id/assets` | — | Asset-Liste für Download |
-| `GET` | `/api/assets/...` | — | Avatare, Collagen (statische Assets) |
+| `GET` | `/api/assets/...` | — | Avatare, Rundenbilder (statische Assets) |
 | `GET` | `/api/sticker-catalog` | — | Sticker-Katalog |
 
 ## WebSocket
@@ -281,7 +272,7 @@ cp game.config.example.json game.config.json
 # adminPassword in game.config.json setzen
 ```
 
-Das Backend mergt beide Dateien beim Start. Für Cloud Run wird nur `game.config.public.json` ins Image kopiert — `adminPassword` kommt per Env-Var, die `npm run cloud:deploy` automatisch aus der lokalen `game.config.json` liest.
+Das Backend mergt beide Dateien beim Start. Für Cloud Run wird nur `game.config.json` ins Image kopiert — `adminPassword` kommt per Env-Var, die `npm run cloud:deploy` automatisch aus der lokalen `game.config.json` liest.
 
 ### `wlan/wlan-config.json`
 
@@ -289,7 +280,7 @@ Optionale WLAN-Daten für den `wlan:qr`-Script:
 
 ```bash
 cp wlan/wlan-config.example.json wlan/wlan-config.json
-npm run wlan:qr  # → wlan/wlan-qr.png
+node wlan/wlan-qr.mjs  # → wlan/wlan-qr.png
 ```
 
 
@@ -299,7 +290,7 @@ npm run wlan:qr  # → wlan/wlan-qr.png
 
 Lokale Dateien in `.data/`:
 - **Sessions**: `.data/sessions/<sessionId>.json`
-- **Assets**: `.data/assets/<sessionId>/avatars/`, `.data/assets/<sessionId>/collages/`
+- **Assets**: `.data/assets/<sessionId>/avatars/`, `.data/assets/<sessionId>/submissions/`
 
 Für Cloud: Repository-Pattern vorbereitet (`SessionRepository`, `AssetRepository`).
 
@@ -313,7 +304,7 @@ Für Cloud: Repository-Pattern vorbereitet (`SessionRepository`, `AssetRepositor
 │   │   └── src/
 │   │       ├── http/               # API-Routen (authPlugin, apiRoutes, editorApiRoutes, wsPlugin)
 │   │       ├── session/            # Session-Management, Player, Timer
-│   │       ├── game-modes/         # Sticker-Collage Engine
+│   │       ├── game-modes/         # Party Game Engine
 │   │       └── infra/              # Repository-Implementierungen
 │   └── frontend/                   # Angular SPA
 │       └── src/app/
@@ -349,4 +340,3 @@ Für Cloud: Repository-Pattern vorbereitet (`SessionRepository`, `AssetRepositor
 - **ZIP-Download**: JSZip
 - **Screenshots**: Playwright
 - **Monorepo**: npm Workspaces
-

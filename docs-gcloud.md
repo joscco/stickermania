@@ -251,6 +251,6 @@ wlan/
 Für eine robustere Cloud-Version (mehrere Instanzen, kein Datenverlust bei Restarts):
 
 - **Firestore** für Sessions und Spielzustand
-- **Cloud Storage** für Avatare und Collagen
+- **Cloud Storage** für Avatare und Einsendungen
 
 Das bestehende Repository-Pattern (`SessionRepository`, `AssetRepository`) ist dafür vorbereitet — es braucht nur neue Implementierungen.

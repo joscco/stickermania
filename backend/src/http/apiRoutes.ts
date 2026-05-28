@@ -113,9 +113,9 @@ export async function registerApiRoutes(
         }
 
         const sessionAssetsPath = path.resolve(backendConfig.dataRoot, "assets", request.params.id);
-        const result: Array<{type: "avatar" | "collage"; filename: string; publicUrl: string}> = [];
+        const result: Array<{type: "avatar" | "submission"; filename: string; publicUrl: string}> = [];
 
-        for (const subdir of ["avatars", "collages"] as const) {
+        for (const subdir of ["avatars", "submissions"] as const) {
             const dir = path.join(sessionAssetsPath, subdir);
             if (!fs.existsSync(dir)) {
                 continue;
@@ -125,7 +125,7 @@ export async function registerApiRoutes(
                     continue;
                 }
                 result.push({
-                    type: subdir === "avatars" ? "avatar" : "collage",
+                    type: subdir === "avatars" ? "avatar" : "submission",
                     filename,
                     publicUrl: `/api/assets/${request.params.id}/${subdir}/${filename}`,
                 });
@@ -135,17 +135,17 @@ export async function registerApiRoutes(
         return result;
     });
 
-    // ─── Collage image upload ───────────────────────────────────
+    // ─── Submission image upload ───────────────────────────────────
 
     app.post<{
         Params: {id: string};
-        Body: {playerId: string; collageId: string; imageDataUrl: string};
-    }>("/api/sessions/:id/collage-image", async (request, reply) => {
+        Body: {playerId: string; submissionId: string; imageDataUrl: string};
+    }>("/api/sessions/:id/submission-image", async (request, reply) => {
         const sessionId = request.params.id;
-        const {playerId, collageId, imageDataUrl} = request.body ?? {};
+        const {playerId, submissionId, imageDataUrl} = request.body ?? {};
 
-        if (!playerId || !collageId || !imageDataUrl) {
-            return reply.status(400).send({message: "Missing playerId, collageId, or imageDataUrl"});
+        if (!playerId || !submissionId || !imageDataUrl) {
+            return reply.status(400).send({message: "Missing playerId, submissionId, or imageDataUrl"});
         }
 
         const state = await sessionService.loadState(sessionId);
@@ -156,8 +156,8 @@ export async function registerApiRoutes(
         const playerName = state.players[playerId]?.name ?? "anonymous";
         const prompt = state.gameState.currentPrompt ?? "";
 
-        const saved = await assetRepository.saveCollage({sessionId, playerId, playerName, collageId, imageDataUrl, prompt});
-        await sessionService.updateCollageSnapshot(sessionId, collageId, playerId, saved.publicUrl);
+        const saved = await assetRepository.saveSubmissionImage({sessionId, playerId, playerName, submissionId, imageDataUrl, prompt});
+        await sessionService.updateSubmissionSnapshot(sessionId, submissionId, playerId, saved.publicUrl);
 
         return {ok: true, publicUrl: saved.publicUrl};
     });

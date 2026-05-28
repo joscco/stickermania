@@ -2,18 +2,18 @@ import {computed, inject, Injectable, signal} from '@angular/core';
 import {GameSessionStore} from '../../../core/challenge.store';
 import {WorldStore} from '../../../core/world.store';
 import {WebSocketService} from '../../../core/websocket.service';
-import {StickerPlayerService} from '../services/sticker-player.service';
+import {PartyPlayerService} from '../services/party-player.service';
 import {PlayerTimerService} from '../services/player-timer.service';
 import {PlayerScreen} from './player-screen.enum';
 import type {BuildingSkippedViewModel, BuildingSubmittedViewModel, BuildingViewModel, PlayerHeaderViewModel, ResultsViewModel, VotingDoneViewModel, VotingVariant, VotingViewModel,} from './player-view-models';
-import type {MinigameTask, OpenMinigameSubmission, StickerCollageVoteResult} from '@birthday/shared';
+import type {MinigameTask, OpenMinigameSubmission, RoundVoteResult} from '@birthday/shared';
 
 @Injectable()
 export class PlayerScreenDataService {
     private readonly sessionStore = inject(GameSessionStore);
     private readonly worldStore = inject(WorldStore);
     private readonly wsService = inject(WebSocketService);
-    private readonly stickerService = inject(StickerPlayerService);
+    private readonly partyService = inject(PartyPlayerService);
     private readonly timerService = inject(PlayerTimerService);
 
     public readonly isEditingName = signal(false);
@@ -42,17 +42,17 @@ export class PlayerScreenDataService {
         if (!this.isReady()) return PlayerScreen.CONNECTING;
         if (!this.hasAvatar()) return PlayerScreen.LOBBY_AVATAR;
 
-        const phase = this.worldStore.stickerCollageGameState()?.phaseState.phase ?? 'LOBBY';
+        const phase = this.worldStore.partyGameState()?.phaseState.phase ?? 'LOBBY';
         switch (phase) {
             case 'LOBBY':            return PlayerScreen.LOBBY_WAITING;
             case 'BUILDING': {
-                if (this.stickerService.hasSubmittedThisRound()) return PlayerScreen.BUILDING_SUBMITTED;
-                if (this.stickerService.hasSkippedThisRound()) return PlayerScreen.BUILDING_SKIPPED;
+                if (this.partyService.hasSubmittedThisRound()) return PlayerScreen.BUILDING_SUBMITTED;
+                if (this.partyService.hasSkippedThisRound()) return PlayerScreen.BUILDING_SKIPPED;
                 return PlayerScreen.BUILDING;
             }
             case 'VOTING': {
-                if (this.stickerService.myDoneVoting()) {
-                    if (this.stickerService.allVotingDone()) return PlayerScreen.VOTING_ALL_DONE;
+                if (this.partyService.myDoneVoting()) {
+                    if (this.partyService.allVotingDone()) return PlayerScreen.VOTING_ALL_DONE;
                     return PlayerScreen.VOTING_DONE;
                 }
                 return PlayerScreen.VOTING;
@@ -81,42 +81,42 @@ export class PlayerScreenDataService {
     readonly timerPercentLeft = computed(() => this.timerService.percentLeft());
     readonly timerTimeLeft = computed(() => this.timerService.timeLeft());
     readonly timerActive = computed(() => {
-        const phase = this.stickerService.phase();
+        const phase = this.partyService.phase();
         return phase === 'BUILDING' || phase === 'VOTING';
     });
     readonly showTimerNotifications = computed(() => {
-        return this.timerActive() && !this.stickerService.hasSubmittedThisRound() && !this.stickerService.hasSkippedThisRound();
+        return this.timerActive() && !this.partyService.hasSubmittedThisRound() && !this.partyService.hasSkippedThisRound();
     });
     readonly timerNotification = computed(() => this.timerService.notification());
     readonly timerTimeUp = computed(() => this.timerService.timeUp() && this.showTimerNotifications());
 
     public readonly votingVm = computed<VotingViewModel>(() => {
-        const gameState = this.stickerService.gameState();
+        const gameState = this.partyService.gameState();
         const votingState = gameState?.phaseState;
         const variant: VotingVariant = (() => {
             if (!votingState || votingState.phase !== 'VOTING') return 'active';
-            if (this.stickerService.allVotingDone()) return 'all-done';
-            if (this.stickerService.myDoneVoting()) return 'done';
+            if (this.partyService.allVotingDone()) return 'all-done';
+            if (this.partyService.myDoneVoting()) return 'done';
             return 'active';
         })();
 
         return {
             variant,
-            prompt: this.stickerService.currentPrompt(),
-            submissions: this.stickerService.currentRoundSubmissions(),
-            myVotes: this.stickerService.myVotes(),
-            votesRemaining: 1 - this.stickerService.myVotes().length,
+            prompt: this.partyService.currentPrompt(),
+            submissions: this.partyService.currentRoundSubmissions(),
+            myVotes: this.partyService.myVotes(),
+            votesRemaining: 1 - this.partyService.myVotes().length,
             players: this.worldStore.players(),
             myPlayerId: this.sessionStore.playerId() ?? '',
-            currentTask: this.stickerService.currentTask(),
-            minigameSubmissions: this.stickerService.currentRoundMinigameSubmissions(),
+            currentTask: this.partyService.currentTask(),
+            minigameSubmissions: this.partyService.currentRoundMinigameSubmissions(),
         };
     });
 
     public readonly buildingVm = computed<BuildingViewModel>(() => ({
-        roundIndex: this.stickerService.currentRoundIndex(),
-        prompt: this.stickerService.currentPrompt(),
-        task: this.stickerService.currentTask(),
+        roundIndex: this.partyService.currentRoundIndex(),
+        prompt: this.partyService.currentPrompt(),
+        task: this.partyService.currentTask(),
     }));
 
     public readonly lobbyWaitingVm = computed(() => ({
@@ -124,36 +124,36 @@ export class PlayerScreenDataService {
     }));
 
     public readonly buildingSubmittedVm = computed<BuildingSubmittedViewModel>(() => {
-        const gs = this.stickerService.gameState();
-        const ri = this.stickerService.currentRoundIndex();
-        const collageIds = new Set((gs?.submissions?.[ri] ?? []).map(s => s.playerId));
+        const gs = this.partyService.gameState();
+        const ri = this.partyService.currentRoundIndex();
+        const submissionIds = new Set((gs?.submissions?.[ri] ?? []).map(s => s.playerId));
         const minigameIds = new Set((gs?.minigameSubmissions?.[ri] ?? []).map(s => s.playerId));
         return {
-            allPlayersDone: this.stickerService.allPlayersDone(),
+            allPlayersDone: this.partyService.allPlayersDone(),
             players: this.worldStore.players(),
             roundParticipantIds: gs?.roundParticipantIds ?? [],
-            submittedPlayerIds: new Set([...collageIds, ...minigameIds]),
+            submittedPlayerIds: new Set([...submissionIds, ...minigameIds]),
         };
     });
 
     public readonly buildingSkippedVm = computed<BuildingSkippedViewModel>(() => {
-        const gs = this.stickerService.gameState();
-        const ri = this.stickerService.currentRoundIndex();
-        const collageIds = new Set((gs?.submissions?.[ri] ?? []).map(s => s.playerId));
+        const gs = this.partyService.gameState();
+        const ri = this.partyService.currentRoundIndex();
+        const submissionIds = new Set((gs?.submissions?.[ri] ?? []).map(s => s.playerId));
         const minigameIds = new Set((gs?.minigameSubmissions?.[ri] ?? []).map(s => s.playerId));
         return {
-            allPlayersDone: this.stickerService.allPlayersDone(),
+            allPlayersDone: this.partyService.allPlayersDone(),
             players: this.worldStore.players(),
             roundParticipantIds: gs?.roundParticipantIds ?? [],
-            submittedPlayerIds: new Set([...collageIds, ...minigameIds]),
+            submittedPlayerIds: new Set([...submissionIds, ...minigameIds]),
         };
     });
 
     public readonly votingDoneVm = computed<VotingDoneViewModel>(() => {
-        const gameState = this.stickerService.gameState();
+        const gameState = this.partyService.gameState();
         const vs = gameState?.phaseState;
         return {
-            allVotingDone: this.stickerService.allVotingDone(),
+            allVotingDone: this.partyService.allVotingDone(),
             players: this.worldStore.players(),
             roundParticipantIds: gameState?.roundParticipantIds ?? [],
             doneVotingIds: (vs?.phase === 'VOTING' ? vs.doneVotingIds : []),
@@ -161,22 +161,26 @@ export class PlayerScreenDataService {
     });
 
     public readonly resultsVm = computed<ResultsViewModel>(() => {
-        const stickerService = this.stickerService;
-        const winnerId = stickerService.winnerId();
-        const myResult = stickerService.lastVoteResults().find(r => r.playerId === (this.sessionStore.playerId() ?? ''));
-        const task = stickerService.currentTask();
+        const partyService = this.partyService;
+        const winnerId = partyService.winnerId();
+        const myResult = partyService.lastVoteResults().find(r => r.playerId === (this.sessionStore.playerId() ?? ''));
+        const task = partyService.currentTask();
         const myId = this.sessionStore.playerId() ?? '';
-        const minigames = stickerService.currentRoundMinigameSubmissions();
+        const minigames = partyService.currentRoundMinigameSubmissions();
+        const myMinigameSubmission = minigames.find(s => s.playerId === myId) ?? null;
 
         return {
-            myPlacement: stickerService.myPlacement(),
+            myPlacement: partyService.myPlacement(),
             myVoteCount: myResult?.voteCount ?? 0,
-            isWinner: stickerService.isWinner(),
-            isTiedWinner: stickerService.isTiedWinner(),
+            isWinner: partyService.isWinner(),
+            isTiedWinner: partyService.isTiedWinner(),
             winnerId,
             winnerName: winnerId ? (this.worldStore.players()[winnerId]?.name ?? 'Gewinner') : '',
-            lastVoteResults: stickerService.lastVoteResults(),
+            lastVoteResults: partyService.lastVoteResults(),
             currentTask: task,
+            myPlayerId: myId,
+            myMinigameSubmission,
+            myMinigameResult: myResult ?? null,
             resultSummary: computeResultSummary(task, minigames, myId, myResult),
         };
     });
@@ -186,7 +190,7 @@ function computeResultSummary(
     task: MinigameTask | null,
     submissions: OpenMinigameSubmission[],
     myId: string,
-    myResult: StickerCollageVoteResult | undefined,
+    myResult: RoundVoteResult | undefined,
 ): string {
     if (!task) return "Abstimmungsergebnis";
     const my = submissions.find(s => s.playerId === myId);

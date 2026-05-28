@@ -1,4 +1,4 @@
-import type {SessionPlayer, SessionState, StickerCollage, StickerCollageBuildingState, StickerCollageGameState, StickerCollageLobbyState, StickerCollageResultsState, StickerCollageVoteResult, StickerCollageVotingState,} from '@birthday/shared';
+import type {SessionPlayer, SessionState, RoundSubmission, PartyBuildingState, PartyGameState, PartyLobbyState, PartyResultsState, RoundVoteResult, PartyVotingState,} from '@birthday/shared';
 
 export const MOCK_PLAYERS: Record<string, SessionPlayer> = {
   'player-1': { id: 'player-1', name: 'Anna', avatarUrl: 'assets/png/example_avatar_player_1.png', avatarAssetPath: null, score: 120, joinedAt: 0, connected: true, isHost: true, teamId: null },
@@ -6,13 +6,13 @@ export const MOCK_PLAYERS: Record<string, SessionPlayer> = {
   'player-3': { id: 'player-3', name: 'Carl', avatarUrl: 'assets/png/example_avatar_player_3.png', avatarAssetPath: null, score: 60, joinedAt: 0, connected: true, isHost: false, teamId: null },
 };
 
-const MOCK_VOTE_RESULTS: StickerCollageVoteResult[] = [
-  { collageId: 'col-1', playerId: 'player-1', voteCount: 2, placement: 1 },
-  { collageId: 'col-2', playerId: 'player-2', voteCount: 1, placement: 2 },
-  { collageId: 'col-3', playerId: 'player-3', voteCount: 0, placement: 3 },
+const MOCK_VOTE_RESULTS: RoundVoteResult[] = [
+  { submissionId: 'col-1', playerId: 'player-1', voteCount: 2, placement: 1 },
+  { submissionId: 'col-2', playerId: 'player-2', voteCount: 1, placement: 2 },
+  { submissionId: 'col-3', playerId: 'player-3', voteCount: 0, placement: 3 },
 ];
 
-export const MOCK_SUBMISSIONS: StickerCollage[] = [
+export const MOCK_SUBMISSIONS: RoundSubmission[] = [
   {id: 'col-1', playerId: 'player-1', roundIndex: 0, placements: [], submittedAt: Date.now()},
   {id: 'col-2', playerId: 'player-2', roundIndex: 0, placements: [], submittedAt: Date.now()},
   {id: 'col-3', playerId: 'player-3', roundIndex: 0, placements: [], submittedAt: Date.now()},
@@ -20,13 +20,13 @@ export const MOCK_SUBMISSIONS: StickerCollage[] = [
 
 // ── Phase state builders ────────────────────────────────────────────────────
 
-export function lobbyPhase(): StickerCollageLobbyState {
+export function lobbyPhase(): PartyLobbyState {
   return { phase: 'LOBBY' };
 }
 
 export function buildingPhase(opts?: {
   skippedPlayerIds?: string[];
-}): StickerCollageBuildingState {
+}): PartyBuildingState {
   return {
     phase: 'BUILDING',
     roundEndsAt: Date.now() + 20_000,
@@ -37,7 +37,7 @@ export function buildingPhase(opts?: {
 export function votingPhase(opts?: {
   currentVotes?: Record<string, string[]>;
   doneVotingIds?: string[];
-}): StickerCollageVotingState {
+}): PartyVotingState {
   return {
     phase: 'VOTING',
     votingEndsAt: Date.now() + 120_000,
@@ -46,7 +46,7 @@ export function votingPhase(opts?: {
   };
 }
 
-export function resultsPhase(): StickerCollageResultsState {
+export function resultsPhase(): PartyResultsState {
   return {
     phase: 'RESULTS',
     resultsEndsAt: Date.now() + 60_000,
@@ -60,10 +60,10 @@ export function resultsPhase(): StickerCollageResultsState {
 // ── Game state builder ───────────────────────────────────────────────────────
 
 export function makeGameState(
-  phaseState: StickerCollageBuildingState | StickerCollageVotingState | StickerCollageResultsState | StickerCollageLobbyState,
-  overrides?: Partial<StickerCollageGameState>,
-): StickerCollageGameState {
-  const base: StickerCollageGameState = {
+  phaseState: PartyBuildingState | PartyVotingState | PartyResultsState | PartyLobbyState,
+  overrides?: Partial<PartyGameState>,
+): PartyGameState {
+  const base: PartyGameState = {
     currentRoundIndex: 0,
     currentPrompt: 'Das schönste Geburtstagsmonster',
     currentTask: null,
@@ -83,9 +83,9 @@ export function makeGameState(
 // ── Session state builder ────────────────────────────────────────────────────
 
 export function makeSessionState(
-  phaseState: StickerCollageBuildingState | StickerCollageVotingState | StickerCollageResultsState | StickerCollageLobbyState,
+  phaseState: PartyBuildingState | PartyVotingState | PartyResultsState | PartyLobbyState,
   players?: Record<string, SessionPlayer>,
-  gameStateOverrides?: Partial<StickerCollageGameState>,
+  gameStateOverrides?: Partial<PartyGameState>,
 ): SessionState {
   return {
     sessionId: 'mock-session',

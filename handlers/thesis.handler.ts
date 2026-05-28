@@ -1,4 +1,4 @@
-import type {ThesisTask, ThesisSubmission, StickerCollage, MinigameClientAction} from '../../contract';
+import type {ThesisTask, ThesisSubmission, RoundSubmission, MinigameClientAction} from '../../contract';
 import type {MinigameHandler} from '../types.js';
 import {minigameRegistry} from '../registry.js';
 import {buildResults} from '../utils.js';
@@ -36,8 +36,8 @@ const handler: MinigameHandler<ThesisTask, ThesisSubmission> = {
 
   requiresVoting: () => false,
 
-  evaluateSubmissions(submissions, collages) {
-    const collageMap = new Map(collages.map(c => [c.playerId, c]));
+  evaluateSubmissions(submissions, roundSubmissions) {
+    const submissionMap = new Map(roundSubmissions.map(c => [c.playerId, c]));
     const total = submissions.length;
     const agreedCount = submissions.filter(s => s.agreed).length;
     const actualPercent = total > 0 ? (agreedCount / total) * 100 : 50;
@@ -45,7 +45,7 @@ const handler: MinigameHandler<ThesisTask, ThesisSubmission> = {
     const scored = submissions.map(s => ({
       playerId: s.playerId,
       score: Math.abs(s.estimatedPercent - actualPercent),
-      collageId: collageMap.get(s.playerId)?.id ?? '',
+      submissionId: submissionMap.get(s.playerId)?.id ?? '',
     }));
     scored.sort((a, b) => a.score - b.score);
 

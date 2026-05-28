@@ -11,7 +11,7 @@ import {PlayerVotingComponent} from './scenes/voting/player-voting.component';
 import {PlayerVotingDoneComponent} from './scenes/voting/player-voting-done.component';
 import {PlayerResultsComponent} from './scenes/results/player-results.component';
 import {PlayerScreenDataService} from './player-screen-data.service';
-import {StickerPlayerService} from '../services/sticker-player.service';
+import {PartyPlayerService} from '../services/party-player.service';
 import {PlayerTimerService} from '../services/player-timer.service';
 import {PlayerMessageHandler} from '../services/player-message-handler.service';
 import {WebSocketService} from '../../../core/websocket.service';
@@ -52,7 +52,7 @@ import {AnimPresenceDirective} from '../../shared/animations/anim-on-init.direct
   providers: [
     PlayerMessageHandler,
     PlayerTimerService,
-    StickerPlayerService,
+    PartyPlayerService,
     PlayerScreenDataService,
   ],
   templateUrl: "./player.component.html",
@@ -80,7 +80,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     public readonly sessionStore: GameSessionStore,
     public readonly timer: PlayerTimerService,
     private readonly messageHandler: PlayerMessageHandler,
-    public readonly stickerService: StickerPlayerService,
+    public readonly partyService: PartyPlayerService,
     public readonly screenData: PlayerScreenDataService,
     public readonly audio: AudioService,
   ) {
@@ -167,16 +167,16 @@ export class PlayerComponent implements OnInit, OnDestroy {
 
   public onSubmitMinigame(event: MinigameSubmitEvent): void {
     this.audio.playAction();
-    this.stickerService.submitMinigame(event as import("@birthday/shared").MinigameClientAction);
+    this.partyService.submitMinigame(event as import("@birthday/shared").MinigameClientAction);
   }
 
   // ── Sound-wrapped actions ────────────────────────────────
 
-  public startGameWithSound(): void { this.audio.playClick(); this.stickerService.startGame(); }
-  public skipRoundWithSound(): void { this.audio.playClick(); this.stickerService.skipRound(); }
-  public endRoundEarlyWithSound(): void { this.audio.playClick(); this.stickerService.endRoundEarly(); }
-  public castVoteWithSound(collageId: string): void { this.audio.playClick(); this.stickerService.castVote(collageId); }
-  public doneVotingWithSound(): void { this.audio.playClick(); this.stickerService.doneVoting(); }
-  public endVotingEarlyWithSound(): void { this.audio.playClick(); this.stickerService.endVotingEarly(); }
-  public readyToAdvanceWithSound(): void { this.audio.playAction(); this.stickerService.readyToAdvance(); }
+  public startGameWithSound(): void { this.audio.playClick(); this.partyService.startGame(); }
+  public skipRoundWithSound(): void { this.audio.playClick(); this.partyService.skipRound(); }
+  public endRoundEarlyWithSound(): void { this.audio.playClick(); this.partyService.endRoundEarly(); }
+  public castVoteWithSound(submissionId: string): void { this.audio.playClick(); this.partyService.castVote(submissionId); }
+  public doneVotingWithSound(): void { this.audio.playClick(); this.partyService.doneVoting(); }
+  public endVotingEarlyWithSound(): void { this.audio.playClick(); this.partyService.endVotingEarly(); }
+  public readyToAdvanceWithSound(): void { this.audio.playAction(); this.partyService.readyToAdvance(); }
 }

@@ -1,4 +1,4 @@
-import type {TimerStopTask, TimerStopSubmission, StickerCollage, MinigameClientAction} from '../../contract';
+import type {TimerStopTask, TimerStopSubmission, RoundSubmission, MinigameClientAction} from '../../contract';
 import type {MinigameHandler} from '../types.js';
 import {minigameRegistry} from '../registry.js';
 import {buildResults} from '../utils.js';
@@ -28,14 +28,14 @@ const handler: MinigameHandler<TimerStopTask, TimerStopSubmission> = {
 
   requiresVoting: () => false,
 
-  evaluateSubmissions(submissions, collages, task) {
-    const collageMap = new Map(collages.map(c => [c.playerId, c]));
+  evaluateSubmissions(submissions, roundSubmissions, task) {
+    const submissionMap = new Map(roundSubmissions.map(c => [c.playerId, c]));
     const target = task.targetSec;
 
     const scored = submissions.map(s => ({
       playerId: s.playerId,
       score: Math.abs(s.elapsedSec - target),
-      collageId: collageMap.get(s.playerId)?.id ?? '',
+      submissionId: submissionMap.get(s.playerId)?.id ?? '',
     }));
     scored.sort((a, b) => a.score - b.score);
 

@@ -7,7 +7,7 @@ import type {BoardHeaderViewModel} from './board-view-models';
 export class BoardScreenDataService {
     private readonly worldStore = inject(WorldStore);
 
-    readonly gameState = computed(() => this.worldStore.stickerCollageGameState());
+    readonly gameState = computed(() => this.worldStore.partyGameState());
     readonly basePhase = computed(() => this.gameState()?.phaseState.phase ?? 'LOBBY');
     readonly players = computed(() => this.worldStore.players());
     readonly connectedPlayers = computed<SessionPlayer[]>(() =>
@@ -18,7 +18,7 @@ export class BoardScreenDataService {
     readonly isSetupDrawerOpen = signal(false);
 
     readonly currentTimerEndsAt = computed(() => {
-        const ps = this.worldStore.stickerCollageGameState()?.phaseState;
+        const ps = this.worldStore.partyGameState()?.phaseState;
         if (!ps) {
           return 0;
         }
@@ -70,7 +70,7 @@ export class BoardScreenDataService {
             }
 
             if (endsAt !== lastEndsAt) {
-                const gameState = this.worldStore.stickerCollageGameState();
+                const gameState = this.worldStore.partyGameState();
                 const phase = gameState?.phaseState.phase;
                 let totalSec = 0;
                 if (phase === 'BUILDING') {

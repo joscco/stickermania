@@ -3,7 +3,7 @@ import type {
   MinigameHandler,
   MinigamePlayerResult,
   OpenMinigameSubmission,
-  StickerCollageVoteResult,
+  RoundVoteResult,
   TimerStopTask,
 } from "@birthday/shared";
 
@@ -25,7 +25,7 @@ type TimerStopSubmission = OpenMinigameSubmission & {
   };
 };
 
-class TimerStopHandler implements MinigameHandler<TimerStopTask, TimerStopSubmission> {
+export class TimerStopHandler implements MinigameHandler<TimerStopTask, TimerStopSubmission> {
   public readonly type = "timer-stop";
 
   public requiresVoting(): boolean {
@@ -85,10 +85,10 @@ class TimerStopHandler implements MinigameHandler<TimerStopTask, TimerStopSubmis
       previousPlacement = placement;
     });
 
-    const voteResults: StickerCollageVoteResult[] = ranked.map((entry) => {
+    const voteResults: RoundVoteResult[] = ranked.map((entry) => {
       const result = resultsByPlayerId[entry.playerId];
       return {
-        collageId: `minigame_${entry.playerId}_${args.submissions.find(s => s.playerId === entry.playerId)?.roundIndex ?? 0}`,
+        submissionId: `minigame_${entry.playerId}_${args.submissions.find(s => s.playerId === entry.playerId)?.roundIndex ?? 0}`,
         playerId: entry.playerId,
         voteCount: 0,
         placement: result?.placement ?? 0,
@@ -118,13 +118,4 @@ class TimerStopHandler implements MinigameHandler<TimerStopTask, TimerStopSubmis
 
     return `${result.stoppedAtSeconds.toFixed(2)}s gestoppt, ${result.deviationSeconds.toFixed(2)}s neben dem Ziel.`;
   }
-}
-
-const handlers = new Map<string, MinigameHandler>([
-  ["timer-stop", new TimerStopHandler() as MinigameHandler],
-]);
-
-export function getMinigameHandler(type: string | undefined): MinigameHandler | null {
-  if (!type) return null;
-  return handlers.get(type) ?? null;
 }

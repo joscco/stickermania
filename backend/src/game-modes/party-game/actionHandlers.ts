@@ -1,21 +1,21 @@
-import type {GameConfig, SessionState, StickerCollage, StickerCollageBuildingState, StickerCollageGameState, StickerCollageResultsState, StickerCollageServerEvent, StickerCollageVotingState, MinigameClientAction, MinigameConfig, OpenMinigameSubmission,} from "@birthday/shared";
+import type {GameConfig, SessionState, RoundSubmission, PartyBuildingState, PartyGameState, PartyResultsState, PartyGameServerEvent, PartyVotingState, MinigameClientAction, MinigameConfig, OpenMinigameSubmission,} from "@birthday/shared";
 import {shouldSkipVoting, transitionToBuilding, transitionToNextRound, transitionToResults, transitionToVoting} from "./roundManager.js";
-import {getMinigameHandler} from "./minigameHandlers.js";
+import {getMinigameHandler} from "../../../../minigames/registry.js";
 
 // ─── Helpers ────────────────────────────────────────────────────
 
-type HandlerResult = { stateChanged: boolean; events: StickerCollageServerEvent[] };
+type HandlerResult = { stateChanged: boolean; events: PartyGameServerEvent[] };
 const noChange: HandlerResult = {stateChanged: false, events: []};
 
-function asBuildingPhase(gameState: StickerCollageGameState): StickerCollageBuildingState | null {
+function asBuildingPhase(gameState: PartyGameState): PartyBuildingState | null {
     return gameState.phaseState.phase === "BUILDING" ? gameState.phaseState : null;
 }
 
-function asVotingPhase(gameState: StickerCollageGameState): StickerCollageVotingState | null {
+function asVotingPhase(gameState: PartyGameState): PartyVotingState | null {
     return gameState.phaseState.phase === "VOTING" ? gameState.phaseState : null;
 }
 
-function asResultsPhase(gameState: StickerCollageGameState): StickerCollageResultsState | null {
+function asResultsPhase(gameState: PartyGameState): PartyResultsState | null {
     return gameState.phaseState.phase === "RESULTS" ? gameState.phaseState : null;
 }
 
@@ -59,7 +59,7 @@ export function startGame(
 // ─── BUILDING ───────────────────────────────────────────────────
 
 /**
- * "skip-round": mark the player as skipping (no collage this round).
+ * "skip-round": mark the player as skipping (no submission this round).
  */
 export function skipRound(
     state: SessionState,
@@ -107,20 +107,20 @@ export function submitMinigame(
     gameState.minigameSubmissions[currentRoundIndex] = existing.filter(s => s.playerId !== playerId);
     gameState.minigameSubmissions[currentRoundIndex].push(submission as OpenMinigameSubmission);
 
-    const existingCollages = gameState.submissions[currentRoundIndex] ?? [];
-    gameState.submissions[currentRoundIndex] = existingCollages.filter((sub: StickerCollage) => sub.playerId !== playerId);
-    const collageId = `minigame_${playerId}_${currentRoundIndex}`;
+    const existingSubmissions = gameState.submissions[currentRoundIndex] ?? [];
+    gameState.submissions[currentRoundIndex] = existingSubmissions.filter((sub: RoundSubmission) => sub.playerId !== playerId);
+    const submissionId = `minigame_${playerId}_${currentRoundIndex}`;
 
-    const placeholderCollage: StickerCollage = {
-        id: collageId,
+    const placeholderSubmission: RoundSubmission = {
+        id: submissionId,
         playerId,
         roundIndex: currentRoundIndex,
         placements: [],
         submittedAt: now,
     };
-    gameState.submissions[currentRoundIndex].push(placeholderCollage);
+    gameState.submissions[currentRoundIndex].push(placeholderSubmission);
 
-    return {stateChanged: true, events: [{type: "collage-submitted", playerId, collageId}]};
+    return {stateChanged: true, events: [{type: "submission-submitted", playerId, submissionId}]};
 }
 
 /**
@@ -159,12 +159,12 @@ export function endBuildingPhaseEarly(
 // ─── VOTING ─────────────────────────────────────────────────────
 
 /**
- * "cast-vote": vote for a collage.
+ * "cast-vote": vote for a submission.
  */
 export function castVote(
     state: SessionState,
     playerId: string,
-    collageId: string,
+    submissionId: string,
     config: GameConfig,
 ): HandlerResult {
     const {gameState} = state;
@@ -174,28 +174,28 @@ export function castVote(
     }
 
     const roundSubmissions = gameState.submissions[gameState.currentRoundIndex] ?? [];
-    const targetCollage = roundSubmissions.find((sub: StickerCollage) => sub.id === collageId);
-    if (!targetCollage || targetCollage.playerId === playerId) {
+    const targetSubmission = roundSubmissions.find((sub: RoundSubmission) => sub.id === submissionId);
+    if (!targetSubmission || targetSubmission.playerId === playerId) {
         return noChange;
     }
 
     const myVotes = votingPhase.currentVotes[playerId] ?? [];
 
-    // Toggle: clicking an already-voted collage removes the vote
-    if (myVotes.includes(collageId)) {
-        votingPhase.currentVotes[playerId] = myVotes.filter(v => v !== collageId);
-        return {stateChanged: true, events: [{type: "vote-unregistered", voterId: playerId, collageId}]};
+    // Toggle: clicking an already-voted submission removes the vote
+    if (myVotes.includes(submissionId)) {
+        votingPhase.currentVotes[playerId] = myVotes.filter(v => v !== submissionId);
+        return {stateChanged: true, events: [{type: "vote-unregistered", voterId: playerId, submissionId}]};
     }
 
     // At capacity: remove the oldest vote before adding the new one
     if (myVotes.length >= 1) {
-        votingPhase.currentVotes[playerId] = [...myVotes.slice(1), collageId];
-        return {stateChanged: true, events: [{type: "vote-registered", voterId: playerId, collageId}]};
+        votingPhase.currentVotes[playerId] = [...myVotes.slice(1), submissionId];
+        return {stateChanged: true, events: [{type: "vote-registered", voterId: playerId, submissionId}]};
     }
 
     // Add the new vote
-    votingPhase.currentVotes[playerId] = [...myVotes, collageId];
-    return {stateChanged: true, events: [{type: "vote-registered", voterId: playerId, collageId}]};
+    votingPhase.currentVotes[playerId] = [...myVotes, submissionId];
+    return {stateChanged: true, events: [{type: "vote-registered", voterId: playerId, submissionId}]};
 }
 
 /**

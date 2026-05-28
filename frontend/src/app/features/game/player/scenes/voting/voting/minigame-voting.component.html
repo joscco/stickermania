@@ -8,7 +8,7 @@
 
 @if (taskType() === 'drawing') {
   <!-- Drawing voting: show ONE drawing at a time with extra task options -->
-  @for (entry of entries(); track entry.collageId) {
+  @for (entry of entries(); track entry.submissionId) {
     <div class="px-4 pb-4">
       @if (entry.snapshotUrl) {
         <img [src]="entry.snapshotUrl" class="w-full aspect-square object-contain rounded-xl bg-neutral-50 mb-3" />
@@ -24,12 +24,12 @@
           @for (t of entry.extraTasks; track t) {
             <button
               class="text-sm px-4 py-2 rounded-xl border-2 font-semibold transition-all active:scale-95"
-              [class.bg-black]="getGuess(entry.collageId) === t"
-              [class.text-white]="getGuess(entry.collageId) === t"
-              [class.border-black]="getGuess(entry.collageId) === t"
-              [class.border-neutral-200]="getGuess(entry.collageId) !== t"
-              [class.bg-white]="getGuess(entry.collageId) !== t"
-              (click)="guessExtraTask(entry.collageId, t)"
+              [class.bg-black]="getGuess(entry.submissionId) === t"
+              [class.text-white]="getGuess(entry.submissionId) === t"
+              [class.border-black]="getGuess(entry.submissionId) === t"
+              [class.border-neutral-200]="getGuess(entry.submissionId) !== t"
+              [class.bg-white]="getGuess(entry.submissionId) !== t"
+              (click)="guessExtraTask(entry.submissionId, t)"
             >{{ t }}</button>
           }
         </div>
@@ -39,16 +39,16 @@
 } @else if (taskType() === 'text-answer') {
   <!-- Text-answer voting: show all answers side by side -->
   <div class="grid grid-cols-2 gap-3 px-4 overflow-y-auto">
-    @for (entry of entries(); track entry.collageId) {
+    @for (entry of entries(); track entry.submissionId) {
       <button
         class="flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all active:scale-95"
-        [class.border-black]="myVotes().includes(entry.collageId)"
-        [class.border-neutral-200]="!myVotes().includes(entry.collageId)"
-        (click)="vote(entry.collageId)"
+        [class.border-black]="myVotes().includes(entry.submissionId)"
+        [class.border-neutral-200]="!myVotes().includes(entry.submissionId)"
+        (click)="vote(entry.submissionId)"
       >
         <span class="text-lg font-bold text-neutral-900 text-center">{{ entry.answer }}</span>
         <span class="text-xs text-neutral-500">{{ entry.playerName }}</span>
-        @if (myVotes().includes(entry.collageId)) {
+        @if (myVotes().includes(entry.submissionId)) {
           <span class="text-2xl">★</span>
         }
       </button>

@@ -1,4 +1,4 @@
-import type {TextAnswerTask, TextAnswerSubmission, StickerCollage, MinigameClientAction} from '../../contract';
+import type {TextAnswerTask, TextAnswerSubmission, RoundSubmission, MinigameClientAction} from '../../contract';
 import type {MinigameHandler} from '../types.js';
 import {minigameRegistry} from '../registry.js';
 import {buildResults} from '../utils.js';

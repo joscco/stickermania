@@ -3,11 +3,11 @@ import type {ConnectedClientSession} from "../session/sessionRuntimeTypes.js";
 
 export interface GameActionResult {
     stateChanged: boolean;
-    emittedEvents: import("@birthday/shared").StickerCollageServerEvent[];
+    emittedEvents: import("@birthday/shared").PartyGameServerEvent[];
 }
 
 export interface GameEngine {
-    createInitialState(): import("@birthday/shared").StickerCollageGameState;
+    createInitialState(): import("@birthday/shared").PartyGameState;
 
     onPlayerJoined(args: {
         sessionState: SessionState;

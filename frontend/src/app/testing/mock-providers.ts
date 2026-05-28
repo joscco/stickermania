@@ -1,5 +1,5 @@
 import {computed, inject, Injectable, signal} from '@angular/core';
-import type {ChoiceTask, DrawingTask, MinigameTask, NumberTask, SessionState, ShapeSplitTask, StickerCollage, StickerCollageBuildingState, StickerCollageGameState, StickerCollageResultsState, StickerCollageVotingState, StickerPlaceTask, TimerStopTask,} from '@birthday/shared';
+import type {ChoiceTask, DrawingTask, MinigameTask, NumberTask, SessionState, ShapeSplitTask, RoundSubmission, PartyBuildingState, PartyGameState, PartyResultsState, PartyVotingState, StickerPlaceTask, TimerStopTask,} from '@birthday/shared';
 import {buildingPhase, lobbyPhase, makeSessionState, MOCK_SUBMISSIONS, resultsPhase, votingPhase} from './mock-data';
 import {WorldStore} from '../core/world.store';
 import {GameSessionStore} from '../core/challenge.store';
@@ -9,7 +9,7 @@ export class MockWorldStore {
   readonly sessionState = signal<SessionState | null>(makeSessionState(lobbyPhase()));
   readonly lastError = signal<string | null>(null);
   readonly players = computed(() => this.sessionState()?.players ?? {});
-  readonly stickerCollageGameState = computed(() => this.sessionState()?.gameState ?? null);
+  readonly partyGameState = computed(() => this.sessionState()?.gameState ?? null);
   setSessionState(state: SessionState) { this.sessionState.set(state); this.lastError.set(null); }
   clearSessionState() { this.sessionState.set(null); }
 }
@@ -20,7 +20,7 @@ export class MockGameSessionStore {
   readonly playerId = signal('player-1');
   readonly clientId = signal('mock-client');
   readonly playerName = signal('Anna');
-  readonly currentMode = signal<'LOBBY' | 'STICKER_COLLAGE' | 'IDLE'>('STICKER_COLLAGE');
+  readonly currentMode = signal<'LOBBY' | 'PARTY_GAME' | 'IDLE'>('PARTY_GAME');
   readonly feedback = signal<{text: string; type: 'success' | 'error'} | null>(null);
   setSession(id: string) { this.sessionId.set(id); }
   setJoined(args: {sessionId: string; playerId: string; clientId: string}) {
@@ -28,7 +28,7 @@ export class MockGameSessionStore {
     this.playerId.set(args.playerId);
     this.clientId.set(args.clientId);
   }
-  clearTask(nextMode: 'LOBBY' | 'STICKER_COLLAGE' | 'IDLE' = 'IDLE') { this.currentMode.set(nextMode); }
+  clearTask(nextMode: 'LOBBY' | 'PARTY_GAME' | 'IDLE' = 'IDLE') { this.currentMode.set(nextMode); }
   showFeedback(text: string, type: 'success' | 'error') { this.feedback.set({text, type}); }
 }
 
@@ -45,25 +45,25 @@ export class MockWebSocketService {
 }
 
 @Injectable({providedIn: 'root'})
-export class MockStickerPlayerService {
+export class MockPartyPlayerService {
   private readonly worldStore = inject(WorldStore);
   private readonly sessionStore = inject(GameSessionStore);
 
-  readonly gameState = computed<StickerCollageGameState | null>(() =>
-    this.worldStore.stickerCollageGameState()
+  readonly gameState = computed<PartyGameState | null>(() =>
+    this.worldStore.partyGameState()
   );
 
-  private readonly buildingState = computed<StickerCollageBuildingState | null>(() => {
+  private readonly buildingState = computed<PartyBuildingState | null>(() => {
     const ps = this.gameState()?.phaseState;
-    return ps?.phase === 'BUILDING' ? ps as StickerCollageBuildingState : null;
+    return ps?.phase === 'BUILDING' ? ps as PartyBuildingState : null;
   });
-  private readonly votingState = computed<StickerCollageVotingState | null>(() => {
+  private readonly votingState = computed<PartyVotingState | null>(() => {
     const ps = this.gameState()?.phaseState;
-    return ps?.phase === 'VOTING' ? ps as StickerCollageVotingState : null;
+    return ps?.phase === 'VOTING' ? ps as PartyVotingState : null;
   });
-  private readonly resultsState = computed<StickerCollageResultsState | null>(() => {
+  private readonly resultsState = computed<PartyResultsState | null>(() => {
     const ps = this.gameState()?.phaseState;
-    return ps?.phase === 'RESULTS' ? ps as StickerCollageResultsState : null;
+    return ps?.phase === 'RESULTS' ? ps as PartyResultsState : null;
   });
 
   readonly currentPrompt = computed(() => this.gameState()?.currentPrompt ?? '');
@@ -74,9 +74,9 @@ export class MockStickerPlayerService {
     const playerId = this.sessionStore.playerId();
     const ms = this.gameState();
     if (!playerId || !ms) return false;
-    const collages = (ms.submissions[ms.currentRoundIndex] ?? []).some(s => s.playerId === playerId);
+    const submissions = (ms.submissions[ms.currentRoundIndex] ?? []).some(s => s.playerId === playerId);
     const minigames = (ms.minigameSubmissions[ms.currentRoundIndex] ?? []).some(s => s.playerId === playerId);
-    return collages || minigames;
+    return submissions || minigames;
   });
   readonly hasSkippedThisRound = computed(() => {
     const playerId = this.sessionStore.playerId();
@@ -95,7 +95,7 @@ export class MockStickerPlayerService {
     const skippedIds = new Set(ps.skippedPlayerIds);
     return activeIds.every(id => submittedIds.has(id) || minigameIds.has(id) || skippedIds.has(id));
   });
-  readonly currentRoundSubmissions = computed<StickerCollage[]>(() => {
+  readonly currentRoundSubmissions = computed<RoundSubmission[]>(() => {
     const ms = this.gameState();
     if (!ms) return [];
     return ms.submissions[ms.currentRoundIndex] ?? [];
@@ -139,7 +139,7 @@ export class MockStickerPlayerService {
     return myResult?.placement ?? null;
   });
   skipRound() {}
-  castVote(_collageId: string) {}
+  castVote(_submissionId: string) {}
   doneVoting() {}
   readyToAdvance() {}
   startGame() {}
@@ -162,7 +162,7 @@ export const MOCK_TASKS: Record<string, MinigameTask> = {
 };
 
 export function makeMockSessionState(phase: MockPhase, taskKey?: keyof typeof MOCK_TASKS, customTask?: MinigameTask): SessionState {
-  const submissions = {0: MOCK_SUBMISSIONS} as Record<number, StickerCollage[]>;
+  const submissions = {0: MOCK_SUBMISSIONS} as Record<number, RoundSubmission[]>;
   const task = customTask ?? (taskKey ? MOCK_TASKS[taskKey] : null);
   switch (phase) {
     case 'lobby':

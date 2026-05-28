@@ -1,6 +1,6 @@
 import {Component, computed, input, output, signal, ElementRef, AfterViewInit, OnDestroy, ViewChild} from "@angular/core";
 import {CommonModule} from "@angular/common";
-import type {StickerCollageGameState, StickerCollage} from "@birthday/shared";
+import type {PartyGameState, RoundSubmission} from "@birthday/shared";
 import {AnimOnInitDirective} from '../../../../shared/animations/anim-on-init.directive';
 import {SvgComponent} from '../../../../shared/svg/svg.component';
 import {RoundInfoComponent} from '../../../../shared/round-info/round-info.component';
@@ -17,7 +17,7 @@ const STRIP_PAD  = 32;
     styleUrl: "./board-voting-scene.component.css",
 })
 export class BoardVotingSceneComponent implements AfterViewInit, OnDestroy {
-    public readonly gameState = input<StickerCollageGameState | null>(null);
+    public readonly gameState = input<PartyGameState | null>(null);
     public readonly endVotingEarly = output<void>();
 
     @ViewChild("strip") stripEl!: ElementRef<HTMLDivElement>;
@@ -25,7 +25,7 @@ export class BoardVotingSceneComponent implements AfterViewInit, OnDestroy {
     private readonly stripWidth = signal(0);
     private resizeObserver: ResizeObserver | null = null;
 
-    public readonly submissions = computed<StickerCollage[]>(() => {
+    public readonly submissions = computed<RoundSubmission[]>(() => {
         const ms = this.gameState();
         if (!ms) return [];
         return ms.submissions[ms.currentRoundIndex] ?? [];

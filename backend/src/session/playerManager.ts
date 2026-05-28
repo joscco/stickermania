@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import type {ClientKind, SessionPlayer, SessionState, StickerCollageServerEvent} from "@birthday/shared";
+import type {ClientKind, SessionPlayer, SessionState, PartyGameServerEvent} from "@birthday/shared";
 import type {AssetRepository} from "../infra/assetRepository.js";
 import type {GameEngineRegistry} from "../game-modes/gameModeRegistry.js";
 import type {ConnectedClientSession, RuntimeEntry} from "./sessionRuntimeTypes.js";
@@ -134,7 +134,7 @@ export class PlayerManager {
             player.avatarUrl = savedAsset.publicUrl;
             player.avatarAssetPath = savedAsset.assetPath;
 
-            let gameEvents: StickerCollageServerEvent[] = [];
+            let gameEvents: PartyGameServerEvent[] = [];
             if (player.name.trim() && player.avatarUrl) {
                 const runtime = this.runtimes.get(sessionId);
                 const connectedClient = runtime

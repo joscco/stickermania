@@ -1,5 +1,5 @@
 import {computed, Injectable, signal} from "@angular/core";
-import type {SessionPlayer, SessionState, StickerCollageGameState} from "@birthday/shared";
+import type {SessionPlayer, SessionState, PartyGameState} from "@birthday/shared";
 
 @Injectable({ providedIn: "root" })
 export class WorldStore {
@@ -8,7 +8,7 @@ export class WorldStore {
   public readonly lastError = signal<string | null>(null);
   public readonly players = computed<Record<string, SessionPlayer>>(() => this.sessionState()?.players ?? {});
 
-  public readonly stickerCollageGameState = computed<StickerCollageGameState | null>(() => {
+  public readonly partyGameState = computed<PartyGameState | null>(() => {
     const sessionState = this.sessionState();
 
     if (!sessionState) {

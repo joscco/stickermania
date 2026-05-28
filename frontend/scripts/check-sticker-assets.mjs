@@ -57,14 +57,14 @@ function loadJson(path) {
 
 const publicCfg  = loadJson(PUBLIC_CONFIG);
 const privateCfg = loadJson(PRIVATE_CONFIG);
-// Deep-merge: stickerCollage from public is base, private only overrides scalar values
-const mergedStickerCollage = {
-  ...(publicCfg?.stickerCollage ?? {}),
-  ...(privateCfg?.stickerCollage ?? {}),
+// Deep-merge: game from public is base, private only overrides scalar values
+const mergedGame = {
+  ...(publicCfg?.game ?? {}),
+  ...(privateCfg?.game ?? {}),
   // Keep catalog from public if private doesn't define one
-  catalog: privateCfg?.stickerCollage?.catalog ?? publicCfg?.stickerCollage?.catalog,
+  catalog: privateCfg?.game?.catalog ?? publicCfg?.game?.catalog,
 };
-const catalogCfg = mergedStickerCollage?.catalog;
+const catalogCfg = mergedGame?.catalog;
 
 // Explicit catalog of pack iconIds (declared here so the check is declarative)
 const catalogPackIconIds = [];
@@ -79,7 +79,7 @@ if (catalogCfg?.packs) {
     }
   }
 } else {
-  console.warn(`⚠  No catalog.packs found in game.config.public.json\n`);
+  console.warn(`⚠  No catalog.packs found in game.config.json\n`);
 }
 
 // ── 3. Scan HTML templates for <use href="assets/sprite.svg#…"> ──────────────

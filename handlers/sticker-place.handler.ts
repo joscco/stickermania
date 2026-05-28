@@ -1,4 +1,4 @@
-import type {StickerPlaceTask, StickerPlaceSubmission, StickerCollage, MinigameClientAction, StickerPlaceGoal} from '../../contract';
+import type {StickerPlaceTask, StickerPlaceSubmission, RoundSubmission, MinigameClientAction, StickerPlaceGoal} from '../../contract';
 import type {MinigameHandler} from '../types.js';
 import {minigameRegistry} from '../registry.js';
 import {buildResults} from '../utils.js';
@@ -43,8 +43,8 @@ const handler: MinigameHandler<StickerPlaceTask, StickerPlaceSubmission> = {
 
   requiresVoting: () => false,
 
-  evaluateSubmissions(submissions, collages, task) {
-    const collageMap = new Map(collages.map(c => [c.playerId, c]));
+  evaluateSubmissions(submissions, roundSubmissions, task) {
+    const submissionMap = new Map(roundSubmissions.map(c => [c.playerId, c]));
     const goal: StickerPlaceGoal | undefined = (task as any).goal;
     const furthest = goal === 'furthest-from-average';
 
@@ -69,7 +69,7 @@ const handler: MinigameHandler<StickerPlaceTask, StickerPlaceSubmission> = {
     const scored = Array.from(playerScores).map(([playerId, score]) => ({
       playerId,
       score,
-      collageId: collageMap.get(playerId)?.id ?? '',
+      submissionId: submissionMap.get(playerId)?.id ?? '',
     }));
     scored.sort((a, b) => furthest ? b.score - a.score : a.score - b.score);
 

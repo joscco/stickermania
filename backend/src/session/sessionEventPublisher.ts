@@ -1,4 +1,4 @@
-import type {GameServerEnvelope, SessionState, StickerCollageServerEvent} from "@birthday/shared";
+import type {GameServerEnvelope, SessionState, PartyGameServerEvent} from "@birthday/shared";
 
 interface SessionServiceEvents {
     onSessionStateChanged?: (sessionId: string, state: SessionState) => void | Promise<void>;
@@ -30,7 +30,7 @@ export class SessionEventPublisher {
         }
     }
 
-    public async publishGameEvents(sessionId: string, events: StickerCollageServerEvent[]): Promise<void> {
+    public async publishGameEvents(sessionId: string, events: PartyGameServerEvent[]): Promise<void> {
         if (!this.callbacks.onSessionGameEvents) {
             return;
         }

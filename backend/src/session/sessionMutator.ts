@@ -1,4 +1,4 @@
-import type {SessionState, StickerCollageServerEvent} from "@birthday/shared";
+import type {SessionState, PartyGameServerEvent} from "@birthday/shared";
 import type {SessionRepository} from "../infra/sessionRepository.js";
 import type {SessionEventPublisher} from "./sessionEventPublisher.js";
 import {SessionLock} from "./sessionLock.js";
@@ -13,7 +13,7 @@ import {SessionLock} from "./sessionLock.js";
  */
 interface MutationResult<TExtra = void> {
     stateChanged: boolean;
-    gameEvents?: StickerCollageServerEvent[];
+    gameEvents?: PartyGameServerEvent[];
     extra: TExtra;
 }
 

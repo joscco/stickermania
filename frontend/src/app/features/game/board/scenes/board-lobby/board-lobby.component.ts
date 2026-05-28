@@ -86,7 +86,7 @@ export class BoardLobbyComponent implements OnInit {
       await Promise.all(assets.map(async (asset) => {
         const response = await fetch(asset.publicUrl);
         const blob = await response.blob();
-        const folder = asset.type === "avatar" ? "avatare" : "collagen";
+        const folder = asset.type === "avatar" ? "avatare" : "einsendungen";
         zip.file(`${folder}/${asset.filename}`, blob);
       }));
 

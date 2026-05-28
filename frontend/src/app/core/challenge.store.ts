@@ -1,6 +1,6 @@
 import { Injectable, signal } from "@angular/core";
 
-type PlayerUiMode = "LOBBY" | "STICKER_COLLAGE" | "IDLE";
+type PlayerUiMode = "LOBBY" | "PARTY_GAME" | "IDLE";
 
 @Injectable({ providedIn: "root" })
 export class GameSessionStore {

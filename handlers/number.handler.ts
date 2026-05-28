@@ -1,4 +1,4 @@
-import type {NumberTask, NumberSubmission, StickerCollage, MinigameClientAction} from '../../contract';
+import type {NumberTask, NumberSubmission, RoundSubmission, MinigameClientAction} from '../../contract';
 import type {MinigameHandler} from '../types.js';
 import {minigameRegistry} from '../registry.js';
 import {buildResults} from '../utils.js';
@@ -30,15 +30,15 @@ const handler: MinigameHandler<NumberTask, NumberSubmission> = {
 
   requiresVoting: () => false,
 
-  evaluateSubmissions(submissions, collages) {
-    const collageMap = new Map(collages.map(c => [c.playerId, c]));
+  evaluateSubmissions(submissions, roundSubmissions) {
+    const submissionMap = new Map(roundSubmissions.map(c => [c.playerId, c]));
     const values = submissions.map(s => s.value);
     const avg = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
 
     const scored = submissions.map(s => ({
       playerId: s.playerId,
       score: Math.abs(s.value - avg),
-      collageId: collageMap.get(s.playerId)?.id ?? '',
+      submissionId: submissionMap.get(s.playerId)?.id ?? '',
     }));
     scored.sort((a, b) => a.score - b.score);
 

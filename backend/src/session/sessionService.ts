@@ -1,8 +1,8 @@
 import crypto from "node:crypto";
-import type {ClientKind, ClientToServerMessage, GameConfig, GameServerEnvelope, SessionInfo, SessionPlayer, SessionState, StickerCollageServerEvent} from "@birthday/shared";
+import type {ClientKind, ClientToServerMessage, GameConfig, GameServerEnvelope, SessionInfo, SessionPlayer, SessionState, PartyGameServerEvent} from "@birthday/shared";
 import type {AssetRepository} from "../infra/assetRepository.js";
 import type {SessionRepository} from "../infra/sessionRepository.js";
-import {StickerCollageEngine} from "../game-modes/sticker-collage/stickerCollageEngine.js";
+import {PartyGameEngine} from "../game-modes/party-game/partyGameEngine.js";
 import {GameEngineRegistry} from "../game-modes/gameModeRegistry.js";
 import {SessionStateFactory} from "./sessionStateFactory.js";
 import type {ConnectedClientSession, RuntimeEntry} from "./sessionRuntimeTypes.js";
@@ -35,7 +35,7 @@ export class SessionService {
         private readonly sessionRepository: SessionRepository,
         private readonly assetRepository: AssetRepository,
     ) {
-        this.engineRegistry.register(new StickerCollageEngine(config));
+        this.engineRegistry.register(new PartyGameEngine(config));
         this.sessionStateFactory = new SessionStateFactory(config, this.engineRegistry);
         this.mutator = new SessionMutator(sessionRepository, this.eventPublisher);
         this.phaseTimer = new PhaseTimerScheduler(this.runtimes, this.engineRegistry, this.mutator);
@@ -110,7 +110,7 @@ export class SessionService {
         clientId: string;
         kind: ClientKind;
         existingPlayerId?: string;
-    }): Promise<{state: SessionState; player: SessionPlayer; gameEvents: StickerCollageServerEvent[]} | null> {
+    }): Promise<{state: SessionState; player: SessionPlayer; gameEvents: PartyGameServerEvent[]} | null> {
         const result = await this.playerManager.join(args);
         if (result) {
             this.phaseTimer.schedule(args.sessionId, result.state);
@@ -216,11 +216,11 @@ export class SessionService {
         throw new Error("Could not generate unique session code");
     }
 
-    // ─── Collage snapshot ───────────────────────────────────────────
+    // ─── Submission snapshot ───────────────────────────────────────────
 
-    public async updateCollageSnapshot(
+    public async updateSubmissionSnapshot(
         sessionId: string,
-        collageId: string,
+        submissionId: string,
         playerId: string,
         snapshotUrl: string,
     ): Promise<SessionState | null> {
@@ -231,9 +231,9 @@ export class SessionService {
             }
 
             for (const roundSubs of Object.values(submissions)) {
-                for (const collage of roundSubs) {
-                    if (collage.id === collageId && collage.playerId === playerId) {
-                        collage.snapshotUrl = snapshotUrl;
+                for (const submission of roundSubs) {
+                    if (submission.id === submissionId && submission.playerId === playerId) {
+                        submission.snapshotUrl = snapshotUrl;
                         return {stateChanged: true, extra: undefined};
                     }
                 }

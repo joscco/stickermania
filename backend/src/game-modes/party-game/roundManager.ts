@@ -1,9 +1,10 @@
-import type {MinigameConfig, SessionState, StickerCollage, StickerCollageGameState, StickerCollageVoteResult,} from "@birthday/shared";
-import {getMinigameHandler} from "./minigameHandlers.js";
+import type {MinigameConfig, SessionState, RoundSubmission, PartyGameState, RoundVoteResult,} from "@birthday/shared";
+import {getMinigameHandler} from "../../../../minigames/registry.js";
 
 function pickRandomTask(minigameConfig: MinigameConfig): import("@birthday/shared").MinigameTask | null {
-    if (minigameConfig.tasks.length === 0) return null;
-    return minigameConfig.tasks[Math.floor(Math.random() * minigameConfig.tasks.length)] ?? null;
+    const runnableTasks = minigameConfig.tasks.filter(task => getMinigameHandler(task.type) !== null);
+    if (runnableTasks.length === 0) return null;
+    return runnableTasks[Math.floor(Math.random() * runnableTasks.length)] ?? null;
 }
 
 export function transitionToBuilding(
@@ -40,7 +41,7 @@ export function transitionToBuilding(
     };
 }
 
-export function shouldSkipVoting(gameState: StickerCollageGameState): boolean {
+export function shouldSkipVoting(gameState: PartyGameState): boolean {
     const currentSubmissions = gameState.submissions[gameState.currentRoundIndex] ?? [];
     const currentMinigames = gameState.minigameSubmissions[gameState.currentRoundIndex] ?? [];
     if ((currentSubmissions.length + currentMinigames.length) <= 1) return true;
@@ -79,7 +80,7 @@ export function transitionToResults(
     const currentSubmissions = gameState.submissions[gameState.currentRoundIndex] ?? [];
     const currentMinigames = gameState.minigameSubmissions[gameState.currentRoundIndex] ?? [];
 
-    let lastVoteResults: StickerCollageVoteResult[] = [];
+    let lastVoteResults: RoundVoteResult[] = [];
     let winnerId: string | null = null;
     let tiedWinnerIds: string[] = [];
 
@@ -89,21 +90,21 @@ export function transitionToResults(
 
     if (useVoting && currentSubmissions.length > 0) {
         const voteCounts = new Map<string, number>();
-        for (const collageIds of Object.values(currentVotes) as string[][]) {
-            for (const collageId of collageIds) {
-                voteCounts.set(collageId, (voteCounts.get(collageId) ?? 0) + 1);
+        for (const submissionIds of Object.values(currentVotes) as string[][]) {
+            for (const submissionId of submissionIds) {
+                voteCounts.set(submissionId, (voteCounts.get(submissionId) ?? 0) + 1);
             }
         }
 
         const ranked = currentSubmissions
-            .map((sub: StickerCollage) => ({ collageId: sub.id, playerId: sub.playerId, voteCount: voteCounts.get(sub.id) ?? 0 }))
+            .map((sub: RoundSubmission) => ({ submissionId: sub.id, playerId: sub.playerId, voteCount: voteCounts.get(sub.id) ?? 0 }))
             .sort((a, b) => b.voteCount - a.voteCount);
 
         let currentPlacement = 0;
         let prevVoteCount: number | undefined;
-        lastVoteResults = ranked.map((entry, i): StickerCollageVoteResult => {
+        lastVoteResults = ranked.map((entry, i): RoundVoteResult => {
             if (entry.voteCount !== prevVoteCount) { currentPlacement = i + 1; prevVoteCount = entry.voteCount; }
-            return { collageId: entry.collageId, playerId: entry.playerId, voteCount: entry.voteCount, placement: currentPlacement };
+            return { submissionId: entry.submissionId, playerId: entry.playerId, voteCount: entry.voteCount, placement: currentPlacement };
         });
 
         const topVoteCount = ranked[0]?.voteCount ?? 0;
