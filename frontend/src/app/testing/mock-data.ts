@@ -66,6 +66,7 @@ export function makeGameState(
     submissions: {},
     minigameSubmissions: {},
     promptHistory: { 0: 'Das schönste Geburtstagsmonster' },
+    playedTaskIds: [],
     roundParticipantIds: ['player-1', 'player-2', 'player-3'],
     phaseState,
     roundDurationSec: MOCK_ROUND_DURATION_SEC,

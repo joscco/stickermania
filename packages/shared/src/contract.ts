@@ -95,6 +95,7 @@ export interface PartyLobbyState {
 export interface PartyRoundActiveState {
   phase: "ROUND_ACTIVE";
   roundEndsAt: number;
+  autoSubmitGraceEndsAt?: number;
   skippedPlayerIds: string[];
 }
 
@@ -122,6 +123,7 @@ export interface PartyGameState {
   submissions: Record<number, RoundSubmission[]>;
   minigameSubmissions: Record<number, OpenMinigameSubmission[]>;
   promptHistory: Record<number, string>;
+  playedTaskIds: string[];
   roundParticipantIds: string[];
   phaseState: GameSubState;
   roundDurationSec: number;

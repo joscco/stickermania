@@ -104,9 +104,28 @@ export class PlayerBuildingComponent {
     });
   }
 
+  public submitCurrentTaskFromPointer(event: PointerEvent): void {
+    event.preventDefault();
+    this.blurActiveInput();
+    this.submitCurrentTask();
+  }
+
+  public skipRoundFromPointer(event: PointerEvent): void {
+    event.preventDefault();
+    this.blurActiveInput();
+    this.skipRound.emit();
+  }
+
   private currentDraft(): unknown {
     const definition = this.minigameDefinition();
     const draft = this.draft();
     return draft ?? definition?.initialDraft();
+  }
+
+  private blurActiveInput(): void {
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement) {
+      activeElement.blur();
+    }
   }
 }

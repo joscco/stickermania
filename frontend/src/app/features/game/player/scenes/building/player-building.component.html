@@ -29,16 +29,16 @@
     <div class="grid w-full grid-cols-2 gap-3" [style.max-width]="stageContainerMaxWidth">
       <button
         type="button"
-        class="min-h-12 rounded-lg bg-neutral-200 px-4 py-3 text-base font-bold text-neutral-900 active:bg-neutral-300"
-        (click)="skipRound.emit()"
+        class="min-h-12 rounded-lg bg-white px-4 py-3 text-base font-bold text-neutral-900 active:bg-neutral-300"
+        (pointerdown)="skipRoundFromPointer($event)"
       >
         Aussetzen
       </button>
       <button
         type="button"
-        class="min-h-12 rounded-lg bg-neutral-950 px-4 py-3 text-base font-bold text-white active:bg-neutral-700 disabled:opacity-40"
+        class="min-h-12 rounded-lg bg-black px-4 py-3 text-base font-bold text-white active:bg-neutral-700 disabled:opacity-40"
         [disabled]="!canSubmit()"
-        (click)="submitCurrentTask()"
+        (pointerdown)="submitCurrentTaskFromPointer($event)"
       >
         Submit
       </button>

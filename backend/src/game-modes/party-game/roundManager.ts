@@ -1,10 +1,20 @@
 import type {MinigameConfig, RoundVoteResult, SessionState} from "@birthday/shared";
 import {getMinigameHandler} from "../../../../minigames/registry.js";
 
-function pickRandomTask(minigameConfig: MinigameConfig): import("@birthday/shared").MinigameTask | null {
+function pickUnplayedTask(
+    state: SessionState,
+    minigameConfig: MinigameConfig,
+): import("@birthday/shared").MinigameTask | null {
     const runnableTasks = minigameConfig.tasks.filter(task => getMinigameHandler(task.type) !== null);
     if (runnableTasks.length === 0) return null;
-    return runnableTasks[Math.floor(Math.random() * runnableTasks.length)] ?? null;
+
+    const configuredTaskIds = new Set(runnableTasks.map(task => task.id));
+    const playedTaskIds = (state.gameState.playedTaskIds ?? []).filter(taskId => configuredTaskIds.has(taskId));
+    const playedTaskIdSet = new Set(playedTaskIds);
+    const unplayedTasks = runnableTasks.filter(task => !playedTaskIdSet.has(task.id));
+    const candidateTasks = unplayedTasks.length > 0 ? unplayedTasks : runnableTasks;
+
+    return candidateTasks[Math.floor(Math.random() * candidateTasks.length)] ?? null;
 }
 
 function pickNextTask(
@@ -20,7 +30,7 @@ function pickNextTask(
         nextRoundIndex: state.gameState.currentRoundIndex + 1,
     });
 
-    return followUpTask ?? pickRandomTask(minigameConfig);
+    return followUpTask ?? pickUnplayedTask(state, minigameConfig);
 }
 
 export function transitionToRoundActive(
@@ -37,6 +47,14 @@ export function transitionToRoundActive(
     gameState.currentTask = task;
     gameState.currentPrompt = task?.title ?? "Neue Runde";
     gameState.promptHistory[gameState.currentRoundIndex] = gameState.currentPrompt;
+    if (task && minigameConfig.tasks.some(configTask => configTask.id === task.id)) {
+        const configuredTaskIds = new Set(minigameConfig.tasks.map(configTask => configTask.id));
+        const previousPlayedTaskIds = (gameState.playedTaskIds ?? []).filter(taskId => configuredTaskIds.has(taskId));
+        const nextPlayedTaskIds = previousPlayedTaskIds.includes(task.id)
+            ? [task.id]
+            : [...previousPlayedTaskIds, task.id];
+        gameState.playedTaskIds = nextPlayedTaskIds;
+    }
 
     gameState.roundParticipantIds = Object.values(state.players)
         .filter(player => player.connected)

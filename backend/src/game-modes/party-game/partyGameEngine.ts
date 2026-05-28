@@ -10,6 +10,8 @@ import {
     submitMinigame,
 } from "./actionHandlers.js";
 
+const AUTO_SUBMIT_GRACE_MS = 2000;
+
 export class PartyGameEngine implements GameEngine {
     public constructor(private readonly config: GameConfig) {
     }
@@ -23,6 +25,7 @@ export class PartyGameEngine implements GameEngine {
             submissions: {},
             minigameSubmissions: {},
             promptHistory: {},
+            playedTaskIds: [],
             roundParticipantIds: [],
             phaseState: {phase: "LOBBY"},
             roundDurationSec: 60,
@@ -109,8 +112,16 @@ export class PartyGameEngine implements GameEngine {
         const {phaseState} = args.sessionState.gameState;
         const {now} = args;
 
-        if (phaseState.phase === "ROUND_ACTIVE" && now < phaseState.roundEndsAt) {
-            return phaseState.roundEndsAt;
+        if (phaseState.phase === "ROUND_ACTIVE") {
+            if (phaseState.autoSubmitGraceEndsAt && now < phaseState.autoSubmitGraceEndsAt) {
+                return phaseState.autoSubmitGraceEndsAt;
+            }
+            if (now < phaseState.roundEndsAt) {
+                return phaseState.roundEndsAt;
+            }
+            if (!phaseState.autoSubmitGraceEndsAt) {
+                return now;
+            }
         }
         if (phaseState.phase === "ROUND_RESULTS" && now < phaseState.resultsEndsAt) {
             return phaseState.resultsEndsAt;
@@ -127,6 +138,11 @@ export class PartyGameEngine implements GameEngine {
         const {phaseState} = gameState;
 
         if (phaseState.phase === "ROUND_ACTIVE") {
+            if (!phaseState.autoSubmitGraceEndsAt) {
+                phaseState.autoSubmitGraceEndsAt = now + AUTO_SUBMIT_GRACE_MS;
+                return {stateChanged: true, emittedEvents: []};
+            }
+
             const roundSubmissions = gameState.submissions[gameState.currentRoundIndex] ?? [];
             if (roundSubmissions.length === 0) {
                 gameState.phaseState = {phase: "LOBBY"};
