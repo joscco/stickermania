@@ -27,6 +27,9 @@ export interface MinigameFrontendDefinition<
   // Angular component for the player result view. It must accept a `state` input.
   resultComponent: Type<unknown>;
 
+  // Optional editor-only controls. It must accept a `state` input and may emit `playerEvent`.
+  editorComponent?: Type<unknown>;
+
   // Playable content/balancing variants owned by this minigame.
   variants: TVariant[];
 
@@ -100,6 +103,11 @@ export interface MinigameFrontendDefinition<
     roundEndsAt: number;
     serverNow: number;
   }): unknown;
+
+  // Optional state/event adapter for editorComponent.
+  createEditorState?(variant: TVariant): unknown;
+
+  reduceEditorEvent?(event: unknown, currentVariant: TVariant): TVariant;
 
   // Short explanation of how this minigame is scored.
   scoringInfo(): string;

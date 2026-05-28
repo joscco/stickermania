@@ -151,6 +151,19 @@
           </button>
         }
       </section>
+
+      @if (definition().editorComponent) {
+        <section class="grid gap-2">
+          <h2 class="text-xs font-black uppercase text-neutral-500">Setup</h2>
+
+          <sm-minigame-component-host
+            class="block"
+            [componentType]="definition().editorComponent!"
+            [state]="editorState()"
+            (playerEvent)="onEditorEvent($event)"
+          />
+        </section>
+      }
     </aside>
 
     <section class="min-h-0 min-w-0 overflow-y-auto p-5">

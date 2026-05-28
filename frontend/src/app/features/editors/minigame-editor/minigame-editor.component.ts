@@ -41,12 +41,18 @@ export class MinigameEditorComponent {
   ]);
   public readonly submissionsByPlayerId = signal<Record<string, MinigameSubmission>>({});
   public readonly draftsByPlayerId = signal<Record<string, unknown>>({});
+  public readonly variantOverrides = signal<Record<string, unknown>>({});
 
   public readonly definition = computed(
     () => this.definitions[this.selectedDefinitionIndex()] ?? this.definitions[0],
   );
   public readonly selectedVariant = computed(
-    () => this.definition().variants[this.selectedVariantIndex()] ?? this.definition().variants[0],
+    () => {
+      const key = this.selectedVariantKey();
+      return this.variantOverrides()[key] ??
+        this.definition().variants[this.selectedVariantIndex()] ??
+        this.definition().variants[0];
+    },
   );
   public readonly selectedTask = computed(() =>
     this.editorTaskOverride() ?? this.definition().taskFromVariant(this.selectedVariant()),
@@ -295,6 +301,24 @@ export class MinigameEditorComponent {
     return this.definition().resultUnitLabel(result);
   }
 
+  public editorState(): unknown {
+    return this.definition().createEditorState?.(this.selectedVariant()) ?? {
+      variant: this.selectedVariant(),
+    };
+  }
+
+  public onEditorEvent(event: unknown): void {
+    const definition = this.definition();
+    if (!definition.reduceEditorEvent) return;
+
+    const nextVariant = definition.reduceEditorEvent(event, this.selectedVariant());
+    this.variantOverrides.update((overrides) => ({
+      ...overrides,
+      [this.selectedVariantKey()]: nextVariant,
+    }));
+    this.resetRound();
+  }
+
   public variantMeta(
     definition: MinigameFrontendDefinition,
     variant: unknown,
@@ -304,6 +328,10 @@ export class MinigameEditorComponent {
 
   private draftFor(playerId: string): unknown {
     return this.draftsByPlayerId()[playerId] ?? this.definition().initialDraft();
+  }
+
+  private selectedVariantKey(): string {
+    return `${this.definition().type}:${this.selectedVariantIndex()}`;
   }
 }
 

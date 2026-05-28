@@ -1,10 +1,12 @@
 import type {MinigameHandler, MinigameTask} from "@birthday/shared";
 import {EstimateOpinionsHandler} from "./estimate-opinions/server-handler.js";
+import {ShapeCuttingHandler} from "./shape-cutting/server-handler.js";
 import {TimerStopHandler} from "./timer-stop/server-handler.js";
 import {UnexpectedTaskHandler} from "./unexpected-task/server-handler.js";
 
 const handlers = new Map<string, MinigameHandler>([
   ["estimate-opinions", new EstimateOpinionsHandler() as MinigameHandler],
+  ["shape-cutting", new ShapeCuttingHandler() as MinigameHandler],
   ["timer-stop", new TimerStopHandler() as MinigameHandler],
   ["unexpected-task", new UnexpectedTaskHandler() as MinigameHandler],
 ]);

@@ -1,0 +1,126 @@
+@if (variant(); as variant) {
+  <div class="grid gap-4">
+    <section class="grid gap-2">
+      <label class="grid gap-1 text-xs font-black uppercase text-neutral-500">
+        Titel
+        <input
+          class="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm normal-case text-neutral-950 outline-none focus:border-neutral-950"
+          [value]="variant.title"
+          (change)="setTitle($event)"
+        />
+      </label>
+
+      <div class="grid grid-cols-2 gap-2">
+        <label class="grid gap-1 text-xs font-black uppercase text-neutral-500">
+          Sekunden
+          <input
+            type="number"
+            min="10"
+            max="180"
+            class="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-950 outline-none focus:border-neutral-950"
+            [value]="variant.firstRoundSeconds"
+            (change)="setDuration($event)"
+          />
+        </label>
+
+        <label class="grid gap-1 text-xs font-black uppercase text-neutral-500">
+          Teile
+          <input
+            type="number"
+            min="2"
+            max="6"
+            class="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-950 outline-none focus:border-neutral-950"
+            [value]="variant.targetParts"
+            (change)="setTargetParts($event)"
+          />
+        </label>
+      </div>
+
+      <label class="grid gap-1 text-xs font-black uppercase text-neutral-500">
+        Hintergrund-Sprite
+        <input
+          class="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm normal-case text-neutral-950 outline-none focus:border-neutral-950"
+          placeholder="sticker-shapes-diamond-filled"
+          [value]="variant.backgroundSvg ?? ''"
+          (change)="setBackground($event)"
+        />
+      </label>
+    </section>
+
+    <section class="grid gap-2">
+      <div class="flex items-center justify-between gap-2">
+        <h3 class="text-xs font-black uppercase text-neutral-500">Polygon</h3>
+        <button
+          type="button"
+          class="rounded-lg bg-neutral-200 px-3 py-1.5 text-xs font-black text-neutral-900 active:bg-neutral-300"
+          (click)="addPoint()"
+        >
+          Punkt +
+        </button>
+      </div>
+
+      <div class="overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100">
+        <svg
+          #svg
+          viewBox="0 0 360 480"
+          class="block aspect-[3/4] w-full touch-none"
+          (pointermove)="onPointerMove($event)"
+          (pointerup)="onPointerUp()"
+          (pointercancel)="onPointerUp()"
+        >
+          @if (backgroundHref(variant.backgroundSvg); as href) {
+            <use [attr.href]="href" x="28" y="62" width="304" height="360" opacity="0.18" />
+          }
+
+          <polygon
+            [attr.points]="polygonPoints(variant)"
+            fill="#facc15"
+            fill-opacity="0.32"
+            stroke="#111827"
+            stroke-width="3"
+            stroke-linejoin="round"
+          />
+
+          @for (point of variant.polygon; track $index; let pointIndex = $index) {
+            <circle
+              [attr.cx]="point.x"
+              [attr.cy]="point.y"
+              r="12"
+              fill="#ffffff"
+              stroke="#111827"
+              stroke-width="4"
+              class="cursor-grab active:cursor-grabbing"
+              (pointerdown)="onPointDown(pointIndex, $event)"
+            />
+            <text
+              [attr.x]="point.x"
+              [attr.y]="point.y + 4"
+              text-anchor="middle"
+              class="pointer-events-none fill-neutral-950 text-[10px] font-black"
+            >
+              {{ pointIndex + 1 }}
+            </text>
+          }
+        </svg>
+      </div>
+
+      <div class="grid max-h-36 gap-1 overflow-y-auto">
+        @for (point of variant.polygon; track $index; let pointIndex = $index) {
+          <div class="grid grid-cols-[1fr_auto] items-center gap-2 rounded-md bg-neutral-100 px-2 py-1 text-xs">
+            <span class="font-bold tabular-nums text-neutral-700">
+              {{ pointIndex + 1 }}: {{ point.x }}, {{ point.y }}
+            </span>
+            <button
+              type="button"
+              class="rounded-md px-2 py-1 font-black text-neutral-400 active:text-red-600 disabled:opacity-30"
+              [disabled]="variant.polygon.length <= 3"
+              (click)="removePoint(pointIndex)"
+            >
+              x
+            </button>
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+}

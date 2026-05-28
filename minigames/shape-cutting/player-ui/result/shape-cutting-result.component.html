@@ -1,0 +1,72 @@
+@if (state().ownResult; as result) {
+  <section class="flex h-full w-full flex-col overflow-hidden bg-white p-5">
+    <header class="grid shrink-0 gap-2 text-center">
+      <p class="text-[10px] font-black uppercase leading-none tracking-[0.18em] text-neutral-400">
+        Ergebnis
+      </p>
+      <h2 class="text-4xl font-black leading-none text-neutral-950">Platz {{ result.placement }}</h2>
+      <p class="text-sm font-black text-neutral-500">
+        {{ result.pieceCount }} von {{ result.targetParts }} Teilen erkannt
+      </p>
+    </header>
+
+    <main class="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] gap-4 pt-4">
+      <div class="overflow-hidden rounded-lg bg-neutral-100">
+        <svg viewBox="0 0 360 480" class="block h-full w-full">
+          @if (backgroundHref(); as href) {
+            <use [attr.href]="href" x="28" y="62" width="304" height="360" opacity="0.16" />
+          }
+
+          @for (piece of pieces(); track $index; let pieceIndex = $index) {
+            <path
+              [attr.d]="pointsToPath(piece.polygon)"
+              [attr.fill]="pieceFill(pieceIndex)"
+              fill-opacity="0.5"
+              stroke="#ffffff"
+              stroke-width="2"
+            />
+          }
+
+          <polygon
+            [attr.points]="polygonPoints()"
+            fill="none"
+            stroke="#111827"
+            stroke-width="3"
+            stroke-linejoin="round"
+          />
+
+          @for (line of result.lines; track $index) {
+            <line
+              [attr.x1]="line.a.x"
+              [attr.y1]="line.a.y"
+              [attr.x2]="line.b.x"
+              [attr.y2]="line.b.y"
+              stroke="#111827"
+              stroke-width="4"
+              stroke-linecap="round"
+            />
+          }
+        </svg>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="rounded-lg bg-neutral-100 px-3 py-3 text-center">
+          <p class="text-[10px] font-black uppercase text-neutral-500">Abweichung</p>
+          <p class="text-2xl font-black tabular-nums text-neutral-950">
+            {{ result.deviationPercentagePoints | number: "1.1-1" }}
+          </p>
+          <p class="text-[10px] font-black uppercase text-neutral-400">Punkte</p>
+        </div>
+        <div class="rounded-lg bg-neutral-100 px-3 py-3 text-center">
+          <p class="text-[10px] font-black uppercase text-neutral-500">Teilflächen</p>
+          <p class="truncate text-2xl font-black tabular-nums text-neutral-950">
+            @for (fraction of result.pieceFractions; track $index) {
+              {{ roundedPercent(fraction) }}%
+            }
+          </p>
+          <p class="text-[10px] font-black uppercase text-neutral-400">gross nach klein</p>
+        </div>
+      </div>
+    </main>
+  </section>
+}

@@ -9,7 +9,9 @@
     "../minigames/_shared/minigame-stage/**/*.ts",
     "../minigames/_shared/minigame-component-host/**/*.ts",
     "../minigames/estimate-opinions/**/*.ts",
+    "../minigames/shape-cutting/**/*.ts",
     "../minigames/timer-stop/**/*.ts",
+    "../minigames/unexpected-task/**/*.ts",
     "../packages/shared/src/minigame.ts"
   ]
 }
