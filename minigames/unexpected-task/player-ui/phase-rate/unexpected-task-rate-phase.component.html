@@ -1,0 +1,56 @@
+<section class="flex h-full w-full flex-col overflow-hidden bg-white p-6 text-center">
+  <header class="shrink-0">
+    <p class="text-[10px] font-black uppercase leading-none tracking-[0.18em] text-neutral-400">
+      Unerwartete Bewertung
+    </p>
+    <p class="mt-2 text-xs font-black leading-tight text-neutral-500">
+      Waehle eine Antwort. Die meistgewaehlte Antwort gewinnt.
+    </p>
+  </header>
+
+  <main class="flex min-h-0 flex-1 flex-col justify-center gap-4 pt-5">
+    <section class="flex h-24 shrink-0 items-center justify-center px-2">
+      <h2 class="text-[1.75rem] font-black leading-[1.08] text-neutral-950">
+        {{ state().variantData.ratingQuestion }}
+      </h2>
+    </section>
+
+    @if (state().comparison; as comparison) {
+      <section class="grid h-[260px] shrink-0 grid-rows-2 gap-4">
+        <button
+          type="button"
+          class="rounded-2xl border-2 px-5 text-3xl font-black leading-tight transition-all duration-300 ease-out active:scale-[0.98]"
+          [class.border-neutral-950]="draft().selectedAnswerId === comparison.left.id"
+          [class.bg-neutral-950]="draft().selectedAnswerId === comparison.left.id"
+          [class.text-white]="draft().selectedAnswerId === comparison.left.id"
+          [class.border-neutral-200]="draft().selectedAnswerId !== comparison.left.id"
+          [class.bg-white]="draft().selectedAnswerId !== comparison.left.id"
+          [class.text-neutral-950]="draft().selectedAnswerId !== comparison.left.id"
+          (click)="selectAnswer(comparison.left.id)"
+        >
+          {{ comparison.left.answer }}
+        </button>
+
+        <button
+          type="button"
+          class="rounded-2xl border-2 px-5 text-3xl font-black leading-tight transition-all duration-300 ease-out active:scale-[0.98]"
+          [class.border-neutral-950]="draft().selectedAnswerId === comparison.right.id"
+          [class.bg-neutral-950]="draft().selectedAnswerId === comparison.right.id"
+          [class.text-white]="draft().selectedAnswerId === comparison.right.id"
+          [class.border-neutral-200]="draft().selectedAnswerId !== comparison.right.id"
+          [class.bg-white]="draft().selectedAnswerId !== comparison.right.id"
+          [class.text-neutral-950]="draft().selectedAnswerId !== comparison.right.id"
+          (click)="selectAnswer(comparison.right.id)"
+        >
+          {{ comparison.right.answer }}
+        </button>
+      </section>
+    } @else {
+      <section class="grid h-[260px] place-items-center rounded-2xl bg-neutral-100 p-6">
+        <p class="text-xl font-black leading-tight text-neutral-500">
+          Nicht genug Antworten fuer eine Bewertung.
+        </p>
+      </section>
+    }
+  </main>
+</section>

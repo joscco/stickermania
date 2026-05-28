@@ -1,0 +1,37 @@
+<section class="flex h-full w-full flex-col overflow-hidden bg-white p-6 text-center">
+    <header class="shrink-0">
+        <p class="text-[10px] font-black uppercase leading-none tracking-[0.18em] text-neutral-400">
+            Blindantwort
+        </p>
+        <p class="mt-2 text-xs font-black leading-tight text-neutral-500">
+            Das Bewertungskriterium erfährst du erst gleich.
+        </p>
+    </header>
+
+    <main class="flex min-h-0 flex-1 flex-col items-center justify-center gap-5">
+        <section class="flex h-[100px] shrink-0 items-center justify-center px-2">
+            <h2 class="text-[2rem] font-black leading-[1.08] text-neutral-950">
+                {{ state().variantData.answerQuestion }}
+            </h2>
+        </section>
+
+        <section class="grid gap-3 rounded-2xl bg-neutral-100 p-4 text-left">
+            <label class="text-xs font-black uppercase tracking-wide text-neutral-500" for="unexpected-answer">
+                Deine Antwort
+            </label>
+
+            <textarea
+                    id="unexpected-answer"
+                    class="h-32 resize-none rounded-xl border-2 border-neutral-200 bg-white p-4 text-2xl font-black leading-tight text-neutral-950 outline-none transition-colors duration-200 focus:border-neutral-950"
+                    maxlength="80"
+                    placeholder=""
+                    [value]="draft().answer"
+                    (input)="setAnswer($event)"
+            ></textarea>
+
+            <p class="text-xs font-black leading-tight text-neutral-500">
+                Nicht zu lange grübeln. Der Twist kommt noch.
+            </p>
+        </section>
+    </main>
+</section>
