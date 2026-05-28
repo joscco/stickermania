@@ -5,11 +5,12 @@ import {
   EstimateOpinionsPlayerUiEvent,
   EstimateOpinionsPlayerUiState,
 } from "../ui-contract";
+import {BigPercentageSliderComponent} from "../../../_shared/big-percentage-slider/big-percentage-slider.component";
 
 @Component({
   selector: "sm-estimate-opinions-phase",
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BigPercentageSliderComponent],
   templateUrl: "./estimate-opinions-phase.component.html",
 })
 export class EstimateOpinionsPhaseComponent {
@@ -19,7 +20,7 @@ export class EstimateOpinionsPhaseComponent {
   public readonly draft = computed<EstimateOpinionsDraft>(() => ({
     choseOptionA: this.state().draft?.choseOptionA ?? null,
     estimatedPercentageWithSameOpinion:
-      this.state().draft?.estimatedPercentageWithSameOpinion ?? 0.5,
+        this.state().draft?.estimatedPercentageWithSameOpinion ?? 0.5,
   }));
 
   public chooseOption(choseOptionA: boolean): void {
@@ -29,13 +30,10 @@ export class EstimateOpinionsPhaseComponent {
     });
   }
 
-  public setEstimate(event: Event): void {
-    const percentage = Number((event.target as HTMLInputElement).value) / 100;
-    if (!Number.isFinite(percentage)) return;
-
+  public setEstimatedPercentageWithSameOpinion(estimatedPercentageWithSameOpinion: number): void {
     this.emitDraft({
       ...this.draft(),
-      estimatedPercentageWithSameOpinion: Math.min(1, Math.max(0, percentage)),
+      estimatedPercentageWithSameOpinion,
     });
   }
 

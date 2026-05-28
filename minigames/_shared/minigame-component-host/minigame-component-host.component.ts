@@ -57,6 +57,9 @@ export class MinigameComponentHostComponent implements OnChanges, OnDestroy {
     this.host.clear();
 
     this.componentRef = this.host.createComponent(componentType);
+    const hostElement = this.componentRef.location.nativeElement as HTMLElement;
+    hostElement.classList.add("block", "h-full", "w-full");
+
     const instance = this.componentRef.instance as ComponentWithPlayerEvent;
     this.eventSubscription = instance.playerEvent?.subscribe((event) => {
       this.playerEvent.emit(event);

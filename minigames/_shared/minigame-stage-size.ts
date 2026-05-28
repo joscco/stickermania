@@ -1,0 +1,2 @@
+export const MINIGAME_STAGE_WIDTH = 360;
+export const MINIGAME_STAGE_HEIGHT = 480;

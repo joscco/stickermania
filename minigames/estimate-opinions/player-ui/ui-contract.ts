@@ -6,8 +6,6 @@ import {
 
 export type EstimateOpinionsPhase = "estimate" | "result";
 
-export const ESTIMATE_OPINIONS_STAGE_SIZE = 400;
-
 export interface EstimateOpinionsDraft {
     choseOptionA: boolean | null;
     estimatedPercentageWithSameOpinion: number;

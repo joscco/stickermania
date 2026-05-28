@@ -63,7 +63,6 @@ Jedes Frontend-Minigame stellt in `minigames/<id>/frontend-definition.ts` eine D
 
 Eine Definition liefert unter anderem:
 
-- `stageSize`
 - `phaseComponent`
 - `resultComponent`
 - `variants`

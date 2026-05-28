@@ -3,6 +3,10 @@ import {Component, computed, input, output} from "@angular/core";
 import type {MinigameTask, OpenMinigameSubmission, RoundVoteResult} from "@birthday/shared";
 import {MinigameComponentHostComponent} from "../../../../../../../../minigames/_shared/minigame-component-host/minigame-component-host.component";
 import {MinigameStageComponent} from "../../../../../../../../minigames/_shared/minigame-stage/minigame-stage.component";
+import {
+    MINIGAME_STAGE_HEIGHT,
+    MINIGAME_STAGE_WIDTH,
+} from "../../../../../../../../minigames/_shared/minigame-stage-size";
 import {getMinigameFrontendDefinition} from "../../../../../../../../minigames/frontend-registry";
 import {AnimOnInitDirective} from "../../../../shared/animations/anim-on-init.directive";
 import {RoundInfoComponent} from "../../../../shared/round-info/round-info.component";
@@ -23,6 +27,8 @@ import {PlayerStatusScreenComponent} from "../../player-status-screen/player-sta
     host: {"class": "flex-1 flex flex-col overflow-hidden"},
 })
 export class PlayerResultsComponent {
+    public readonly stageContainerMaxWidth = `min(100%, calc((100dvh - 9rem) * ${MINIGAME_STAGE_WIDTH} / ${MINIGAME_STAGE_HEIGHT}))`;
+
     public readonly myPlacement = input<number | null>(null);
     public readonly myVoteCount = input<number>(0);
     public readonly isWinner = input<boolean>(false);

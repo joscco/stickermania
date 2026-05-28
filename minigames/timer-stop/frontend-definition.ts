@@ -5,7 +5,6 @@ import {TimerStopGame} from "./game";
 import type {TimerStopSubmission, TimerStopVariantData} from "./game";
 import {TimerStopPhaseComponent} from "./player-ui/phase-0-stop/timer-stop-phase.component";
 import {TimerStopResultComponent} from "./player-ui/result/timer-stop-result.component";
-import {TIMER_STOP_STAGE_SIZE} from "./player-ui/ui-contract";
 import {TIMER_STOP_VARIANTS} from "./variants";
 
 export const TIMER_STOP_FRONTEND_DEFINITION: MinigameFrontendDefinition<
@@ -15,7 +14,6 @@ export const TIMER_STOP_FRONTEND_DEFINITION: MinigameFrontendDefinition<
 > = {
   type: "timer-stop",
   label: "Timer Stop",
-  stageSize: TIMER_STOP_STAGE_SIZE,
   phaseComponent: TimerStopPhaseComponent,
   resultComponent: TimerStopResultComponent,
   variants: TIMER_STOP_VARIANTS,

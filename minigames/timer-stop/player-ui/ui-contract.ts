@@ -6,8 +6,6 @@ import {
 
 export type TimerStopPhase = "stop" | "result";
 
-export const TIMER_STOP_STAGE_SIZE = 400;
-
 export interface TimerStopPlayerUiState {
   playerId: string;
   phase: TimerStopPhase;

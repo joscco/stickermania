@@ -1,12 +1,12 @@
 # Stickermania
 
-Session-basiertes Party-Spiel: Spieler erstellen gemeinsam lustige Rundenbilder und stimmen über die besten ab.
+Session-basiertes Party-Spiel mit Board- und Player-Ansicht. Spieler treten per Code bei und spielen kurze Minigames auf ihren Handys; das Board zeigt Lobby, Rundenstatus und Ergebnisse.
 
 - Gäste treten einer **Session** per QR-Code bei
-- Jede Runde gibt es einen **Prompt** — Spieler bauen auf ihrem Handy eine Einsendung aus Stickern
-- Danach wird **abgestimmt**, wer die beste Einsendung hat
-- Der **Gewinner** wählt Prompt, Sticker-Pack und Garantie-Pack für die nächste Runde
-- Sticker-Packs werden Runde für Runde **freigeschaltet**
+- Jede Runde wird ein **Minigame** aus den registrierten Varianten gestartet
+- Spieler geben ihre Minigame-Submission auf dem Handy ab
+- Das Backend wertet die Runde über den Minigame-Handler aus
+- Der **Player** zeigt die eigene Interaktion, das **Board** den gemeinsamen Spielzustand
 
 ---
 
@@ -16,9 +16,9 @@ Die App kennt **zwei Modi**:
 
 | | **🎉 Spiel** | **🛠️ Dev (Editoren)** |
 |---|---|---|
-| **Einsatz** | Party (LAN) oder Google Cloud Run | Sticker & Hitboxen bearbeiten |
-| **Was läuft** | Voller Game-Server + WebSocket | Nur Editor-APIs, kein WebSocket |
-| **Frontend** | Board, Player | Hitbox-Editor, Sticker-Editor |
+| **Einsatz** | Party (LAN) oder Google Cloud Run | Entwicklung, Catalog, Editor-Workflows |
+| **Was läuft** | Voller Game-Server + WebSocket | Backend im Dev-Modus, Angular Dev-Server, Sprite-Watch |
+| **Frontend** | Board, Player | Dev Landing, Catalog, Minigame-Editor, weitere Editoren |
 | **Script** | `npm run start` | `npm run dev` |
 
 ---
@@ -75,7 +75,7 @@ npm run cloud:stop
 
 ### Dev-Modus
 
-Nur die Editoren, kein Spiel:
+Dev-Stack mit Backend, Angular Dev-Server, Catalog, Minigame-Editor und Sprite-Watch:
 
 ```bash
 npm run dev
@@ -105,19 +105,34 @@ Ist kein Passwort konfiguriert (`adminPassword: null`), ist der Board-Zugang ohn
 ## Spielablauf
 
 ```
-LOBBY → BUILDING → VOTING → RESULTS → BUILDING → ...
+LOBBY → ROUND_ACTIVE → ROUND_RESULTS → ROUND_ACTIVE → ...
 ```
 
 1. **Lobby** — Spieler treten per QR-Code bei, zeichnen Avatar, wählen Namen
-2. **Building** — Jeder bekommt eine Hand aus Stickern und baut eine Einsendung zum Prompt
-3. **Voting** — Alle sehen die Rundenbilder und stimmen ab (max. 3 Stimmen)
-4. **Results** — Siegertreppchen + Punkte. Der Gewinner wählt:
-   - 🎯 Nächsten **Prompt** (aus 3 zufälligen)
-   - 🔓 Ein neues **Sticker-Pack** freischalten
-   - ⭐ Ein **"Auf jeden Fall dabei"-Pack** (garantiert 1 Sticker davon in jeder Hand)
+2. **Round Active** — Das Backend wählt ein registriertes Minigame; jeder Spieler interagiert in der Player-Hülle mit der Minigame-UI
+3. **Submission** — Die Player-Hülle sendet generisch `submit-minigame`; der jeweilige Minigame-Handler validiert und speichert die Payload
+4. **Round Results** — Der Minigame-Handler berechnet Platzierungen, Gewinner und persönliche Ergebnisdaten
 5. Zurück zu Schritt 2
 
 Nach der Session: Im Board auf **"Alle Avatare & Rundenbilder herunterladen"** klicken, um alle Bilder als ZIP zu speichern.
+
+---
+
+## Minigames
+
+Minigames sind selbstbeschreibende Module unter `minigames/<minigame-id>`.
+
+- Varianten kommen aus `variants.ts`, nicht aus einer zentralen `minigame.config.json`
+- Backend-Integration läuft über `server-handler.ts` und `minigames/registry.ts`
+- Frontend-Integration läuft über `frontend-definition.ts` im jeweiligen Minigame-Ordner und `minigames/frontend-registry.ts`
+- App-Shells wie Player-Hülle, Result-Screen, Catalog und Editor dürfen keine spezifische Spielelogik kennen
+
+Details und Checkliste: [`minigames/ARCHITECTURE.md`](minigames/ARCHITECTURE.md)
+
+Aktive Referenzspiele:
+
+- `timer-stop`
+- `estimate-opinions`
 
 ---
 
@@ -141,93 +156,27 @@ Nach der Session: Im Board auf **"Alle Avatare & Rundenbilder herunterladen"** k
 Gespeicherte Dateien in `.data/assets/<sessionId>/`:
 
 - **Avatare**: `avatar_<spielername>_<playerId>.png`
-- **Rundenbilder**: `submission_<spielername>_<prompt>_<submissionId>.png`
+- **Rundenbilder/Uploads**: `submission_<spielername>_<task>_<submissionId>.png`
 
-Spieler- und Prompt-Namen werden sanitiert (Sonderzeichen → `_`, max. 60 Zeichen). Die IDs am Ende verhindern Namenskollisionen.
+Spieler- und Task-Namen werden sanitiert (Sonderzeichen → `_`, max. 60 Zeichen). Die IDs am Ende verhindern Namenskollisionen.
 
 ---
 
-## Mock-Modus (Screenshots & Dev-Preview)
+## Dev-Preview
 
-Das Screenshot-Feature nutzt einen schlanken **Mock-Server** (`scripts/mock-server.mjs`) statt des echten Backends. Das Frontend bleibt dabei völlig unverändert — es verhält sich exakt wie in Produktion.
+Der Dev-Stack startet lokale Werkzeuge für UI- und Minigame-Arbeit:
 
-**Funktionsweise:** Der gewünschte Screen wird als **Cookie** (`mock-screen=<id>`) übergeben — nicht im Session-Code. Im Frontend erscheint damit immer `MOCK` als Session-Code, kurz und sauber.
+- **Dev Landing**: `http://localhost:4200`
+- **Catalog**: `http://localhost:4200/catalog`
+- **Minigame-Editor**: `http://localhost:4200/minigame-editor`
 
-Das Screenshot-Script setzt den Cookie vor jeder Navigation; der Mock-Server liest ihn aus dem WebSocket-Upgrade-Request:
+Der Catalog zeigt Player- und Board-Screens mit Mock-State. Der Minigame-Editor simuliert mehrere lokale Spieler und rendert die registrierten Minigame-Definitionen direkt aus `minigames/frontend-registry.ts`.
 
+Falls Port `4200` belegt ist, kann der Angular-Dev-Server mit einem alternativen Port gestartet werden:
+
+```bash
+npm run dev -w @birthday/frontend -- --port 4201
 ```
-mock-screen=lobby-name         → Player sieht Namenseingabe
-mock-screen=lobby-avatar       → Player sieht Avatar-Zeichnen
-mock-screen=lobby-waiting      → Player wartet in der Lobby
-mock-screen=building           → Player sieht Canvas mit Hand
-mock-screen=building-no-hand   → Player sieht "Sticker austeilen"-Button
-mock-screen=building-submitted → Player sieht "Eingereicht, warte..."
-mock-screen=voting             → Player sieht Voting-Ansicht
-mock-screen=board-voting       → Board zeigt Voting-Slideshow
-...
-```
-
-Das Frontend navigiert ganz normal zu `/#/player?session=MOCK`, löst den Code per HTTP auf, verbindet per WebSocket — und der Mock-Server antwortet auf das `join`-Paket sofort mit dem passenden `session-state`.
-
-**Kein Frontend-Code für Mock nötig.** Die gesamte Logik sitzt in:
-- `scripts/mock-server.mjs` — HTTP + WebSocket, Fixture-Daten, State-Aufbau pro Screen
-- `scripts/screenshots.mjs` — baut Frontend, startet Mock-Server, schießt Screenshots, stoppt Server
-
-Screenshots landen in `./screenshots/`.
-
----
-
-## Sticker-Canvas (Player)
-
-### Drag-from-Hand
-
-Sticker können per **Pointer-Drag** aus der Hand auf die Leinwand gezogen werden:
-
-- **Ghost** erscheint in der exakt gleichen Größe wie der Sticker in der Hand
-- Der Ghost zeigt den Sticker in seiner tatsächlichen Form (kein rechteckiger Rahmen, kein Scale-Down)
-- **Vertikales Scrollen** in der Hand-Liste bleibt erhalten — Drag wird erst nach horizontaler Bewegung ausgelöst
-- Nach dem Loslassen über der Leinwand wird der Sticker an der Abwurfposition platziert
-
-### Touch-Interaktion auf der Leinwand
-
-| Geste | Aktion |
-|---|---|
-| 1 Finger auf Sticker | Sticker auswählen & verschieben |
-| 1 Finger auf leere Fläche | Lasso-Auswahl aufziehen |
-| 2 Finger (beliebige Position) | Pinch → ausgewählten Sticker/Gruppe skalieren & rotieren |
-| Tippen auf leere Fläche | Auswahl aufheben |
-
-> **Pinch ohne Finger auf dem Sticker**: Sobald ein Sticker (oder eine Gruppe) ausgewählt ist, kann die 2-Finger-Geste **irgendwo** auf der Leinwand gestartet werden — der zweite Finger muss nicht auf dem Sticker landen.
-
-### Lasso-Select
-
-- 1 Finger auf **leere** Fläche ziehen → Lasso-Rechteck aufziehen
-- Alle Sticker, die das Rechteck schneiden, werden als **Gruppe** markiert
-- Gruppe lässt sich gemeinsam **verschieben** (1 Finger auf einem Gruppen-Sticker) und **transformieren** (2 Finger, pinch/rotate)
-- Antippen außerhalb der Gruppe hebt die Auswahl auf
-
-### Swap-Modal
-
-Langer Druck (500 ms) auf einen Sticker in der Hand öffnet das Swap-Modal (solange Swaps übrig sind). Ein Sticker aus dem Modal tauscht den gedrückten Sticker in der Hand aus.
-
----
-
-## Voting
-
-### Board-Ansicht
-
-Die Abstimmungs-Slideshow passt sich automatisch an die Anzahl der Einreichungen an:
-
-- **Wenige Bilder** (passen alle nebeneinander ins Board): zentrierte, statische Darstellung
-- **Viele Bilder** (mehr als ins Board passt): automatisch wandernde Endlos-Schleife (Marquee)
-
-Die Entscheidung wird live per `ResizeObserver` neu berechnet — passt sich also auch bei Fenstergrößenänderungen an.
-
-### Player-Ansicht
-
-- Feedback (verbleibende Stimmen / alle Stimmen abgegeben) ist **klein und unauffällig im Header** untergebracht, nicht als großes Banner
-- Eigene Einsendung ist mit einem lila Badge „Deine" markiert und kann nicht gewählt werden
-- Bereits abgegebene Stimmen sind mit ⭐ markiert
 
 ---
 
@@ -258,12 +207,12 @@ ws://HOST:PORT/ws
 
 ## Konfiguration
 
-Die Spielkonfiguration ist auf zwei Dateien aufgeteilt:
+Die private Laufzeitkonfiguration liegt in `game.config.json`.
 
 | Datei | Inhalt | Git |
 |---|---|---|
-| `game.config.public.json` | Spieleinstellungen (Prompts, Timer, Handgröße, …) | ✅ committed |
-| `game.config.json` | Nur `adminPassword` | ❌ gitignored |
+| `game.config.example.json` | Vorlage für lokale Konfiguration | ✅ committed |
+| `game.config.json` | Lokale/private Werte, aktuell vor allem `adminPassword` | ❌ gitignored |
 
 ### Erster Checkout
 
@@ -272,7 +221,9 @@ cp game.config.example.json game.config.json
 # adminPassword in game.config.json setzen
 ```
 
-Das Backend mergt beide Dateien beim Start. Für Cloud Run wird nur `game.config.json` ins Image kopiert — `adminPassword` kommt per Env-Var, die `npm run cloud:deploy` automatisch aus der lokalen `game.config.json` liest.
+Das Backend lädt `game.config.json` beim Start. Für Cloud Run kommt `adminPassword` per Env-Var, die `npm run cloud:deploy` automatisch aus der lokalen `game.config.json` liest.
+
+Spielbare Minigame-Runden werden nicht hier konfiguriert. Sie werden aus den `variants.ts`-Dateien der Minigame-Ordner über die Minigame-Registries bereitgestellt.
 
 ### `wlan/wlan-config.json`
 
@@ -299,32 +250,36 @@ Für Cloud: Repository-Pattern vorbereitet (`SessionRepository`, `AssetRepositor
 ## Projektstruktur
 
 ```
-├── apps/
-│   ├── backend/                    # Node.js (Fastify) HTTP + WebSocket Server
-│   │   └── src/
-│   │       ├── http/               # API-Routen (authPlugin, apiRoutes, editorApiRoutes, wsPlugin)
-│   │       ├── session/            # Session-Management, Player, Timer
-│   │       ├── game-modes/         # Party Game Engine
-│   │       └── infra/              # Repository-Implementierungen
-│   └── frontend/                   # Angular SPA
-│       └── src/app/
-│           ├── core/               # Stores, Services (WebSocket, API, Session, BoardAuthGuard)
-│           └── features/
-│               ├── game/
-│               │   ├── landing/    # Startseite: Session-Code-Eingabe + Board-Login
-│               │   ├── board/      # Board-Szenen (Lobby, Building, Voting, Results + Download)
-│               │   └── player/     # Player-Szenen (Lobby, Building, Voting, Results)
-│               └── shared/         # Animationen, gemeinsame Komponenten
+├── backend/                        # Node.js (Fastify) HTTP + WebSocket Server
+│   └── src/
+│       ├── http/                   # API-Routen, Auth, Editor-APIs, WebSocket
+│       ├── game-modes/             # Party Game Engine und Rundenlogik
+│       ├── session/                # Session-Management
+│       └── infra/                  # Repository-Implementierungen
+├── frontend/                       # Angular SPA
+│   └── src/app/
+│       ├── core/                   # Stores, Services, Guards
+│       └── features/
+│           ├── game/
+│           │   ├── board/          # Board-Szenen
+│           │   └── player/         # Player-Szenen und Player-Hülle
+│           ├── catalog/            # Screen-Katalog für UI-Preview
+│           └── editors/            # Dev Landing, Minigame-Editor
+├── minigames/                      # Selbstbeschreibende Minigame-Module
+│   ├── _shared/                    # Gemeinsame Minigame-Stage/Host-Komponenten
+│   ├── timer-stop/
+│   ├── estimate-opinions/
+│   ├── registry.ts                 # Backend-Registry
+│   ├── frontend-registry.ts        # Frontend-Registry
+│   └── ARCHITECTURE.md             # Regeln für neue Minigames
 ├── packages/
 │   └── shared/                     # Shared Types, Config-Parser
 ├── scripts/
-│   ├── mock-server.mjs            # Mock-Server für Screenshots
-│   └── screenshots.mjs            # Playwright-Screenshot-Runner
+│   └── dev-live.mjs                # Dev-Stack mit Backend, Frontend und Sprite-Watch
 ├── wlan/
 │   ├── wlan-config.example.json   # WLAN-Config-Vorlage
 │   └── wlan-qr.mjs               # QR-Code-Generator
-├── game.config.json                # Spielkonfiguration (inkl. adminPassword)
-├── hitbox-data.json                # Hitbox-Polygone
+├── game.config.json                # Private lokale Konfiguration
 ├── Dockerfile                      # Cloud-Image
 └── package.json                    # Workspace-Scripts
 ```
@@ -338,5 +293,4 @@ Für Cloud: Repository-Pattern vorbereitet (`SessionRepository`, `AssetRepositor
 - **Styling**: Tailwind CSS 4
 - **Animationen**: GSAP
 - **ZIP-Download**: JSZip
-- **Screenshots**: Playwright
 - **Monorepo**: npm Workspaces

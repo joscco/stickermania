@@ -7,10 +7,7 @@ import type {
 } from "./game";
 import {EstimateOpinionsPhaseComponent} from "./player-ui/phase-0-estimate/estimate-opinions-phase.component";
 import {EstimateOpinionsResultComponent} from "./player-ui/result/estimate-opinions-result.component";
-import {
-    ESTIMATE_OPINIONS_STAGE_SIZE,
-    EstimateOpinionsDraft,
-} from "./player-ui/ui-contract";
+import {EstimateOpinionsDraft} from "./player-ui/ui-contract";
 import {ESTIMATE_OPINIONS_VARIANTS} from "./variants";
 
 export const ESTIMATE_OPINIONS_FRONTEND_DEFINITION: MinigameFrontendDefinition<
@@ -20,7 +17,6 @@ export const ESTIMATE_OPINIONS_FRONTEND_DEFINITION: MinigameFrontendDefinition<
 > = {
     type: "estimate-opinions",
     label: "Estimate Opinions",
-    stageSize: ESTIMATE_OPINIONS_STAGE_SIZE,
     phaseComponent: EstimateOpinionsPhaseComponent,
     resultComponent: EstimateOpinionsResultComponent,
     variants: ESTIMATE_OPINIONS_VARIANTS,
@@ -129,7 +125,7 @@ export const ESTIMATE_OPINIONS_FRONTEND_DEFINITION: MinigameFrontendDefinition<
     },
     resultValue: (result) => {
         const estimateResult = result as { deviationPercentagePoints?: number };
-        return `${(estimateResult.deviationPercentagePoints ?? 0).toFixed(1)} Pkt.`;
+        return `${(estimateResult.deviationPercentagePoints ?? 0).toFixed(1)} %.`;
     },
     resultUnitLabel: () => "daneben",
     resultSummary: ({submission, result}) => {

@@ -4,10 +4,13 @@ import {
   ElementRef,
   OnDestroy,
   computed,
-  input,
   signal,
   viewChild,
 } from "@angular/core";
+import {
+  MINIGAME_STAGE_HEIGHT,
+  MINIGAME_STAGE_WIDTH,
+} from "../minigame-stage-size";
 
 @Component({
   selector: "sm-minigame-stage",
@@ -16,20 +19,27 @@ import {
   templateUrl: "./minigame-stage.component.html",
 })
 export class MinigameStageComponent implements AfterViewInit, OnDestroy {
-  public readonly stageSize = input(400);
+  public readonly stageWidth = MINIGAME_STAGE_WIDTH;
+  public readonly stageHeight = MINIGAME_STAGE_HEIGHT;
   private readonly frame = viewChild.required<ElementRef<HTMLElement>>("frame");
-  private readonly frameSize = signal<number | null>(null);
+  private readonly frameSize = signal<{width: number; height: number} | null>(null);
   private resizeObserver: ResizeObserver | null = null;
   private animationFrameId: number | null = null;
   private remainingMeasureAttempts = 30;
 
+  public readonly aspectRatio = `${this.stageWidth} / ${this.stageHeight}`;
+
   public readonly scale = computed(() => {
-    const size = this.stageSize();
-    if (size <= 0) {
+    const width = this.stageWidth;
+    const height = this.stageHeight;
+    if (width <= 0 || height <= 0) {
       return 1;
     }
 
-    return (this.frameSize() ?? size) / size;
+    const frameSize = this.frameSize();
+    if (!frameSize) return 1;
+
+    return Math.min(frameSize.width / width, frameSize.height / height);
   });
 
   public readonly transform = computed(() => `scale(${this.scale()})`);
@@ -58,8 +68,7 @@ export class MinigameStageComponent implements AfterViewInit, OnDestroy {
   }
 
   private setMeasuredSize(width: number, height: number): void {
-    const nextSize = Math.min(width, height);
-    if (nextSize > 0) this.frameSize.set(nextSize);
+    if (width > 0 && height > 0) this.frameSize.set({width, height});
   }
 
   private scheduleMeasure(frame: HTMLElement): void {

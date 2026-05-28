@@ -1,12 +1,13 @@
 <div
   #frame
   class="bg-white"
-  style="position: relative; width: 100%; aspect-ratio: 1 / 1; overflow: hidden;"
+  style="position: relative; width: 100%; overflow: hidden;"
+  [style.aspect-ratio]="aspectRatio"
 >
   <div
     style="position: absolute; left: 0; top: 0; overflow: hidden; transform-origin: 0 0;"
-    [style.width.px]="stageSize()"
-    [style.height.px]="stageSize()"
+    [style.width.px]="stageWidth"
+    [style.height.px]="stageHeight"
     [style.transform]="transform()"
   >
     <ng-content />

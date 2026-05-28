@@ -18,9 +18,6 @@ export interface MinigameFrontendDefinition<
   // Human-readable name for editor/catalog controls.
   label: string;
 
-  // Virtual square stage size expected by this minigame UI.
-  stageSize: number;
-
   // Angular component for the interactive player phase. It must accept a `state` input and may emit `playerEvent`.
   phaseComponent: Type<unknown>;
 

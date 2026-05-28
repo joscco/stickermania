@@ -16,16 +16,16 @@ Siehe `minigames/ARCHITECTURE.md` für die verbindlichen Architekturregeln und d
 - `player-ui/result/*`: Eine Angular-Komponente für die Auswertung.
 - `README.md`: Minigame-spezifische Notizen, Annahmen und Datenfluss.
 
-## Quadratische Spielflaeche
+## Spielflaeche
 
-Jede Player-UI-Komponente wird für eine quadratische Grundflaeche entworfen. Die empfohlene virtuelle Design-Groesse ist `200 x 200`. Die spaetere Player-Hülle entscheidet, wie gross dieses Quadrat auf dem konkreten Geraet dargestellt wird.
+Jede Player-UI-Komponente wird für eine feste virtuelle Hochformat-Grundflaeche entworfen. Die zentrale Design-Groesse steht in `minigames/_shared/minigame-stage-size.ts`; aktuell ist sie `360 x 480`. Das ist bewusst kompakter als ein voller Handy-Screen, weil Header und Shell-Aktionen wie `Submit` und `Aussetzen` ausserhalb der Minigame-Flaeche liegen. Die spaetere Player-Hülle entscheidet, wie gross diese Flaeche auf dem konkreten Geraet dargestellt wird.
 
 Die Minigame-Komponente soll deshalb immer `width: 100%`, `height: 100%` und eine bereits skalierte Stage erwarten. Sie darf keine Annahmen über das restliche Screen-Layout treffen.
 
 Die Hülle rendert dafür `MinigameStageComponent` aus `minigames/_shared/minigame-stage`. Diese Komponente:
 
-- misst das responsive Quadrat aussen
-- rendert innen eine feste `200 x 200`-Bühne
+- misst die responsive Flaeche aussen
+- rendert innen die zentrale virtuelle Bühne, aktuell `360 x 480`
 - skaliert diese Bühne per `transform: scale(...)`
 
 Innerhalb eines Minigames werden normale Tailwind-Groessen verwendet, z. B. `text-sm`, `p-8`, `gap-5` oder `h-16`. Diese Werte werden als Ganzes skaliert und bleiben dadurch proportional stabil.
@@ -36,7 +36,7 @@ Aktionen der Hülle gehoeren nicht in die Spielflaeche:
 - `Aussetzen`
 - Navigation zur naechsten Runde
 
-Nur echte Spielinteraktionen liegen im Quadrat, zum Beispiel Zeichnen, Platzieren, Auswaehlen oder beim Timer `Start` und `Stopp`.
+Nur echte Spielinteraktionen liegen in der Spielflaeche, zum Beispiel Zeichnen, Platzieren, Auswaehlen oder beim Timer `Start` und `Stopp`.
 
 ## Datenmodell
 

@@ -4,6 +4,10 @@ import type {MinigameClientAction, MinigameTask} from "@birthday/shared";
 import {AnimGroupDirective} from "../../../../shared/animations/anim-on-init.directive";
 import {MinigameComponentHostComponent} from "../../../../../../../../minigames/_shared/minigame-component-host/minigame-component-host.component";
 import {MinigameStageComponent} from "../../../../../../../../minigames/_shared/minigame-stage/minigame-stage.component";
+import {
+  MINIGAME_STAGE_HEIGHT,
+  MINIGAME_STAGE_WIDTH,
+} from "../../../../../../../../minigames/_shared/minigame-stage-size";
 import {getMinigameFrontendDefinition} from "../../../../../../../../minigames/frontend-registry";
 
 export type MinigameSubmitEvent = MinigameClientAction;
@@ -21,6 +25,9 @@ export type MinigameSubmitEvent = MinigameClientAction;
   host: {"class": "h-full flex-1 flex flex-col"},
 })
 export class PlayerBuildingComponent {
+  public readonly stageContainerMaxWidth = `min(100%, calc((100dvh - 9rem) * ${MINIGAME_STAGE_WIDTH} / ${MINIGAME_STAGE_HEIGHT}))`;
+  public readonly stageAspectRatio = `${MINIGAME_STAGE_WIDTH} / ${MINIGAME_STAGE_HEIGHT}`;
+
   public readonly roundIndex = input<number>(0);
   public readonly prompt = input<string>("");
   public readonly task = input<MinigameTask | null>(null);
@@ -38,8 +45,6 @@ export class PlayerBuildingComponent {
     const definition = this.minigameDefinition();
     return definition ? definition.canSubmit(this.currentDraft()) : false;
   });
-
-  public readonly stageSize = computed(() => this.minigameDefinition()?.stageSize ?? 400);
 
   public readonly minigameState = computed(() => {
     const task = this.task();
