@@ -1,11 +1,13 @@
 import type {
+  BaseMinigameTask,
   MinigameClientAction,
   MinigameHandler,
   MinigamePlayerResult,
   OpenMinigameSubmission,
   RoundVoteResult,
-  TimerStopTask,
 } from "@birthday/shared";
+import type {TimerStopVariantData} from "./game.js";
+import {TIMER_STOP_VARIANTS} from "./variants.js";
 
 type TimerStopPayload = {
   stoppedAtSeconds?: unknown;
@@ -18,6 +20,11 @@ type TimerStopResult = MinigamePlayerResult & {
   deviationSeconds: number;
 };
 
+type TimerStopTask = BaseMinigameTask & {
+  type: "timer-stop";
+  variantData: TimerStopVariantData;
+};
+
 type TimerStopSubmission = OpenMinigameSubmission & {
   minigameType: "timer-stop";
   payload: {
@@ -27,6 +34,16 @@ type TimerStopSubmission = OpenMinigameSubmission & {
 
 export class TimerStopHandler implements MinigameHandler<TimerStopTask, TimerStopSubmission> {
   public readonly type = "timer-stop";
+
+  public createTasks(): TimerStopTask[] {
+    return TIMER_STOP_VARIANTS.map((variant) => ({
+      id: variant.id,
+      type: this.type,
+      title: variant.title,
+      durationSec: variant.firstRoundSeconds,
+      variantData: variant,
+    }));
+  }
 
   public createSubmission(args: {
     playerId: string;
@@ -60,7 +77,7 @@ export class TimerStopHandler implements MinigameHandler<TimerStopTask, TimerSto
     task: TimerStopTask;
     submissions: TimerStopSubmission[];
   }) {
-    const targetSeconds = Number(args.task.targetSec);
+    const targetSeconds = Number(args.task.variantData.targetSeconds);
     const ranked = args.submissions
       .map((submission) => ({
         playerId: submission.playerId,

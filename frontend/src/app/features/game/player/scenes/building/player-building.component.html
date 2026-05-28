@@ -1,26 +1,24 @@
 <div animGroup="opacity" class="flex h-full flex-col items-center justify-center gap-4 p-4">
   @if (task(); as t) {
     <div class="w-full max-w-[min(100%,70dvh)]">
-      @switch (t.type) {
-        @case ("timer-stop") {
-          @if (timerState(); as state) {
-            <sm-minigame-stage
-              class="block w-full overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm"
-              [stageSize]="stageSize"
-            >
-              <sm-timer-stop-phase
-                class="block h-full w-full"
-                [state]="state"
-                (playerEvent)="onTimerEvent($event)"
-              />
-            </sm-minigame-stage>
-          }
+      @if (minigameDefinition(); as definition) {
+        @if (minigameState(); as state) {
+          <sm-minigame-stage
+            class="block w-full overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm"
+            [stageSize]="stageSize()"
+          >
+            <sm-minigame-component-host
+              class="block h-full w-full"
+              [componentType]="definition.phaseComponent"
+              [state]="state"
+              (playerEvent)="onMinigameEvent($event)"
+            />
+          </sm-minigame-stage>
         }
-        @default {
-          <div class="grid aspect-square w-full place-items-center rounded-lg border border-neutral-200 bg-white p-6 text-center text-sm text-neutral-500">
-            Dieses Minigame ist in der neuen Struktur noch nicht vorbereitet.
-          </div>
-        }
+      } @else {
+        <div class="grid aspect-square w-full place-items-center rounded-lg border border-neutral-200 bg-white p-6 text-center text-sm text-neutral-500">
+          Dieses Minigame ist in der neuen Struktur noch nicht vorbereitet.
+        </div>
       }
     </div>
 

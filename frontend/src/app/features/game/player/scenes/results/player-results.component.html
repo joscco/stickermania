@@ -5,26 +5,35 @@
     [task]="currentTask()"
   />
 
-  @if (timerStopResultState(); as state) {
-    <div animOnInit="medal" [animDelay]="0.15" class="flex flex-col items-center justify-center gap-3 py-4">
-      <div class="w-full max-w-[min(100%,70dvh)] px-4">
-        <sm-minigame-stage
-          class="block w-full overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm"
-          [stageSize]="stageSize"
-        >
-          <sm-timer-stop-result
-            class="block h-full w-full"
-            [state]="state"
-          />
-        </sm-minigame-stage>
-      </div>
+  @if (minigameDefinition(); as definition) {
+    @if (minigameResultState(); as state) {
+      <div animOnInit="medal" [animDelay]="0.15" class="flex flex-col items-center justify-center gap-3 py-4">
+        <div class="w-full max-w-[min(100%,70dvh)] px-4">
+          <sm-minigame-stage
+            class="block w-full overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm"
+            [stageSize]="definition.stageSize"
+          >
+            <sm-minigame-component-host
+              class="block h-full w-full"
+              [componentType]="definition.resultComponent"
+              [state]="state"
+            />
+          </sm-minigame-stage>
+        </div>
 
-      @if (isWinner()) {
-        <div class="text-lg font-bold text-neutral-800 mt-2">🎉 Du hast gewonnen!</div>
-      } @else if (isTiedWinner()) {
-        <div class="text-lg font-bold text-neutral-800 mt-2">🤝 Geteilter 1. Platz!</div>
-      }
-    </div>
+        @if (isWinner()) {
+          <div class="text-lg font-bold text-neutral-800 mt-2">🎉 Du hast gewonnen!</div>
+        } @else if (isTiedWinner()) {
+          <div class="text-lg font-bold text-neutral-800 mt-2">🤝 Geteilter 1. Platz!</div>
+        }
+      </div>
+    } @else {
+      <app-player-status-screen
+        icon=""
+        title="Du hast diese Runde nicht teilgenommen."
+        titleClass="text-neutral-400 text-sm"
+      />
+    }
   } @else if (myPlacement(); as placement) {
     <div animOnInit="medal" [animDelay]="0.15" class="flex flex-col items-center justify-center gap-3 py-4">
       <div class="grid h-24 w-24 place-items-center rounded-full bg-yellow-400 text-4xl font-black text-neutral-950 shadow-lg">

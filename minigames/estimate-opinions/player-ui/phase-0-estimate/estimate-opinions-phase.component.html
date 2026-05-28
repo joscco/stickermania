@@ -1,0 +1,56 @@
+<section class="flex h-full w-full flex-col bg-white p-7 text-center">
+  <div class="flex min-h-0 flex-1 flex-col justify-center gap-4">
+    <h2 class="text-xl font-black leading-tight text-neutral-950">
+      {{ state().variantData.question }}
+    </h2>
+
+    <div class="grid gap-2">
+      <button
+        type="button"
+        class="min-h-14 rounded-xl border px-4 text-base font-black leading-tight"
+        [class.border-neutral-950]="draft().choseOptionA === true"
+        [class.bg-neutral-950]="draft().choseOptionA === true"
+        [class.text-white]="draft().choseOptionA === true"
+        [class.border-neutral-200]="draft().choseOptionA !== true"
+        [class.bg-neutral-100]="draft().choseOptionA !== true"
+        [class.text-neutral-950]="draft().choseOptionA !== true"
+        (click)="chooseOption(true)"
+      >
+        {{ state().variantData.optionA }}
+      </button>
+
+      <button
+        type="button"
+        class="min-h-14 rounded-xl border px-4 text-base font-black leading-tight"
+        [class.border-neutral-950]="draft().choseOptionA === false"
+        [class.bg-neutral-950]="draft().choseOptionA === false"
+        [class.text-white]="draft().choseOptionA === false"
+        [class.border-neutral-200]="draft().choseOptionA !== false"
+        [class.bg-neutral-100]="draft().choseOptionA !== false"
+        [class.text-neutral-950]="draft().choseOptionA !== false"
+        (click)="chooseOption(false)"
+      >
+        {{ state().variantData.optionB }}
+      </button>
+    </div>
+  </div>
+
+  <div class="grid shrink-0 gap-2 rounded-xl bg-yellow-100 p-4 text-left">
+    <div class="flex items-end justify-between gap-3">
+      <span class="text-xs font-bold uppercase text-yellow-900">Gleiche Meinung</span>
+      <span class="text-2xl font-black tabular-nums text-neutral-950">
+        {{ draft().estimatedPercentageWithSameOpinion * 100 | number: "1.0-0" }}%
+      </span>
+    </div>
+
+    <input
+      class="w-full accent-neutral-950"
+      type="range"
+      min="0"
+      max="100"
+      step="1"
+      [value]="draft().estimatedPercentageWithSameOpinion * 100"
+      (input)="setEstimate($event)"
+    />
+  </div>
+</section>

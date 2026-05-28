@@ -159,29 +159,7 @@ export interface BaseMinigameTask {
   [key: string]: unknown;
 }
 
-export interface TimerStopTask extends BaseMinigameTask {
-  type: "timer-stop";
-  targetSec: number;
-}
-
-export type StickerPlaceTask = BaseMinigameTask & {type: "sticker-place"};
-export type DrawingTask = BaseMinigameTask & {type: "drawing"};
-export type ChoiceTask = BaseMinigameTask & {type: "choice"};
-export type NumberTask = BaseMinigameTask & {type: "number"};
-export type ShapeSplitTask = BaseMinigameTask & {type: "shape-split"};
-export type TextAnswerTask = BaseMinigameTask & {type: "text-answer"};
-export type ThesisTask = BaseMinigameTask & {type: "thesis"};
-
-export type MinigameTask =
-  | TimerStopTask
-  | StickerPlaceTask
-  | DrawingTask
-  | ChoiceTask
-  | NumberTask
-  | ShapeSplitTask
-  | TextAnswerTask
-  | ThesisTask
-  | BaseMinigameTask;
+export type MinigameTask = BaseMinigameTask;
 
 // ─── Open minigame protocol ─────────────────────────────────────
 
@@ -252,6 +230,7 @@ export interface MinigameHandler<
   TSubmission extends OpenMinigameSubmission = OpenMinigameSubmission,
 > {
   readonly type: string;
+  createTasks?(): TTask[];
   createSubmission(args: {
     playerId: string;
     roundIndex: number;

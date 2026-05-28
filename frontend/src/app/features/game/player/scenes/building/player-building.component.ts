@@ -2,13 +2,9 @@ import {CommonModule} from "@angular/common";
 import {Component, computed, input, output, signal} from "@angular/core";
 import type {MinigameClientAction, MinigameTask} from "@birthday/shared";
 import {AnimGroupDirective} from "../../../../shared/animations/anim-on-init.directive";
+import {MinigameComponentHostComponent} from "../../../../../../../../minigames/_shared/minigame-component-host/minigame-component-host.component";
 import {MinigameStageComponent} from "../../../../../../../../minigames/_shared/minigame-stage/minigame-stage.component";
-import {TimerStopPhaseComponent} from "../../../../../../../../minigames/timer-stop/player-ui/phase-0-stop/timer-stop-phase.component";
-import {
-  TIMER_STOP_STAGE_SIZE,
-  TimerStopPlayerUiEvent,
-  TimerStopPlayerUiState,
-} from "../../../../../../../../minigames/timer-stop/player-ui/ui-contract";
+import {getMinigameFrontendDefinition} from "../../../../../../../../minigames/frontend-registry";
 
 export type MinigameSubmitEvent = MinigameClientAction;
 
@@ -19,7 +15,7 @@ export type MinigameSubmitEvent = MinigameClientAction;
     CommonModule,
     AnimGroupDirective,
     MinigameStageComponent,
-    TimerStopPhaseComponent,
+    MinigameComponentHostComponent,
   ],
   templateUrl: "./player-building.component.html",
   host: {"class": "h-full flex-1 flex flex-col"},
@@ -32,57 +28,56 @@ export class PlayerBuildingComponent {
   public readonly skipRound = output<void>();
   public readonly submitMinigame = output<MinigameSubmitEvent>();
 
-  public readonly stageSize = TIMER_STOP_STAGE_SIZE;
-  public readonly timerDraftSeconds = signal<number | null>(null);
+  public readonly draft = signal<unknown>(null);
+
+  public readonly minigameDefinition = computed(() =>
+    getMinigameFrontendDefinition(this.task()?.type),
+  );
 
   public readonly canSubmit = computed(() => {
-    const task = this.task();
-    if (!task) return false;
-    if (task.type === "timer-stop") return this.timerDraftSeconds() !== null;
-    return false;
+    const definition = this.minigameDefinition();
+    return definition ? definition.canSubmit(this.currentDraft()) : false;
   });
 
-  public timerState(): TimerStopPlayerUiState | null {
+  public readonly stageSize = computed(() => this.minigameDefinition()?.stageSize ?? 400);
+
+  public readonly minigameState = computed(() => {
     const task = this.task();
-    if (!task || task.type !== "timer-stop") return null;
+    const definition = this.minigameDefinition();
+    if (!task || !definition) return null;
 
-    const targetSeconds = Number(task["targetSec"] ?? 5);
-    const firstRoundSeconds = Number(task["durationSec"] ?? targetSeconds + 5);
-
-    return {
+    const durationSec = Number(task.durationSec ?? 60);
+    return definition.createPlayState({
       playerId: "local-player",
-      phase: "stop",
-      variantData: {
-        id: task.id,
-        title: task.title,
-        firstRoundSeconds,
-        targetSeconds,
-      },
-      draftStoppedAtSeconds: this.timerDraftSeconds() ?? undefined,
-      roundEndsAt: Date.now() + firstRoundSeconds * 1000,
+      task,
+      draft: this.currentDraft(),
+      roundEndsAt: Date.now() + durationSec * 1000,
       serverNow: Date.now(),
-    };
-  }
+    });
+  });
 
-  public onTimerEvent(event: TimerStopPlayerUiEvent): void {
-    if (event.type === "draft-change") {
-      this.timerDraftSeconds.set(event.stoppedAtSeconds);
-    }
+  public onMinigameEvent(event: unknown): void {
+    const definition = this.minigameDefinition();
+    if (!definition) return;
+
+    this.draft.set(definition.reducePlayerEvent(event, this.currentDraft()));
   }
 
   public submitCurrentTask(): void {
     const task = this.task();
-    if (!task) return;
+    const definition = this.minigameDefinition();
+    if (!task || !definition || !definition.canSubmit(this.currentDraft())) return;
 
-    if (task.type === "timer-stop") {
-      const stoppedAtSeconds = this.timerDraftSeconds();
-      if (stoppedAtSeconds === null) return;
+    this.submitMinigame.emit({
+      type: "submit-minigame",
+      minigameType: definition.type,
+      payload: definition.createSubmitPayload(this.currentDraft()),
+    });
+  }
 
-      this.submitMinigame.emit({
-        type: "submit-minigame",
-        minigameType: "timer-stop",
-        payload: {stoppedAtSeconds},
-      });
-    }
+  private currentDraft(): unknown {
+    const definition = this.minigameDefinition();
+    const draft = this.draft();
+    return draft ?? definition?.initialDraft();
   }
 }

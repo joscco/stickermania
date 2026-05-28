@@ -36,9 +36,30 @@
   <main class="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)_220px] overflow-hidden">
     <aside class="flex min-h-0 min-w-0 flex-col gap-5 overflow-y-auto border-r border-neutral-200 bg-white p-4">
       <section class="grid gap-2">
+        <h2 class="text-xs font-black uppercase text-neutral-500">Minigame</h2>
+
+        <div class="grid gap-2">
+          @for (entry of definitions; track entry.type; let definitionIndex = $index) {
+            <button
+              type="button"
+              class="rounded-lg border px-3 py-2 text-left text-sm font-bold"
+              [class.border-neutral-950]="selectedDefinitionIndex() === definitionIndex"
+              [class.bg-neutral-950]="selectedDefinitionIndex() === definitionIndex"
+              [class.text-white]="selectedDefinitionIndex() === definitionIndex"
+              [class.border-neutral-200]="selectedDefinitionIndex() !== definitionIndex"
+              [class.bg-white]="selectedDefinitionIndex() !== definitionIndex"
+              (click)="selectDefinition(definitionIndex)"
+            >
+              {{ entry.label }}
+            </button>
+          }
+        </div>
+      </section>
+
+      <section class="grid gap-2">
         <h2 class="text-xs font-black uppercase text-neutral-500">Variante</h2>
 
-        @for (variant of variants; track variant.id; let variantIndex = $index) {
+        @for (variant of definition().variants; track definition().taskFromVariant(variant).id; let variantIndex = $index) {
           <button
             type="button"
             class="rounded-lg border px-3 py-2 text-left"
@@ -49,10 +70,8 @@
             [class.bg-white]="selectedVariantIndex() !== variantIndex"
             (click)="selectVariant(variantIndex)"
           >
-            <span class="block text-sm font-bold">{{ variant.title }}</span>
-            <span class="block text-xs opacity-70">
-              Ziel {{ variant.targetSeconds }}s · Runde {{ variant.firstRoundSeconds }}s
-            </span>
+            <span class="block text-sm font-bold">{{ definition().taskFromVariant(variant).title }}</span>
+            <span class="block text-xs opacity-70">{{ variantMeta(definition(), variant) }}</span>
           </button>
         }
       </section>
@@ -88,25 +107,6 @@
                 x
               </button>
             </div>
-
-            <div class="flex min-w-0 items-center gap-2">
-              <input
-                class="min-w-0 flex-1 rounded-md border border-neutral-200 bg-white px-2 py-1 text-sm tabular-nums outline-none focus:border-neutral-900"
-                type="number"
-                min="0"
-                step="0.01"
-                [value]="manualSecondsFor(player.id)"
-                (input)="setManualSeconds(player.id, $event)"
-              />
-
-              <button
-                type="button"
-                class="shrink-0 rounded-md bg-yellow-400 px-2 py-1 text-sm font-bold text-neutral-950 active:bg-yellow-300"
-                (click)="submitManual(player.id)"
-              >
-                Draft
-              </button>
-            </div>
           </div>
         }
       </section>
@@ -125,7 +125,7 @@
           class="rounded-lg bg-neutral-200 px-4 py-2 text-sm font-bold text-neutral-900 active:bg-neutral-300"
           (click)="resetRound()"
         >
-          Runde zuruecksetzen
+          Runde zurücksetzen
         </button>
       </section>
     </aside>
@@ -138,14 +138,10 @@
               <div class="min-w-0">
                 <h2 class="truncate text-lg font-black text-neutral-950">{{ player.name }}</h2>
 
-                @if (submissionsByPlayerId()[player.id]; as submission) {
-                  <p class="text-sm text-emerald-700">
-                    {{ submission.stoppedAtSeconds | number: "1.2-2" }}s abgegeben
-                  </p>
-                } @else if (draftsByPlayerId()[player.id] !== undefined) {
-                  <p class="text-sm text-yellow-700">
-                    {{ draftsByPlayerId()[player.id] | number: "1.2-2" }}s bereit
-                  </p>
+                @if (submissionLabel(player.id); as submission) {
+                  <p class="text-sm text-emerald-700">{{ submission }}</p>
+                } @else if (draftLabel(player.id); as draft) {
+                  <p class="text-sm text-yellow-700">{{ draft }}</p>
                 } @else {
                   <p class="text-sm text-neutral-500">Noch keine Submission</p>
                 }
@@ -164,18 +160,20 @@
 
             <sm-minigame-stage
               class="block w-full overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm"
-              [stageSize]="stageSize"
+              [stageSize]="definition().stageSize"
             >
               @if (phase() === "play") {
-                <sm-timer-stop-phase
+                <sm-minigame-component-host
                   class="block h-full w-full"
-                  [state]="stateFor(player)"
-                  (playerEvent)="onPlayerEvent($event)"
+                  [componentType]="definition().phaseComponent"
+                  [state]="playStateFor(player)"
+                  (playerEvent)="onMinigameEvent(player.id, $event)"
                 />
               } @else {
-                <sm-timer-stop-result
+                <sm-minigame-component-host
                   class="block h-full w-full"
-                  [state]="stateFor(player)"
+                  [componentType]="definition().resultComponent"
+                  [state]="resultStateFor(player)"
                 />
               }
             </sm-minigame-stage>
@@ -184,7 +182,7 @@
               <div class="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  class="min-h-11 rounded-lg bg-neutral-200 px-3 py-2 text-xs font-bold text-neutral-800 active:bg-neutral-300 truncate"
+                  class="min-h-11 truncate rounded-lg bg-neutral-200 px-3 py-2 text-xs font-bold text-neutral-800 active:bg-neutral-300"
                   (click)="skipPlayer(player.id)"
                 >
                   Aussetzen
@@ -192,14 +190,12 @@
 
                 <button
                   type="button"
-                  class="min-h-11 rounded-lg bg-neutral-950 px-3 py-2 text-xs font-bold text-white active:bg-neutral-700 disabled:opacity-40 truncate"
-                  [disabled]="draftsByPlayerId()[player.id] === undefined"
+                  class="min-h-11 truncate rounded-lg bg-neutral-950 px-3 py-2 text-xs font-bold text-white active:bg-neutral-700 disabled:opacity-40"
+                  [disabled]="!canSubmitPlayer(player.id)"
                   (click)="submitPlayer(player.id)"
                 >
                   Submit
                 </button>
-
-
               </div>
             }
           </article>
@@ -233,17 +229,17 @@
                       {{ result.placement }}. {{ playerName(result.playerId) }}
                     </p>
 
-                    <p class="text-xs text-neutral-500">
-                      {{ result.stoppedAtSeconds | number: "1.2-2" }}s
+                    <p class="truncate text-xs text-neutral-500">
+                      {{ resultDetail(result) }}
                     </p>
                   </div>
 
                   <div class="text-right">
                     <p class="text-base font-black tabular-nums text-neutral-950">
-                      {{ result.deviationSeconds | number: "1.2-2" }}s
+                      {{ resultValue(result) }}
                     </p>
 
-                    <p class="text-[10px] text-neutral-500">daneben</p>
+                    <p class="text-[10px] text-neutral-500">{{ resultUnitLabel(result) }}</p>
                   </div>
                 </div>
               </div>

@@ -4,7 +4,7 @@ import {
   MinigameResult,
   MinigameSubmission,
   MinigameVariantData,
-} from "../../packages/shared/src/minigame";
+} from "../../packages/shared/src/minigame.js";
 
 export interface TimerStopVariantData extends MinigameVariantData {
   id: string;

@@ -1,4 +1,4 @@
-import {TimerStopVariantData} from "./game";
+import type {TimerStopVariantData} from "./game.js";
 
 export const TIMER_STOP_VARIANTS: TimerStopVariantData[] = [
   {

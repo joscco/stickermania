@@ -1,6 +1,7 @@
 import {Component, input, computed} from "@angular/core";
 import {CommonModule} from "@angular/common";
 import type {MinigameTask} from "@birthday/shared";
+import {getMinigameFrontendDefinition} from "../../../../../../minigames/frontend-registry";
 
 @Component({
   selector: "app-round-info",
@@ -17,10 +18,12 @@ export class RoundInfoComponent {
   readonly scoringInfo = computed(() => {
     const t = this.task();
     if (!t) return "";
+    const minigameInfo = getMinigameFrontendDefinition(t.type)?.scoringInfo();
+    if (minigameInfo) return minigameInfo;
+
     switch (t.type) {
       case "thesis": return "Schätze, wie viele zustimmen — am nächsten dran gewinnt";
       case "number": return "Am nächsten am Durchschnitt gewinnt";
-      case "timer-stop": return "Am nächsten an der Zielzeit gewinnt";
       case "shape-split": return "Am nächsten an der Ziel-Proportion gewinnt";
       case "sticker-place": {
         const goal = (t as any).goal;

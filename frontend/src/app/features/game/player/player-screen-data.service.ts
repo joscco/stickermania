@@ -7,6 +7,7 @@ import {PlayerTimerService} from '../services/player-timer.service';
 import {PlayerScreen} from './player-screen.enum';
 import type {BuildingSkippedViewModel, BuildingSubmittedViewModel, BuildingViewModel, PlayerHeaderViewModel, ResultsViewModel,} from './player-view-models';
 import type {MinigameTask, OpenMinigameSubmission, RoundVoteResult} from '@birthday/shared';
+import {getMinigameFrontendDefinition} from "../../../../../../minigames/frontend-registry";
 
 @Injectable()
 export class PlayerScreenDataService {
@@ -153,11 +154,8 @@ function computeResultSummary(
 ): string {
     if (!task) return "Abstimmungsergebnis";
     const my = submissions.find(s => s.playerId === myId);
-    if (task.type === "timer-stop" && my && myResult?.result) {
-        const result = myResult.result as {stoppedAtSeconds?: number; deviationSeconds?: number};
-        if (typeof result.stoppedAtSeconds === "number" && typeof result.deviationSeconds === "number") {
-            return `${result.stoppedAtSeconds.toFixed(2)}s gestoppt, ${result.deviationSeconds.toFixed(2)}s neben dem Ziel.`;
-        }
-    }
-    return "";
+    return getMinigameFrontendDefinition(task.type)?.resultSummary({
+        submission: my,
+        result: myResult?.result,
+    }) ?? "";
 }

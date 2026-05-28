@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { parseGameConfig, parseMinigameConfig, type GameConfig } from "@birthday/shared";
+import { parseGameConfig, type GameConfig } from "@birthday/shared";
+import {getMinigameTasks} from "../../minigames/registry.js";
 
 export interface BackendConfig {
     devMode: boolean;
@@ -24,15 +25,9 @@ export function loadBackendConfig(args: { argv: string[]; cwd: string }): Backen
     // 2. Merge: public base, private overrides (private wins for any shared keys)
     const gameConfig = parseGameConfig(rawPrivate);
 
-    // 3. Load minigame config (separate JSON file)
-    const minigameConfigPath = path.resolve(args.cwd, "minigame.config.json");
-    try {
-        const rawMinigame = JSON.parse(fs.readFileSync(minigameConfigPath, "utf-8"));
-        gameConfig.minigame = parseMinigameConfig(rawMinigame);
-        console.log(`[config] loaded minigame.config.json (${gameConfig.minigame.tasks.length} tasks)`);
-    } catch {
-        console.warn(`[config] minigame.config.json not found, no minigame tasks`);
-    }
+    // 3. Minigames provide their runnable task variants from their own folders.
+    gameConfig.minigame = {tasks: getMinigameTasks()};
+    console.log(`[config] loaded minigame variants (${gameConfig.minigame.tasks.length} tasks)`);
 
     // 5. Env-var overrides (highest priority)
     if (process.env.PORT) {

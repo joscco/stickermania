@@ -9,6 +9,8 @@
   "include": [
     "src/**/*.ts",
     "../minigames/_shared/minigame-stage/**/*.ts",
+    "../minigames/_shared/minigame-component-host/**/*.ts",
+    "../minigames/estimate-opinions/**/*.ts",
     "../minigames/timer-stop/**/*.ts",
     "../packages/shared/src/**/*.ts"
   ],

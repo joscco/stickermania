@@ -1,5 +1,5 @@
 import {computed, inject, Injectable, signal} from '@angular/core';
-import type {ChoiceTask, DrawingTask, MinigameTask, NumberTask, SessionState, ShapeSplitTask, RoundSubmission, PartyGameState, PartyRoundActiveState, PartyRoundResultsState, StickerPlaceTask, TimerStopTask,} from '@birthday/shared';
+import type {MinigameTask, SessionState, RoundSubmission, PartyGameState, PartyRoundActiveState, PartyRoundResultsState} from '@birthday/shared';
 import {roundActivePhase, lobbyPhase, makeSessionState, MOCK_SUBMISSIONS, resultsPhase} from './mock-data';
 import {WorldStore} from '../core/world.store';
 import {GameSessionStore} from '../core/challenge.store';
@@ -126,14 +126,13 @@ export class MockPartyPlayerService {
 export type MockPhase = 'lobby' | 'round-active' | 'round-submitted' | 'round-skipped' | 'round-results';
 
 export const MOCK_TASKS: Record<string, MinigameTask> = {
-  stickerPlace: {id: 'mock-sticker', type: 'sticker-place', title: 'Platziere das Herz!', durationSec: 30, stickerSvgs: ['sticker-shapes-heart']} as StickerPlaceTask,
-  drawing: {id: 'mock-drawing', type: 'drawing', title: 'Zeichne einen Bart!', durationSec: 60} as DrawingTask,
-  choice: {id: 'mock-choice', type: 'choice', title: 'Wähle deinen Lieblingskäse', durationSec: 30, options: [{label: 'Gouda'}, {label: 'Cheddar'}, {label: 'Brie'}, {label: 'Camembert'}]} as ChoiceTask,
-  number: {id: 'mock-number', type: 'number', title: 'Wie viele Kinder?', durationSec: 30, min: 0, max: 10, default: 2} as NumberTask,
-  timer: {id: 'mock-timer', type: 'timer-stop', title: 'Stoppe bei 5 Sekunden!', durationSec: 30, targetSec: 5} as TimerStopTask,
-  shapeSplit: {id: 'mock-split', type: 'shape-split', title: 'Teile die Fläche 50:50!', durationSec: 45, polygon: [], targetFraction: 0.5} as ShapeSplitTask,
-  textAnswer: {id: 'mock-text', type: 'text-answer', title: 'Nenne ein Gericht vom Italiener!', durationSec: 30, voteQuestion: 'Welches Gericht hat mehr Kalorien?'} as import("@birthday/shared").TextAnswerTask,
-  thesis: {id: 'mock-thesis', type: 'thesis', title: 'Ananas auf Pizza ist legitim', durationSec: 30} as import("@birthday/shared").ThesisTask,
+  stickerPlace: {id: 'mock-sticker', type: 'sticker-place', title: 'Platziere das Herz!', durationSec: 30, stickerSvgs: ['sticker-shapes-heart']},
+  drawing: {id: 'mock-drawing', type: 'drawing', title: 'Zeichne einen Bart!', durationSec: 60},
+  choice: {id: 'mock-choice', type: 'choice', title: 'Wähle deinen Lieblingskäse', durationSec: 30, options: [{label: 'Gouda'}, {label: 'Cheddar'}, {label: 'Brie'}, {label: 'Camembert'}]},
+  number: {id: 'mock-number', type: 'number', title: 'Wie viele Kinder?', durationSec: 30, min: 0, max: 10, default: 2},
+  shapeSplit: {id: 'mock-split', type: 'shape-split', title: 'Teile die Fläche 50:50!', durationSec: 45, polygon: [], targetFraction: 0.5},
+  textAnswer: {id: 'mock-text', type: 'text-answer', title: 'Nenne ein Gericht vom Italiener!', durationSec: 30, voteQuestion: 'Welches Gericht hat mehr Kalorien?'},
+  thesis: {id: 'mock-thesis', type: 'thesis', title: 'Ananas auf Pizza ist legitim', durationSec: 30},
 };
 
 export function makeMockSessionState(phase: MockPhase, taskKey?: keyof typeof MOCK_TASKS, customTask?: MinigameTask): SessionState {

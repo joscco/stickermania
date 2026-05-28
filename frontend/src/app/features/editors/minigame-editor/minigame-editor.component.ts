@@ -1,19 +1,12 @@
 import {CommonModule} from "@angular/common";
 import {Component, computed, signal} from "@angular/core";
-import {TimerStopGame} from "../../../../../../minigames/timer-stop/game";
-import type {
-  TimerStopPlayerResult,
-  TimerStopSubmission,
-} from "../../../../../../minigames/timer-stop/game";
-import {TIMER_STOP_VARIANTS} from "../../../../../../minigames/timer-stop/variants";
-import {TimerStopPhaseComponent} from "../../../../../../minigames/timer-stop/player-ui/phase-0-stop/timer-stop-phase.component";
-import {TimerStopResultComponent} from "../../../../../../minigames/timer-stop/player-ui/result/timer-stop-result.component";
-import type {
-  TimerStopPlayerUiEvent,
-  TimerStopPlayerUiState,
-} from "../../../../../../minigames/timer-stop/player-ui/ui-contract";
-import {TIMER_STOP_STAGE_SIZE} from "../../../../../../minigames/timer-stop/player-ui/ui-contract";
+import type {MinigamePlayerResult, MinigameSubmission} from "../../../../../../packages/shared/src/minigame";
+import {MinigameComponentHostComponent} from "../../../../../../minigames/_shared/minigame-component-host/minigame-component-host.component";
 import {MinigameStageComponent} from "../../../../../../minigames/_shared/minigame-stage/minigame-stage.component";
+import {
+  MinigameFrontendDefinition,
+  getMinigameFrontendDefinitions,
+} from "../../../../../../minigames/frontend-registry";
 
 type EditorPhase = "play" | "result";
 
@@ -28,15 +21,14 @@ interface SimPlayer {
   imports: [
     CommonModule,
     MinigameStageComponent,
-    TimerStopPhaseComponent,
-    TimerStopResultComponent,
+    MinigameComponentHostComponent,
   ],
   templateUrl: "./minigame-editor.component.html",
   host: {class: "block h-dvh overflow-hidden bg-neutral-100 text-neutral-950"},
 })
 export class MinigameEditorComponent {
-  public readonly stageSize = TIMER_STOP_STAGE_SIZE;
-  public readonly variants = TIMER_STOP_VARIANTS;
+  public readonly definitions = getMinigameFrontendDefinitions();
+  public readonly selectedDefinitionIndex = signal(0);
   public readonly selectedVariantIndex = signal(0);
   public readonly phase = signal<EditorPhase>("play");
   public readonly players = signal<SimPlayer[]>([
@@ -45,44 +37,45 @@ export class MinigameEditorComponent {
     {id: "p3", name: "Charlie"},
     {id: "p4", name: "Diana"},
   ]);
-  public readonly submissionsByPlayerId = signal<Record<string, TimerStopSubmission>>({});
-  public readonly draftsByPlayerId = signal<Record<string, number>>({});
-  public readonly manualSecondsByPlayerId = signal<Record<string, number>>({
-    p1: 4.82,
-    p2: 5.31,
-    p3: 5.02,
-    p4: 6.14,
-  });
+  public readonly submissionsByPlayerId = signal<Record<string, MinigameSubmission>>({});
+  public readonly draftsByPlayerId = signal<Record<string, unknown>>({});
 
-  public readonly selectedVariant = computed(
-    () => this.variants[this.selectedVariantIndex()] ?? this.variants[0],
+  public readonly definition = computed(
+    () => this.definitions[this.selectedDefinitionIndex()] ?? this.definitions[0],
   );
-
-  public readonly game = computed(() => new TimerStopGame(this.selectedVariant()));
-
+  public readonly selectedVariant = computed(
+    () => this.definition().variants[this.selectedVariantIndex()] ?? this.definition().variants[0],
+  );
+  public readonly selectedTask = computed(() =>
+    this.definition().taskFromVariant(this.selectedVariant()),
+  );
   public readonly result = computed(() => {
     const submissions = Object.values(this.submissionsByPlayerId());
     if (submissions.length === 0) return null;
-    return this.game().calculateResults(submissions);
-  });
 
+    return this.definition().calculateResults(
+      submissions,
+      this.selectedVariant(),
+    );
+  });
   public readonly submittedCount = computed(
     () => Object.keys(this.submissionsByPlayerId()).length,
   );
-
+  public readonly canEvaluate = computed(() => this.submittedCount() > 0);
   public readonly rankedResults = computed(() => {
     const result = this.result();
     if (!result) return [];
 
     return Object.values(result.resultsByPlayerId).sort(
-      (a, b) =>
-        a.placement - b.placement ||
-        a.deviationSeconds - b.deviationSeconds ||
-        a.playerId.localeCompare(b.playerId),
+      (a, b) => a.placement - b.placement || a.playerId.localeCompare(b.playerId),
     );
   });
 
-  public readonly canEvaluate = computed(() => this.submittedCount() > 0);
+  public selectDefinition(index: number): void {
+    this.selectedDefinitionIndex.set(index);
+    this.selectedVariantIndex.set(0);
+    this.resetRound();
+  }
 
   public selectVariant(index: number): void {
     this.selectedVariantIndex.set(index);
@@ -101,31 +94,14 @@ export class MinigameEditorComponent {
       ...players,
       {id, name: `Spieler ${nextIndex}`},
     ]);
-    this.manualSecondsByPlayerId.update((values) => ({
-      ...values,
-      [id]: this.selectedVariant().targetSeconds,
-    }));
   }
 
   public removePlayer(playerId: string): void {
     if (this.players().length <= 1) return;
 
     this.players.update((players) => players.filter((player) => player.id !== playerId));
-    this.submissionsByPlayerId.update((submissions) => {
-      const next = {...submissions};
-      delete next[playerId];
-      return next;
-    });
-    this.draftsByPlayerId.update((drafts) => {
-      const next = {...drafts};
-      delete next[playerId];
-      return next;
-    });
-    this.manualSecondsByPlayerId.update((values) => {
-      const next = {...values};
-      delete next[playerId];
-      return next;
-    });
+    this.submissionsByPlayerId.update((values) => removeRecordKey(values, playerId));
+    this.draftsByPlayerId.update((values) => removeRecordKey(values, playerId));
   }
 
   public renamePlayer(playerId: string, event: Event): void {
@@ -137,49 +113,34 @@ export class MinigameEditorComponent {
     );
   }
 
-  public setManualSeconds(playerId: string, event: Event): void {
-    const value = Number((event.target as HTMLInputElement).value);
-    if (!Number.isFinite(value)) return;
-
-    this.manualSecondsByPlayerId.update((values) => ({
-      ...values,
-      [playerId]: value,
-    }));
-  }
-
-  public manualSecondsFor(playerId: string): number {
-    return this.manualSecondsByPlayerId()[playerId] ?? this.selectedVariant().targetSeconds;
-  }
-
-  public submitManual(playerId: string): void {
-    this.setDraft(playerId, this.manualSecondsFor(playerId));
-  }
-
   public fillSampleSubmissions(): void {
-    for (const player of this.players()) {
-      this.submit(player.id, this.manualSecondsFor(player.id));
-    }
+    this.submissionsByPlayerId.set(
+      Object.fromEntries(
+        this.players().map((player, index) => [
+          player.id,
+          this.definition().createSampleSubmission(player.id, index),
+        ]),
+      ),
+    );
   }
 
   public clearSubmission(playerId: string): void {
-    this.submissionsByPlayerId.update((submissions) => {
-      const next = {...submissions};
-      delete next[playerId];
-      return next;
-    });
-    this.draftsByPlayerId.update((drafts) => {
-      const next = {...drafts};
-      delete next[playerId];
-      return next;
-    });
+    this.submissionsByPlayerId.update((submissions) => removeRecordKey(submissions, playerId));
+    this.draftsByPlayerId.update((drafts) => removeRecordKey(drafts, playerId));
     if (this.submittedCount() === 0) this.phase.set("play");
   }
 
   public submitPlayer(playerId: string): void {
-    const draft = this.draftsByPlayerId()[playerId];
-    if (draft === undefined) return;
+    const submission = this.definition().createEditorSubmission(
+      playerId,
+      this.draftFor(playerId),
+    );
+    if (!submission) return;
 
-    this.submit(playerId, draft);
+    this.submissionsByPlayerId.update((submissions) => ({
+      ...submissions,
+      [playerId]: submission,
+    }));
   }
 
   public skipPlayer(playerId: string): void {
@@ -192,32 +153,37 @@ export class MinigameEditorComponent {
     this.phase.set("play");
   }
 
-  public onPlayerEvent(event: TimerStopPlayerUiEvent): void {
-    if (event.type === "draft-change") {
-      this.setDraft(event.playerId, event.stoppedAtSeconds);
-      return;
-    }
-
-    this.phase.set("play");
+  public onMinigameEvent(playerId: string, event: unknown): void {
+    this.draftsByPlayerId.update((drafts) => ({
+      ...drafts,
+      [playerId]: this.definition().reducePlayerEvent(event, this.draftFor(playerId)),
+    }));
   }
 
-  public stateFor(player: SimPlayer): TimerStopPlayerUiState {
-    const submission = this.submissionsByPlayerId()[player.id];
-    const ownResult = this.result()?.resultsByPlayerId[player.id];
-
-    return {
+  public playStateFor(player: SimPlayer): unknown {
+    return this.definition().createPlayState({
       playerId: player.id,
-      phase: this.phase() === "play" ? "stop" : "result",
-      variantData: this.selectedVariant(),
-      ownSubmission: submission,
-      draftStoppedAtSeconds: this.draftsByPlayerId()[player.id],
-      ownResult,
-      roundEndsAt: Date.now() + this.selectedVariant().firstRoundSeconds * 1000,
+      task: this.selectedTask(),
+      draft: this.draftFor(player.id),
+      ownSubmission: this.submissionsByPlayerId()[player.id],
+      ownResult: this.resultFor(player.id) ?? undefined,
+      roundEndsAt: Date.now() + Number(this.selectedTask().durationSec ?? 60) * 1000,
       serverNow: Date.now(),
-    };
+    });
   }
 
-  public resultFor(playerId: string): TimerStopPlayerResult | null {
+  public resultStateFor(player: SimPlayer): unknown {
+    return this.definition().createResultState({
+      playerId: player.id,
+      task: this.selectedTask(),
+      ownSubmission: this.submissionsByPlayerId()[player.id],
+      ownResult: this.resultFor(player.id) ?? undefined,
+      roundEndsAt: 0,
+      serverNow: Date.now(),
+    });
+  }
+
+  public resultFor(playerId: string): MinigamePlayerResult | null {
     return this.result()?.resultsByPlayerId[playerId] ?? null;
   }
 
@@ -225,20 +191,46 @@ export class MinigameEditorComponent {
     return this.players().find((player) => player.id === playerId)?.name ?? playerId;
   }
 
-  private submit(playerId: string, stoppedAtSeconds: number): void {
-    this.submissionsByPlayerId.update((submissions) => ({
-      ...submissions,
-      [playerId]: {
-        playerId,
-        stoppedAtSeconds: Math.max(0, stoppedAtSeconds),
-      },
-    }));
+  public submissionLabel(playerId: string): string | null {
+    const submission = this.submissionsByPlayerId()[playerId];
+    if (!submission) return null;
+    return this.definition().submissionLabel(submission, this.selectedVariant());
   }
 
-  private setDraft(playerId: string, stoppedAtSeconds: number): void {
-    this.draftsByPlayerId.update((drafts) => ({
-      ...drafts,
-      [playerId]: Math.max(0, stoppedAtSeconds),
-    }));
+  public draftLabel(playerId: string): string | null {
+    return this.definition().draftLabel(this.draftFor(playerId), this.selectedVariant());
   }
+
+  public canSubmitPlayer(playerId: string): boolean {
+    return this.definition().canSubmit(this.draftFor(playerId));
+  }
+
+  public resultDetail(result: MinigamePlayerResult): string {
+    return this.definition().resultDetail(result);
+  }
+
+  public resultValue(result: MinigamePlayerResult): string {
+    return this.definition().resultValue(result);
+  }
+
+  public resultUnitLabel(result: MinigamePlayerResult): string {
+    return this.definition().resultUnitLabel(result);
+  }
+
+  public variantMeta(
+    definition: MinigameFrontendDefinition,
+    variant: unknown,
+  ): string {
+    return definition.variantMeta(variant);
+  }
+
+  private draftFor(playerId: string): unknown {
+    return this.draftsByPlayerId()[playerId] ?? this.definition().initialDraft();
+  }
+}
+
+function removeRecordKey<T>(values: Record<string, T>, key: string): Record<string, T> {
+  const next = {...values};
+  delete next[key];
+  return next;
 }

@@ -1,74 +1,110 @@
-import {Minigame, MinigamePlayerResult, MinigameResult, MinigameSubmission, MinigameVariantData} from "../../packages/shared/src/minigame";
+import {
+  Minigame,
+  MinigamePlayerResult,
+  MinigameResult,
+  MinigameSubmission,
+  MinigameVariantData,
+} from "../../packages/shared/src/minigame.js";
 
-export interface EstimateOpinionsGameVariantData extends MinigameVariantData {
-    question: string; // Ananas ist ein legitimer Pizzabelag.
-    optionA: string; // Stimme zu
-    optionB: string; // Stimme nicht zu
+export interface EstimateOpinionsVariantData extends MinigameVariantData {
+  id: string;
+  title: string;
+  firstRoundSeconds: number;
+  question: string;
+  optionA: string;
+  optionB: string;
 }
 
-export interface EstimateOpinionsGameSubmission extends MinigameSubmission {
-    playerId: string; // id of the player
-    choseOptionA: boolean; // Did the player use option A?
-    estimatedPercentageWithSameOpinion: number; // value between 0 and 1
+export interface EstimateOpinionsSubmission extends MinigameSubmission {
+  playerId: string;
+  choseOptionA: boolean;
+  estimatedPercentageWithSameOpinion: number;
 }
 
-export interface EstimateOpinionsGamePlayerResult extends MinigamePlayerResult {
-    playerId: string;
-    placement: number; // What place did the player make
-    chosenOption: string; // What option did they chose
-    estimatedPercentageWithSameOpinion: number; // What percentage did he think had the same opinion
-    realPercentageWithSameOpinion: number; // How many did really think as he did
+export interface EstimateOpinionsPlayerResult extends MinigamePlayerResult {
+  playerId: string;
+  placement: number;
+  chosenOption: string;
+  choseOptionA: boolean;
+  estimatedPercentageWithSameOpinion: number;
+  realPercentageWithSameOpinion: number;
+  deviationPercentagePoints: number;
 }
 
-export class EstimateOptionsGame implements Minigame<
-    EstimateOpinionsGameVariantData,
-    EstimateOpinionsGameSubmission,
-    EstimateOpinionsGamePlayerResult
+export class EstimateOpinionsGame implements Minigame<
+  EstimateOpinionsVariantData,
+  EstimateOpinionsSubmission,
+  EstimateOpinionsPlayerResult
 > {
-    variantData: EstimateOpinionsGameVariantData;
+  public constructor(private readonly variantData: EstimateOpinionsVariantData) {}
 
-    calculateResults(submissions: EstimateOpinionsGameSubmission[]): MinigameResult<EstimateOpinionsGamePlayerResult> {
-        const playersTotal = submissions.length;
-        const playersWithOpinionA = submissions.filter(s => s.choseOptionA).length;
-        const percentageWithOpinionA = playersWithOpinionA / playersTotal;
-        const playerData = submissions.map(submission => {
-            return {
-                playerId: submission.playerId,
-                chosenOption: submission.choseOptionA ? this.variantData.optionA : this.variantData.optionB,
-                estimatedPercentageWithSameOpinion: submission.estimatedPercentageWithSameOpinion,
-                realPercentageWithSameOpinion: submission.choseOptionA ? percentageWithOpinionA : 1 - percentageWithOpinionA
-            }
-        })
+  public provideData(): EstimateOpinionsVariantData {
+    return this.variantData;
+  }
 
-        const scoresByPlayerId = playerData.map(player => {
-            return {
-                ...player,
-                offset: Math.abs(player.estimatedPercentageWithSameOpinion - player.realPercentageWithSameOpinion)
-            };
-        })
-            .sort((a, b) => b.offset - a.offset);
-
-        let lastOffset = 99;
-        let currentPlacement = 0;
-        let peopleWithCurrentPlacementSoFar = 1;
-        let resultsByPlayerId: Record<string, EstimateOpinionsGamePlayerResult> = {};
-        for (const score of scoresByPlayerId) {
-            if (score.offset == lastOffset) {
-                resultsByPlayerId[score.playerId] = {...score, placement: currentPlacement};
-                peopleWithCurrentPlacementSoFar++;
-            } else {
-                lastOffset = score.offset;
-                const newPlace = currentPlacement + peopleWithCurrentPlacementSoFar
-                resultsByPlayerId[score.playerId] = {...score, placement: newPlace};
-                currentPlacement = newPlace
-                peopleWithCurrentPlacementSoFar = 1;
-            }
-        }
-        return {resultsByPlayerId: resultsByPlayerId};
+  public calculateResults(
+    submissions: EstimateOpinionsSubmission[],
+  ): MinigameResult<EstimateOpinionsPlayerResult> {
+    if (submissions.length === 0) {
+      return {resultsByPlayerId: {}};
     }
 
-    provideData(): EstimateOpinionsGameVariantData {
-        return undefined;
-    }
+    const playersTotal = submissions.length;
+    const playersWithOptionA = submissions.filter((submission) => submission.choseOptionA).length;
+    const percentageWithOptionA = playersWithOptionA / playersTotal;
 
+    const rankedPlayers = submissions
+      .map((submission) => {
+        const realPercentageWithSameOpinion = submission.choseOptionA
+          ? percentageWithOptionA
+          : 1 - percentageWithOptionA;
+        const estimatedPercentageWithSameOpinion = clampPercentage(
+          submission.estimatedPercentageWithSameOpinion,
+        );
+
+        return {
+          playerId: submission.playerId,
+          chosenOption: submission.choseOptionA
+            ? this.variantData.optionA
+            : this.variantData.optionB,
+          choseOptionA: submission.choseOptionA,
+          estimatedPercentageWithSameOpinion,
+          realPercentageWithSameOpinion,
+          deviationPercentagePoints: Math.abs(
+            estimatedPercentageWithSameOpinion - realPercentageWithSameOpinion,
+          ) * 100,
+        };
+      })
+      .sort(
+        (a, b) =>
+          a.deviationPercentagePoints - b.deviationPercentagePoints ||
+          a.playerId.localeCompare(b.playerId),
+      );
+
+    const resultsByPlayerId: Record<string, EstimateOpinionsPlayerResult> = {};
+    let previousDeviation: number | null = null;
+    let previousPlacement = 0;
+
+    rankedPlayers.forEach((player, index) => {
+      const placement =
+        previousDeviation === player.deviationPercentagePoints
+          ? previousPlacement
+          : index + 1;
+
+      resultsByPlayerId[player.playerId] = {
+        ...player,
+        placement,
+      };
+
+      previousDeviation = player.deviationPercentagePoints;
+      previousPlacement = placement;
+    });
+
+    return {resultsByPlayerId};
+  }
+}
+
+export function clampPercentage(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(1, Math.max(0, value));
 }

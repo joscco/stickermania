@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type {FastifyInstance} from "fastify";
+import {getMinigameTasks} from "../../../minigames/registry.js";
 import type {BackendConfig} from "../config.js";
 
 type HitboxEntry = {
@@ -82,10 +83,6 @@ export async function registerEditorApiRoutes(
         return {ok: true};
     });
 
-    // ─── Game Config Task Management ─────────────────────────────────
-
-    const configPath = path.resolve(backendConfig.dataRoot, "..", "minigame.config.json");
-
     // ═══ SVG Sprite ID Listing ═══════════════════════════════════════
 
     app.get("/api/sprite-ids", async () => {
@@ -101,75 +98,28 @@ export async function registerEditorApiRoutes(
         }
     });
 
-    // ═══ Minigame Config CRUD ═══════════════════════════════════════
+    // ═══ Minigame Variant Listing ════════════════════════════════════
 
     app.get("/api/game-config", async () => {
-        try {
-            const raw = fs.readFileSync(configPath, "utf-8");
-            return JSON.parse(raw);
-        } catch {
-            return {tasks: []};
-        }
+        return {tasks: getMinigameTasks()};
     });
 
     app.get("/api/game-config/tasks", async () => {
-        try {
-            const raw = fs.readFileSync(configPath, "utf-8");
-            const config = JSON.parse(raw) as any;
-            const tasks = config?.tasks ?? [];
-            return tasks.map((t: any, i: number) => ({...t, _index: i}));
-        } catch {
-            return [];
-        }
+        return getMinigameTasks().map((task, index) => ({...task, _index: index}));
     });
 
     app.post<{Body: {task: import("@birthday/shared").MinigameTask}}>("/api/game-config/tasks", async (request, reply) => {
-        try {
-            const raw = fs.readFileSync(configPath, "utf-8");
-            const config = JSON.parse(raw) as any;
-            if (!Array.isArray(config.tasks)) config.tasks = [];
-            config.tasks.push(request.body.task);
-            fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
-            return {ok: true, taskCount: config.tasks.length};
-        } catch (err) {
-            reply.status(500);
-            return {error: String(err)};
-        }
+        reply.status(410);
+        return {error: "Minigame tasks are provided by minigame variants.ts files."};
     });
 
     app.put<{Params: {index: string}; Body: {task: import("@birthday/shared").MinigameTask}}>("/api/game-config/tasks/:index", async (request, reply) => {
-        try {
-            const idx = parseInt(request.params.index, 10);
-            const raw = fs.readFileSync(configPath, "utf-8");
-            const config = JSON.parse(raw) as any;
-            if (!config.tasks || idx < 0 || idx >= config.tasks.length) {
-                reply.status(404);
-                return {error: "Task not found"};
-            }
-            config.tasks[idx] = request.body.task;
-            fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
-            return {ok: true, index: idx};
-        } catch (err) {
-            reply.status(500);
-            return {error: String(err)};
-        }
+        reply.status(410);
+        return {error: "Minigame tasks are provided by minigame variants.ts files."};
     });
 
     app.delete<{Params: {index: string}}>("/api/game-config/tasks/:index", async (request, reply) => {
-        try {
-            const idx = parseInt(request.params.index, 10);
-            const raw = fs.readFileSync(configPath, "utf-8");
-            const config = JSON.parse(raw) as any;
-            if (!config.tasks || idx < 0 || idx >= config.tasks.length) {
-                reply.status(404);
-                return {error: "Task not found"};
-            }
-            config.tasks.splice(idx, 1);
-            fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
-            return {ok: true, taskCount: config.tasks.length};
-        } catch (err) {
-            reply.status(500);
-            return {error: String(err)};
-        }
+        reply.status(410);
+        return {error: "Minigame tasks are provided by minigame variants.ts files."};
     });
 }

@@ -21,6 +21,7 @@ import {BoardComponent} from '../game/board/board.component';
 import {LandingComponent} from '../game/board/scenes/landing/landing.component';
 import {OfflineComponent} from '../game/board/scenes/offline/offline.component';
 import {BoardLobbyComponent} from '../game/board/scenes/board-lobby/board-lobby.component';
+import {getMinigameCatalogTasks} from '../../../../../minigames/frontend-registry';
 
 type ViewMode = 'player' | 'board' | 'landing' | 'offline';
 
@@ -79,7 +80,9 @@ export class CatalogComponent implements OnInit {
     try {
       const data = await firstValueFrom(this.http.get<Array<MinigameTask & {_index?: number}>>("/api/game-config/tasks"));
       this.tasks.set(data);
-    } catch { /* offline */ }
+    } catch {
+      this.tasks.set(getMinigameCatalogTasks());
+    }
   }
 
   // ── Computed ────────────────────────────────────────────────

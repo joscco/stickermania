@@ -12,5 +12,10 @@
     "lib": ["ES2022"],
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "../minigames/registry.ts", "../minigames/timer-stop/server-handler.ts"]
+  "include": [
+    "src/**/*",
+    "../minigames/registry.ts",
+    "../minigames/timer-stop/server-handler.ts",
+    "../minigames/estimate-opinions/server-handler.ts"
+  ]
 }
