@@ -1,6 +1,10 @@
 import type {GameConfig, MinigameClientAction, SessionState, PartyGameState,} from "@birthday/shared";
 import type {GameActionResult, GameEngine} from "../gameModeEngine.js";
-import {transitionToNextRound, transitionToRoundResults} from "./roundManager.js";
+import {
+    transitionToFollowUpRoundIfAvailable,
+    transitionToNextRound,
+    transitionToRoundResults,
+} from "./roundManager.js";
 import {
     advanceToNextRound,
     boardAdvancesToNextRound,
@@ -148,6 +152,23 @@ export class PartyGameEngine implements GameEngine {
                 gameState.phaseState = {phase: "LOBBY"};
                 return {stateChanged: true, emittedEvents: []};
             }
+
+            if (transitionToFollowUpRoundIfAvailable(sessionState, this.config.minigame, now)) {
+                const newPhase = gameState.phaseState;
+                if (newPhase.phase !== "ROUND_ACTIVE") {
+                    return {stateChanged: false, emittedEvents: []};
+                }
+                return {
+                    stateChanged: true,
+                    emittedEvents: [{
+                        type: "round-started",
+                        roundIndex: gameState.currentRoundIndex,
+                        prompt: gameState.currentPrompt,
+                        endsAt: newPhase.roundEndsAt,
+                    }],
+                };
+            }
+
             transitionToRoundResults(sessionState, now);
             const newPhase = gameState.phaseState;
             if (newPhase.phase !== "ROUND_RESULTS") {

@@ -5,8 +5,6 @@
     <app-timer-fill [percent]="screenData.timerPercentElapsed()"/>
   }
 
-  <app-timer-notification [animPresence]="screenData.showTimerNotifications()" [text]="screenData.timerNotification()"/>
-
   <app-player-header
     [vm]="screenData.headerVm()"
     [timerPercent]="screenData.timerActive() ? screenData.timerPercentLeft() : 100"
@@ -47,6 +45,7 @@
           [roundIndex]="screenData.buildingVm().roundIndex"
           [prompt]="screenData.buildingVm().prompt"
           [task]="screenData.buildingVm().task"
+          [playerId]="screenData.buildingVm().myPlayerId"
           [timeUp]="screenData.timerTimeUp()"
           (skipRound)="skipRoundWithSound()"
           (submitMinigame)="onSubmitMinigame($event)"

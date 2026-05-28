@@ -31,6 +31,7 @@ export class PlayerBuildingComponent {
   public readonly roundIndex = input<number>(0);
   public readonly prompt = input<string>("");
   public readonly task = input<MinigameTask | null>(null);
+  public readonly playerId = input<string>("");
   public readonly timeUp = input<boolean>(false);
 
   public readonly skipRound = output<void>();
@@ -55,7 +56,7 @@ export class PlayerBuildingComponent {
 
     const durationSec = Number(task.durationSec ?? 60);
     return definition.createPlayState({
-      playerId: "local-player",
+      playerId: this.playerId(),
       task,
       draft: this.currentDraft(),
       roundEndsAt: Date.now() + durationSec * 1000,

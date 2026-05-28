@@ -11,7 +11,12 @@ import type {
     SessionState,
 } from "@birthday/shared";
 import {getMinigameHandler} from "../../../../minigames/registry.js";
-import {transitionToNextRound, transitionToRoundActive, transitionToRoundResults} from "./roundManager.js";
+import {
+    transitionToFollowUpRoundIfAvailable,
+    transitionToNextRound,
+    transitionToRoundActive,
+    transitionToRoundResults,
+} from "./roundManager.js";
 
 type HandlerResult = { stateChanged: boolean; events: PartyGameServerEvent[] };
 const noChange: HandlerResult = {stateChanged: false, events: []};
@@ -127,6 +132,10 @@ export function endRoundEarly(
     if (roundSubmissions.length === 0) {
         state.gameState.phaseState = {phase: "LOBBY"};
         return {stateChanged: true, events: []};
+    }
+
+    if (transitionToFollowUpRoundIfAvailable(state, _config.minigame, now)) {
+        return buildRoundStartedEvents(state);
     }
 
     transitionToRoundResults(state, now);

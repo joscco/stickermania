@@ -88,6 +88,7 @@ export class PlayerScreenDataService {
         roundIndex: this.partyService.currentRoundIndex(),
         prompt: this.partyService.currentPrompt(),
         task: this.partyService.currentTask(),
+        myPlayerId: this.sessionStore.playerId() ?? "",
     }));
 
     public readonly lobbyWaitingVm = computed(() => ({

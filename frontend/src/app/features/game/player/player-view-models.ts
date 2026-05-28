@@ -18,6 +18,7 @@ export interface BuildingViewModel {
   roundIndex: number;
   prompt: string;
   task: MinigameTask | null;
+  myPlayerId: string;
 }
 
 export interface BuildingSubmittedViewModel {

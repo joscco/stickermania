@@ -7,13 +7,6 @@
     >
       <app-svg [name]="musicPlaying() ? 'icon-music' : 'icon-no-music'" w="18"/>
     </button>
-    @if (showMusicTooltip()) {
-      <div
-        class="bg-neutral-800 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap animate-pulse pointer-events-none"
-      >
-        Ein bisschen musikalische Untermalung?
-      </div>
-    }
   </div>
 }
 

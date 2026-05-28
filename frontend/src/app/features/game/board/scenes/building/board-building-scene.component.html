@@ -1,9 +1,9 @@
-<div class="h-full flex flex-col">
+<div class="h-full flex flex-col items-center">
   <app-round-info
     [roundIndex]="gameState()?.currentRoundIndex ?? 0"
     [title]="gameState()?.currentPrompt ?? ''"
     [task]="$any(gameState())?.currentTask ?? null"
-    class="w-full max-w-lg shrink-0"
+    class="w-full max-w-lg shrink-0 rounded-lg"
   />
 
   <!-- Player status -->

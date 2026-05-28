@@ -50,12 +50,13 @@ export class PlayerResultsComponent {
         const task = this.currentTask();
         const definition = this.minigameDefinition();
         const minigameResult = this.myMinigameResult()?.result;
-        if (!task || !definition || !minigameResult) return null;
+        const minigameSubmission = this.myMinigameSubmission();
+        if (!task || !definition || (!minigameResult && !minigameSubmission)) return null;
 
         return definition.createResultState({
             playerId: this.myPlayerId(),
             task,
-            ownSubmission: this.myMinigameSubmission() ?? undefined,
+            ownSubmission: minigameSubmission ?? undefined,
             ownResult: minigameResult,
             roundEndsAt: 0,
             serverNow: Date.now(),
