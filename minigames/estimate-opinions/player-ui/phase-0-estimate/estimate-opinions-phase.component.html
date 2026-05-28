@@ -1,13 +1,23 @@
 <section class="flex h-full w-full flex-col bg-white p-7 text-center">
-  <div class="flex min-h-0 flex-1 flex-col justify-center gap-4">
+  <div class="grid shrink-0 gap-1">
+    <p class="text-[10px] font-bold uppercase leading-tight text-neutral-400">
+      Waehle eine Antwort und schaetze danach, wie viele deine Meinung teilen.
+    </p>
+
+    <p class="text-[10px] leading-tight text-neutral-500">
+      Gewinner ist, wer die eigene Zustimmungsgruppe am besten einschaetzt.
+    </p>
+  </div>
+
+  <div class="flex min-h-0 flex-1 flex-col justify-center gap-5">
     <h2 class="text-xl font-black leading-tight text-neutral-950">
       {{ state().variantData.question }}
     </h2>
 
-    <div class="grid gap-2">
+    <div class="mx-auto grid w-full max-w-72 grid-cols-2 gap-3">
       <button
         type="button"
-        class="min-h-14 rounded-xl border px-4 text-base font-black leading-tight"
+        class="min-h-20 rounded-xl border px-4 text-lg font-black leading-tight"
         [class.border-neutral-950]="draft().choseOptionA === true"
         [class.bg-neutral-950]="draft().choseOptionA === true"
         [class.text-white]="draft().choseOptionA === true"
@@ -21,7 +31,7 @@
 
       <button
         type="button"
-        class="min-h-14 rounded-xl border px-4 text-base font-black leading-tight"
+        class="min-h-20 rounded-xl border px-4 text-lg font-black leading-tight"
         [class.border-neutral-950]="draft().choseOptionA === false"
         [class.bg-neutral-950]="draft().choseOptionA === false"
         [class.text-white]="draft().choseOptionA === false"
