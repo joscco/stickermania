@@ -8,6 +8,7 @@ describe("asset-url-cache", () => {
   const environment: AssetUrlCacheEnvironment = {
     origin: "http://localhost:4200",
     hostname: "localhost",
+    baseUrl: "http://localhost:4200/",
   };
 
   it("skips virtual and inline asset URLs", () => {
@@ -39,6 +40,19 @@ describe("asset-url-cache", () => {
     expect(assetCacheDescriptor("https://cdn.example.com/assets/png/avatar.png?x=1", environment)).toEqual({
       cacheKey: "http://localhost:4200/assets/png/avatar.png?x=1",
       requestUrl: "https://cdn.example.com/assets/png/avatar.png?x=1",
+    });
+  });
+
+  it("resolves root-relative bundled assets against the document base URL", () => {
+    const githubPagesEnvironment: AssetUrlCacheEnvironment = {
+      origin: "https://joscco.github.io",
+      hostname: "joscco.github.io",
+      baseUrl: "https://joscco.github.io/stickermania/",
+    };
+
+    expect(assetCacheDescriptor("/assets/default-stickers/letter-7.png", githubPagesEnvironment)).toEqual({
+      cacheKey: "https://joscco.github.io/stickermania/assets/default-stickers/letter-7.png",
+      requestUrl: "https://joscco.github.io/stickermania/assets/default-stickers/letter-7.png",
     });
   });
 

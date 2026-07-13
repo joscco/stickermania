@@ -41,14 +41,14 @@
 @font-face {
   font-family: 'Darumadrop One';
   src: local('Darumadrop One'),
-  url('/assets/DarumadropOne-Regular.ttf') format('truetype');
+  url('../public/assets/DarumadropOne-Regular.ttf') format('truetype');
   font-display: swap;
 }
 
 @font-face {
   font-family: 'Darumadrop One Fixed';
   src: local('Darumadrop One'),
-  url('/assets/DarumadropOne-Regular.ttf') format('truetype');
+  url('../public/assets/DarumadropOne-Regular.ttf') format('truetype');
   ascent-override: 80%;
   descent-override: 20%;
   line-gap-override: 0%;

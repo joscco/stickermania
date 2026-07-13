@@ -13,6 +13,7 @@ export type AssetCacheDescriptor = {
 export type AssetUrlCacheEnvironment = {
   origin: string;
   hostname: string;
+  baseUrl: string;
 };
 
 export type AssetPreloadOptions = {
@@ -25,7 +26,7 @@ const DEFAULT_PRELOAD_BATCH_SIZE = 6;
 export function cachedAssetUrl(url: string): Promise<string> {
   const descriptor = assetCacheDescriptor(url);
   if (!descriptor || typeof window === "undefined") {
-    return Promise.resolve(url);
+    return Promise.resolve(resolveBrowserAssetUrl(url));
   }
 
   const cached = objectUrlCache.get(descriptor.cacheKey);
@@ -42,10 +43,24 @@ export function cachedAssetUrl(url: string): Promise<string> {
         entry.objectUrl = loaded.objectUrl;
         return loaded.url;
       })
-      .catch(() => url),
+      .catch(() => resolveBrowserAssetUrl(url)),
   };
   objectUrlCache.set(descriptor.cacheKey, entry);
   return entry.promise;
+}
+
+export function resolveBrowserAssetUrl(
+  url: string,
+  environment: AssetUrlCacheEnvironment | null = browserAssetUrlCacheEnvironment(),
+): string {
+  if (!url || !environment) return url;
+  if (url.startsWith("/assets/")) {
+    return new URL(url.slice(1), environment.baseUrl).href;
+  }
+  if (url.startsWith("assets/")) {
+    return new URL(url, environment.baseUrl).href;
+  }
+  return url;
 }
 
 export function preloadAssetUrls(urls: Iterable<string | null | undefined>, options?: AssetPreloadOptions): void {
@@ -79,7 +94,7 @@ export function assetCacheDescriptor(
   if (!url || url.startsWith("sprite:#") || url.startsWith("data:") || url.startsWith("blob:")) return null;
   if (!environment) return null;
 
-  const parsed = parseAssetUrl(url, environment.origin);
+  const parsed = parseAssetUrl(resolveBrowserAssetUrl(url, environment), environment.origin);
   if (!parsed) return null;
   if (!isCacheableAssetPath(parsed.pathname)) return null;
 
@@ -97,6 +112,7 @@ function browserAssetUrlCacheEnvironment(): AssetUrlCacheEnvironment | null {
   return {
     origin: window.location.origin,
     hostname: window.location.hostname,
+    baseUrl: document.baseURI || `${window.location.origin}/`,
   };
 }
 
@@ -110,9 +126,9 @@ function parseAssetUrl(url: string, origin: string): URL | null {
 
 export function isCacheableAssetPath(pathname: string): boolean {
   return pathname.startsWith("/api/assets/")
-    || pathname.startsWith("/assets/default-stickers/")
-    || pathname.startsWith("/assets/png/")
-    || pathname.startsWith("/assets/svg/");
+    || /(?:^|\/)assets\/default-stickers\//.test(pathname)
+    || /(?:^|\/)assets\/png\//.test(pathname)
+    || /(?:^|\/)assets\/svg\//.test(pathname);
 }
 
 function shouldUseSameOriginRequest(url: URL, environment: AssetUrlCacheEnvironment): boolean {

@@ -1,12 +1,12 @@
 const CACHE_NAME = "stickermania-local-web-v1";
 const APP_SHELL_URLS = [
-  "/",
-  "/index.html",
-  "/assets/sprite-manifest.json",
-  "/assets/sprite.svg",
-  "/assets/svg/logo.svg",
-  "/assets/svg/board-dot-pattern.svg",
-  "/assets/DarumadropOne-Regular.ttf"
+  "./",
+  "index.html",
+  "assets/sprite-manifest.json",
+  "assets/sprite.svg",
+  "assets/svg/logo.svg",
+  "assets/svg/board-dot-pattern.svg",
+  "assets/DarumadropOne-Regular.ttf"
 ];
 
 self.addEventListener("install", event => {
@@ -36,7 +36,7 @@ self.addEventListener("fetch", event => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(networkFirst(request, "/"));
+    event.respondWith(networkFirst(request, "./"));
     return;
   }
 

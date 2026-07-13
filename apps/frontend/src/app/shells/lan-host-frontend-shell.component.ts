@@ -1,5 +1,6 @@
 import {CommonModule} from "@angular/common";
 import {Component, OnInit, signal} from "@angular/core";
+import {resolveBrowserAssetUrl} from "../core/assets/asset-url-cache";
 import {LanHostBoardComponent} from "../features/board-screen/lan-host-board.component";
 import {PlayerComponent} from "../features/player/player-shell/player.component";
 import {preloadSprite} from "../shared/stickers/model/sprite-url.util";
@@ -36,7 +37,7 @@ async function warmUpHostBoard(): Promise<void> {
   await Promise.allSettled([
     preloadSprite(),
     import("pixi.js"),
-    fetch("/assets/svg/board-dot-pattern.svg", {cache: "force-cache"}).then(response => response.arrayBuffer()),
+    fetch(resolveBrowserAssetUrl("/assets/svg/board-dot-pattern.svg"), {cache: "force-cache"}).then(response => response.arrayBuffer()),
     nextPaint(),
   ]);
   await nextPaint();

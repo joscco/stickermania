@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import type {SessionState} from "@birthday/shared";
 import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import {resolveBrowserAssetUrl} from "../../../core/assets/asset-url-cache";
 import {STICKERMANIA_COLORS} from "../../../shared/theme/stickermania-theme";
 
 export type SessionAssetExportInfo = {
@@ -57,9 +58,10 @@ async function addExportAssets(
 }
 
 async function addFetchedFile(zip: JSZip, url: string, path: string): Promise<void> {
-  const response = await fetch(url);
+  const requestUrl = resolveBrowserAssetUrl(url);
+  const response = await fetch(requestUrl);
   if (!response.ok) {
-    throw new Error(`Could not fetch ${url}`);
+    throw new Error(`Could not fetch ${requestUrl}`);
   }
   zip.file(path, await response.blob());
 }
@@ -89,7 +91,7 @@ function rewriteStateAssetUrls(state: SessionState, assetLookup: Map<string, str
 
 function normalizedAssetUrl(url: string): string {
   try {
-    const parsed = new URL(url, window.location.origin);
+    const parsed = new URL(resolveBrowserAssetUrl(url), window.location.origin);
     parsed.search = "";
     parsed.hash = "";
     return parsed.href;
