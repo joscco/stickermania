@@ -211,7 +211,7 @@ export class LocalSessionRuntimeService {
   public async importSessionBackup(file: File): Promise<SessionSummary> {
     const backup = JSON.parse(await file.text()) as Partial<LocalGameBackup>;
     if (backup.format !== LOCAL_GAME_BACKUP_FORMAT || (backup.version !== 1 && backup.version !== 2) || !this.isSessionStateLike(backup.state)) {
-      throw new Error("Invalid Stickermania local session backup.");
+      throw new Error("Invalid stickermania local session backup.");
     }
 
     backup.state.sessionId = LOCAL_GAME_ID;

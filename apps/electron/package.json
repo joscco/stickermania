@@ -1,8 +1,8 @@
 {
   "name": "@birthday/electron",
   "version": "0.1.0",
-  "description": "Desktop host shell for Stickermania LAN games.",
-  "author": "Stickermania",
+  "description": "Desktop host shell for stickermania LAN games.",
+  "author": "stickermania",
   "private": true,
   "type": "module",
   "main": "main.js",
@@ -29,7 +29,7 @@
   },
   "build": {
     "appId": "de.stickermania.host",
-    "productName": "Stickermania",
+    "productName": "stickermania",
     "icon": "build/icon.png",
     "asar": true,
     "files": [

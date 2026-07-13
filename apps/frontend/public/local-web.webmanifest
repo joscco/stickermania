@@ -1,7 +1,7 @@
 {
-  "name": "Stickermania Local",
-  "short_name": "Stickermania",
-  "description": "Stickermania als lokale Browser-Version ohne Backend.",
+  "name": "stickermania Local",
+  "short_name": "stickermania",
+  "description": "stickermania als lokale Browser-Version ohne Backend.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -13,7 +13,7 @@ let mainWindow = null;
 let backendProcess = null;
 let backendBaseUrl = null;
 
-app.setName("Stickermania");
+app.setName("stickermania");
 app.commandLine.appendSwitch("enable-gpu-rasterization");
 app.commandLine.appendSwitch("enable-zero-copy");
 app.commandLine.appendSwitch("disable-background-timer-throttling");
@@ -46,8 +46,8 @@ app.whenReady().then(async () => {
   } catch (error) {
     await dialog.showMessageBox({
       type: "error",
-      title: "Stickermania Host konnte nicht starten",
-      message: "Der lokale Stickermania-Server konnte nicht gestartet werden.",
+      title: "stickermania Host konnte nicht starten",
+      message: "Der lokale stickermania-Server konnte nicht gestartet werden.",
       detail: error instanceof Error ? error.message : String(error),
     });
     app.quit();
@@ -137,7 +137,7 @@ function startBackend({paths, port}) {
     }
     dialog.showMessageBox({
       type: "error",
-      title: "Stickermania Host wurde beendet",
+      title: "stickermania Host wurde beendet",
       message: "Der lokale Server wurde unerwartet beendet.",
       detail: `Exit-Code: ${code ?? "unbekannt"}\nSignal: ${signal ?? "keins"}`,
     }).catch(() => undefined);
@@ -165,7 +165,7 @@ function createMainWindow(url) {
     height: 900,
     minWidth: 1024,
     minHeight: 720,
-    title: "Stickermania",
+    title: "stickermania",
     backgroundColor: "#f7f2e8",
     icon: resolveWindowIconPath(),
     webPreferences: {
@@ -191,7 +191,7 @@ function createLoadingUrl(paths) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Stickermania startet</title>
+  <title>stickermania startet</title>
   <style>
     html, body {
       height: 100%;
@@ -229,7 +229,7 @@ function createLoadingUrl(paths) {
 </head>
 <body>
   <main class="panel">
-    ${logoDataUrl ? `<img class="logo" src="${logoDataUrl}" alt="Stickermania">` : ""}
+    ${logoDataUrl ? `<img class="logo" src="${logoDataUrl}" alt="stickermania">` : ""}
   </main>
 </body>
 </html>`;

@@ -1,6 +1,6 @@
 # Google Cloud Run Deployment
 
-Diese Anleitung beschreibt den Cloud-Modus von Stickermania. Persönliche Projektwerte und Secrets werden nicht versioniert. Nutze `.env.cloud.example` als Vorlage.
+Diese Anleitung beschreibt den Cloud-Modus von stickermania. Persönliche Projektwerte und Secrets werden nicht versioniert. Nutze `.env.cloud.example` als Vorlage.
 
 ## Voraussetzungen
 

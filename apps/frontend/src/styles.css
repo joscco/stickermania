@@ -58,7 +58,7 @@
   --font-sans: 'Darumadrop One Fixed', 'Darumadrop One', cursive;
   --font-darumadrop: 'Darumadrop One Fixed', 'Darumadrop One', cursive;
 
-  /* Stickermania brand tokens. Tailwind v4 exposes these as bg-stick-yellow,
+  /* stickermania brand tokens. Tailwind v4 exposes these as bg-stick-yellow,
      text-stick-ink, border-stick-paper, etc. */
   --color-stick-ink: #111827;
   --color-stick-ink-hard: #111111;

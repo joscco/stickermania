@@ -102,7 +102,7 @@ jobs:
             "$RELEASE_TAG"
             release-artifacts/*
             --target "$GITHUB_SHA"
-            --title "Stickermania LAN ${RELEASE_TAG}"
+            --title "stickermania LAN ${RELEASE_TAG}"
             --notes "Unsigned LAN desktop build from workflow run ${GITHUB_RUN_NUMBER}."
           )
 

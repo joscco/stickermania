@@ -1,6 +1,6 @@
 # stickermania
 
-Stickermania is a sticker party game. Players create stickers on their phones and place them together on a shared board.
+stickermania is a sticker party game. Players create stickers on their phones and place them together on a shared board.
 
 ## Play In Your Browser
 
@@ -16,10 +16,10 @@ Use the LAN host app when several people want to play together in the same Wi-Fi
 
 ### macOS
 
-1. Open the GitHub repository: https://github.com/joscco/Stickermania
+1. Open the GitHub repository: https://github.com/joscco/stickermania
 2. Go to **Releases**.
 3. Download the latest macOS file, usually a `.dmg` or `.zip`.
-4. Open it and start **Stickermania**.
+4. Open it and start **stickermania**.
 5. If macOS warns that the app cannot be verified, open **System Settings → Privacy & Security** and allow it manually.
 6. Keep the app open and let players scan the QR code.
 
@@ -27,10 +27,10 @@ The current public builds are unsigned. A notarized macOS release still requires
 
 ### Windows
 
-1. Open the GitHub repository: https://github.com/joscco/Stickermania
+1. Open the GitHub repository: https://github.com/joscco/stickermania
 2. Go to **Releases**.
 3. Download the latest Windows installer, usually an `.exe`.
-4. Run the installer and start **Stickermania**.
+4. Run the installer and start **stickermania**.
 5. If Windows Defender Firewall asks for network access, allow access for **Private networks** so phones in the same Wi-Fi can connect.
 6. Keep the app open and let players scan the QR code.
 

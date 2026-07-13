@@ -116,7 +116,7 @@ function staticBoardHtml(state: SessionState): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Stickermania Board</title>
+  <title>stickermania Board</title>
   <style>
     * { box-sizing: border-box; }
     html, body { width: 100%; height: 100%; }

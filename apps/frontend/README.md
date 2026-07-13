@@ -1,4 +1,4 @@
-# Stickermania Frontend
+# stickermania Frontend
 
 Angular-21-SPA fuer Board, Player, DEV-Sticker-Editor und Component-Preview.
 
