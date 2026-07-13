@@ -87,20 +87,22 @@ jobs:
       - name: Publish release assets
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ inputs.release_tag }}
           DRAFT_RELEASE: ${{ inputs.draft_release }}
         run: |
           set -euo pipefail
           ls -la release-artifacts
 
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" release-artifacts/* --clobber
+          if gh release view "$RELEASE_TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" release-artifacts/* --repo "$GH_REPO" --clobber
             exit 0
           fi
 
           release_args=(
             "$RELEASE_TAG"
             release-artifacts/*
+            --repo "$GH_REPO"
             --target "$GITHUB_SHA"
             --title "stickermania LAN ${RELEASE_TAG}"
             --notes "Unsigned LAN desktop build from workflow run ${GITHUB_RUN_NUMBER}."
