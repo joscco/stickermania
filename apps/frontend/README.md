@@ -1,54 +1,58 @@
 # stickermania Frontend
 
-Angular-21-SPA fuer Board, Player, DEV-Sticker-Editor und Component-Preview.
+Angular 21 single-page app for the board, player flow, development sticker editor, and component preview.
 
 ## Start
 
-```bash
-# aus dem Repo-Root
-npm run dev:live
+From the repository root:
 
-# nur Frontend
+```bash
+npm run dev:live
+```
+
+Frontend tools only:
+
+```bash
 npm run dev:tools -w @birthday/frontend
 ```
 
-## Struktur
+## Structure
 
-| Pfad | Zweck |
+| Path | Purpose |
 |---|---|
-| `src/app/core` | API-, WebSocket- und State-Services |
-| `src/app/features/board-screen` | Moderator-/Board-Ansicht |
-| `src/app/features/player` | Player-Shell, Profil, Sticker-Workbench |
-| `src/app/features/player/sticker-workbench/creator` | Crop-, Paint- und Start-Schritt fuer Sticker-Erstellung |
-| `src/app/shared/stickers` | Wiederverwendbare Sticker-Canvas-, Board-Viewport- und Rendering-Bausteine |
-| `src/app/shared/theme/stickermania-theme.ts` | TypeScript-Farbkonstanten fuer Canvas-Code und dynamische Styles |
-| `src/styles.css` | Tailwind-4-Theme-Tokens, Utilities und globale Styles |
+| `src/app/core` | API, WebSocket, runtime, and state services |
+| `src/app/features/board-screen` | Host and board views |
+| `src/app/features/player` | Player shell, profile, and sticker workbench |
+| `src/app/features/player/sticker-workbench/creator` | Crop, paint, and start steps for sticker creation |
+| `src/app/shared/stickers` | Reusable sticker canvas, board viewport, and rendering building blocks |
+| `src/app/shared/theme/stickermania-theme.ts` | TypeScript color constants for canvas code and dynamic styles |
+| `src/styles.css` | Tailwind 4 theme tokens, utilities, and global styles |
 
-## Konfiguration
+## Configuration
 
-Gemeinsame App-Werte kommen aus `@birthday/shared/stickermaniaConfig`.
+Shared app values come from `@birthday/shared/stickermaniaConfig`.
 
-Direktimport bevorzugen:
+Prefer direct imports:
 
 ```ts
 import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
 ```
 
-Nicht fuer konkrete Config-Werte ueber `@birthday/shared` importieren, weil die IDE sonst oft nur in den Barrel-Export oder in `dist/*.d.ts` springt.
+Do not import concrete config values through `@birthday/shared`, because IDE navigation often jumps to the barrel export or to `dist/*.d.ts` instead of the source file.
 
-Wichtige Werte dort:
+Important values:
 
-- `stickers.maxOutputSizePx`: maximale gespeicherte Sticker-Groesse, aktuell 750px
-- `board.*`: Board-Grenzen, Zoom-Limits, Basis-Sticker-Groesse und View-Performance-Schwellen
-- `stickerCreator.*`: Paint-Workspace-Grenzen und Upscale-Regeln
+- `stickers.maxOutputSizePx`: maximum saved sticker size, currently 750px
+- `board.*`: board bounds, zoom limits, base sticker size, and view performance thresholds
+- `stickerCreator.*`: paint workspace bounds and upscale rules
 
-## Farben
+## Colors
 
-Templates sollen Tailwind-Theme-Klassen verwenden, z. B. `bg-stick-yellow`, `text-stick-ink`, `border-stick-paper`.
+Templates should use Tailwind theme classes such as `bg-stick-yellow`, `text-stick-ink`, and `border-stick-paper`.
 
-Canvas-Code oder dynamische Styles sollen `STICKERMANIA_COLORS` aus `src/app/shared/theme/stickermania-theme.ts` verwenden.
+Canvas code and dynamic styles should use `STICKERMANIA_COLORS` from `src/app/shared/theme/stickermania-theme.ts`.
 
-Neue Farben immer in beiden Quellen ergaenzen, wenn sie sowohl in Templates als auch in TypeScript gebraucht werden.
+Add new colors to both sources when they are needed in templates and TypeScript.
 
 ## Checks
 
@@ -58,4 +62,4 @@ npx tsc -p apps/frontend/tsconfig.spec.json --noEmit
 npm run check-stickers -w @birthday/frontend
 ```
 
-Der Production-Build nutzt native optionale Dependencies (`esbuild`, `lightningcss`). Wenn Node/NPM zwischen Rosetta x64 und arm64 gewechselt wurde, muss `node_modules` zur aktiven Architektur passen.
+The production build uses native optional dependencies such as `esbuild` and `lightningcss`. If Node or npm was switched between Rosetta x64 and arm64, `node_modules` must match the active architecture.

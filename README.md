@@ -149,7 +149,7 @@ docs/           planning and architecture notes
 packages/
   shared/       shared types, config, default sticker catalog
 scripts/        cloud and infrastructure scripts
-wlan/           optional Wi-Fi QR template and generator
+wlan/           optional Wi-Fi QR template, generator, and README
 ```
 
 ## Useful Scripts
@@ -189,5 +189,5 @@ Backend variables:
 
 ## More Documentation
 
-- [docs/spielmodi-ohne-abo-plan.md](docs/spielmodi-ohne-abo-plan.md)
 - [docs-gcloud.md](docs-gcloud.md)
+- [wlan/README.md](wlan/README.md)
