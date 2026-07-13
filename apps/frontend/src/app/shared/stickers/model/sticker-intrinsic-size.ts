@@ -1,5 +1,6 @@
 import {signal} from "@angular/core";
 import type {StickerDefinition} from "@birthday/shared";
+import {cachedAssetUrl} from "../../../core/assets/asset-url-cache";
 import {getSpriteViewBox} from "./sprite-url.util";
 
 export type StickerIntrinsicSize = {width: number; height: number};
@@ -39,25 +40,30 @@ export function ensureStickerIntrinsicSize(sticker: StickerDefinition): void {
 
   const sourceUrl = sticker.imageUrl;
   loading.set(sticker.id, sourceUrl);
+  void loadRasterIntrinsicSize(sticker.id, sourceUrl);
+}
+
+async function loadRasterIntrinsicSize(stickerId: string, sourceUrl: string): Promise<void> {
+  const loadUrl = await cachedAssetUrl(sourceUrl);
   const image = new Image();
   image.crossOrigin = "anonymous";
   image.onload = () => {
     const width = image.naturalWidth || image.width;
     const height = image.naturalHeight || image.height;
     if (width > 0 && height > 0) {
-      rasterSizes.set(sticker.id, {width, height, sourceUrl});
+      rasterSizes.set(stickerId, {width, height, sourceUrl});
       stickerIntrinsicSizeRevision.update(revision => revision + 1);
     }
-    if (loading.get(sticker.id) === sourceUrl) {
-      loading.delete(sticker.id);
+    if (loading.get(stickerId) === sourceUrl) {
+      loading.delete(stickerId);
     }
   };
   image.onerror = () => {
-    if (loading.get(sticker.id) === sourceUrl) {
-      loading.delete(sticker.id);
+    if (loading.get(stickerId) === sourceUrl) {
+      loading.delete(stickerId);
     }
   };
-  image.src = sourceUrl;
+  image.src = loadUrl;
 }
 
 export function setStickerIntrinsicSizeForTesting(stickerId: string, size: StickerIntrinsicSize | null): void {

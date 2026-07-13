@@ -1,4 +1,4 @@
-const CACHE_NAME = "stickermania-local-web-v1";
+const CACHE_NAME = "stickermania-local-web-v2";
 const APP_SHELL_URLS = [
   "./",
   "index.html",

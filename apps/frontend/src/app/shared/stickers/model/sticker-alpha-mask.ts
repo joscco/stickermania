@@ -1,5 +1,6 @@
 import {signal} from "@angular/core";
 import type {StickerDefinition} from "@birthday/shared";
+import {cachedAssetUrl} from "../../../core/assets/asset-url-cache";
 import type {BoundingBox} from "./types";
 import {getSpriteSymbolSvg, preloadSprite} from "./sprite-url.util";
 
@@ -73,11 +74,11 @@ export async function loadStickerAlphaMask(sticker: StickerDefinition): Promise<
 
   const image = new Image();
   image.crossOrigin = "anonymous";
-  image.src = sourceUrl;
 
   await new Promise<void>((resolve, reject) => {
     image.onload = () => resolve();
     image.onerror = () => reject(new Error(`Could not load sticker image: ${sourceUrl}`));
+    image.src = sourceUrl;
   });
 
   const canvas = document.createElement("canvas");
@@ -175,7 +176,7 @@ async function stickerAlphaSourceUrl(sticker: StickerDefinition): Promise<string
   if (!sourceUrl) return null;
 
   if (!sourceUrl.startsWith("sprite:#")) {
-    return sourceUrl;
+    return cachedAssetUrl(sourceUrl);
   }
 
   await preloadSprite();
