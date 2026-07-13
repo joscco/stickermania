@@ -1,0 +1,18 @@
+@if (isSprite()) {
+  <svg
+    [attr.aria-label]="alt()"
+    aria-hidden="true"
+    focusable="false"
+    class="block h-full w-full opacity-35"
+    style="fill:#111; color:#111; stroke:#111"
+  >
+    <use [attr.href]="getLocalHref(imageUrl())" />
+  </svg>
+} @else if (rasterShadowUrl(); as shadowUrl) {
+  <img
+    [src]="shadowUrl"
+    [alt]="alt()"
+    class="block h-full w-full object-contain opacity-35"
+    draggable="false"
+  />
+}

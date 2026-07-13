@@ -1,0 +1,82 @@
+<div class="relative h-full flex flex-col text-taupe-950">
+  <app-sticker-workbench-tabs
+    [mode]="mode()"
+    [player]="currentPlayer()"
+    [showProfile]="profileEnabled()"
+    (modeSelected)="setMode($event)"
+    (profileSelected)="editProfile()"
+  />
+
+  @if (creatorVisible()) {
+    <app-sticker-creator
+      class="flex-1 min-h-0 flex flex-col"
+      [stickers]="stickers()"
+      [playerId]="playerId()"
+      [createStatus]="createStatus()"
+      [editorOnly]="creatorEditorOnly()"
+      [initialStickerDataUrl]="creatorEditorOnly() ? stickerToImprove() : null"
+      [initialStickerName]="creatorEditorOnly() ? (stickerToEdit()?.name ?? null) : null"
+      [editingStickerId]="creatorEditorOnly() ? (stickerToEdit()?.id ?? null) : null"
+      [initialStickerEditorData]="creatorEditorOnly() ? (stickerToEdit()?.editorData ?? null) : null"
+      (createSticker)="onCreateSticker($event)"
+      (improveSticker)="onImproveSticker($event)"
+      (stickerCreated)="onStickerCreated()"
+      (editorCanceled)="onEditorCanceled()"
+    />
+  }
+
+  @if (mode() === 'edit' && !stickerToImprove()) {
+    <app-player-sticker-library
+      class="flex-1 min-h-0 flex flex-col"
+      [playerId]="playerId()"
+      [defaultPackIdOverride]="editableDefaultPackId()"
+      [stickers]="ownStickers()"
+      [stickerPacks]="effectiveEditableStickerPacks()"
+      (stickerSelected)="editOwnSticker($event)"
+      (stickerDeleted)="deleteOwnSticker($event)"
+      (stickerPackChanged)="moveOwnStickerToPack($event)"
+      (createPackRequested)="onCreatePackRequested($event)"
+      (deletePackRequested)="onDeletePackRequested($event)"
+    />
+  }
+
+  @if (mode() === 'board') {
+    <app-player-board-editor
+      class="flex-1 min-h-0 flex flex-col"
+      [playerId]="playerId()"
+      [players]="players()"
+      [stickers]="stickers()"
+      [defaultStickerCatalog]="defaultStickerCatalog()"
+      [defaultStickerPacks]="effectiveStickerPacks()"
+      [boardPlacements]="boardPlacements()"
+      [showPlacementAuthorControls]="profileEnabled()"
+      [showBoardActions]="isLocalBackupSupported()"
+      [boardExportState]="boardExportState()"
+      [boardResetState]="boardResetState()"
+      (upsertBoardPlacements)="onUpsertBoardPlacements($event)"
+      (deleteBoardPlacements)="onDeleteBoardPlacements($event)"
+      (boardFocusChanged)="onBoardFocusChanged($event)"
+      (exportBoardRequested)="exportLocalBoard($event)"
+      (resetBoardRequested)="resetLocalBoard($event)"
+    />
+  }
+
+  @if (mode() === 'profile' && profileEnabled()) {
+    <app-lobby-profile
+      class="flex-1 min-h-0 flex flex-col pt-14"
+      [initialName]="profileInitialName()"
+      [initialAvatarImage]="profileInitialAvatarImage()"
+      (profileSubmitted)="onProfileSubmitted($event)"
+    />
+  }
+
+  @if (isLocalBackupSupported() && storageEstimate()) {
+    <div
+      class="absolute right-3 bottom-3 z-[2100] rounded-xl bg-white/95 px-3 py-2 text-xs font-black signature-frame-sm backdrop-blur-sm"
+      [class.text-red-700]="isStorageNearlyFull()"
+      [class.text-taupe-700]="!isStorageNearlyFull()"
+    >
+      Speicher: {{ storageUsageLabel() }}
+    </div>
+  }
+</div>

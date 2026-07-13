@@ -1,0 +1,18 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--platform=linux/amd64'
+      - '--build-arg'
+      - 'FRONTEND_BUILD_SCRIPT=build:cloud'
+      - '-t'
+      - '${_CLOUD_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/${_CLOUD_RUN_SERVICE}:latest'
+      - '.'
+
+images:
+  - '${_CLOUD_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/${_CLOUD_RUN_SERVICE}:latest'
+
+substitutions:
+  _CLOUD_REGION: 'europe-west1'
+  _CLOUD_RUN_SERVICE: 'stickermania'
+  _ARTIFACT_REPOSITORY: 'stickermania'

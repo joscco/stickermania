@@ -1,0 +1,11 @@
+@switch (runtime.mode) {
+  @case ("local-web") {
+    <app-local-web-frontend-shell />
+  }
+  @case ("lan-host") {
+    <app-lan-host-frontend-shell />
+  }
+  @default {
+    <app-cloud-frontend-shell />
+  }
+}

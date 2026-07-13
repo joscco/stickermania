@@ -1,0 +1,45 @@
+<div class="pointer-events-none absolute inset-x-0 top-0 z-[2000] flex h-14 justify-center overflow-visible px-3 pt-4 pb-1">
+  <div
+    class="pointer-events-auto h-11 w-full max-w-[28rem] rounded-2xl signature-frame-sm bg-white/35 p-1 backdrop-blur-sm"
+    animOnInit="banner">
+    <div class="grid h-full gap-1" [ngClass]="showProfile() ? 'grid-cols-[1fr_1fr_1fr_auto]' : 'grid-cols-3'">
+      @for (tab of modeTabs; track tab.mode) {
+        <button
+          class="flex h-full min-h-0 items-center justify-center gap-1 rounded-xl px-1.5 text-[13px] font-black leading-none transition max-[380px]:px-1"
+          [class.bg-stick-yellow]="mode() === tab.mode"
+          [class.text-taupe-500]="mode() !== tab.mode"
+          (click)="selectMode(tab.mode)">
+          <app-svg w="20" [name]="tab.icon" />
+          <span class="block h-3 leading-3 max-[380px]:hidden">{{ tab.label }}</span>
+        </button>
+      }
+      @if (showProfile()) {
+        <button
+          class="grid h-full w-10 place-items-center rounded-xl transition active:translate-y-px"
+          type="button"
+          (click)="selectProfile()"
+          aria-label="Profil bearbeiten">
+          <span class="grid h-7.5 w-7.5 overflow-hidden rounded-lg bg-stick-yellow-soft text-sm font-black border-2 border-taupe-950">
+            @if (player(); as currentPlayer) {
+              @if (currentPlayer.avatarUrl) {
+                <img
+                  class="h-full w-full object-cover"
+                  [src]="currentPlayer.avatarUrl"
+                  alt=""
+                />
+              } @else {
+                <span class="grid h-full w-full place-items-center">
+                  {{ (currentPlayer.name || '?').slice(0, 1) }}
+                </span>
+              }
+            } @else {
+              <span class="grid h-full w-full place-items-center">
+                ?
+              </span>
+            }
+          </span>
+        </button>
+      }
+    </div>
+  </div>
+</div>

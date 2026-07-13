@@ -1,0 +1,31 @@
+<div class="w-40 rounded-[1.6rem] signature-frame-lg bg-white/95 p-3 text-taupe-950 backdrop-blur-sm">
+  <div class="flex flex-col items-center justify-center gap-3">
+    @if (showSessionCode()) {
+      <div class="text-center">
+        <div class="text-[0.65rem] font-black uppercase tracking-[0.18em] text-taupe-500">Session-Code</div>
+        <div class="mt-0.5 text-3xl font-black leading-none tracking-[0.22em] text-taupe-950">{{ sessionCode() }}</div>
+      </div>
+    }
+
+    @if (playerQrDataUrl()) {
+      <div class="flex flex-col items-center gap-3">
+        <div
+          class="rounded-full bg-taupe-950 px-3 py-1 text-[0.65rem] font-black uppercase tracking-[0.16em] text-white">
+          Mitspielen
+        </div>
+        <img [src]="playerQrDataUrl()!" alt="QR Mitspielen"
+             class="h-30 w-30 rounded-xl bg-white"/>
+      </div>
+    }
+
+    @if (showHostHelp()) {
+      <div class="w-full px-1 text-center text-[0.65rem] ">
+        <span class="font-bold">Hinweis:</span>
+        <span class="leading-snug text-taupe-500">
+          Alle Spieler müssen das gleiche WLAN wie dieser PC verwenden und Port {{ hostPort() ?? 3001 }} in der Firewall erlauben.
+        </span>
+      </div>
+    }
+  </div>
+
+</div>

@@ -1,0 +1,49 @@
+<div class="flex h-full min-h-0 items-center justify-center overflow-hidden p-[clamp(0.75rem,3cqh,1rem)] [container-type:size]">
+  <div class="flex w-[clamp(280px,90cqw,28rem)] flex-col items-center">
+    <div class="mb-[clamp(0.75rem,5cqh,2.5rem)] flex w-full shrink-0 flex-col items-center text-center" animOnInit="banner">
+      <div class="w-full shrink-0 text-[clamp(1.45rem,6cqh,2rem)] font-black leading-none">
+        Sticker erstellen
+      </div>
+
+      <div class="mx-auto mt-[clamp(0.25rem,1.5cqh,0.5rem)] w-full max-w-[20rem] shrink-0 text-[clamp(0.9rem,2.8cqh,1.1rem)] font-bold leading-[clamp(1.1rem,3.4cqh,1.5rem)] text-taupe-500">
+        Starte mit Foto, Kamera oder einer leeren Zeichenfläche.
+      </div>
+    </div>
+
+    <div class="grid gap-[clamp(0.5rem,2cqh,0.75rem)]" animGroup="choice" [animStagger]="0.06">
+      <app-sticker-creator-start-action
+        animOnInit="choice"
+        kind="file"
+        tone="yellow"
+        icon="image-picture"
+        title="Bild importieren"
+        subtitle="Aus der Galerie importieren"
+        (activated)="beginExternalImagePick()"
+        (fileSelected)="onFileSelected($event)"
+      />
+
+      <app-sticker-creator-start-action
+        animOnInit="choice"
+        kind="file"
+        tone="white"
+        icon="image-camera"
+        [title]="cameraAvailability() === 'unavailable' ? 'Keine Kamera' : 'Foto schießen'"
+        [subtitle]="cameraAvailability() === 'unavailable' ? 'Kamera nicht erkannt' : 'Mit der Kamera aufnehmen'"
+        capture="environment"
+        [invisible]="cameraAvailability() === 'unknown'"
+        [disabled]="cameraAvailability() === 'unavailable'"
+        (activated)="beginExternalImagePick()"
+        (fileSelected)="onFileSelected($event)"
+      />
+
+      <app-sticker-creator-start-action
+        animOnInit="choice"
+        tone="cream"
+        icon="image-pencil"
+        title="Neu zeichnen"
+        subtitle="Ohne Foto starten"
+        (activated)="blankSelected.emit()"
+      />
+    </div>
+  </div>
+</div>

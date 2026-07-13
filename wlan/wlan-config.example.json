@@ -1,0 +1,9 @@
+{
+  "wifi": {
+    "ssid": "DEIN-WLAN-NAME",
+    "password": "dein-wlan-passwort",
+    "security": "WPA",
+    "hidden": false,
+    "showWifiSectionByDefault": true
+  }
+}

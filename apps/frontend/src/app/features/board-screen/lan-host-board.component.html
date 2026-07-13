@@ -1,0 +1,66 @@
+@if (board.isBootstrapping()) {
+  <div class="h-full">
+    <div class="h-full w-full grid place-items-center text-taupe-500">
+      <div class="text-center">
+        <app-svg [w]="50" name="connecting" class="animate-spin"/>
+        <div class="mt-4 text-sm">Host-Spielstand wird geladen...</div>
+      </div>
+    </div>
+  </div>
+} @else if (!board.isBoardReady()) {
+  <div class="h-full">
+    <div class="h-full w-full grid place-items-center text-taupe-600">
+      <div class="max-w-sm px-6 text-center">
+        <app-svg [w]="50" name="disconnected"/>
+        <div class="mt-4 text-sm font-black text-taupe-900">Host-Spielstand konnte nicht gestartet werden</div>
+        <div class="mt-2 text-xs font-bold leading-relaxed text-taupe-500">
+          {{ board.bootErrorText() || 'Bitte pruefe Netzwerk und Firewall und starte die App erneut.' }}
+        </div>
+        <button
+          class="mt-5 rounded-xl bg-amber-300 px-4 py-2 text-xs font-black text-taupe-950 signature-frame-sm transition-transform active:scale-95"
+          (click)="retryBootstrap()"
+        >
+          Erneut versuchen
+        </button>
+      </div>
+    </div>
+  </div>
+} @else {
+  <app-board-workspace
+    [worldReady]="!!board.worldStore.sessionState()"
+    [boardMode]="board.boardMode()"
+    [showPlacementAuthors]="board.showPlacementAuthors()"
+    [placements]="board.boardEditorPlacements()"
+    [stickerCatalog]="board.stickerCatalog()"
+    [placementBadges]="board.placementBadges()"
+    [pixiMaxResolution]="1"
+    [pixiWarmupFrames]="8"
+    (modeSelected)="board.setBoardMode($event)"
+    (placementAuthorsVisibleChanged)="board.setPlacementAuthorsVisible($event)"
+    (placementsChanged)="board.onBoardPlacementsChanged($event)"
+    (selectionChanged)="board.onBoardSelectionChanged($event)"
+  >
+    <app-board-action-button
+      board-toolbar-left
+      kind="reset"
+      [state]="resetState()"
+      (actionRequested)="resetHostBoard($event)"
+    />
+    <app-board-action-button
+      board-toolbar-right
+      kind="export"
+      [state]="exportState()"
+      (actionRequested)="exportHostBoard($event)"
+    />
+
+    <div board-bottom-right class="absolute bottom-6 right-6 z-10">
+      <app-board-qr-panel
+        [sessionCode]="null"
+        [playerQrDataUrl]="board.playerQrDataUrl()"
+        [hostPort]="board.hostPort()"
+        [showSessionCode]="false"
+        [showHostHelp]="true"
+      />
+    </div>
+  </app-board-workspace>
+}

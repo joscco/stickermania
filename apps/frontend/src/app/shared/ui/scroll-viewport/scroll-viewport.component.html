@@ -1,0 +1,23 @@
+<div class="relative h-full pr-3">
+  <div
+    #scrollViewport
+    class="scrollbar-none h-full overflow-y-auto overscroll-contain pl-2 pr-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+    <ng-content/>
+  </div>
+
+  <div
+    #scrollTrack
+    class="pointer-events-none absolute bottom-4 right-0 top-4 w-4 touch-none rounded-full signature-frame-sm bg-stick-paper opacity-0 transition-opacity"
+    (pointerdown)="onScrollbarPointerDown($event)"
+    (pointermove)="onScrollbarPointerMove($event)"
+    (pointerup)="onScrollbarPointerUp($event)"
+    (pointercancel)="onScrollbarPointerUp($event)"
+    aria-hidden="true">
+    <div class="absolute inset-x-1 top-2 bottom-2 rounded-full bg-taupe-950/15"></div>
+    <div
+      #scrollThumb
+      data-scrollbar-handle
+      class="absolute left-1/2 top-0 h-11 w-3 cursor-grab rounded-full signature-frame bg-stick-yellow will-change-transform active:cursor-grabbing">
+    </div>
+  </div>
+</div>

@@ -1,0 +1,64 @@
+<div
+  animGroup="opacity"
+  class="relative flex h-full min-h-0 flex-col overflow-hidden px-4 pt-[clamp(0.5rem,2.5cqh,1.25rem)] pb-[calc(clamp(0.5rem,2.5cqh,1rem)+env(safe-area-inset-bottom))] text-taupe-950 [container-type:size]">
+  <div
+    animOnInit="opacity"
+    class="relative mx-auto my-auto flex w-[clamp(170px,min(90vw,calc(100cqh-17rem)),400px)] flex-col items-center gap-[clamp(0.4rem,1.8cqh,1rem)]">
+
+    <input
+      animOnInit="players"
+      class="w-full rounded-2xl bg-white px-4 py-[clamp(0.45rem,1.3cqh,0.75rem)] text-center text-[clamp(1rem,2.8cqh,1.4rem)] font-black leading-[clamp(1.3rem,3.5cqh,1.8rem)] text-taupe-950 outline-none transition placeholder:text-sm placeholder:font-black placeholder:text-taupe-500 focus:bg-amber-300 signature-frame"
+      type="text"
+      inputmode="text"
+      maxlength="24"
+      placeholder="Gib hier deinen Namen ein!"
+      autocomplete="off"
+      autocorrect="off"
+      spellcheck="false"
+      [value]="nameInput()"
+      (input)="onNameInput($event)"
+      (keydown.enter)="submit()"
+    />
+
+    <div
+      animOnInit="players"
+      class="relative aspect-square w-full shrink-0 overflow-hidden rounded-2xl bg-white signature-frame">
+      <app-profile-avatar-canvas
+        class="block h-full w-full"
+        #avatarCanvas
+        [initialImage]="initialAvatarImage()"
+        [drawMode]="drawMode()"
+        (changed)="onAvatarChanged()"
+        (submitted)="onAvatarSubmitted($event)"
+      />
+      <div [animPresence]="avatarPromptVisible()"
+           class="pointer-events-none absolute inset-0 grid place-content-center justify-items-center gap-1 px-6 text-center text-sm font-black text-taupe-500">
+        <span>Hier deinen Avatar zeichnen!</span>
+      </div>
+    </div>
+
+    <div
+      animOnInit="players"
+      class="flex w-full shrink-0 items-center justify-center gap-[clamp(0.25rem,1cqh,0.5rem)] rounded-2xl bg-white/90 p-[clamp(0.35rem,1.2cqh,0.5rem)] signature-frame">
+      @for (tool of avatarToolButtons; track tool.id) {
+        <button
+          class="grid h-[clamp(2.25rem,7.5cqh,3rem)] w-[clamp(2.25rem,7.5cqh,3rem)] place-items-center rounded-full transition active:scale-95"
+          type="button"
+          [attr.aria-label]="tool.ariaLabel"
+          [class.bg-stick-yellow]="tool.mode !== undefined && drawMode() === tool.mode"
+          (click)="selectAvatarTool(tool)">
+          <app-svg [name]="tool.icon" w="36"/>
+        </button>
+      }
+    </div>
+
+    <button
+      animOnInit="opacity"
+      class="flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl bg-stick-yellow px-5 py-[clamp(0.45rem,1.3cqh,0.75rem)] text-[clamp(0.95rem,2.4cqh,1.2rem)] font-black leading-[clamp(1.25rem,3cqh,1.6rem)] text-black transition active:translate-x-0.5 active:translate-y-0.5 disabled:bg-white disabled:opacity-30 signature-frame"
+      type="button"
+      (click)="submit()">
+      <app-svg name="icon-checkmark" [w]="25"/>
+      Profil speichern
+    </button>
+  </div>
+</div>

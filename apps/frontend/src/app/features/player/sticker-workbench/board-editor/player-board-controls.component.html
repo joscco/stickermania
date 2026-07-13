@@ -1,0 +1,75 @@
+@if (boardMode() === 'edit' && !showBoardPicker() && canEditBoard()) {
+  <div
+    class="pointer-events-none absolute inset-x-0 z-30 flex h-16 items-center justify-center"
+    style="bottom: calc(5.75rem + env(safe-area-inset-bottom));"
+    animOnInit="choice">
+    <button
+      class="pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full signature-frame-xl bg-stick-yellow text-4xl font-black leading-none active:translate-x-1 active:translate-y-1"
+      type="button"
+      (click)="pickerRequested.emit()"
+      title="Sticker hinzufügen">
+      <app-svg name="icon-plus" w="40" />
+    </button>
+  </div>
+}
+
+@if (!showBoardPicker()) {
+  @if (boardMode() === 'view' && showPlacementAuthorControls()) {
+    <div
+      class="pointer-events-none absolute inset-x-0 z-30 flex justify-center px-3"
+      style="bottom: calc(5rem + env(safe-area-inset-bottom));"
+      animOnInit="choice">
+      <label class="pointer-events-auto flex items-center gap-2 rounded-full signature-frame-sm bg-white/95 px-3 py-2 text-xs font-black text-taupe-950 backdrop-blur-sm">
+        <input
+          type="checkbox"
+          class="h-4 w-4 accent-stick-yellow"
+          [checked]="showPlacementAuthors()"
+          (change)="placementAuthorsVisibleChanged.emit($any($event.target).checked)"
+        >
+        Avatare anzeigen
+      </label>
+    </div>
+  }
+
+  <div
+    class="pointer-events-none absolute inset-x-0 z-30 flex h-12 justify-center px-3"
+    style="bottom: calc(1.25rem + env(safe-area-inset-bottom));"
+    animOnInit="choice">
+    <div class="pointer-events-auto flex h-full items-center justify-center gap-2">
+      @if (showBoardActions()) {
+        <app-board-action-button
+          kind="reset"
+          [state]="boardResetState()"
+          (actionRequested)="resetBoardRequested.emit($event)"
+        />
+      }
+
+      <div class="grid h-full grid-cols-2 gap-1 rounded-2xl signature-frame bg-white/90 p-1 backdrop-blur-md">
+        <button
+          class="h-full rounded-xl px-4 text-xs font-black"
+          type="button"
+          [class.bg-stick-yellow]="boardMode() === 'view'"
+          (click)="modeSelected.emit('view')">Nur ansehen
+        </button>
+        <button
+          class="h-full rounded-xl px-4 text-xs font-black transition"
+          type="button"
+          [class.bg-stick-yellow]="boardMode() === 'edit'"
+          [class.opacity-35]="!canEditBoard()"
+          [class.cursor-not-allowed]="!canEditBoard()"
+          [disabled]="!canEditBoard()"
+          title="Erstelle zuerst einen Sticker, um das Board zu bearbeiten"
+          (click)="modeSelected.emit('edit')">Bearbeiten
+        </button>
+      </div>
+
+      @if (showBoardActions()) {
+        <app-board-action-button
+          kind="export"
+          [state]="boardExportState()"
+          (actionRequested)="exportBoardRequested.emit($event)"
+        />
+      }
+    </div>
+  </div>
+}

@@ -1,0 +1,108 @@
+<!-- Full-screen backdrop -->
+<div
+  class="picker-backdrop-inner inset-0 bg-taupe-950/35 backdrop-blur-[2px]"
+  [ngClass]="contained() ? 'absolute' : 'fixed'"
+  (click)="requestClose()"
+></div>
+
+<!-- Sheet -->
+<div
+  class="picker-sheet flex flex-col overflow-hidden rounded-[1.25rem] min-[390px]:rounded-[1.75rem] signature-frame-xl bg-stick-paper text-taupe-950 inset-2 min-[390px]:inset-6"
+  [ngClass]="contained() ? 'absolute' : 'fixed'"
+  (click)="$event.stopPropagation()"
+>
+  <!-- Header -->
+  <div class="shrink-0 border-b-2 border-taupe-950 bg-stick-yellow px-4 py-3">
+    <div class="flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <div class="text-[0.7rem] font-black uppercase tracking-[0.18em] text-taupe-700">
+          Sticker-Album
+        </div>
+        <div class="truncate text-lg font-black leading-tight">
+          Sticker auswählen
+        </div>
+      </div>
+
+      <button
+        class="grid h-10 w-10 shrink-0 place-items-center rounded-full signature-frame-sm bg-white text-taupe-950 transition active:translate-x-0.5 active:translate-y-0.5"
+        (click)="requestClose()"
+        aria-label="Sticker-Auswahl schließen"
+        title="Schließen"
+      >
+        <app-svg name="icon-cross" [w]="22"/>
+      </button>
+    </div>
+  </div>
+
+  <!-- Body: pack list (left) + sticker grid (right) -->
+  <div class="flex min-h-0 flex-1">
+    <!-- Pack sidebar -->
+    <div
+      class="picker-pack-list scrollbar-none w-14 shrink-0 overflow-y-auto border-r-2 border-taupe-950 bg-stick-cream p-1.5 min-[390px]:w-40 min-[390px]:p-2">
+      @for (pack of availablePacks(); track pack.id) {
+        <button
+          class="mb-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl px-1 text-left text-sm font-black transition-[background-color,color,transform] active:translate-x-0.5 active:translate-y-0.5 min-[390px]:h-12 min-[390px]:justify-start min-[390px]:rounded-2xl min-[390px]:px-2"
+          [class.signature-frame-sm]="currentPackId() === pack.id"
+          [class.bg-stick-yellow]="currentPackId() === pack.id"
+          [class.bg-white]="currentPackId() !== pack.id"
+          [class.text-taupe-950]="currentPackId() === pack.id"
+          [class.text-taupe-500]="currentPackId() !== pack.id"
+          (click)="selectPack(pack.id)"
+        >
+          @if (packPlayer(pack); as player) {
+            @if (player.avatarUrl) {
+              <img
+                [appCachedSrc]="player.avatarUrl"
+                alt=""
+                class="h-7 w-7 shrink-0 rounded-md border-2 border-taupe-950 object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+            } @else {
+              <span
+                class="grid h-7 w-7 shrink-0 place-items-center rounded-md border-2 border-taupe-950 bg-stick-yellow text-[10px] font-black">
+                {{ packLabel(pack).slice(0, 1).toUpperCase() }}
+              </span>
+            }
+          } @else if (packIconLookup().get(pack.id); as iconId) {
+            <app-svg [name]="iconId" w="16" class="shrink-0"/>
+          }
+
+          <span class="truncate text-xs max-[389px]:hidden">
+            {{ packLabel(pack) }}
+          </span>
+        </button>
+      }
+    </div>
+
+    <!-- Sticker grid -->
+    <div
+      class="min-h-0 w-full flex-1 px-2 min-[390px]:px-3">
+      <app-scroll-viewport [contentVersion]="contentVersion()">
+          <div class="grid w-full grid-cols-2 justify-items-center gap-2 min-[390px]:grid-cols-[repeat(auto-fit,120px)] min-[390px]:justify-start min-[390px]:gap-x-3 min-[390px]:gap-y-4">
+            @for (sticker of currentStickers(); track sticker.id) {
+              <button animOnInit="players" [animDelay]="stickerAnimDelay($index)"
+                type="button"
+                class="checkerboard-sm relative aspect-square w-full max-w-[120px] rounded-[1rem] bg-white p-1.5 active:translate-x-0.5 active:translate-y-0.5 signature-frame min-[390px]:rounded-[1.25rem] min-[390px]:p-2"
+                (click)="onStickerSelected($event, sticker)"
+                [title]="sticker.name || sticker.id"
+              >
+                <app-sticker-img
+                  [imageUrl]="sticker.imageUrl"
+                  [alt]="sticker.name || sticker.id"
+                  class="pointer-events-none h-full w-full select-none"
+                />
+              </button>
+            }
+          </div>
+
+
+        @if (currentStickers().length === 0) {
+          <div class="grid min-h-48 w-full place-items-center text-center text-sm font-black text-[#9c9c9c]">
+            Keine Sticker verfügbar
+          </div>
+        }
+      </app-scroll-viewport>
+    </div>
+  </div>
+</div>

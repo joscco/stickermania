@@ -1,0 +1,17 @@
+<div
+  #wrapper
+  class="relative aspect-square w-full overflow-hidden no-select"
+  style="touch-action: none; user-select: none; -webkit-touch-callout: none; -webkit-user-select: none;"
+  (pointerdown)="$event.preventDefault()"
+  (pointermove)="$event.preventDefault()">
+
+  <canvas
+    #drawCanvas
+    class="absolute left-1/2 top-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2 rounded-xl"
+    style="touch-action: none;"
+    (pointerdown)="onPointerDown($event)"
+    (pointermove)="painter.pointerMove($event)"
+    (pointerup)="painter.pointerUp($event)"
+    (pointercancel)="painter.pointerUp($event)"
+  ></canvas>
+</div>

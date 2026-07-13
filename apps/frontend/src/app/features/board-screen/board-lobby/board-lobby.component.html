@@ -1,0 +1,118 @@
+<div pageRoot class="h-full w-full text-taupe-900 flex flex-col items-center justify-center"
+     style="background-image: url('/assets/svg/board-dot-pattern.svg'); background-size: 64px 64px">
+  <div class="w-full max-w-xl px-4 flex flex-col flex-1 min-h-0 py-10 gap-3">
+
+    <!-- Header – flex-1 oben damit er sich vertikal zentriert -->
+    <div class="flex items-center justify-center shrink-0 p-6">
+      <div animOnInit="banner" class="text-center">
+        <img src="assets/svg/logo.svg" alt="Stickermania"
+             class="w-full max-w-md drop-shadow-[4px_6px_0_rgba(17,17,17,0.25)]"/>
+      </div>
+    </div>
+
+    @if (errorText()) {
+      <div animOnInit="opacity"
+           class="mb-4 shrink-0 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 text-center">
+        {{ errorText() }}
+      </div>
+    }
+
+    <!-- Existing sessions -->
+    <div class="py-4 px-3 flex flex-col min-h-0 flex-1 bg-amber-100 border-2 border-[#f9c677] rounded-xl gap-3">
+      <div animOnInit="opacity" [animDelay]="0.2" class="shrink-0 font-medium text-taupe-600 px-1">
+        Bestehende Sessions
+      </div>
+
+      @if (isLoadingSessions()) {
+        <div animOnInit="opacity" [animDelay]="0.25" class="shrink-0 text-sm text-taupe-400 text-center py-8">Lade
+          Sessions...
+        </div>
+      } @else if (sessions().length === 0) {
+        <div animOnInit="opacity" [animDelay]="0.25"
+             class="flex flex-1 min-h-0 items-center justify-center gap-2 text-sm text-taupe-400 text-center py-4 px-4">
+          Keine aktiven Sessions vorhanden.
+        </div>
+      } @else {
+        <div animGroup="opacity" [animDelay]="0.25" class="overflow-y-visible scrollbar-none space-y-2 pb-4">
+          @for (session of sessions(); track session.sessionId) {
+            <div
+              animOnInit="opacity"
+              [animPresence]="!isSessionLeaving(session.sessionId)"
+              animPresenceType="opacity"
+              class="rounded-2xl bg-white signature-frame-xl mr-1.5 px-4 py-3 flex items-center gap-4 hover:bg-neutral-50 cursor-pointer transition-colors group"
+              [class.pointer-events-none]="isSessionLeaving(session.sessionId)"
+              (click)="openSession(session.sessionCode)"
+            >
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold tracking-widest text-taupe-900">{{ session.sessionCode }}</span>
+                </div>
+                <div class="text-xs text-taupe-400 mt-0.5">
+                  {{ session.playerCount }} Spieler · {{ timeAgo(session.createdAt) }}
+                </div>
+              </div>
+              <button
+                class="shrink-0 rounded-lg p-2 text-taupe-400 hover:text-taupe-600 hover:bg-taupe-50 transition-colors disabled:opacity-40"
+                [title]="downloadState(session.sessionId) === 'done' ? 'Heruntergeladen ✓' : downloadState(session.sessionId) === 'error' ? 'Keine Bilder vorhanden' : 'Bilder herunterladen'"
+                [disabled]="downloadState(session.sessionId) === 'loading'"
+                (click)="downloadSessionAssets(session.sessionId, session.sessionCode, $event)"
+              >
+                @switch (downloadState(session.sessionId)) {
+                  @case ('loading') {
+                    <app-svg name="icon-wait" w="20"/>
+                  }
+                  @case ('done') {
+                    <app-svg name="icon-checkmark" w="20"/>
+                  }
+                  @case ('error') {
+                    <app-svg name="icon-cross" w="20"/>
+                  }
+                  @default {
+                    <app-svg name="icon-download" w="20"/>
+                  }
+                }
+              </button>
+              <button
+                class="shrink-0 rounded-lg p-2 text-taupe-400 hover:text-taupe-600 hover:bg-taupe-50 transition-colors disabled:opacity-40"
+                [title]="exportState(session.sessionId) === 'done' ? 'Board exportiert ✓' : exportState(session.sessionId) === 'error' ? 'Export fehlgeschlagen' : 'Statische Board-Webseite exportieren'"
+                [disabled]="exportState(session.sessionId) === 'loading'"
+                (click)="exportStaticBoard(session.sessionId, session.sessionCode, $event)"
+              >
+                @switch (exportState(session.sessionId)) {
+                  @case ('loading') {
+                    <app-svg name="icon-wait" w="20"/>
+                  }
+                  @case ('done') {
+                    <app-svg name="icon-checkmark" w="20"/>
+                  }
+                  @case ('error') {
+                    <app-svg name="icon-cross" w="20"/>
+                  }
+                  @default {
+                    <app-svg name="icon-board" w="20"/>
+                  }
+                }
+              </button>
+              <button
+                class="shrink-0 rounded-lg p-2 text-taupe-400 hover:text-taupe-600 hover:bg-taupe-50 transition-colors"
+                title="Session löschen"
+                (click)="deleteSession(session.sessionId, $event)"
+              >
+                <app-svg name="icon-trash" w="20"/>
+              </button>
+            </div>
+          }
+        </div>
+      }
+      <!-- New session button -->
+      <button animOnInit="opacity" [animDelay]="0.1"
+              class="flex items-center justify-center gap-2 shrink-0 rounded-2xl bg-taupe-900 px-5 py-3 text-white font-medium hover:bg-taupe-800 disabled:opacity-50 transition-colors mt-auto"
+              [disabled]="isCreating()"
+              (click)="createSession()"
+      >
+        <app-svg name="icon-plus" [w]="20"/>
+        {{ isCreating() ? 'Erstelle...' : 'Neue Session starten' }}
+      </button>
+    </div>
+  </div>
+</div>

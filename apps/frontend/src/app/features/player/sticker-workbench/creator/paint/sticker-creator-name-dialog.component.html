@@ -1,0 +1,29 @@
+<div
+  class="pointer-events-auto fixed inset-0 z-[100400] grid place-items-center overflow-y-auto bg-taupe-950/25 p-4 backdrop-blur-sm"
+  animOnInit="overlay">
+  <div
+    class="w-full max-w-sm -translate-y-[5vh] overflow-hidden rounded-[1.5rem] bg-white p-4 signature-frame-xl transition-transform duration-300 focus-within:-translate-y-[12vh] sm:-translate-y-0 sm:focus-within:-translate-y-4"
+    animOnInit="players">
+    <div class="mb-1 text-center text-base font-black">Name für den Sticker</div>
+    <div class="mb-3 text-center text-xs font-bold text-taupe-500">Optional, kann leer bleiben.</div>
+    <input
+      class="mb-3 w-full rounded-2xl border-2 border-taupe-950 bg-white px-3 py-3 text-center text-base font-black outline-none placeholder:text-taupe-500 focus:bg-amber-100 transition"
+      [maxLength]="maxNameLength"
+      placeholder="Optional"
+      [value]="name()"
+      (input)="updateName($any($event.target).value)"
+      (keydown.enter)="submitRequested.emit()"
+    />
+    <div class="grid grid-cols-2 gap-2">
+      <button
+        class="rounded-2xl signature-frame-sm bg-white px-3 py-3 text-sm font-black"
+        (click)="backRequested.emit()">Zurück
+      </button>
+      <button
+        class="rounded-2xl signature-frame-sm bg-amber-300 px-3 py-3 text-sm font-black disabled:bg-white disabled:opacity-60"
+        [disabled]="saving()"
+        (click)="submitRequested.emit()">Speichern
+      </button>
+    </div>
+  </div>
+</div>

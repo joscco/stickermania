@@ -1,0 +1,57 @@
+<div class="h-full overflow-hidden  text-taupe-900 overscroll-none flex flex-col no-select relative"
+     style="padding-top: env(safe-area-inset-top);">
+  <div class="flex-1 overflow-hidden flex flex-col relative z-10">
+    @switch (currentScreen()) {
+      @case (PlayerScreen.CONNECTING) {
+        <app-player-connecting/>
+      }
+      @case (PlayerScreen.RECONNECTING) {
+        <app-player-reconnecting/>
+      }
+      @case (PlayerScreen.DISCONNECTED) {
+        <app-player-disconnected/>
+      }
+      @case (PlayerScreen.LOBBY_PROFILE) {
+        @if (profileEnabled()) {
+          <app-lobby-profile
+            [initialName]="screenData.existingPlayerName()"
+            [initialAvatarImage]="screenData.existingAvatarImage()"
+            (profileSubmitted)="onProfileSubmitted($event)"
+          />
+        } @else {
+          <app-player-connecting/>
+        }
+      }
+      @case (PlayerScreen.STICKER_SPACE) {
+        <app-sticker-workbench
+          [sessionId]="sessionStore.sessionId()"
+          [playerId]="sessionStore.playerId() ?? ''"
+          [players]="screenData.players()"
+          [stickers]="stickerService.allCreatedStickers()"
+          [defaultStickerCatalog]="stickerService.defaultStickerCatalog()"
+          [defaultStickerPacks]="stickerService.defaultStickerPacks()"
+          [stickerPacks]="stickerService.defaultStickerPacks()"
+          [boardPlacements]="stickerService.boardPlacements()"
+          [initialProfileName]="screenData.existingPlayerName()"
+          [initialProfileAvatarImage]="screenData.existingAvatarImage()"
+          [initialMode]="initialStickerSpaceMode()"
+          [profileEnabled]="profileEnabled()"
+          [createStatus]="stickerCreateStatus()"
+          (profileSubmitted)="onProfileSubmitted($event)"
+          (createPackRequested)="onCreateStickerPackRequested($event)"
+          (deletePackRequested)="onDeleteStickerPackRequested($event)"
+          (createSticker)="onCreateSticker($event)"
+          (updateSticker)="onUpdateSticker($event)"
+          (moveStickerToPackRequested)="onMoveStickerToPackRequested($event)"
+          (deleteSticker)="onDeleteSticker($event)"
+          (upsertBoardPlacements)="onUpsertBoardPlacements($event)"
+          (deleteBoardPlacements)="onDeleteBoardPlacements($event)"
+          (boardFocusChanged)="onBoardFocusChanged($event)"
+        />
+      }
+      @default {
+        <app-player-connecting/>
+      }
+    }
+  </div>
+</div>

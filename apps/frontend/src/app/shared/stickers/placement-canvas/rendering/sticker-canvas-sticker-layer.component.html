@@ -1,0 +1,28 @@
+@for (sticker of renderedStickers(); track sticker.instanceId) {
+  <div
+    class="absolute select-none w-max origin-top-left"
+    [style.left.px]="sticker.left"
+    [style.top.px]="sticker.top"
+    [style.touch-action]="'none'"
+    [style.cursor]="sticker.cursor"
+    [style.z-index]="sticker.zIndex"
+    [attr.data-instance-id]="sticker.instanceId"
+  >
+    <app-sticker-item
+      [instanceId]="sticker.instanceId"
+      [imageUrl]="sticker.imageUrl"
+      [width]="sticker.width"
+      [height]="sticker.height"
+      [showShadow]="showStickerShadow()"
+      [shadowOffsetX]="stickerShadowOffsetX()"
+      [shadowOffsetY]="stickerShadowOffsetY()"
+      [itemTransform]="sticker.transform"
+      [transformOrigin]="sticker.transformOrigin"
+      [decorativeMotion]="decorativeStickerMotion()"
+      [decorativeMotionDelay]="sticker.motionDelay"
+      [animState]="animStateFor()(sticker.instanceId)"
+      (removed)="removed.emit(sticker.instanceId)"
+      (animDone)="animDone.emit(sticker.instanceId)"
+    />
+  </div>
+}

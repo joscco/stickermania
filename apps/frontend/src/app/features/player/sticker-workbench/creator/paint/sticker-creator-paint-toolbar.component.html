@@ -1,0 +1,228 @@
+<div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-2 px-4 pb-[calc(1.2rem+env(safe-area-inset-bottom))]">
+  <div
+    #toolbarPanel
+    class="scrollbar-none pointer-events-auto w-[min(32rem,calc(100vw-0.75rem))] overflow-hidden rounded-[1.4rem] p-2 min-[380px]:p-3 signature-frame-lg bg-white/92 backdrop-blur-md transition-[opacity,transform,box-shadow] duration-300 ease-out"
+    style="height: 0"
+    [class.opacity-100]="toolbarVisible()"
+    [class.translate-y-0]="toolbarVisible()"
+    [class.opacity-0]="!toolbarVisible()"
+    [class.translate-y-4]="!toolbarVisible()"
+    [class.pointer-events-none]="!toolbarVisible()">
+    <div
+      #toolbarContent
+      class="scrollbar-none -mx-1 max-h-[calc(58vh-1.5rem)] overflow-y-auto px-1 pb-2 transition-opacity duration-200"
+      [class.opacity-0]="!toolbarVisible()">
+      <div class="mb-3 flex min-h-10 items-start justify-between gap-3">
+        <div class="min-w-0">
+          <div class="text-xs font-black uppercase tracking-[0.16em] text-taupe-500">Werkzeug</div>
+          <div #toolLabel class="truncate text-base font-black leading-tight">{{ currentToolLabel() }}</div>
+        </div>
+        <button
+          class="h-7 w-7 flex items-center justify-center shrink-0 rounded-full bg-taupe-950 px-3 text-xs font-black text-white transition active:scale-95"
+          type="button"
+          (click)="toolbarClosed.emit()">
+          <app-svg class="pointer-events-none" name="icon-cross" [w]="20" />
+        </button>
+      </div>
+
+      @if (paintToolUsesColor()) {
+        <div class="mb-3 text-center" animOnInit="opacity">
+          <div class="mb-1.5 text-[11px] font-black uppercase tracking-wide text-taupe-500">Farbe</div>
+          <div class="flex flex-wrap justify-center gap-1.5">
+            @for (color of paintColors; track color) {
+              <button
+                class="h-8 w-8 rounded-full border-2 border-taupe-950 shadow-[1px_1px_0_#111] transition active:scale-95"
+                type="button"
+                [class.ring-3]="paintColor() === color"
+                [class.ring-stick-yellow]="paintColor() === color"
+                [style.background]="color"
+                (click)="colorSelected.emit(color)"
+                [attr.aria-label]="'Farbe ' + color">
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      @if (paintTool() === 'outline') {
+        <div class="mb-3 text-center" animOnInit="opacity">
+          <div class="mb-1.5 text-[11px] font-black uppercase tracking-wide text-taupe-500">Weiße Kontur</div>
+          <div class="flex flex-wrap justify-center gap-1.5">
+            @for (width of stickerOutlineWidths; track width) {
+              <button
+                class="h-9 rounded-xl signature-frame-sm px-2.5 text-xs font-black transition active:scale-95"
+                type="button"
+                [class.bg-stick-yellow]="stickerOutlineWidth() === width"
+                [class.bg-white]="stickerOutlineWidth() !== width"
+                (click)="stickerOutlineWidthSelected.emit(width)"
+                [attr.aria-label]="'Weiße Kontur ' + stickerOutlineLabel(width)">
+                {{ stickerOutlineLabel(width) }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="flex flex-col items-center gap-3">
+        @if (paintToolUsesBrushSize()) {
+          <div class="w-full text-center" animOnInit="opacity">
+            <div class="mb-1.5 text-[11px] font-black uppercase tracking-wide text-taupe-500">Größe</div>
+            <div class="flex flex-wrap justify-center gap-1.5">
+              @for (size of brushSizes; track size) {
+                <button
+                  class="grid h-9 w-11 place-items-center rounded-xl signature-frame-sm transition active:scale-95"
+                  type="button"
+                  [class.ring-3]="brushSize() === size"
+                  [class.ring-taupe-950]="brushSize() === size"
+                  [class.bg-stick-yellow]="brushSize() === size"
+                  [class.bg-white]="brushSize() !== size"
+                  (click)="brushSizeSelected.emit(size)"
+                  [attr.aria-label]="'Größe ' + size">
+                  <span class="rounded-full bg-taupe-950" [style.width.px]="size / 2" [style.height.px]="size / 2"></span>
+                </button>
+              }
+            </div>
+          </div>
+        }
+
+        @if (paintTool() === 'eraser') {
+          <div class="w-full text-center" animOnInit="opacity">
+            <div class="mb-1.5 text-[11px] font-black uppercase tracking-wide text-taupe-500">Radieren</div>
+            <div class="mx-auto grid w-full max-w-56 grid-cols-2 gap-1.5">
+              <button
+                class="h-10 rounded-xl signature-frame-sm px-2 text-xs font-black"
+                type="button"
+                [class.bg-stick-yellow]="eraserMode() === 'paint'"
+                [class.bg-white]="eraserMode() !== 'paint'"
+                (click)="eraserModeSelected.emit('paint')">Nur Farbe
+              </button>
+              <button
+                class="h-10 rounded-xl signature-frame-sm px-2 text-xs font-black"
+                type="button"
+                [class.bg-stick-yellow]="eraserMode() === 'sticker'"
+                [class.bg-white]="eraserMode() !== 'sticker'"
+                (click)="eraserModeSelected.emit('sticker')">Foto + Farbe
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="scrollbar-none pointer-events-auto flex h-12 max-w-[calc(100vw-0.5rem)] items-center gap-0.5 overflow-x-auto overflow-y-hidden rounded-full signature-frame bg-white/88 p-1 backdrop-blur-md min-[380px]:h-13 min-[380px]:gap-1"
+    animOnInit="opacity">
+    <app-sticker-creator-paint-tool-button
+      icon="icon-tool-hand"
+      title="Verschieben"
+      [active]="paintTool() === 'hand'"
+      (selected)="toolSelected.emit('hand')"
+    />
+
+    <app-sticker-creator-paint-tool-button
+      icon="icon-tool-pencil"
+      title="Stift"
+      [active]="paintTool() === 'brush'"
+      [activeBackground]="paintColor()"
+      [activeForeground]="activeColorForeground()"
+      [activeBorder]="paintTool() === 'brush' && activeColorNeedsBorder()"
+      (selected)="toolSelected.emit('brush')">
+      @if (paintTool() === 'brush') {
+        <span
+          class="absolute -bottom-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full border-2 border-taupe-950 bg-white shadow-[1px_1px_0_#111]"
+          aria-hidden="true">
+          <span
+            class="rounded-full bg-taupe-950"
+            [style.width.px]="brushSizeBadgeScale()"
+            [style.height.px]="brushSizeBadgeScale()"></span>
+        </span>
+      }
+    </app-sticker-creator-paint-tool-button>
+
+    <app-sticker-creator-paint-tool-button
+      icon="icon-tool-eraser"
+      title="Radierer"
+      [active]="paintTool() === 'eraser'"
+      (selected)="toolSelected.emit('eraser')">
+      @if (paintTool() === 'eraser') {
+        <span
+          class="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full border-2 border-taupe-950 bg-white px-0.5 text-[8px] font-black leading-none shadow-[1px_1px_0_#111]"
+          aria-hidden="true">
+          {{ eraserMode() === 'sticker' ? 'F+' : 'F' }}
+        </span>
+        <span
+          class="absolute -bottom-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full border-2 border-neutral-950 bg-white shadow-[1px_1px_0_#111]"
+          aria-hidden="true">
+          <span
+            class="rounded-full bg-neutral-950"
+            [style.width.px]="brushSizeBadgeScale()"
+            [style.height.px]="brushSizeBadgeScale()"></span>
+        </span>
+      }
+    </app-sticker-creator-paint-tool-button>
+
+    <app-sticker-creator-paint-tool-button
+      icon="icon-tool-bucket"
+      title="Füllen"
+      [active]="paintTool() === 'fill'"
+      [activeBackground]="paintColor()"
+      [activeForeground]="activeColorForeground()"
+      [activeBorder]="paintTool() === 'fill' && activeColorNeedsBorder()"
+      (selected)="toolSelected.emit('fill')"
+    />
+
+    <app-sticker-creator-paint-tool-button
+      title="Text"
+      [active]="paintTool() === 'text'"
+      [activeBackground]="paintColor()"
+      [activeForeground]="activeColorForeground()"
+      [activeBorder]="paintTool() === 'text' && activeColorNeedsBorder()"
+      (selected)="toolSelected.emit('text')">
+      <span class="text-lg font-black leading-none">T</span>
+    </app-sticker-creator-paint-tool-button>
+
+    <app-sticker-creator-paint-tool-button
+      icon="icon-tool-outline"
+      title="Weiße Kontur"
+      [active]="paintTool() === 'outline'"
+      (selected)="toolSelected.emit('outline')">
+      @if (paintTool() === 'outline') {
+        <span
+          class="absolute -bottom-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full border-2 border-neutral-950 bg-white shadow-[1px_1px_0_#111]"
+          aria-hidden="true">
+          @if (stickerOutlineWidth() === 0) {
+            <app-svg name="icon-cross" w="10"/>
+          } @else {
+            <span
+              class="rounded-full bg-neutral-950"
+              [style.width.px]="outlineSizeBadgeScale()"
+              [style.height.px]="outlineSizeBadgeScale()"></span>
+          }
+        </span>
+      }
+    </app-sticker-creator-paint-tool-button>
+
+    <div class="h-6 w-px shrink-0 bg-neutral-950/20"></div>
+
+    <button
+      class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white text-taupe-950 transition active:scale-95 min-[380px]:h-[2.125rem] min-[380px]:w-[2.125rem]"
+      type="button"
+      [class.opacity-50]="!canUndoPaintStep()"
+      [disabled]="!canUndoPaintStep()"
+      (click)="undoRequested.emit()"
+      title="Zurück"
+      aria-label="Zurück">
+      <app-svg name="icon-back" w="22"/>
+    </button>
+
+    <button
+      class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white text-taupe-950 transition active:scale-95 min-[380px]:h-[2.125rem] min-[380px]:w-[2.125rem]"
+      type="button"
+      (click)="resetRequested.emit()"
+      title="Reset"
+      aria-label="Reset">
+      <app-svg name="icon-reset" w="22"/>
+    </button>
+  </div>
+</div>

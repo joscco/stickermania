@@ -1,0 +1,61 @@
+<div class="checkerboard-editor relative h-full min-h-0 overflow-hidden text-taupe-950">
+  <div #canvasFrame class="absolute inset-0">
+    <canvas
+      #sourceCanvas
+      class="block h-full w-full touch-none bg-transparent"
+      appPointerSurface
+      [pointerSurfaceHandler]="cropInteractionController"
+    ></canvas>
+  </div>
+
+  @if (selectedPolygonPointIndex() !== null) {
+    <button
+      class="absolute z-20 grid h-4 w-4 place-items-center rounded-full signature-frame-sm bg-white text-[11px] font-bold leading-none text-[#7d7d7d] backdrop-blur-sm transition hover:bg-white/90 hover:text-taupe-950"
+      [style.left.px]="selectedPolygonPointLeftPx()"
+      [style.top.px]="selectedPolygonPointTopPx()"
+      aria-label="Polygonpunkt löschen"
+      title="Polygonpunkt löschen"
+      (pointerdown)="$event.preventDefault(); $event.stopPropagation()"
+      (click)="deleteSelectedPolygonPoint(); $event.stopPropagation()">
+      <app-svg name="icon-cross" [w]="10" />
+    </button>
+  }
+
+  <div class="pointer-events-none absolute left-0 right-0 top-14 z-10 flex items-start justify-between gap-3 p-3">
+    <button
+      class="grid h-12 w-12 place-items-center pointer-events-auto rounded-2xl signature-frame bg-white text-sm font-black"
+      (click)="cancelStickerCreation()">
+      <app-svg name="icon-cross" w="30" />
+    </button>
+
+    <div class="pointer-events-auto flex gap-2">
+      <button
+        class="grid h-12 w-12 place-items-center rounded-2xl signature-frame"
+        [class.bg-white]="cropMode() !== 'lasso'"
+        [class.bg-stick-yellow]="cropMode() === 'lasso'"
+        (click)="toggleLassoMode()"
+        title="Freihand-Lasso">
+        <app-svg name="icon-tool-lasso" w="30" />
+      </button>
+
+      <button
+        class="grid h-12 w-12 place-items-center rounded-2xl signature-frame"
+        [class.bg-white]="cropMode() !== 'polygon-lasso'"
+        [class.bg-stick-yellow]="cropMode() === 'polygon-lasso'"
+        (click)="togglePolygonLassoMode()"
+        title="Polygon-Lasso">
+        <app-svg name="icon-tool-polygon-lasso" w="30" />
+      </button>
+    </div>
+  </div>
+
+  @if (canRequestStickerImprovement()) {
+    <div class="pointer-events-none absolute bottom-0 left-0 right-0 z-10 flex justify-end p-3 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+      <button
+        class="pointer-events-auto rounded-2xl signature-frame-lg bg-white px-4 py-2.5 text-sm font-black"
+        (click)="requestStickerImprovement()">
+        Weiter: Sticker verbessern
+      </button>
+    </div>
+  }
+</div>

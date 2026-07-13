@@ -1,0 +1,17 @@
+@switch (currentView()) {
+  @case ("board") {
+    @if (boardAuthChecked()) {
+      <app-cloud-board />
+    } @else {
+      <div class="min-h-dvh flex items-center justify-center">
+        <div class="h-10 w-10 animate-spin rounded-full border-4 border-taupe-300 border-t-taupe-600"></div>
+      </div>
+    }
+  }
+  @case ("player") {
+    <app-player />
+  }
+  @default {
+    <app-landing />
+  }
+}

@@ -1,0 +1,55 @@
+<div
+  #animTarget
+  class="sticker-anim-wrap relative inline-block leading-[0]"
+  [style.width.px]="width()"
+  [style.height.px]="height()"
+>
+  @if (showShadow()) {
+    <div
+      class="pointer-events-none absolute left-0 top-0 z-0 block"
+      [style.width.px]="width()"
+      [style.height.px]="height()"
+      [style.transform]="shadowTransform()"
+      aria-hidden="true"
+    >
+      <div
+        class="sticker-transform-layer h-full w-full"
+        [style.transform]="itemTransform()"
+        [style.transform-origin]="transformOrigin()"
+      >
+        <div
+          class="sticker-motion-layer h-full w-full"
+          [class.sticker-decorative-motion]="decorativeMotion()"
+          [style.--sticker-decorative-delay]="decorativeMotionDelay()"
+        >
+          <app-sticker-shadow
+            [imageUrl]="imageUrl()"
+            [alt]="stickerAlt() + ' Schatten'"
+            class="block h-full w-full"
+          />
+        </div>
+      </div>
+    </div>
+  }
+
+  <div
+    class="sticker-transform-layer relative z-10 block pointer-events-none"
+    [style.width.px]="width()"
+    [style.height.px]="height()"
+    [style.transform]="itemTransform()"
+    [style.transform-origin]="transformOrigin()"
+  >
+    <div
+      class="sticker-motion-layer h-full w-full"
+      [class.sticker-decorative-motion]="decorativeMotion()"
+      [style.--sticker-decorative-delay]="decorativeMotionDelay()"
+    >
+      <app-sticker-img
+        [imageUrl]="imageUrl()"
+        [alt]="stickerAlt()"
+        [loading]="imageLoading()"
+        class="block h-full w-full"
+      />
+    </div>
+  </div>
+</div>

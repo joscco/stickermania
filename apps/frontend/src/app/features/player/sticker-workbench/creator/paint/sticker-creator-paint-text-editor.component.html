@@ -1,0 +1,172 @@
+<div
+  class="pointer-events-none absolute"
+  [style.z-index]="active() ? 30 : 5"
+  [style.left.px]="textBox().left"
+  [style.top.px]="textBox().top"
+  [style.width.px]="textBox().width">
+  <textarea
+    #paintTextArea
+    class="block w-full resize-none overflow-hidden rounded-xl p-0 font-black outline-none placeholder:text-transparent"
+    [class]="active() ? 'border-2 border-dotted border-taupe-950/70 bg-transparent' : 'border-0 bg-transparent'"
+    [class.pointer-events-auto]="active() && editing()"
+    [class.pointer-events-none]="!active() || !editing()"
+    [readonly]="!active() || !editing()"
+    [value]="textBox().text"
+    placeholder="Text"
+    spellcheck="false"
+    [style.height.px]="textBox().height"
+    [style.font-size.px]="textBox().fontSize"
+    [style.line-height.px]="textBox().lineHeight"
+    [style.color]="'transparent'"
+    [style.caret-color]="textBox().color"
+    [style.text-align]="textBox().align"
+    [style.padding-top.px]="textBox().paddingTop"
+    [style.padding-bottom.px]="textBox().paddingBottom"
+    style="box-sizing: border-box;"
+    (input)="textChanged.emit($any($event.target).value)"
+    (blur)="stopEditing()"
+    (pointerdown)="$event.stopPropagation()"
+    (pointermove)="$event.stopPropagation()"
+    (pointerup)="$event.stopPropagation()"
+    (wheel)="$event.stopPropagation()"></textarea>
+
+  @if (active()) {
+    @if (menuVisible()) {
+      <div
+        class="pointer-events-auto absolute bottom-[calc(100%+0.75rem)] left-1/2 z-30 w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 space-y-2 rounded-2xl bg-white/95 p-2 signature-frame-sm backdrop-blur-md"
+        (pointerdown)="$event.stopPropagation()"
+        (wheel)="$event.stopPropagation()">
+        <div class="flex items-center justify-between gap-1">
+          <div class="scrollbar-none flex min-w-0 flex-1 gap-1 overflow-x-auto p-0.5">
+            @for (color of paintColors; track color) {
+              <button
+                class="h-6 w-6 shrink-0 rounded-full border-2 border-taupe-950 transition active:scale-95"
+                type="button"
+                [class.ring-2]="settings().color === color"
+                [class.ring-stick-yellow]="settings().color === color"
+                [style.background]="color"
+                (click)="styleChanged.emit({color})"
+                [attr.aria-label]="'Textfarbe ' + color">
+              </button>
+            }
+          </div>
+          <button
+            class="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-red-100 text-taupe-950 transition active:scale-95"
+            type="button"
+            (click)="requestDelete()"
+            aria-label="Text löschen"
+            title="Text löschen">
+            <app-svg name="icon-trash" w="18"/>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <label class="min-w-0">
+            <span class="mb-0.5 flex justify-between text-[9px] font-black uppercase tracking-wide text-taupe-500">
+              <span>Schrift</span>
+              <span>{{ settings().fontSize }} px</span>
+            </span>
+            <input
+              class="block w-full accent-taupe-950"
+              type="range"
+              [min]="fontSizeMin"
+              [max]="fontSizeMax"
+              step="1"
+              [value]="settings().fontSize"
+              (input)="updateFontSize($any($event.target).valueAsNumber)"
+              aria-label="Schriftgröße" />
+          </label>
+          <label class="min-w-0">
+            <span class="mb-0.5 flex justify-between text-[9px] font-black uppercase tracking-wide text-taupe-500">
+              <span>Zeilenhöhe</span>
+              <span>{{ settings().lineHeight | percent:'1.0-0' }}</span>
+            </span>
+            <input
+              class="block w-full accent-taupe-950"
+              type="range"
+              [min]="lineHeightMin"
+              [max]="lineHeightMax"
+              step="0.05"
+              [value]="settings().lineHeight"
+              (input)="updateLineHeight($any($event.target).valueAsNumber)"
+              aria-label="Zeilenhöhe" />
+          </label>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <div class="mb-1 text-[9px] font-black uppercase tracking-wide text-taupe-500">Horizontal</div>
+            <div class="grid grid-cols-3 gap-1">
+              @for (align of paintTextAlignments; track align) {
+                <button
+                  class="h-7 rounded-lg border-2 border-taupe-950 text-xs font-black transition active:scale-95"
+                  type="button"
+                  [class.bg-stick-yellow]="settings().align === align"
+                  [class.bg-white]="settings().align !== align"
+                  (click)="styleChanged.emit({align})"
+                  [attr.aria-label]="'Text ' + textAlignLabel(align)"
+                  [title]="textAlignLabel(align)">
+                  {{ align === 'left' ? '←' : align === 'center' ? '↔' : '→' }}
+                </button>
+              }
+            </div>
+          </div>
+          <div>
+            <div class="mb-1 text-[9px] font-black uppercase tracking-wide text-taupe-500">Vertikal</div>
+            <div class="grid grid-cols-3 gap-1">
+              @for (align of paintTextVerticalAlignments; track align) {
+                <button
+                  class="h-7 rounded-lg border-2 border-taupe-950 text-xs font-black transition active:scale-95"
+                  type="button"
+                  [class.bg-stick-yellow]="settings().verticalAlign === align"
+                  [class.bg-white]="settings().verticalAlign !== align"
+                  (click)="styleChanged.emit({verticalAlign: align})"
+                  [attr.aria-label]="'Text ' + textVerticalAlignLabel(align)"
+                  [title]="textVerticalAlignLabel(align)">
+                  {{ align === 'top' ? '↑' : align === 'middle' ? '↕' : '↓' }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <button
+      class="pointer-events-auto absolute -left-3 -top-3 h-6 w-6 rounded-full border-2 border-taupe-950 bg-white shadow-[1px_1px_0_#111] cursor-nwse-resize active:scale-95"
+      type="button"
+      aria-label="Textbox oben links ziehen"
+      (pointerdown)="startResize($event, 'top-left')"
+      (pointermove)="continueResize($event)"
+      (pointerup)="finishResize($event)"
+      (pointercancel)="finishResize($event)">
+    </button>
+    <button
+      class="pointer-events-auto absolute -right-3 -top-3 h-6 w-6 rounded-full border-2 border-taupe-950 bg-white shadow-[1px_1px_0_#111] cursor-nesw-resize active:scale-95"
+      type="button"
+      aria-label="Textbox oben rechts ziehen"
+      (pointerdown)="startResize($event, 'top-right')"
+      (pointermove)="continueResize($event)"
+      (pointerup)="finishResize($event)"
+      (pointercancel)="finishResize($event)">
+    </button>
+    <button
+      class="pointer-events-auto absolute -bottom-3 -left-3 h-6 w-6 rounded-full border-2 border-taupe-950 bg-white shadow-[1px_1px_0_#111] cursor-nesw-resize active:scale-95"
+      type="button"
+      aria-label="Textbox unten links ziehen"
+      (pointerdown)="startResize($event, 'bottom-left')"
+      (pointermove)="continueResize($event)"
+      (pointerup)="finishResize($event)"
+      (pointercancel)="finishResize($event)">
+    </button>
+    <button
+      class="pointer-events-auto absolute -bottom-3 -right-3 h-6 w-6 rounded-full border-2 border-taupe-950 bg-white shadow-[1px_1px_0_#111] cursor-nwse-resize active:scale-95"
+      type="button"
+      aria-label="Textbox unten rechts ziehen"
+      (pointerdown)="startResize($event, 'bottom-right')"
+      (pointermove)="continueResize($event)"
+      (pointerup)="finishResize($event)"
+      (pointercancel)="finishResize($event)">
+    </button>
+  }
+</div>

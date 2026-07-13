@@ -1,0 +1,21 @@
+@if (isHost) {
+  @if (boardWarmupDone()) {
+    <app-lan-host-board />
+  } @else {
+    <div class="grid h-full w-full place-items-center bg-amber-300 text-taupe-900">
+      <div class="grid justify-items-center gap-5 px-8 text-center">
+        <img
+          src="assets/svg/logo.svg"
+          alt="Stickermania"
+          class="w-[min(420px,72vw)] drop-shadow-[4px_6px_0_rgba(17,17,17,0.22)]"
+        >
+        <div>
+          <div class="text-sm font-black">Board wird vorbereitet</div>
+          <div class="mt-1 text-xs font-bold text-taupe-500">Grafiken werden vorgeladen.</div>
+        </div>
+      </div>
+    </div>
+  }
+} @else {
+  <app-player />
+}

@@ -1,0 +1,32 @@
+<!-- ── Canvas area ── -->
+<div
+  animOnInit="opacity"
+  #canvasArea
+  class="w-full h-full relative overflow-visible"
+>
+  <!-- Selection overlay (rotate + scale handles) -->
+  <app-sticker-overlay
+    [visible]="overlayVisible()"
+    [box]="overlayBox()"
+    [rotationOrigin]="overlayRotationOrigin()"
+    [rotation]="overlayRotation()"
+    [showHandles]="showOverlayHandles() && !selectionState.isMoveActive()"
+    [dimmed]="selectionState.isMoveActive()"
+    (handleDrag)="onOverlayHandle($event)"
+  />
+
+  <!-- Action bar: flip, z-index, delete, duplicate -->
+  <app-sticker-action-bar
+    [visible]="actionBarVisible()"
+    [mode]="actionBarMode()"
+    [box]="actionBarBox()"
+    [centerX]="actionBarCenterX()"
+    [centerY]="actionBarCenterY()"
+    [canvasW]="canvasW()"
+    [canvasH]="canvasH()"
+    [viewportBounds]="actionBarViewportBounds()"
+    [spacing]="actionBarSpacing"
+    [stickerRotation]="actionBarRotation()"
+    (action)="onActionBarAction($event)"
+  />
+</div>

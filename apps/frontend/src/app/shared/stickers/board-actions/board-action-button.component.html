@@ -1,0 +1,11 @@
+<button
+  class="grid h-11 w-11 place-items-center rounded-2xl signature-frame bg-white/95 text-taupe-950 backdrop-blur-sm transition hover:bg-stick-yellow disabled:opacity-50 active:translate-x-0.5 active:translate-y-0.5"
+  [class.hover:bg-red-50]="kind() === 'reset'"
+  [class.hover:text-red-700]="kind() === 'reset'"
+  [title]="title()"
+  [disabled]="state() === 'loading'"
+  type="button"
+  (click)="actionRequested.emit($event)"
+>
+  <app-svg [name]="iconName()" w="22"/>
+</button>

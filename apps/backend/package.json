@@ -1,0 +1,27 @@
+{
+  "name": "@birthday/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@birthday/shared": "0.1.0",
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/static": "^9.0.0",
+    "@fastify/websocket": "^11.2.0",
+    "@google-cloud/firestore": "^8.6.0",
+    "@google-cloud/storage": "^7.19.0",
+    "fastify": "^5.8.4",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.2",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

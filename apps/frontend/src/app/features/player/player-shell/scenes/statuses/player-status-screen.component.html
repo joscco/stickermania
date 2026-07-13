@@ -1,0 +1,13 @@
+<div animGroup="opacity" class="flex-1 flex flex-col items-center justify-center gap-4 p-6 text-center">
+  <ng-content select="[iconSlot]"/>
+  @if (icon(); as iconName) {
+    <app-svg animOnInit="opacity" [name]="iconName" w="100" [class]="iconClass()"/>
+  }
+  @if (title()) {
+    <p animOnInit="opacity" [class]="titleClass()">{{ title() }}</p>
+  }
+  @if (subtitle()) {
+    <p animOnInit="opacity" [class]="subtitleClass()">{{ subtitle() }}</p>
+  }
+  <ng-content/>
+</div>

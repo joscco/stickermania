@@ -1,0 +1,23 @@
+<div class="h-screen min-h-0 flex flex-col bg-stick-cream text-taupe-950">
+  <app-sticker-workbench
+    class="min-h-0 flex-1"
+    [playerId]="playerId"
+    [players]="players"
+    [stickers]="stickers()"
+    [defaultStickerCatalog]="defaultStickerCatalog()"
+    [defaultStickerPacks]="defaultStickerPacks()"
+    [stickerPacks]="defaultStickerPacks()"
+    [editableStickerPacks]="editableStickerPacks()"
+    [editableDefaultPackId]="'default'"
+    [boardPlacements]="boardPlacements()"
+    [createStatus]="createStatus()"
+    (createPackRequested)="onCreatePackRequested($event)"
+    (deletePackRequested)="onDeletePackRequested($event)"
+    (createSticker)="onCreateSticker($event)"
+    (updateSticker)="onUpdateSticker($event)"
+    (moveStickerToPackRequested)="onMoveStickerToPackRequested($event)"
+    (deleteSticker)="onDeleteSticker($event)"
+    (upsertBoardPlacements)="onUpsertBoardPlacements($event)"
+    (deleteBoardPlacements)="onDeleteBoardPlacements($event)"
+  />
+</div>

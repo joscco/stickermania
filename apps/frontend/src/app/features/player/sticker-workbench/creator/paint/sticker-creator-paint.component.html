@@ -1,0 +1,99 @@
+<div
+  class="checkerboard-editor relative h-full min-h-0 overflow-visible text-taupe-950">
+  <div #canvasFrame class="absolute inset-0">
+    <canvas
+      #sourceCanvas
+      class="block h-full w-full touch-none bg-transparent"
+      [style.cursor]="paintCanvasCursor()"
+      appPointerSurface
+      [pointerSurfaceHandler]="paintInputHandler"
+      (pointerleave)="paintInputHandler.pointerLeave($event)"
+    ></canvas>
+  </div>
+
+  @if (activeTextBoxOverlay(); as textBox) {
+    <app-sticker-creator-paint-text-editor
+      #paintTextEditor
+      [textBox]="textBox"
+      [active]="paintTool() === 'text'"
+      [menuVisible]="paintTextMenuVisible()"
+      [settings]="paintTextEditorSettings()"
+      (textChanged)="updateActivePaintText($event)"
+      (styleChanged)="updateActivePaintTextStyle($event)"
+      (deleteRequested)="clearActivePaintTextBox()"
+      (resizeDelta)="resizePaintTextBox($event)"
+      (resizeEnded)="finishPaintTextResize()"
+    />
+  }
+
+  @if (paintPointerPreview(); as pointer) {
+    <div
+      class="pointer-events-none absolute z-20 rounded-full border-2 bg-white/10 backdrop-invert-[0.08]"
+      [class.border-dashed]="pointer.tool === 'eraser'"
+      [style.left.px]="pointer.x"
+      [style.top.px]="pointer.y"
+      [style.width.px]="pointer.size"
+      [style.height.px]="pointer.size"
+      [style.border-color]="paintPointerBorderColor(pointer)"
+      [style.box-shadow]="paintPointerBoxShadow(pointer)"
+      style="transform: translate(-50%, -50%);"
+    ></div>
+  }
+
+  <div class="pointer-events-none absolute inset-x-0 top-14 z-10 mx-auto flex w-full max-w-lg items-start justify-between gap-3 p-3">
+    <button
+      class="pointer-events-auto grid h-12 w-12 place-items-center rounded-full signature-frame bg-white text-taupe-950 active:translate-x-0.5 active:translate-y-0.5"
+      (click)="cancelStickerCreation()"
+      aria-label="Abbrechen"
+      title="Abbrechen">
+      <app-svg name="icon-cross" w="28"/>
+    </button>
+
+    <button
+      class="pointer-events-auto grid h-12 w-12 place-items-center rounded-full signature-frame bg-amber-400 text-taupe-950 disabled:bg-white disabled:opacity-60 active:translate-x-0.5 active:translate-y-0.5"
+      [disabled]="!previewReady() || stickerPreparing() || createStatus() === 'saving' || !!pendingStickerDataUrl()"
+      (click)="confirmSticker()"
+      aria-label="Sticker speichern"
+      title="Sticker speichern">
+      <app-svg name="icon-checkmark" w="28"/>
+    </button>
+  </div>
+
+  @if (statusText()) {
+    <div class="pointer-events-none absolute left-3 right-3 top-32 z-10 flex justify-center">
+      <div class="w-fit max-w-full rounded-xl signature-frame-sm bg-white px-3 py-1 text-center text-xs font-black">
+        {{ statusText() }}
+      </div>
+    </div>
+  }
+
+  <app-sticker-creator-paint-toolbar
+    [toolbarVisible]="paintToolbarVisible()"
+    [currentToolLabel]="currentPaintToolLabel()"
+    [paintTool]="paintTool()"
+    [eraserMode]="eraserMode()"
+    [paintColor]="toolbarPaintColor()"
+    [brushSize]="brushSize()"
+    [stickerOutlineWidth]="stickerOutlineWidth()"
+    [canUndoPaintStep]="canUndoPaintStep()"
+    (toolbarClosed)="closePaintToolbar()"
+    (toolbarToggled)="togglePaintToolbar()"
+    (toolSelected)="selectPaintTool($event)"
+    (eraserModeSelected)="selectEraserMode($event)"
+    (colorSelected)="selectPaintColor($event)"
+    (brushSizeSelected)="selectBrushSize($event)"
+    (stickerOutlineWidthSelected)="selectStickerOutlineWidth($event)"
+    (undoRequested)="undoPaintStep()"
+    (resetRequested)="resetPaintEditsAndCloseTools()"
+  />
+
+  @if (pendingStickerDataUrl()) {
+    <app-sticker-creator-name-dialog
+      [name]="stickerName()"
+      [saving]="createStatus() === 'saving'"
+      (nameChanged)="stickerName.set($event)"
+      (backRequested)="editPendingStickerAgain()"
+      (submitRequested)="submitPendingSticker()"
+    />
+  }
+</div>

@@ -1,0 +1,113 @@
+name: Build LAN Desktop App
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Optional: Git tag/release name, e.g. lan-v0.1.0. Empty means Actions artifact only."
+        required: false
+        type: string
+      draft_release:
+        description: "Create new GitHub Release as draft when release_tag is set."
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macos
+            os: macos-latest
+          - name: windows
+            os: windows-latest
+
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Electron LAN app
+        run: npm run electron:dist
+
+      - name: Collect release files
+        shell: bash
+        run: |
+          mkdir -p release-artifacts
+          find apps/electron/dist -maxdepth 1 -type f \( \
+            -name '*.dmg' -o \
+            -name '*.zip' -o \
+            -name '*.exe' -o \
+            -name '*.msi' -o \
+            -name '*.AppImage' \
+          \) -print -exec cp {} release-artifacts/ \;
+          ls -la release-artifacts
+
+      - name: Upload LAN app artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: stickermania-lan-${{ matrix.name }}
+          path: release-artifacts/*
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    if: ${{ inputs.release_tag != '' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: stickermania-lan-*
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          DRAFT_RELEASE: ${{ inputs.draft_release }}
+        run: |
+          set -euo pipefail
+          ls -la release-artifacts
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" release-artifacts/* --clobber
+            exit 0
+          fi
+
+          release_args=(
+            "$RELEASE_TAG"
+            release-artifacts/*
+            --target "$GITHUB_SHA"
+            --title "Stickermania LAN ${RELEASE_TAG}"
+            --notes "Unsigned LAN desktop build from workflow run ${GITHUB_RUN_NUMBER}."
+          )
+
+          if [ "$DRAFT_RELEASE" = "true" ]; then
+            release_args+=(--draft)
+          fi
+
+          gh release create "${release_args[@]}"

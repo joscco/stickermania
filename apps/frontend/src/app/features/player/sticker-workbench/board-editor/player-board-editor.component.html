@@ -1,0 +1,74 @@
+<div class="flex-1 min-h-0 flex flex-col">
+  <div class="relative flex-1 min-h-0">
+    <app-sticker-board-viewport
+      #boardSurface
+      [placements]="boardEditorPlacements()"
+      [stickerCatalog]="stickerCatalog()"
+      [readonlyMode]="boardMode() === 'view' || !canEditBoard()"
+      [editablePlacementIds]="boardMode() === 'edit' && canEditBoard() ? editableBoardPlacementIds() : []"
+      [unlockablePlacementIds]="boardMode() === 'edit' && canEditBoard() ? unlockableBoardPlacementIds() : []"
+      [showPlacementLabels]="showPlacementAuthorControls() && boardMode() === 'view' && showPlacementAuthors()"
+      [placementBadges]="placementBadges()"
+      (placementsChanged)="onBoardPlacementsChanged($event)"
+      (selectionChanged)="onBoardSelectionChanged($event)"
+      (viewportCenterChanged)="onBoardFocusChanged($event)"
+    />
+
+
+    @if (!canEditBoard()) {
+      <div class="pointer-events-none absolute inset-x-3 z-20 flex justify-center"
+           style="bottom: calc(5.75rem + env(safe-area-inset-bottom));">
+        <div
+          class="max-w-sm rounded-2xl signature-frame bg-white/90 px-4 py-3 text-center backdrop-blur-sm">
+          <div class="text-sm font-black">
+            Du hast noch keine Sticker zum Platzieren.
+          </div>
+          <div class="text-xs text-taupe-500">
+            Solange kannst du nur das Board ansehen.
+          </div>
+        </div>
+      </div>
+    }
+
+    <div [animPresence]="showBoardSaveState()"
+         class="pointer-events-none absolute inset-x-3 top-18 z-30 flex justify-center">
+      <div
+        class="rounded-2xl signature-frame bg-white/95 px-3 py-1 text-xs font-black backdrop-blur-sm"
+        [class.bg-stick-yellow]="boardSaveState() === 'saved'"
+        [class.bg-red-100]="boardSaveState() === 'error'">
+        {{ boardSaveStateText() }}
+      </div>
+    </div>
+
+    <app-player-board-controls
+      [boardMode]="boardMode()"
+      [canEditBoard]="canEditBoard()"
+      [showBoardPicker]="showBoardPicker()"
+      [showPlacementAuthorControls]="showPlacementAuthorControls()"
+      [showPlacementAuthors]="showPlacementAuthors()"
+      [showBoardActions]="showBoardActions()"
+      [boardExportState]="boardExportState()"
+      [boardResetState]="boardResetState()"
+      (modeSelected)="setBoardMode($event)"
+      (placementAuthorsVisibleChanged)="setPlacementAuthorsVisible($event)"
+      (pickerRequested)="openBoardPicker()"
+      (exportBoardRequested)="exportBoardRequested.emit($event)"
+      (resetBoardRequested)="resetBoardRequested.emit($event)"
+    />
+
+    @if ((showBoardPicker() || boardPickerClosing()) && boardMode() === 'edit' && canEditBoard()) {
+      <div class="absolute inset-0 z-[100200]">
+        <app-sticker-catalog-picker
+          [stickerCatalog]="stickerCatalog()"
+          [stickerPacks]="stickerPacks()"
+          [players]="players()"
+          [playerId]="playerId()"
+          [closing]="boardPickerClosing()"
+          [contained]="true"
+          (stickerDragStarted)="addStickerToBoard($event)"
+          (close)="closeBoardPicker()"
+        />
+      </div>
+    }
+  </div>
+</div>

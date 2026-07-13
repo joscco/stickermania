@@ -1,0 +1,54 @@
+@if (renderVisible() && displayBox()) {
+  <div
+    #bar
+    class="pointer-events-auto scrollbar-none absolute z-[9500] flex h-11 origin-center items-center justify-center gap-1 overflow-x-auto overflow-y-hidden rounded-full signature-frame-lg bg-stick-paper px-1.5 py-1.5 backdrop-blur-sm transition-[opacity,transform] duration-140 ease-out select-none"
+    [class.opacity-100]="actionBarActive()"
+    [class.translate-y-0]="actionBarActive()"
+    [class.opacity-0]="!actionBarActive()"
+    [class.translate-y-1]="!actionBarActive()"
+    [style.left.px]="clampedX()"
+    [style.top.px]="clampedY()"
+    [style.width.px]="barWidth()"
+    (pointerdown)="$event.stopPropagation()"
+  >
+    @if (mode() === 'locked') {
+      <button class="grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 border-taupe-950 bg-stick-yellow text-taupe-950 transition active:scale-95" title="Entsperren"
+              (pointerdown)="onAction('unlock', $event)">
+        <app-svg name="icon-unlock" w="20"/>
+      </button>
+    } @else {
+      <button class="grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 border-taupe-950 bg-white text-taupe-950 transition active:scale-95" title="Duplizieren"
+              (pointerdown)="onAction('duplicate', $event)">
+        <app-svg name="icon-ctx-duplicate" w="20"/>
+      </button>
+      <button class="grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 border-neutral-950 bg-white text-taupe-950 transition active:scale-95" title="Spiegeln" (pointerdown)="onAction('flipH', $event)">
+        <app-svg name="icon-ctx-flip-h" w="20"/>
+      </button>
+
+      <button class="grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 border-neutral-950 bg-white text-taupe-950 transition active:scale-95" title="Zurücksetzen" (pointerdown)="onAction('reset', $event)">
+        <app-svg name="icon-reset" w="20"/>
+      </button>
+
+      <button class="grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 border-neutral-950 bg-white text-taupe-950 transition active:scale-95" title="Ganz nach vorne" (pointerdown)="onAction('zFront', $event)">
+        <app-svg name="icon-ctx-z-front" w="20"/>
+      </button>
+      <button class="grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 border-neutral-950 bg-white text-taupe-950 transition active:scale-95" title="Eine Ebene vor" (pointerdown)="onAction('zForward', $event)">
+        <app-svg name="icon-ctx-z-forward" w="20"/>
+      </button>
+      <button class="grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 border-neutral-950 bg-white text-taupe-950 transition active:scale-95" title="Eine Ebene zurück" (pointerdown)="onAction('zBackward', $event)">
+        <app-svg name="icon-ctx-z-backward" w="20"/>
+      </button>
+      <button class="grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 border-neutral-950 bg-white text-taupe-950 transition active:scale-95" title="Ganz nach hinten" (pointerdown)="onAction('zBack', $event)">
+        <app-svg name="icon-ctx-z-back" w="20"/>
+      </button>
+
+      <button class="grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 border-neutral-950 bg-white text-taupe-950 transition active:scale-95" title="Sperren" (pointerdown)="onAction('lock', $event)">
+        <app-svg name="icon-lock" w="20"/>
+      </button>
+
+      <button class="grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 border-neutral-950 bg-red-500 text-white transition active:translate-x-0.5 active:translate-y-0.5" title="Löschen" (pointerdown)="onAction('delete', $event)">
+        <app-svg name="icon-ctx-delete" w="20" color="black"/>
+      </button>
+    }
+  </div>
+}

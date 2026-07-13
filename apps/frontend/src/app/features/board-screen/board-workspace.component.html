@@ -1,0 +1,67 @@
+<div class="relative h-full w-full overflow-hidden text-taupe-900 flex flex-col">
+  <div class="flex-1 min-h-0 relative">
+    @if (!worldReady()) {
+      <div animOnInit="opacity" class="h-full flex flex-col items-center justify-center gap-3 text-taupe-600">
+        <app-svg [w]="50" name="connecting" class="animate-spin"/>
+        <span class="text-sm">Verbinde mit Session...</span>
+      </div>
+    } @else {
+      <div class="h-full relative">
+        <div class="pointer-events-none absolute inset-x-0 top-6 z-[100000] flex justify-center">
+          <div class="pointer-events-auto flex flex-col items-center gap-2">
+            <div class="flex items-center justify-center gap-2" animOnInit="strip">
+              <ng-content select="[board-toolbar-left]"/>
+
+              <div class="grid grid-cols-2 gap-1 rounded-2xl signature-frame bg-white p-1">
+                <button
+                  class="rounded-xl px-3 py-2 text-xs font-black"
+                  [class.bg-amber-300]="boardMode() === 'view'"
+                  (click)="modeSelected.emit('view')">Nur ansehen
+                </button>
+                <button
+                  class="rounded-xl px-3 py-2 text-xs font-black"
+                  [class.bg-amber-300]="boardMode() === 'edit'"
+                  (click)="modeSelected.emit('edit')">Bearbeiten
+                </button>
+              </div>
+
+              <ng-content select="[board-toolbar-right]"/>
+            </div>
+
+            @if (boardMode() === 'view') {
+              <label class="flex items-center gap-2 rounded-full signature-frame-sm bg-white/95 px-3 py-2 text-xs font-black text-taupe-950 backdrop-blur-sm">
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 accent-amber-300"
+                  [checked]="showPlacementAuthors()"
+                  (change)="placementAuthorsVisibleChanged.emit($any($event.target).checked)"
+                >
+                Avatare anzeigen
+              </label>
+            }
+
+            <ng-content select="[board-toolbar-actions]"/>
+          </div>
+        </div>
+
+        <app-sticker-board-viewport
+          [placements]="placements()"
+          [stickerCatalog]="stickerCatalog()"
+          [readonlyMode]="boardMode() === 'view'"
+          [editablePlacementIds]="boardMode() === 'edit' ? null : []"
+          [unlockablePlacementIds]="boardMode() === 'edit' ? null : []"
+          [showPlacementLabels]="boardMode() === 'view' && showPlacementAuthors()"
+          [placementBadges]="placementBadges()"
+          [contentPaddingPx]="40"
+          [pixiMaxResolution]="pixiMaxResolution()"
+          [pixiWarmupFrames]="pixiWarmupFrames()"
+          (placementsChanged)="placementsChanged.emit($event)"
+          (selectionChanged)="selectionChanged.emit($event)"
+          animOnInit="opacity"
+        />
+
+        <ng-content select="[board-bottom-right]"/>
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,18 @@
+<button
+  class="relative grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 transition-[background-color,border-color,color,transform,box-shadow] duration-200 min-[380px]:h-10 min-[380px]:w-10"
+  type="button"
+  [class.border-taupe-950]="activeBorder()"
+  [class.border-transparent]="!activeBorder()"
+  [class.signature-frame-sm]="active()"
+  [class.bg-white]="!active()"
+  [class.bg-stick-yellow]="active() && !activeBackground()"
+  [style.background]="active() && activeBackground() ? activeBackground() : null"
+  [style.color]="active() && activeForeground() ? activeForeground() : null"
+  (click)="selected.emit()"
+  [title]="title()"
+  [attr.aria-label]="title()">
+  @if (icon(); as iconName) {
+    <app-svg [name]="iconName" w="26"/>
+  }
+  <ng-content/>
+</button>

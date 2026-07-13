@@ -1,0 +1,96 @@
+<div #landingRoot class="relative min-h-dvh overflow-hidden flex flex-col items-center justify-center px-6"
+     style="background-image: url('/assets/svg/board-dot-pattern.svg'); background-size: 64px 64px">
+  <div class="pointer-events-none absolute inset-0"></div>
+  <div class="pointer-events-none absolute inset-0 opacity-30"></div>
+
+  <!-- Logo -->
+  <img animOnInit="strip" src="assets/svg/logo.svg" alt="Stickermania" class="relative z-10 w-full max-w-lg mx-auto mb-4 drop-shadow-[4px_6px_0_rgba(17,17,17,0.25)] pointer-events-none"/>
+
+  <div animOnInit="strip" [animDelay]="0.2" class="relative z-10 w-full max-w-sm bg-stick-paper rounded-3xl signature-frame-xl p-4 text-center mb-5">
+
+    <p class="text-sm text-taupe-700 leading-relaxed mb-3">
+      Session-Code:
+    </p>
+
+    <div class="flex items-center justify-center gap-2" [class.ui-shake]="sessionCodeShakeActive()">
+      @for (index of digitSlots; track index) {
+        <input
+          #codeInput
+          class="h-14 w-14 rounded-2xl signature-frame-lg bg-white text-center text-2xl text-taupe-950 outline-none focus:bg-amber-300 placeholder-taupe-400 transition"
+          type="text"
+          inputmode="numeric"
+          maxlength="1"
+          autocomplete="false"
+          autocorrect="off"
+          spellcheck="false"
+          [value]="codeDigits()[index]"
+          (input)="onCodeDigitInput(index, $event)"
+          (keydown)="onCodeDigitKeydown(index, $event)"
+          (paste)="onCodePaste(index, $event)"
+        />
+      }
+    </div>
+
+    <button
+      class="mt-4 w-full rounded-xl signature-frame-lg bg-taupe-950 text-white px-4 py-3 text-sm font-black enabled:hover:bg-amber-300 enabled:hover:text-taupe-950 disabled:opacity-40 transition-all"
+      [disabled]="sessionCode().length < 4 || sessionJoinLoading()"
+      (click)="joinSession()"
+    >
+      Beitreten
+    </button>
+  </div>
+
+  <button
+    animOnInit="strip" [animDelay]="0.4"
+    class="relative z-10 signature-frame-lg bg-white hover:bg-taupe-50 text-xs text-taupe-700 hover:text-taupe-950 transition-colors p-4 w-full max-w-75 rounded-2xl"
+    (click)="goToBoard()"
+  >
+    → Als Moderator zum Board
+  </button>
+</div>
+
+<!-- Password dialog -->
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+  [animPresence]="showPasswordDialog()"
+  animPresenceType="overlay"
+  (click)="cancelPasswordDialog()"
+>
+  <div
+    class="w-full max-w-sm rounded-3xl signature-frame-xl bg-stick-paper p-6"
+    [animPresence]="showPasswordDialog()"
+    animPresenceType="opacity"
+    [class.ui-shake]="passwordShakeActive()"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="text-lg font-bold text-taupe-950">Board-Zugang</div>
+    <p class="mt-1 text-sm text-taupe-600">Bitte das Board-Passwort eingeben.</p>
+
+    <input
+      class="mt-4 w-full rounded-2xl border-[3px] border-taupe-950 bg-white px-4 py-3 text-sm text-taupe-950 outline-none focus:bg-stick-yellow placeholder-neutral-500"
+      type="password"
+      placeholder="Passwort"
+      autocomplete="false"
+      autocorrect="off"
+      [value]="boardPassword()"
+      (input)="boardPassword.set($any($event.target).value)"
+      (keydown.enter)="submitPassword()"
+    />
+
+    <div class="mt-4 flex gap-2">
+      <button
+        class="flex-1 rounded-2xl border-2 border-neutral-950 bg-white px-4 py-2 text-sm text-taupe-950 hover:bg-neutral-100 transition-colors"
+        (click)="cancelPasswordDialog()"
+      >
+        Abbrechen
+      </button>
+      <button
+        class="flex-1 rounded-2xl border-2 border-neutral-950 bg-neutral-950 text-white px-4 py-2 text-sm font-medium hover:bg-stick-orange hover:text-taupe-950 disabled:opacity-40 transition-all"
+        [disabled]="passwordLoading()"
+        (click)="submitPassword()"
+      >
+        Weiter
+      </button>
+    </div>
+  </div>
+</div>

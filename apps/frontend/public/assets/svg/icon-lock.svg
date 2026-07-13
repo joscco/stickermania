@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="SM_Icons" data-name="SM Icons" xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <polygon points="147.421 173.219 135.558 175.486 123.707 172.494 111.861 172.256 100.012 173.237 88.158 173.131 76.308 172.182 64.45 173.786 52.053 173.755 52.916 161.58 52.36 149.954 52.027 138.333 52.895 126.708 52.012 115.079 53.512 103.454 53.713 91.821 54.12 81.744 64.442 78.452 76.293 80.469 88.139 80.616 99.988 80.549 111.842 78.996 123.692 79.693 135.55 79.558 147.998 79.586 146.369 91.813 145.445 103.439 147.835 115.06 147.553 126.685 149.827 138.314 149.568 149.939 147.813 161.572 147.421 173.219" style="fill: none; stroke: #000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 23px;"/>
+  <g>
+    <polygon points="109.514 117.628 98.572 126.815 90.608 117.628 98.572 108.961 109.514 117.628"/>
+    <polygon points="109.514 117.628 98.572 126.815 90.608 117.628 98.572 108.961 109.514 117.628" style="fill: none; stroke: #000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 23px;"/>
+  </g>
+  <polyline points="100.3 114.386 99.564 128.368 100.451 142.35" style="fill: none; stroke: #000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 23px;"/>
+  <polyline points="76.972 75.675 74.71 63.75 77.702 51.868 82.614 40.77 90.818 31.605 102.98 28.948 113.733 32.747 122.578 40.234 125.779 51.819 124.685 63.75 125.241 75.675" style="fill: none; stroke: #000; stroke-linecap: round; stroke-linejoin: round; stroke-width: 23px;"/>
+</svg>

@@ -1,0 +1,49 @@
+@if (kind() === 'file') {
+  <label
+    class="relative flex h-full w-full cursor-pointer items-center overflow-hidden rounded-[clamp(1.1rem,4cqh,1.75rem)] p-[clamp(0.65rem,2.4cqh,1rem)] text-left transition active:translate-x-1 active:translate-y-1 signature-frame-lg"
+    [class.bg-stick-yellow]="tone() === 'yellow'"
+    [class.bg-white]="tone() === 'white'"
+    [class.bg-stick-cream]="tone() === 'cream'"
+    [class.pointer-events-none]="invisible()"
+    [class.opacity-0]="invisible()"
+    [class.opacity-50]="disabled() && !invisible()"
+    [attr.aria-hidden]="invisible() ? 'true' : null">
+    <span class="pointer-events-none flex min-w-0 items-center gap-[clamp(0.65rem,2.2cqh,1rem)]">
+      <app-svg [name]="icon()" w="40" class="shrink-0"/>
+      <span class="min-w-0">
+        <span class="block h-[clamp(1.35rem,4cqh,1.75rem)] truncate text-[clamp(1.05rem,3.8cqh,1.6rem)] font-black leading-[clamp(1.35rem,4cqh,1.75rem)]">{{ title() }}</span>
+        <span class="block h-[clamp(0.9rem,2.6cqh,1rem)] truncate text-[clamp(0.7rem,2.1cqh,0.8rem)] font-bold leading-[clamp(0.9rem,2.6cqh,1rem)] text-stick-ink-hard/60">{{ subtitle() }}</span>
+      </span>
+    </span>
+    <input
+      type="file"
+      accept="image/*"
+      class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+      [attr.capture]="capture()"
+      [disabled]="disabled() || invisible()"
+      (click)="onFileInputClick($event)"
+      (change)="onFileInputChange($event)"
+    >
+  </label>
+} @else {
+  <button
+    type="button"
+    class="flex h-full w-full items-center rounded-[clamp(1.1rem,4cqh,1.75rem)] p-[clamp(0.65rem,2.4cqh,1rem)] text-left transition active:translate-x-1 active:translate-y-1 signature-frame-lg"
+    [class.bg-stick-yellow]="tone() === 'yellow'"
+    [class.bg-white]="tone() === 'white'"
+    [class.bg-stick-cream]="tone() === 'cream'"
+    [class.pointer-events-none]="invisible()"
+    [class.opacity-0]="invisible()"
+    [class.opacity-50]="disabled() && !invisible()"
+    [disabled]="disabled() || invisible()"
+    [attr.aria-hidden]="invisible() ? 'true' : null"
+    (click)="activated.emit()">
+    <span class="flex min-w-0 items-center gap-[clamp(0.65rem,2.2cqh,1rem)]">
+      <app-svg [name]="icon()" w="40" class="shrink-0"/>
+      <span class="min-w-0">
+        <span class="block h-[clamp(1.35rem,4cqh,1.75rem)] truncate text-[clamp(1.05rem,3.8cqh,1.6rem)] font-black leading-[clamp(1.35rem,4cqh,1.75rem)]">{{ title() }}</span>
+        <span class="block h-[clamp(0.9rem,2.6cqh,1rem)] truncate text-[clamp(0.7rem,2.1cqh,0.8rem)] font-bold leading-[clamp(0.9rem,2.6cqh,1rem)] text-stick-ink-hard/60">{{ subtitle() }}</span>
+      </span>
+    </span>
+  </button>
+}

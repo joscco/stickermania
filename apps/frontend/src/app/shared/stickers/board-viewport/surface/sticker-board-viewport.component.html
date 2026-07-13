@@ -1,0 +1,66 @@
+<div
+  #boardViewport
+  class="h-full w-full relative overflow-hidden select-none bg-transparent"
+  [style.touch-action]="touchAction()"
+  [style.cursor]="boardCursor()"
+  appPointerSurface
+  [pointerSurfaceHandler]="boardPointerSurfaceHandler"
+  [pointerSurfaceOptions]="boardPointerSurfaceOptions"
+>
+  <app-pixi-sticker-board-renderer
+    #pixiBoard
+    [placements]="placements()"
+    [stickerCatalog]="stickerCatalog()"
+    [bounds]="bounds"
+    [boardWidth]="boardWidth"
+    [boardHeight]="boardHeight"
+    [stickerBaseSize]="boardView.stickerBaseSize"
+    [panX]="panX()"
+    [panY]="panY()"
+    [zoom]="zoom()"
+    [viewportW]="viewportW()"
+    [viewportH]="viewportH()"
+    [stickerShadowOffsetX]="stickerShadowOffsetX()"
+    [stickerShadowOffsetY]="stickerShadowOffsetY()"
+    [cameraSmoothingMs]="pixiCameraSmoothingMs()"
+    [showPlacementLabels]="showPlacementLabels()"
+    [placementBadges]="placementBadges()"
+    [stickerAnimStates]="stickerAnimStates()"
+    [maxResolution]="pixiMaxResolution()"
+    [warmupFrames]="pixiWarmupFrames()"
+  />
+
+  <div
+    class="pointer-events-none absolute left-0 top-0 z-20"
+    [style.width.px]="renderBoardWidth()"
+    [style.height.px]="renderBoardHeight()"
+    [style.transform]="boardTransform()"
+    [style.transform-origin]="'0 0'"
+    [style.will-change]="'transform'"
+  >
+    <app-sticker-placement-canvas
+      #boardCanvas
+      class="pointer-events-none absolute inset-0 block"
+      [stickersOnCanvas]="displayPlacements()"
+      [stickerCatalog]="stickerCatalog()"
+      [stickerSizeOverride]="stickerSizeOverride()"
+      [inputElement]="pixiBoard.inputElement()"
+      [showStickerShadow]="false"
+      [stickerShadowOffsetX]="stickerShadowOffsetX()"
+      [stickerShadowOffsetY]="stickerShadowOffsetY()"
+      [readonlyMode]="readonlyMode()"
+      [editablePlacementIds]="editablePlacementIds()"
+      [unlockablePlacementIds]="unlockablePlacementIds()"
+      [placementBounds]="displayPlacementBounds()"
+      [consumeSelectionClearEvents]="false"
+      [coalescePointerMoves]="coalescePointerMoves()"
+      [minStickerScale]="boardView.minStickerScale"
+      [maxStickerScale]="boardView.maxStickerScale"
+      (placementsChanged)="onCanvasPlacementsChanged($event)"
+      (selectionChanged)="onCanvasSelectionChanged($event)"
+      (moveActiveChanged)="onCanvasMoveActiveChanged($event)"
+      (movePointerChanged)="onCanvasMovePointerChanged($event)"
+      (stickerAnimStatesChanged)="onCanvasStickerAnimStatesChanged($event)"
+    />
+  </div>
+</div>
