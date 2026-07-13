@@ -1,8 +1,10 @@
-# stickermania
+<p>
+  <img src="apps/frontend/public/assets/svg/logo.svg" alt="stickermania" width="420">
+</p>
 
 stickermania is a sticker party game. Players create stickers on their phones and place them together on a shared board.
 
-## Play In Your Browser
+## Play It In Your Browser!
 
 Open the free browser version:
 
@@ -10,7 +12,7 @@ https://joscco.github.io/stickermania/
 
 This version runs on one device and stores everything locally in your browser. There is no account, no server, and no multiplayer sync. If you clear your browser data, your local board can be lost, so use export when you want to keep a board.
 
-## Install The LAN Host App
+## Or Install The LAN Host App
 
 Use the LAN host app when several people want to play together in the same Wi-Fi network. One person starts the app on a computer. Everyone else joins from their phone by scanning the QR code shown on the board.
 
