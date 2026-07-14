@@ -1,7 +1,7 @@
 import {CommonModule} from "@angular/common";
 import {Component, computed, OnInit, signal} from "@angular/core";
-import type {BoardStickerPlacement, PlayerSticker, SessionPlayer, StickerDefinition, StickerPack} from "@birthday/shared";
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import type {BoardStickerPlacement, PlayerSticker, SessionPlayer, StickerDefinition, StickerPack} from "@stickermania/shared";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 import {MOCK_CATALOG, MOCK_PLAYERS, MOCK_SHAPES_PACK} from '../testing/mock-data';
 import {DevCatalogApiService} from '../../../core/api/dev-catalog-api.service';
 import {StickerApiService} from '../../../core/api/sticker-api.service';

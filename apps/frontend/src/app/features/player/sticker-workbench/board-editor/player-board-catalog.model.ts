@@ -4,7 +4,7 @@ import type {
   SessionPlayer,
   StickerDefinition,
   StickerPack,
-} from "@birthday/shared";
+} from "@stickermania/shared";
 
 export type PlacementBadge = {
   name: string;

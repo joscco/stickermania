@@ -1,6 +1,6 @@
 import JSZip from "jszip";
-import type {SessionState} from "@birthday/shared";
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import type {SessionState} from "@stickermania/shared";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 import {resolveBrowserAssetUrl} from "../../../core/assets/asset-url-cache";
 import {STICKERMANIA_COLORS} from "../../../shared/theme/stickermania-theme";
 

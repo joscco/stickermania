@@ -1,4 +1,4 @@
-import type {BoardStickerPlacement} from "@birthday/shared";
+import type {BoardStickerPlacement} from "@stickermania/shared";
 import {describe, expect, it} from "vitest";
 
 import {BoardPlacementPatchAccumulator} from "./board-placement-patch-accumulator";

@@ -1,5 +1,5 @@
 import {Component, input, output} from "@angular/core";
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 
 import {AnimOnInitDirective} from "../../../../../shared/ui/animations/anim-on-init.directive";
 

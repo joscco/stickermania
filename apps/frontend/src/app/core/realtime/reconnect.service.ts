@@ -1,9 +1,9 @@
 import { Injectable } from "@angular/core";
 import type { ActivatedRoute } from "@angular/router";
 
-const RECONNECT_STORAGE_KEY = "birthday_reconnect";
-const DEVICE_NAME_KEY = "birthday_device_player_name";
-const DEVICE_AVATAR_KEY = "birthday_device_player_avatar";
+const RECONNECT_STORAGE_KEY = "stickermania_reconnect";
+const DEVICE_NAME_KEY = "stickermania_device_player_name";
+const DEVICE_AVATAR_KEY = "stickermania_device_player_avatar";
 
 export interface ReconnectPayload {
   /** Server-assigned player UUID — used to reclaim the same player slot on rejoin. */

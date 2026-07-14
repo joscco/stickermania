@@ -1,4 +1,4 @@
-import type {BoardStickerPlacement, StickerDefinition} from "@birthday/shared";
+import type {BoardStickerPlacement, StickerDefinition} from "@stickermania/shared";
 import {overlayBox} from '../../placement-canvas/rendering/sticker-transform.util';
 import {BoardBounds} from '../geometry/sticker-board-types';
 

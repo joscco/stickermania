@@ -5,7 +5,7 @@ import type {AssetRepository} from "../../infrastructure/assetRepository.js";
 import type {SessionService} from "./sessionService.js";
 import {hasBoardAuth} from "../../http/authPlugin.js";
 import {disconnectSessionClients} from "../../http/wsPlugin.js";
-import type {SessionState, StickerAssetManifest} from "@birthday/shared";
+import type {SessionState, StickerAssetManifest} from "@stickermania/shared";
 
 function buildBaseUrl(protocol: string, hostname: string, port: number): string {
     return `${protocol}://${hostname.includes(":") ? hostname : `${hostname}:${port}`}`;

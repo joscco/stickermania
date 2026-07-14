@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
-import type {ClientKind, ClientToServerMessage, GameConfig, GameServerEnvelope, PlayerSticker, SessionInfo, SessionPlayer, SessionState, StickerCollageServerEvent, StickerPack} from "@birthday/shared";
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import type {ClientKind, ClientToServerMessage, GameConfig, GameServerEnvelope, PlayerSticker, SessionInfo, SessionPlayer, SessionState, StickerCollageServerEvent, StickerPack} from "@stickermania/shared";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 import type {AssetRepository} from "../../infrastructure/assetRepository.js";
 import type {SessionRepository} from "../../infrastructure/sessionRepository.js";
 import {SessionStateFactory} from "./sessionStateFactory.js";

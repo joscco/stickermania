@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { SessionState } from "@birthday/shared";
+import type { SessionState } from "@stickermania/shared";
 import type { SessionRepository } from "../sessionRepository.js";
 
 export class FileSessionRepository implements SessionRepository {

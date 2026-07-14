@@ -1,4 +1,4 @@
-import type {StickerPlacement, StickerDefinition} from '@birthday/shared';
+import type {StickerPlacement, StickerDefinition} from '@stickermania/shared';
 import {BoundingBox} from '../../model/types';
 import {stickerIntrinsicSize} from '../../model/sticker-intrinsic-size';
 import {outsetNormalizedBounds, STICKER_ALPHA_MASK_OUTSET_PX} from '../../model/sticker-alpha-mask';

@@ -1,6 +1,6 @@
 import {CommonModule} from "@angular/common";
 import {Component, computed, effect, input, OnDestroy, output, signal, ViewChild} from "@angular/core";
-import {type BoardStickerPlacement, type PlayerSticker, type SessionPlayer, type StickerDefinition, type StickerPack} from "@birthday/shared";
+import {type BoardStickerPlacement, type PlayerSticker, type SessionPlayer, type StickerDefinition, type StickerPack} from "@stickermania/shared";
 import {AnimPresenceDirective} from '../../../../shared/ui/animations/anim-on-init.directive';
 import {
   buildCreatedStickerCatalog,

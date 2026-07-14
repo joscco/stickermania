@@ -1,4 +1,4 @@
-import type {StickerEditorData} from "@birthday/shared";
+import type {StickerEditorData} from "@stickermania/shared";
 import {DRAFT_STICKER_LAYER_ID, deleteStickerLayerSnapshot, readStickerLayerSnapshot, type StickerLayerSnapshot} from "../storage/sticker-layer-storage";
 import type {PaintSourceLayer, StickerOutlineWidth} from "../shared/sticker-creator-types";
 import {createPaintWorkspace, createPaintWorkspaceFromLayers, loadImage} from "./paint-canvas-utils";

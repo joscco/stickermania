@@ -1,4 +1,4 @@
-import type {ClientKind, ClientToServerMessage, ServerToClientMessage} from "@birthday/shared";
+import type {ClientKind, ClientToServerMessage, ServerToClientMessage} from "@stickermania/shared";
 import type {SessionService} from "../session-management/sessionService.js";
 
 export type ConnectedPlayerSocket = {

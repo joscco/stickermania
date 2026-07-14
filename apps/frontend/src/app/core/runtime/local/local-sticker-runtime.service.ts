@@ -1,14 +1,14 @@
 import {Injectable} from "@angular/core";
-import type {PlayerSticker, StickerDefinition, StickerEditorUpload, StickerPack} from "@birthday/shared";
+import type {PlayerSticker, StickerDefinition, StickerEditorUpload, StickerPack} from "@stickermania/shared";
 import {
   addStickerToPlayerPack,
   createPlayerStickerPack,
   ensurePlayerDefaultStickerPack,
   removeStickerFromPlayerPacks,
   touchSessionState,
-} from "@birthday/shared/sessionState";
-import {DEFAULT_GAME_CONFIG} from "@birthday/shared/stickermaniaConfig";
-import {buildStickerCatalog, buildStickerPacks} from "@birthday/shared/sessionState";
+} from "@stickermania/shared/sessionState";
+import {DEFAULT_GAME_CONFIG} from "@stickermania/shared/stickermaniaConfig";
+import {buildStickerCatalog, buildStickerPacks} from "@stickermania/shared/sessionState";
 import {LocalSessionRuntimeService} from "./local-session-runtime.service";
 
 @Injectable({providedIn: "root"})

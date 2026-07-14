@@ -1,5 +1,5 @@
 import {Component, effect, input, output, signal, ViewChild} from "@angular/core";
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 import {AnimGroupDirective, AnimOnInitDirective, AnimPresenceDirective} from '../../../shared/ui/animations/anim-on-init.directive';
 import {SvgComponent} from '../../../shared/ui/svg/svg.component';
 import {ProfileAvatarCanvasComponent, type ProfileAvatarDrawMode} from "./avatar-canvas/profile-avatar-canvas.component";

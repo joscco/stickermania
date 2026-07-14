@@ -1,5 +1,5 @@
 import {computed} from "@angular/core";
-import type {StickerDefinition, StickerPlacement} from "@birthday/shared";
+import type {StickerDefinition, StickerPlacement} from "@stickermania/shared";
 import {
   alphaMaskBounds,
   StickerAlphaMaskCache,

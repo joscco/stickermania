@@ -3,7 +3,7 @@ import {
   ElementRef, AfterViewInit, HostBinding, inject,
 } from '@angular/core';
 import {CommonModule} from '@angular/common';
-import type {SessionPlayer, StickerDefinition, StickerPack} from '@birthday/shared';
+import type {SessionPlayer, StickerDefinition, StickerPack} from '@stickermania/shared';
 
 export interface StickerDragStartEvent {
   stickerId: string;

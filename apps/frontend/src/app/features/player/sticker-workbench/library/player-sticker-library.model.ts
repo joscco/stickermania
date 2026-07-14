@@ -1,5 +1,5 @@
-import type {PlayerSticker, StickerPack} from "@birthday/shared";
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import type {PlayerSticker, StickerPack} from "@stickermania/shared";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 
 export type StickerPackSection = StickerPack & {stickers: PlayerSticker[]};
 

@@ -1,5 +1,5 @@
 import {Firestore} from "@google-cloud/firestore";
-import type {SessionState} from "@birthday/shared";
+import type {SessionState} from "@stickermania/shared";
 import type {SessionRepository} from "../sessionRepository.js";
 
 export class FirestoreSessionRepository implements SessionRepository {

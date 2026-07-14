@@ -1,4 +1,4 @@
-import type {BoardStickerPlacement, StickerDefinition} from "@birthday/shared";
+import type {BoardStickerPlacement, StickerDefinition} from "@stickermania/shared";
 import {describe, expect, it} from "vitest";
 import {buildPlacementLabels} from "./sticker-board-label-layout";
 import type {BoardBounds} from "../geometry/sticker-board-types";

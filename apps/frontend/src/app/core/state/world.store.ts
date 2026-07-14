@@ -1,5 +1,5 @@
 import {computed, Injectable, signal} from "@angular/core";
-import type {BoardStickerPlacement, PlayerSticker, SessionPlayer, SessionState, StickerCollageGameState, StickerPack} from "@birthday/shared";
+import type {BoardStickerPlacement, PlayerSticker, SessionPlayer, SessionState, StickerCollageGameState, StickerPack} from "@stickermania/shared";
 
 @Injectable({ providedIn: "root" })
 export class WorldStore {

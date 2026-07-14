@@ -1,4 +1,4 @@
-import type { SessionState } from "@birthday/shared";
+import type { SessionState } from "@stickermania/shared";
 
 export interface SessionRepository {
   create(sessionState: SessionState): Promise<void>;

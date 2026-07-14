@@ -1,4 +1,4 @@
-import type {BoardStickerPlacement, PlayerSticker, SessionPlayer, SessionState, StickerCollageGameState, StickerDefinition, StickerPack,} from '@birthday/shared';
+import type {BoardStickerPlacement, PlayerSticker, SessionPlayer, SessionState, StickerCollageGameState, StickerDefinition, StickerPack,} from '@stickermania/shared';
 
 export const MOCK_STICKER_IDS = [
   'shapes-triangle', 'shapes-rectangle', 'shapes-diamond', 'shapes-star',

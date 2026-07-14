@@ -1,4 +1,4 @@
-import type {StickerPlacement} from "@birthday/shared";
+import type {StickerPlacement} from "@stickermania/shared";
 import {CanvasSelectionState} from "../state/canvas-selection.state";
 import {StickerCanvasOverlayInteractionState} from "../state/sticker-canvas-overlay-interaction.state";
 import {StickerCanvasSelectionPresentation} from "./sticker-canvas-selection.presentation";

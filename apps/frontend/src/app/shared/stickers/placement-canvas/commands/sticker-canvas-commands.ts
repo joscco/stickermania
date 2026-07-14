@@ -1,4 +1,4 @@
-import type {StickerPlacement} from "@birthday/shared";
+import type {StickerPlacement} from "@stickermania/shared";
 import * as ops from "../../model/sticker-placement-ops";
 import {ActionBarAction} from '../sticker-action-bar/sticker-action-bar.component';
 import {BoundingBox} from '../../model/types';

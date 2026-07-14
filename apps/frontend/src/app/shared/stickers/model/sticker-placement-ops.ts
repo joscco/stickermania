@@ -1,4 +1,4 @@
-import type {StickerPlacement} from '@birthday/shared';
+import type {StickerPlacement} from '@stickermania/shared';
 import {SelectionInfo} from './types';
 import {centroid, clamp, clampGroupScaleFactor, degToRad, MAX_SCALE, MIN_SCALE, rotatedBoundingBox, rotateVec} from './geometry-helpers';
 

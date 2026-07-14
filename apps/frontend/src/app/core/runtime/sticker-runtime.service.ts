@@ -1,5 +1,5 @@
 import {Injectable} from "@angular/core";
-import type {PlayerSticker, StickerDefinition, StickerEditorUpload, StickerPack} from "@birthday/shared";
+import type {PlayerSticker, StickerDefinition, StickerEditorUpload, StickerPack} from "@stickermania/shared";
 import {StickerApiService} from "../api/sticker-api.service";
 import {AppRuntimeService} from "./app-runtime.service";
 import {LocalStickerRuntimeService} from "./local/local-sticker-runtime.service";

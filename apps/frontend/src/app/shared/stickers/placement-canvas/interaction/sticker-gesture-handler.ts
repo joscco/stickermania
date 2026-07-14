@@ -1,4 +1,4 @@
-import type {StickerPlacement} from "@birthday/shared";
+import type {StickerPlacement} from "@stickermania/shared";
 import type {CanvasSelectionState} from '../state/canvas-selection.state';
 
 export interface ActivePointer { id: number; x: number; y: number; }

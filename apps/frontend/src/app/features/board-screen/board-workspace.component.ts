@@ -1,6 +1,6 @@
 import {CommonModule} from "@angular/common";
 import {Component, input, output} from "@angular/core";
-import {type BoardStickerPlacement, type StickerDefinition, type StickerPlacement} from "@birthday/shared";
+import {type BoardStickerPlacement, type StickerDefinition, type StickerPlacement} from "@stickermania/shared";
 import {AnimOnInitDirective} from "../../shared/ui/animations/anim-on-init.directive";
 import {SvgComponent} from "../../shared/ui/svg/svg.component";
 import {StickerBoardViewportComponent} from "../../shared/stickers/board-viewport/surface/sticker-board-viewport.component";

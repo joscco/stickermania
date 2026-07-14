@@ -1,4 +1,4 @@
-import type {PlayerSticker, SessionState, StickerPack} from "@birthday/shared";
+import type {PlayerSticker, SessionState, StickerPack} from "@stickermania/shared";
 import {
     addStickerToPlayerPack,
     createPlayerStickerPack,

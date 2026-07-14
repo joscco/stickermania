@@ -1,4 +1,4 @@
-import type {BoardStickerPlacement, StickerDefinition} from "@birthday/shared";
+import type {BoardStickerPlacement, StickerDefinition} from "@stickermania/shared";
 import {buildPlacementLabels, type PlacementBadge, type PlacementLabel} from "../labels/sticker-board-label-layout";
 import type {BoardBounds} from "../geometry/sticker-board-types";
 import {STICKERMANIA_COLORS} from "../../../theme/stickermania-theme";

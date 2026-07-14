@@ -4,7 +4,7 @@ import {
   type PlayerSticker,
   type StickerCollageClientAction,
   type StickerCollageGameState,
-} from "@birthday/shared";
+} from "@stickermania/shared";
 import {WorldStore} from '../../../../core/state/world.store';
 import {RealtimeRuntimeService} from '../../../../core/runtime/realtime-runtime.service';
 

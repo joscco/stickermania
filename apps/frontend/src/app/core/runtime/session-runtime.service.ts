@@ -1,5 +1,5 @@
 import {Injectable} from "@angular/core";
-import type {SessionInfo, SessionState, StickerAssetManifest} from "@birthday/shared";
+import type {SessionInfo, SessionState, StickerAssetManifest} from "@stickermania/shared";
 import {SessionApiService, type ResolvedSessionInfo, type RuntimeInfo, type SessionSummary} from "../api/session-api.service";
 import {AppRuntimeService} from "./app-runtime.service";
 import {LocalSessionRuntimeService} from "./local/local-session-runtime.service";

@@ -1,4 +1,4 @@
-import {normalizeBoardZIndexes, type BoardStickerPlacement, type ClientKind, type GameConfig, type SessionPlayer, type SessionState, type StickerCollageClientAction, type StickerCollageGameState, type StickerCollageServerEvent} from "@birthday/shared";
+import {normalizeBoardZIndexes, type BoardStickerPlacement, type ClientKind, type GameConfig, type SessionPlayer, type SessionState, type StickerCollageClientAction, type StickerCollageGameState, type StickerCollageServerEvent} from "@stickermania/shared";
 import type {ConnectedClientSession} from "../session-management/sessionRuntimeTypes.js";
 import {buildCatalog, buildPacks} from "./catalog/stickerCatalog.js";
 import {ensurePlayerDefaultStickerPack} from "./playerStickerPacks.js";

@@ -22,19 +22,22 @@
 
     <div
       animOnInit="players"
-      class="relative aspect-square w-full shrink-0 overflow-hidden rounded-2xl bg-white signature-frame">
-      <app-profile-avatar-canvas
-        class="block h-full w-full"
-        #avatarCanvas
-        [initialImage]="initialAvatarImage()"
-        [drawMode]="drawMode()"
-        (changed)="onAvatarChanged()"
-        (submitted)="onAvatarSubmitted($event)"
-      />
-      <div [animPresence]="avatarPromptVisible()"
-           class="pointer-events-none absolute inset-0 grid place-content-center justify-items-center gap-1 px-6 text-center text-sm font-black text-taupe-500">
-        <span>Hier deinen Avatar zeichnen!</span>
+      class="my-1 relative aspect-square w-full shrink-0 overflow-visible">
+      <div class="absolute inset-[clamp(0.45rem,2.2cqh,0.9rem)] overflow-hidden bg-white">
+        <app-profile-avatar-canvas
+          class="block h-full w-full"
+          #avatarCanvas
+          [initialImage]="initialAvatarImage()"
+          [drawMode]="drawMode()"
+          (changed)="onAvatarChanged()"
+          (submitted)="onAvatarSubmitted($event)"
+        />
+        <div [animPresence]="avatarPromptVisible()"
+             class="pointer-events-none absolute inset-0 grid place-content-center justify-items-center gap-1 px-6 text-center text-sm font-black text-taupe-500">
+          <span>Hier deinen Avatar zeichnen!</span>
+        </div>
       </div>
+      <app-svg class="pointer-events-none absolute left-1/2 top-1/2 z-10 h-[105%] w-[105%] -translate-x-1/2 -translate-y-1/2" name="draw-frame" w="100%" h="100%"></app-svg>
     </div>
 
     <div
@@ -42,12 +45,12 @@
       class="flex w-full shrink-0 items-center justify-center gap-[clamp(0.25rem,1cqh,0.5rem)] rounded-2xl bg-white/90 p-[clamp(0.35rem,1.2cqh,0.5rem)] signature-frame">
       @for (tool of avatarToolButtons; track tool.id) {
         <button
-          class="grid h-[clamp(2.25rem,7.5cqh,3rem)] w-[clamp(2.25rem,7.5cqh,3rem)] place-items-center rounded-full transition active:scale-95"
+          class="grid h-[clamp(2.25rem,7.5cqh,4rem)] w-[clamp(2.25rem,7.5cqh,4rem)] place-items-center rounded-full transition active:scale-95"
           type="button"
           [attr.aria-label]="tool.ariaLabel"
           [class.bg-stick-yellow]="tool.mode !== undefined && drawMode() === tool.mode"
           (click)="selectAvatarTool(tool)">
-          <app-svg [name]="tool.icon" w="36"/>
+          <app-svg [name]="tool.icon" w="clamp(1.75rem,7.5cqh,3rem)"/>
         </button>
       }
     </div>

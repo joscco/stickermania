@@ -5,13 +5,13 @@ import type {
   ServerToClientMessage,
   SessionPlayer,
   SessionState,
-} from "@birthday/shared";
+} from "@stickermania/shared";
 import {
   createSessionPlayer,
   ensurePlayerDefaultStickerPack,
   normalizeBoardZIndexes,
   touchSessionState,
-} from "@birthday/shared/sessionState";
+} from "@stickermania/shared/sessionState";
 import type {WsConnectionStatus} from "../../realtime/websocket.service";
 import {LocalSessionRuntimeService} from "./local-session-runtime.service";
 

@@ -13,7 +13,7 @@ npm run dev:live
 Frontend tools only:
 
 ```bash
-npm run dev:tools -w @birthday/frontend
+npm run dev:tools -w @stickermania/frontend
 ```
 
 ## Structure
@@ -30,15 +30,15 @@ npm run dev:tools -w @birthday/frontend
 
 ## Configuration
 
-Shared app values come from `@birthday/shared/stickermaniaConfig`.
+Shared app values come from `@stickermania/shared/stickermaniaConfig`.
 
 Prefer direct imports:
 
 ```ts
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 ```
 
-Do not import concrete config values through `@birthday/shared`, because IDE navigation often jumps to the barrel export or to `dist/*.d.ts` instead of the source file.
+Do not import concrete config values through `@stickermania/shared`, because IDE navigation often jumps to the barrel export or to `dist/*.d.ts` instead of the source file.
 
 Important values:
 
@@ -59,7 +59,7 @@ Add new colors to both sources when they are needed in templates and TypeScript.
 ```bash
 npx tsc -p apps/frontend/tsconfig.app.json --noEmit
 npx tsc -p apps/frontend/tsconfig.spec.json --noEmit
-npm run check-stickers -w @birthday/frontend
+npm run check-stickers -w @stickermania/frontend
 ```
 
 The production build uses native optional dependencies such as `esbuild` and `lightningcss`. If Node or npm was switched between Rosetta x64 and arm64, `node_modules` must match the active architecture.

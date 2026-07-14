@@ -1,4 +1,4 @@
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 
 export const environment = {
   production: false,

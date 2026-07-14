@@ -1,4 +1,4 @@
-import type {StickerDefinition, StickerPlacement} from "@birthday/shared";
+import type {StickerDefinition, StickerPlacement} from "@stickermania/shared";
 import * as stickerTransformer from "./sticker-transform.util";
 import {BoundingBox, Point} from '../../model/types';
 

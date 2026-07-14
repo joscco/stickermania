@@ -1,4 +1,4 @@
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 import {capturePointer, releasePointer} from "../../../../shared/input/pointer-event-utils";
 import {STICKERMANIA_COLORS} from "../../../../shared/theme/stickermania-theme";
 

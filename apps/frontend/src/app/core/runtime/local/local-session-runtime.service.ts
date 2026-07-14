@@ -1,7 +1,7 @@
 import {Injectable} from "@angular/core";
-import type {PlayerSticker, SessionInfo, SessionPlayer, SessionState, StickerAssetManifest, StickerDefinition} from "@birthday/shared";
-import {createEmptySessionState} from "@birthday/shared/sessionState";
-import {DEFAULT_GAME_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import type {PlayerSticker, SessionInfo, SessionPlayer, SessionState, StickerAssetManifest, StickerDefinition} from "@stickermania/shared";
+import {createEmptySessionState} from "@stickermania/shared/sessionState";
+import {DEFAULT_GAME_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 import {type ResolvedSessionInfo, type SessionSummary} from "../../api/session-api.service";
 import {LocalSessionDb} from "./local-session-db";
 

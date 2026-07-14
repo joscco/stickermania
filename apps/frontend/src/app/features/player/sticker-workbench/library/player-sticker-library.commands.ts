@@ -1,4 +1,4 @@
-import type {PlayerSticker} from "@birthday/shared";
+import type {PlayerSticker} from "@stickermania/shared";
 import {effectiveStickerPackId, normalizedPackName} from "./player-sticker-library.model";
 
 export type PlayerStickerLibraryCommand =

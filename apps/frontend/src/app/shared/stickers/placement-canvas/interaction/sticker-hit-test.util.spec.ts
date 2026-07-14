@@ -1,4 +1,4 @@
-import type {StickerPlacement} from "@birthday/shared";
+import type {StickerPlacement} from "@stickermania/shared";
 import {hitTestOnCanvas, type StickerHitGeometry} from "./sticker-hit-test.util";
 
 describe("hitTestOnCanvas", () => {

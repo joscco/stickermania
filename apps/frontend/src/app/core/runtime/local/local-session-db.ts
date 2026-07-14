@@ -1,5 +1,5 @@
 import {Injectable} from "@angular/core";
-import type {SessionState} from "@birthday/shared";
+import type {SessionState} from "@stickermania/shared";
 
 const DB_NAME = "stickermania-local-web";
 const DB_VERSION = 2;

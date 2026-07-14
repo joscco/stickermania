@@ -1,6 +1,6 @@
 import path from "node:path";
-import type {GameConfig} from "@birthday/shared";
-import {createGameConfig} from "@birthday/shared/stickermaniaConfig";
+import type {GameConfig} from "@stickermania/shared";
+import {createGameConfig} from "@stickermania/shared/stickermaniaConfig";
 
 export interface BackendConfig {
     devMode: boolean;

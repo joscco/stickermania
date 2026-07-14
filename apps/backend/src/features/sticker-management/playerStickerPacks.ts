@@ -1,4 +1,4 @@
-import type {StickerCollageGameState} from "@birthday/shared";
+import type {StickerCollageGameState} from "@stickermania/shared";
 import {
     addStickerToPlayerPack,
     createPlayerStickerPack,
@@ -8,7 +8,7 @@ import {
     normalizePackName,
     playerDefaultPackName,
     removeStickerFromPlayerPacks,
-} from "@birthday/shared/sessionState";
+} from "@stickermania/shared/sessionState";
 
 export {
     addStickerToPlayerPack,

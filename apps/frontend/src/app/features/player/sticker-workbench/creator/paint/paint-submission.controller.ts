@@ -1,4 +1,4 @@
-import type {PlayerSticker} from "@birthday/shared";
+import type {PlayerSticker} from "@stickermania/shared";
 import type {StickerCreatorResult} from "../shared/sticker-creator-types";
 
 export type PaintCreateStatus = "idle" | "saving" | "saved" | "error";

@@ -1,4 +1,4 @@
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 import {STICKERMANIA_PAINT_COLORS} from "../../../../../shared/theme/stickermania-theme";
 
 export type StickerCreatorResult = {dataUrl: string; name: string; packId?: string; adoptDraftLayers?: boolean};

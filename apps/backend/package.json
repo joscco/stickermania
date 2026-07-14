@@ -1,5 +1,5 @@
 {
-  "name": "@birthday/backend",
+  "name": "@stickermania/backend",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@birthday/shared": "0.1.0",
+    "@stickermania/shared": "0.1.0",
     "@fastify/cookie": "^11.0.2",
     "@fastify/static": "^9.0.0",
     "@fastify/websocket": "^11.2.0",

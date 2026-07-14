@@ -8,7 +8,7 @@ export class BoardScreenDataService {
     readonly gameState = computed(() => this.worldStore.stickerCollageGameState());
     readonly players = computed(() => this.worldStore.players());
     readonly stickersById = computed(() => {
-        const result: Record<string, import("@birthday/shared").PlayerSticker> = {};
+        const result: Record<string, import("@stickermania/shared").PlayerSticker> = {};
         const stickersByPlayer = this.gameState()?.playerStickers ?? {};
         for (const sticker of Object.values(stickersByPlayer).flat()) {
             result[sticker.id] = sticker;

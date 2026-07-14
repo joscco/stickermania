@@ -1,6 +1,6 @@
 import {CommonModule} from "@angular/common";
 import {Component, computed, effect, inject, input, output, signal} from "@angular/core";
-import {type BoardStickerPlacement, type PlayerSticker, type SessionPlayer, type StickerDefinition, type StickerPack} from "@birthday/shared";
+import {type BoardStickerPlacement, type PlayerSticker, type SessionPlayer, type StickerDefinition, type StickerPack} from "@stickermania/shared";
 import {PlayerStickerSpaceMode, PlayerStickerWorkbenchTabsComponent} from './tabs/player-sticker-workbench-tabs.component';
 import {PlayerBoardEditorComponent} from './board-editor/player-board-editor.component';
 import {StickerCreatorComponent} from './creator/sticker-creator.component';

@@ -1,4 +1,4 @@
-import type {StickerEditorTextBox, StickerEditorUpload} from "@birthday/shared";
+import type {StickerEditorTextBox, StickerEditorUpload} from "@stickermania/shared";
 
 export function isValidStickerEditorUpload(value: unknown): value is StickerEditorUpload {
     if (!value || typeof value !== "object") return false;

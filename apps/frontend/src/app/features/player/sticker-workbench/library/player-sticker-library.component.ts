@@ -1,7 +1,7 @@
 import {CommonModule} from "@angular/common";
 import {Component, computed, input, OnDestroy, output, signal, ViewChild} from "@angular/core";
-import type {PlayerSticker, StickerPack} from "@birthday/shared";
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import type {PlayerSticker, StickerPack} from "@stickermania/shared";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 import {AnimOnInitDirective} from '../../../../shared/ui/animations/anim-on-init.directive';
 import {ScrollViewportComponent} from '../../../../shared/ui/scroll-viewport/scroll-viewport.component';
 import {StickerImgComponent} from '../../../../shared/stickers/primitives/sticker-img/sticker-img.component';

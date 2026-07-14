@@ -1,5 +1,5 @@
 import {signal} from "@angular/core";
-import type {StickerDefinition} from "@birthday/shared";
+import type {StickerDefinition} from "@stickermania/shared";
 import {cachedAssetUrl} from "../../../core/assets/asset-url-cache";
 import type {BoundingBox} from "./types";
 import {getSpriteSymbolSvg, preloadSprite} from "./sprite-url.util";

@@ -1,5 +1,5 @@
 import {Component, input, output, signal} from "@angular/core";
-import type {PlayerSticker, StickerEditorData} from "@birthday/shared";
+import type {PlayerSticker, StickerEditorData} from "@stickermania/shared";
 import {StickerCreatorStartComponent} from './start/sticker-creator-start.component';
 import {StickerCreatorCropComponent} from './crop/sticker-creator-crop.component';
 import {StickerCreatorPaintComponent} from './paint/sticker-creator-paint.component';

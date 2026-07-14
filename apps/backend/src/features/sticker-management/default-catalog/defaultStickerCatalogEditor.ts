@@ -1,4 +1,4 @@
-import type {StickerDefinition, StickerDefinitionConfig, StickerEditorData, StickerEditorUpload, StickerPack, StickerPackConfig} from "@birthday/shared";
+import type {StickerDefinition, StickerDefinitionConfig, StickerEditorData, StickerEditorUpload, StickerPack, StickerPackConfig} from "@stickermania/shared";
 import type {BackendConfig} from "../../../config.js";
 import {buildCatalog, buildPacks} from "../catalog/stickerCatalog.js";
 import {DefaultStickerAssetStore, decodePngDataUrl} from "./defaultStickerAssetStore.js";

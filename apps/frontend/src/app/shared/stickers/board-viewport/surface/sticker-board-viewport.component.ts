@@ -1,6 +1,6 @@
 import {CommonModule} from "@angular/common";
 import {AfterViewInit, Component, computed, effect, ElementRef, input, OnDestroy, output, signal, ViewChild} from "@angular/core";
-import type {BoardStickerPlacement, StickerDefinition, StickerPlacement} from "@birthday/shared";
+import type {BoardStickerPlacement, StickerDefinition, StickerPlacement} from "@stickermania/shared";
 
 import type {PlacementBadge} from '../labels/sticker-board-label-layout';
 import type {StickerAnimState} from '../../primitives/sticker-item/sticker-item.component';

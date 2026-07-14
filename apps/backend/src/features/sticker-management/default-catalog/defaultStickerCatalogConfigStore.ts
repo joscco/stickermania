@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type {StickerCatalogConfig} from "@birthday/shared";
+import type {StickerCatalogConfig} from "@stickermania/shared";
 import type {BackendConfig} from "../../../config.js";
 import {asEditableCatalog, type EditableStickerCatalog} from "./defaultStickerCatalogConfig.js";
 

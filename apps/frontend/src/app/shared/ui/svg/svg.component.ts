@@ -1,8 +1,20 @@
 import {Component, computed, effect, input, signal} from '@angular/core';
 import {getSpriteViewBox, preloadSprite} from '../../stickers/model/sprite-url.util';
 
-function parsePx(v: string | number): number | undefined {
-  return typeof v === 'number' ? v : Number(v) || undefined;
+type SvgLength = number | string | undefined;
+
+function parseSvgLength(v: string | number): SvgLength {
+  if (typeof v === 'number') {
+    return Number.isFinite(v) ? v : undefined;
+  }
+
+  const trimmed = v.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const numericValue = Number(trimmed);
+  return Number.isFinite(numericValue) ? numericValue : trimmed;
 }
 
 @Component({
@@ -25,8 +37,8 @@ function parsePx(v: string | number): number | undefined {
 })
 export class SvgComponent {
   readonly name = input.required<string>();
-  readonly w = input(undefined, {transform: parsePx});
-  readonly h = input(undefined, {transform: parsePx});
+  readonly w = input<SvgLength, string | number>(undefined, {transform: parseSvgLength});
+  readonly h = input<SvgLength, string | number>(undefined, {transform: parseSvgLength});
   readonly color = input('currentColor');
   readonly opacity = input('1');
 

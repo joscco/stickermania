@@ -1,7 +1,7 @@
 import {CommonModule} from "@angular/common";
 import {AfterViewInit, Component, ElementRef, OnDestroy, OnInit, QueryList, signal, ViewChild, ViewChildren} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 import {AnimOnInitDirective, AnimPresenceDirective} from '../../shared/ui/animations/anim-on-init.directive';
 import {SessionRuntimeService} from '../../core/runtime/session-runtime.service';
 import {BoardAuthRuntimeService} from '../../core/runtime/board-auth-runtime.service';

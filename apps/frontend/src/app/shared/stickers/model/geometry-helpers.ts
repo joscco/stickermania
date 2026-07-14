@@ -3,7 +3,7 @@
  *
  * No Angular dependencies, no side effects — trivially unit-testable.
  */
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 
 // ── Basic math ────────────────────────────────────────────────────────────────
 

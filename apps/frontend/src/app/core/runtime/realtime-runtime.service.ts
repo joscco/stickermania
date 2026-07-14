@@ -1,5 +1,5 @@
 import {Injectable} from "@angular/core";
-import type {ClientToServerMessage, ServerToClientMessage} from "@birthday/shared";
+import type {ClientToServerMessage, ServerToClientMessage} from "@stickermania/shared";
 import {WebSocketService, type WsConnectionStatus} from "../realtime/websocket.service";
 import {AppRuntimeService} from "./app-runtime.service";
 import {LocalRealtimeRuntimeService} from "./local/local-realtime-runtime.service";

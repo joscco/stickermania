@@ -61,7 +61,7 @@ export class StickerCreatorPaintTextEditorComponent {
   readonly paintTextAlignments = PAINT_TEXT_ALIGNMENTS;
   readonly paintTextVerticalAlignments = PAINT_TEXT_VERTICAL_ALIGNMENTS;
   readonly fontSizeMin = 8;
-  readonly fontSizeMax = 220;
+  readonly fontSizeMax = 400;
   readonly lineHeightMin = 0.8;
   readonly lineHeightMax = 2;
 

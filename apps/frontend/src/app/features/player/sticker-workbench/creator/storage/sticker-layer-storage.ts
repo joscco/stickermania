@@ -1,4 +1,4 @@
-import type {StickerEditorUpload} from "@birthday/shared";
+import type {StickerEditorUpload} from "@stickermania/shared";
 import type {PaintTextAlign, PaintTextVerticalAlign} from "../shared/sticker-creator-types";
 
 export type StickerTextLayerSnapshot = {

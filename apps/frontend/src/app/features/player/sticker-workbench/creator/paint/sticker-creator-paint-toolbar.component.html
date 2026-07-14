@@ -173,13 +173,13 @@
     />
 
     <app-sticker-creator-paint-tool-button
+      icon="icon-tool-text"
       title="Text"
       [active]="paintTool() === 'text'"
       [activeBackground]="paintColor()"
       [activeForeground]="activeColorForeground()"
       [activeBorder]="paintTool() === 'text' && activeColorNeedsBorder()"
       (selected)="toolSelected.emit('text')">
-      <span class="text-lg font-black leading-none">T</span>
     </app-sticker-creator-paint-tool-button>
 
     <app-sticker-creator-paint-tool-button

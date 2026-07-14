@@ -1,6 +1,6 @@
 import {AfterViewInit, Component, ElementRef, OnDestroy, ViewChild, computed, effect, input, output, signal} from "@angular/core";
-import type {PlayerSticker, StickerEditorData} from "@birthday/shared";
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import type {PlayerSticker, StickerEditorData} from "@stickermania/shared";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 import {
   BRUSH_SIZES,
   PAINT_COLORS,

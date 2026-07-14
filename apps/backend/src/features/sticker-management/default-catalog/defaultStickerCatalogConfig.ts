@@ -1,5 +1,5 @@
-import type {StickerCatalogConfig, StickerConfigEntry, StickerPackConfig} from "@birthday/shared";
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import type {StickerCatalogConfig, StickerConfigEntry, StickerPackConfig} from "@stickermania/shared";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 
 export const DEFAULT_PACK_ID = "default";
 export const DEFAULT_PACK_NAME = "Default";

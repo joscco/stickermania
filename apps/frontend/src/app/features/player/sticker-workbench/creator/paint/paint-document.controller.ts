@@ -1,4 +1,4 @@
-import type {StickerEditorData} from "@birthday/shared";
+import type {StickerEditorData} from "@stickermania/shared";
 
 import {canvasToBoundedStickerPngDataUrl} from "../shared/sticker-output-canvas";
 import type {StickerOutlineWidth} from "../shared/sticker-creator-types";

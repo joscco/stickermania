@@ -1,4 +1,4 @@
-import type {StickerPlacement} from "@birthday/shared";
+import type {StickerPlacement} from "@stickermania/shared";
 import {describe, expect, it} from "vitest";
 import {
   applyStickerCanvasActionCommand,

@@ -1,5 +1,5 @@
-import type {StickerBoardBoundsConfig} from "@birthday/shared";
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import type {StickerBoardBoundsConfig} from "@stickermania/shared";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 
 export type BoardPoint = {x: number; y: number};
 

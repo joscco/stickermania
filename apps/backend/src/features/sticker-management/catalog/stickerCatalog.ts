@@ -1,5 +1,5 @@
-import type {StickerCatalogConfig} from "@birthday/shared";
-import {buildStickerCatalog, buildStickerPacks} from "@birthday/shared/sessionState";
+import type {StickerCatalogConfig} from "@stickermania/shared";
+import {buildStickerCatalog, buildStickerPacks} from "@stickermania/shared/sessionState";
 
 /**
  * Builds the runtime StickerDefinition array from the catalog config.

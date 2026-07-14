@@ -1,5 +1,5 @@
 import {computed, effect, Injectable, OnDestroy, signal} from "@angular/core";
-import {type BoardStickerPlacement, type ServerToClientMessage, type StickerDefinition, type StickerPlacement} from "@birthday/shared";
+import {type BoardStickerPlacement, type ServerToClientMessage, type StickerDefinition, type StickerPlacement} from "@stickermania/shared";
 import {RealtimeRuntimeService} from "../../core/runtime/realtime-runtime.service";
 import {WorldStore} from "../../core/state/world.store";
 import {boardPlacementListSignature, diffBoardPlacementPatch} from "../../shared/stickers/board-viewport/sync/board-placement-patch";

@@ -1,4 +1,4 @@
-import type {BoardStickerPlacement} from "@birthday/shared";
+import type {BoardStickerPlacement} from "@stickermania/shared";
 import {vi} from "vitest";
 import {BoardPlacementPatchQueue} from "./board-placement-patch-queue";
 

@@ -1,5 +1,5 @@
 {
-  "name": "@birthday/electron",
+  "name": "@stickermania/electron",
   "version": "0.1.0",
   "description": "Desktop host shell for stickermania LAN games.",
   "author": "stickermania",
@@ -15,7 +15,7 @@
     "dist": "electron-builder"
   },
   "dependencies": {
-    "@birthday/shared": "0.1.0",
+    "@stickermania/shared": "0.1.0",
     "@fastify/cookie": "^11.0.2",
     "@fastify/static": "^9.0.0",
     "@fastify/websocket": "^11.2.0",
@@ -41,11 +41,11 @@
       },
       {
         "from": "../../packages/shared/dist",
-        "to": "node_modules/@birthday/shared/dist"
+        "to": "node_modules/@stickermania/shared/dist"
       },
       {
         "from": "../../packages/shared/package.json",
-        "to": "node_modules/@birthday/shared/package.json"
+        "to": "node_modules/@stickermania/shared/package.json"
       }
     ],
     "extraResources": [

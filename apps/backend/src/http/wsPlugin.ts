@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import type {ClientToServerMessage, ServerToClientMessage, SessionState} from "@birthday/shared";
+import type {ClientToServerMessage, ServerToClientMessage, SessionState} from "@stickermania/shared";
 import type {FastifyInstance} from "fastify";
 import type {SessionService} from "../features/session-management/sessionService.js";
 import {handlePlayerSocketAction} from "../features/player-actions/playerSocketActions.js";

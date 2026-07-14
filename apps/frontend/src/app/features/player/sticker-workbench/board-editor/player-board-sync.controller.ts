@@ -1,4 +1,4 @@
-import type {BoardStickerPlacement} from "@birthday/shared";
+import type {BoardStickerPlacement} from "@stickermania/shared";
 import {
   boardPlacementListSignature,
   diffBoardPlacementPatch,

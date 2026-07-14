@@ -1,5 +1,5 @@
 import {degToRad, rotatePt} from "./geometry-helpers";
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 
 export type Point = {x: number; y: number};
 

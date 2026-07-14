@@ -1,4 +1,4 @@
-import type {GameServerEnvelope, SessionState, StickerCollageServerEvent} from "@birthday/shared";
+import type {GameServerEnvelope, SessionState, StickerCollageServerEvent} from "@stickermania/shared";
 
 export interface SessionServiceEvents {
     onSessionStateChanged?: (sessionId: string, state: SessionState) => void | Promise<void>;

@@ -36,8 +36,8 @@ jobs:
       - name: Build local-web app
         run: |
           npm run _build:shared
-          npm run prebuild -w @birthday/frontend
-          npm run build:local-web -w @birthday/frontend -- --base-href ./
+          npm run prebuild -w @stickermania/frontend
+          npm run build:local-web -w @stickermania/frontend -- --base-href ./
 
       - name: Disable Jekyll
         run: touch apps/frontend/dist/frontend/browser/.nojekyll

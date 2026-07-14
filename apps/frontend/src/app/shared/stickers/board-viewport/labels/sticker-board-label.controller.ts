@@ -1,5 +1,5 @@
 import {computed, type Signal} from "@angular/core";
-import type {BoardStickerPlacement, StickerDefinition} from "@birthday/shared";
+import type {BoardStickerPlacement, StickerDefinition} from "@stickermania/shared";
 import type {BoardBounds} from "../geometry/sticker-board-types";
 import {buildPlacementLabels, PlacementBadge, PlacementLabel} from './sticker-board-label-layout';
 

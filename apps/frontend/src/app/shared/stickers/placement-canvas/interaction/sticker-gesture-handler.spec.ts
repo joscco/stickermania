@@ -1,4 +1,4 @@
-import type {StickerPlacement} from "@birthday/shared";
+import type {StickerPlacement} from "@stickermania/shared";
 import {describe, expect, it} from "vitest";
 import {CanvasSelectionState} from "../state/canvas-selection.state";
 import {StickerGestureHandler} from "./sticker-gesture-handler";

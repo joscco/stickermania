@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 import type { AssetRepository, ReadAssetResult, SavedAsset, SessionAssetInfo } from "../assetRepository.js";
 
 function sanitize(input: string): string {

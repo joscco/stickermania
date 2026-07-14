@@ -11,7 +11,7 @@ Recommended source format:
 - transparent background is supported
 - keep enough padding around the main motif for macOS and Windows masks
 
-Run `npm run icon -w @birthday/electron` to generate:
+Run `npm run icon -w @stickermania/electron` to generate:
 
 - `apps/electron/build/icon.png`
 - `apps/electron/build/icon.ico`

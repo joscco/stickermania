@@ -1,5 +1,5 @@
 import type {FastifyInstance} from "fastify";
-import type {StickerDefinition, StickerEditorData, StickerEditorUpload} from "@birthday/shared";
+import type {StickerDefinition, StickerEditorData, StickerEditorUpload} from "@stickermania/shared";
 import type {AssetRepository} from "../../infrastructure/assetRepository.js";
 import type {SessionService} from "../session-management/sessionService.js";
 import {isValidStickerEditorUpload} from "./stickerEditorData.js";

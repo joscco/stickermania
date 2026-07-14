@@ -90,7 +90,7 @@ Electron starts the same LAN host server, opens the board directly, and uses LAN
 To generate custom app icons, place a `1024x1024` PNG at `apps/electron/assets/icon-source.png` and run:
 
 ```bash
-npm run icon -w @birthday/electron
+npm run icon -w @stickermania/electron
 ```
 
 ### GitHub Release Builds

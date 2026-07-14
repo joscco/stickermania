@@ -1,5 +1,5 @@
 import {computed, Injectable, signal} from '@angular/core';
-import {type BoardStickerPlacement, type PlayerSticker, type SessionState, type StickerCollageGameState} from '@birthday/shared';
+import {type BoardStickerPlacement, type PlayerSticker, type SessionState, type StickerCollageGameState} from '@stickermania/shared';
 import {makeSessionState} from './mock-data';
 import {WorldStore} from '../../../core/state/world.store';
 import {GameSessionStore} from '../../../core/state/session-state.store';

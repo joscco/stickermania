@@ -1,4 +1,4 @@
-import type {GameConfig, SessionPlayer, SessionState} from "@birthday/shared";
+import type {GameConfig, SessionPlayer, SessionState} from "@stickermania/shared";
 import type {StickerCollageGame} from "../sticker-management/stickerCollageGame.js";
 
 export class SessionStateFactory {

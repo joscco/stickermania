@@ -1,6 +1,6 @@
 import {inject, Injectable, signal} from "@angular/core";
 import {Router} from "@angular/router";
-import type {ServerToClientMessage} from "@birthday/shared";
+import type {ServerToClientMessage} from "@stickermania/shared";
 import {WorldStore} from '../state/world.store';
 import {GameSessionStore} from '../state/session-state.store';
 import {ReconnectService} from './reconnect.service';

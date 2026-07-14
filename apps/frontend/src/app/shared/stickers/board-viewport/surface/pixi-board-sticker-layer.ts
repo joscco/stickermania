@@ -1,4 +1,4 @@
-import type {BoardStickerPlacement, StickerDefinition} from "@birthday/shared";
+import type {BoardStickerPlacement, StickerDefinition} from "@stickermania/shared";
 import {effectiveScaleX, effectiveScaleY} from "../../placement-canvas/rendering/sticker-transform.util";
 import type {StickerAnimState} from "../../primitives/sticker-item/sticker-item.component";
 import type {BoardBounds} from "../geometry/sticker-board-types";

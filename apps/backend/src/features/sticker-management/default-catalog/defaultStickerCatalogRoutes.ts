@@ -1,5 +1,5 @@
 import type {FastifyInstance} from "fastify";
-import type {StickerEditorUpload} from "@birthday/shared";
+import type {StickerEditorUpload} from "@stickermania/shared";
 import type {BackendConfig} from "../../../config.js";
 import {isValidStickerEditorUpload} from "../stickerEditorData.js";
 import {DefaultStickerCatalogEditor} from "./defaultStickerCatalogEditor.js";

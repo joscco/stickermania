@@ -1,6 +1,6 @@
 import {Injectable} from "@angular/core";
 import {HttpClient} from "@angular/common/http";
-import type {StickerDefinition, StickerEditorUpload, StickerPack} from "@birthday/shared";
+import type {StickerDefinition, StickerEditorUpload, StickerPack} from "@stickermania/shared";
 import {firstValueFrom} from "rxjs";
 
 @Injectable({ providedIn: "root" })

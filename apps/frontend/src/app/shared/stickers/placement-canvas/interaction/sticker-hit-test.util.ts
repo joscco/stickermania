@@ -1,4 +1,4 @@
-import type { StickerPlacement } from "@birthday/shared";
+import type { StickerPlacement } from "@stickermania/shared";
 import {degToRad} from '../../model/geometry-helpers';
 import {BoundingBox} from '../../model/types';
 

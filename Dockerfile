@@ -10,7 +10,7 @@ FROM deps AS build
 WORKDIR /app
 COPY . .
 ARG FRONTEND_BUILD_SCRIPT=build
-RUN npm run _build:shared && npm run ${FRONTEND_BUILD_SCRIPT} -w @birthday/frontend && npm run build -w @birthday/backend
+RUN npm run _build:shared && npm run ${FRONTEND_BUILD_SCRIPT} -w @stickermania/frontend && npm run build -w @stickermania/backend
 
 FROM node:20-bookworm-slim AS runtime
 WORKDIR /app

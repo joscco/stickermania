@@ -1,5 +1,5 @@
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
-import type {StickerEditorData} from "@birthday/shared";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
+import type {StickerEditorData} from "@stickermania/shared";
 import {
   type CanvasPoint,
   type ImageTransform,

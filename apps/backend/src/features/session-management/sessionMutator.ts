@@ -1,4 +1,4 @@
-import type {SessionState, StickerCollageServerEvent} from "@birthday/shared";
+import type {SessionState, StickerCollageServerEvent} from "@stickermania/shared";
 import type {SessionRepository} from "../../infrastructure/sessionRepository.js";
 import type {SessionEventPublisher} from "./sessionEventPublisher.js";
 import {SessionLock} from "./sessionLock.js";

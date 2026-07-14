@@ -99,14 +99,14 @@
             <div class="grid grid-cols-3 gap-1">
               @for (align of paintTextAlignments; track align) {
                 <button
-                  class="h-7 rounded-lg border-2 border-taupe-950 text-xs font-black transition active:scale-95"
+                  class="flex items-center justify-center h-7 rounded-lg border-2 border-taupe-950 text-xs font-black transition active:scale-95"
                   type="button"
                   [class.bg-stick-yellow]="settings().align === align"
                   [class.bg-white]="settings().align !== align"
                   (click)="styleChanged.emit({align})"
                   [attr.aria-label]="'Text ' + textAlignLabel(align)"
                   [title]="textAlignLabel(align)">
-                  {{ align === 'left' ? '←' : align === 'center' ? '↔' : '→' }}
+                  <app-svg [name]="align === 'left' ? 'icon-hor-left' : align === 'center' ? 'icon-hor-center' : 'icon-hor-right'" [w]="20"></app-svg>
                 </button>
               }
             </div>
@@ -116,14 +116,14 @@
             <div class="grid grid-cols-3 gap-1">
               @for (align of paintTextVerticalAlignments; track align) {
                 <button
-                  class="h-7 rounded-lg border-2 border-taupe-950 text-xs font-black transition active:scale-95"
+                  class="flex items-center justify-center h-7 rounded-lg border-2 border-taupe-950 text-xs font-black transition active:scale-95"
                   type="button"
                   [class.bg-stick-yellow]="settings().verticalAlign === align"
                   [class.bg-white]="settings().verticalAlign !== align"
                   (click)="styleChanged.emit({verticalAlign: align})"
                   [attr.aria-label]="'Text ' + textVerticalAlignLabel(align)"
                   [title]="textVerticalAlignLabel(align)">
-                  {{ align === 'top' ? '↑' : align === 'middle' ? '↕' : '↓' }}
+                  <app-svg [name]="align === 'top' ? 'icon-vert-top' : align === 'middle' ? 'icon-vert-center' : 'icon-vert-bottom'" [w]="20"></app-svg>
                 </button>
               }
             </div>

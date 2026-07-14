@@ -1,4 +1,4 @@
-import type {PlayerSticker} from "@birthday/shared";
+import type {PlayerSticker} from "@stickermania/shared";
 import {PlayerStickerLibraryCommand, PlayerStickerLibraryCommandService} from "./player-sticker-library.commands";
 
 const sticker = (overrides: Partial<PlayerSticker> = {}): PlayerSticker => ({

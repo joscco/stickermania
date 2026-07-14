@@ -1,4 +1,4 @@
-import type { ClientKind } from "@birthday/shared";
+import type { ClientKind } from "@stickermania/shared";
 
 export interface ConnectedClientSession {
   playerId: string;

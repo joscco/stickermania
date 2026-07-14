@@ -1,6 +1,6 @@
 import {CommonModule} from "@angular/common";
 import {AfterViewInit, Component, ElementRef, NgZone, OnDestroy, ViewChild, effect, input, signal} from "@angular/core";
-import type {BoardStickerPlacement, StickerDefinition} from "@birthday/shared";
+import type {BoardStickerPlacement, StickerDefinition} from "@stickermania/shared";
 import type {Application, Container, TilingSprite} from "pixi.js";
 import type {PlacementBadge} from "../labels/sticker-board-label-layout";
 import type {BoardBounds} from "../geometry/sticker-board-types";

@@ -1,5 +1,5 @@
 import {computed, signal, type Signal} from "@angular/core";
-import type {StickerDefinition, StickerPlacement} from "@birthday/shared";
+import type {StickerDefinition, StickerPlacement} from "@stickermania/shared";
 import type {BoundingBox, Point, SelectionInfo} from "../../model/types";
 import * as ops from "../../model/sticker-placement-ops";
 import type {CanvasSelectionState} from "../state/canvas-selection.state";

@@ -1,6 +1,6 @@
 import {Injectable} from "@angular/core";
 import {HttpClient} from "@angular/common/http";
-import type {SessionInfo, SessionState, StickerAssetManifest} from "@birthday/shared";
+import type {SessionInfo, SessionState, StickerAssetManifest} from "@stickermania/shared";
 import {firstValueFrom} from "rxjs";
 
 export interface ResolvedSessionInfo {

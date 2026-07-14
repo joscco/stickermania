@@ -2,7 +2,7 @@ import {Component, computed, OnDestroy, OnInit, signal} from "@angular/core";
 import {ActivatedRoute, Router} from "@angular/router";
 import {PlayerScreenDataService} from './player-screen-data.service';
 import {PlayerScreen} from './player-screen.enum';
-import type {BoardStickerPlacement, PlayerSticker, StickerDefinition} from '@birthday/shared';
+import type {BoardStickerPlacement, PlayerSticker, StickerDefinition} from '@stickermania/shared';
 import {PlayerReconnectingComponent} from './scenes/statuses/reconnecting/player-reconnecting.component';
 import {PlayerConnectingComponent} from './scenes/statuses/connecting/player-connecting.component';
 import {PlayerDisconnectedComponent} from './scenes/statuses/disconnected/player-disconnected.component';

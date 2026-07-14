@@ -1,4 +1,4 @@
-import type {StickerDefinition, StickerPlacement} from "@birthday/shared";
+import type {StickerDefinition, StickerPlacement} from "@stickermania/shared";
 import {setStickerIntrinsicSizeForTesting} from "../../model/sticker-intrinsic-size";
 import {
   clampPlacementsToBounds,

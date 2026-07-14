@@ -1,5 +1,5 @@
 import { Injectable, signal } from "@angular/core";
-import type { ClientToServerMessage, ServerToClientMessage } from "@birthday/shared";
+import type { ClientToServerMessage, ServerToClientMessage } from "@stickermania/shared";
 
 /**
  * idle         – connect() has never been called

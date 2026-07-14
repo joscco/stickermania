@@ -1,4 +1,4 @@
-import {type BoardStickerPlacement, type StickerPlacement} from "@birthday/shared";
+import {type BoardStickerPlacement, type StickerPlacement} from "@stickermania/shared";
 import type {BoardBounds, BoardPoint} from "./sticker-board-types";
 export {wheelZoomFactor} from "../../../input/wheel-zoom";
 

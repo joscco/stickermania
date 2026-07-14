@@ -1,5 +1,5 @@
 import {Component, computed, input, output} from "@angular/core";
-import type {StickerDefinition, StickerPlacement} from "@birthday/shared";
+import type {StickerDefinition, StickerPlacement} from "@stickermania/shared";
 import * as renderModel from "./sticker-canvas-render-model";
 import * as stickerTransformer from "./sticker-transform.util";
 import {StickerAnimState, StickerItemComponent} from '../../primitives/sticker-item/sticker-item.component';

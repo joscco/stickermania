@@ -1,7 +1,7 @@
 import {AfterViewChecked, AfterViewInit, Component, computed, effect, ElementRef, input, OnDestroy, output, signal, ViewChild,} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import type {StickerDefinition, StickerPlacement} from '@birthday/shared';
-import {STICKERMANIA_CONFIG} from '@birthday/shared/stickermaniaConfig';
+import type {StickerDefinition, StickerPlacement} from '@stickermania/shared';
+import {STICKERMANIA_CONFIG} from '@stickermania/shared/stickermaniaConfig';
 import {hitTestOnCanvas, StickerHitGeometry} from './interaction/sticker-hit-test.util';
 import type {GestureCallbacks} from './interaction/sticker-gesture-handler';
 import {StickerGestureHandler} from './interaction/sticker-gesture-handler';

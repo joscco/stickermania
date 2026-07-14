@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
-import type {ClientKind, SessionPlayer, SessionState, StickerCollageServerEvent} from "@birthday/shared";
-import {STICKERMANIA_CONFIG} from "@birthday/shared/stickermaniaConfig";
+import type {ClientKind, SessionPlayer, SessionState, StickerCollageServerEvent} from "@stickermania/shared";
+import {STICKERMANIA_CONFIG} from "@stickermania/shared/stickermaniaConfig";
 import type {AssetRepository} from "../../infrastructure/assetRepository.js";
 import type {ConnectedClientSession, RuntimeEntry} from "../session-management/sessionRuntimeTypes.js";
 import type {SessionStateFactory} from "../session-management/sessionStateFactory.js";
