@@ -87,7 +87,7 @@ export const STICKERMANIA_CONFIG = {
         defaultPort: 3001,
     },
     session: {
-        ttlHours: 24,
+        ttlHours: 14 * 24,
         codeLength: 4,
     },
     player: {
