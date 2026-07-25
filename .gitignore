@@ -50,10 +50,6 @@ gcloud*.json
 apps/electron/signing/*.p12
 apps/electron/signing/*.cer
 
-# Local config with credentials – copy from *.example.json and fill in
-game.config.json
-wlan/wlan-config.json
-wlan/wlan-qr.png
 /.data/
 /apps/backend/.data/
 /screenshots/

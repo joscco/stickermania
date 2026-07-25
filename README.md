@@ -119,14 +119,16 @@ Cloud configuration must stay out of the repository:
 ```bash
 cp .env.cloud.example .env.cloud
 # fill .env.cloud
-set -a
-source .env.cloud
-set +a
 ```
 
-Required values:
+The cloud npm scripts load `.env.cloud` automatically. Environment variables
+set in the shell take precedence.
 
-- `GCP_PROJECT` or `GOOGLE_CLOUD_PROJECT`
+The cloud scripts use `GCP_PROJECT` or `GOOGLE_CLOUD_PROJECT` when set. Otherwise,
+they use the active project from `gcloud config get-value project`.
+
+Required value:
+
 - `ADMIN_PASSWORD` for `cloud:deploy` and `cloud:start`
 
 Commands:

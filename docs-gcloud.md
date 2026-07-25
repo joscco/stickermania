@@ -14,22 +14,26 @@ Diese Anleitung beschreibt den Cloud-Modus von stickermania. Persönliche Projek
 ```bash
 cp .env.cloud.example .env.cloud
 # .env.cloud ausfüllen
-set -a
-source .env.cloud
-set +a
 ```
 
-Pflichtwerte:
+Die Cloud-NPM-Skripte laden `.env.cloud` automatisch. Bereits in der Shell
+gesetzte Umgebungsvariablen haben Vorrang.
+
+Die Cloud-Skripte verwenden `GCP_PROJECT` oder `GOOGLE_CLOUD_PROJECT`, wenn eine
+der Variablen gesetzt ist. Andernfalls übernehmen sie automatisch das aktive
+Projekt aus `gcloud config get-value project`.
+
+Pflichtwert:
 
 | Variable | Bedeutung |
 |---|---|
-| `GCP_PROJECT` | Google-Cloud-Projekt-ID |
 | `ADMIN_PASSWORD` | Board-Passwort für Cloud-Deployments |
 
 Optionale Werte:
 
 | Variable | Default |
 |---|---|
+| `GCP_PROJECT` | Aktives Projekt aus der lokalen `gcloud`-Konfiguration |
 | `CLOUD_REGION` | `europe-west1` |
 | `CLOUD_RUN_SERVICE` | `stickermania` |
 | `ARTIFACT_REPOSITORY` | Wert von `CLOUD_RUN_SERVICE` |

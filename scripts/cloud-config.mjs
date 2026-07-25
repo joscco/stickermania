@@ -1,9 +1,10 @@
+import {execFileSync} from "node:child_process";
 import {writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
 import path from "node:path";
 
 export function getCloudConfig() {
-  const project = readRequiredEnv(["GCP_PROJECT", "GOOGLE_CLOUD_PROJECT"]);
+  const project = readCloudProject();
   const region = readOptionalEnv("CLOUD_REGION") || "europe-west1";
   const service = readOptionalEnv("CLOUD_RUN_SERVICE") || "stickermania";
   const artifactRepository = readOptionalEnv("ARTIFACT_REPOSITORY") || service;
@@ -57,13 +58,30 @@ export function writeCloudEnvFile(config) {
   return envFile;
 }
 
-function readRequiredEnv(names) {
-  const value = names.map(readOptionalEnv).find(Boolean);
-  if (value) {
-    return value;
+function readCloudProject() {
+  const envProject = ["GCP_PROJECT", "GOOGLE_CLOUD_PROJECT"]
+    .map(readOptionalEnv)
+    .find(Boolean);
+  if (envProject) {
+    return envProject;
   }
 
-  throw new Error(`Missing required env var: ${names.join(" or ")}`);
+  try {
+    const gcloudProject = execFileSync(
+      "gcloud",
+      ["config", "get-value", "project"],
+      {encoding: "utf8", stdio: ["ignore", "pipe", "ignore"]},
+    ).trim();
+    if (gcloudProject && gcloudProject !== "(unset)") {
+      return gcloudProject;
+    }
+  } catch {
+    // The actionable error below covers a missing CLI and missing configuration.
+  }
+
+  throw new Error(
+    "Missing Google Cloud project. Set GCP_PROJECT or GOOGLE_CLOUD_PROJECT, or run: gcloud config set project PROJECT_ID",
+  );
 }
 
 function readOptionalEnv(name) {
