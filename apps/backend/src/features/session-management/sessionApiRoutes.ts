@@ -54,7 +54,6 @@ export async function registerSessionManagementApiRoutes(
             sessionCode: session.sessionCode,
             playerCount: Object.keys(session.players).length,
             createdAt: session.createdAt,
-            expiresAt: session.expiresAt,
         }));
     });
 
@@ -89,8 +88,7 @@ export async function registerSessionManagementApiRoutes(
         return {
             sessionId: state.sessionId,
             sessionCode: state.sessionCode,
-            createdAt: state.createdAt,
-            expiresAt: state.expiresAt
+            createdAt: state.createdAt
         };
     });
 

@@ -48,7 +48,6 @@ export interface StickerCollageGameConfig {
 export interface GameConfig {
     port: number;
     adminPassword: string | null;
-    sessionTtlHours: number;
     stickerCollage: StickerCollageGameConfig;
 }
 
@@ -81,7 +80,6 @@ export interface SessionState {
     revision: number;
     updatedAt: number;
     createdAt: number;
-    expiresAt: number;
 }
 
 export interface SessionInfo {
@@ -90,7 +88,6 @@ export interface SessionInfo {
     playerJoinUrl: string;
     boardUrl: string;
     createdAt: number;
-    expiresAt: number;
 }
 
 export type SessionClientToServerMessage =

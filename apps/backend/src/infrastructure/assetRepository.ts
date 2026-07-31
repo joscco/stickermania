@@ -21,6 +21,7 @@ export interface AssetRepository {
   saveSticker(args: { sessionId: string; playerId: string; playerName: string; stickerId: string; imageDataUrl: string }): Promise<SavedAsset>;
   saveStickerLayer(args: { sessionId: string; stickerId: string; layer: "base" | "paint"; imageDataUrl: string }): Promise<SavedAsset>;
   deleteSticker(args: { assetPath: string }): Promise<void>;
+  deleteSessionAssets(sessionId: string): Promise<void>;
   listSessionAssets(sessionId: string): Promise<SessionAssetInfo[]>;
   readAsset(assetPath: string): Promise<ReadAssetResult | null>;
 }

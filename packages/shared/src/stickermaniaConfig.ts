@@ -7,8 +7,6 @@ export interface StickermaniaAppConfig {
         defaultPort: number;
     };
     session: {
-        /** How long sessions are retained after creation when no longer actively used. */
-        ttlHours: number;
         /** Number of digits players enter to join a session. */
         codeLength: number;
     };
@@ -87,7 +85,6 @@ export const STICKERMANIA_CONFIG = {
         defaultPort: 3001,
     },
     session: {
-        ttlHours: 14 * 24,
         codeLength: 4,
     },
     player: {
@@ -142,7 +139,6 @@ export const STICKERMANIA_CONFIG = {
 export const DEFAULT_GAME_CONFIG: GameConfig = {
     port: STICKERMANIA_CONFIG.runtime.defaultPort,
     adminPassword: null,
-    sessionTtlHours: STICKERMANIA_CONFIG.session.ttlHours,
     stickerCollage: {
         catalog: cloneStickerCatalog(DEFAULT_STICKER_CATALOG),
     },

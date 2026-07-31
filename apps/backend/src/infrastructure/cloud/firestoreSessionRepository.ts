@@ -47,13 +47,6 @@ export class FirestoreSessionRepository implements SessionRepository {
     return snapshot.docs.map(doc => doc.data() as SessionState);
   }
 
-  public async listExpired(now: number): Promise<SessionState[]> {
-    const snapshot = await this.collection()
-      .where("expiresAt", "<=", now)
-      .get();
-    return snapshot.docs.map(doc => doc.data() as SessionState);
-  }
-
   private collection() {
     return this.firestore.collection(this.collectionName);
   }

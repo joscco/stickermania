@@ -82,7 +82,6 @@ export function createEmptySessionState(args: {
         revision: 0,
         updatedAt: now,
         createdAt: now,
-        expiresAt: now + args.config.sessionTtlHours * 60 * 60 * 1000,
     };
 }
 

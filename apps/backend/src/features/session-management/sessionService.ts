@@ -16,6 +16,15 @@ const SESSION_CODE_ALPHABET = "0123456789";
 const HOST_SESSION_ID = "host-game";
 const HOST_SESSION_CODE = "HOST";
 
+function removeLegacySessionExpiry(state: SessionState): boolean {
+    const legacyState = state as SessionState & {expiresAt?: unknown};
+    if (!Object.prototype.hasOwnProperty.call(legacyState, "expiresAt")) {
+        return false;
+    }
+    delete legacyState.expiresAt;
+    return true;
+}
+
 function generateSessionCode(length: number = STICKERMANIA_CONFIG.session.codeLength): string {
     let code = "";
     for (let i = 0; i < length; i += 1) {
@@ -74,7 +83,6 @@ export class SessionService {
             playerJoinUrl: `${args.baseUrl}/join/${encodeURIComponent(sessionCode)}`,
             boardUrl: `${args.baseUrl}/board/${encodeURIComponent(sessionCode)}`,
             createdAt: state.createdAt,
-            expiresAt: state.expiresAt,
         };
     }
 
@@ -102,11 +110,8 @@ export class SessionService {
 
     public async listSessions(): Promise<SessionState[]> {
         const allSessions = await this.sessionRepository.listAll();
-        const now = Date.now();
-        const activeSessions = allSessions.filter(session => this.isSessionRetained(session, now));
-        await Promise.all(activeSessions.map(session => this.normalizeStoredExpiry(session, now)));
-        return activeSessions
-            .sort((a, b) => b.createdAt - a.createdAt);
+        await Promise.all(allSessions.map(session => this.normalizeLoadedState(session)));
+        return allSessions.sort((a, b) => b.createdAt - a.createdAt);
     }
 
     public async loadState(sessionId: string): Promise<SessionState | null> {
@@ -125,6 +130,7 @@ export class SessionService {
             return false;
         }
 
+        await this.assetRepository.deleteSessionAssets(sessionId);
         await this.sessionRepository.delete(sessionId);
         this.runtimes.delete(sessionId);
         return true;
@@ -233,43 +239,17 @@ export class SessionService {
         throw new Error("Could not generate unique session code");
     }
 
-    private sessionRetentionMs(): number {
-        return this.config.sessionTtlHours * 60 * 60 * 1000;
-    }
-
-    private retainedUntil(state: SessionState): number {
-        return state.createdAt + this.sessionRetentionMs();
-    }
-
-    private isSessionRetained(state: SessionState, now: number): boolean {
-        return Math.max(state.expiresAt, this.retainedUntil(state)) > now;
-    }
-
     private async normalizeLoadedState(state: SessionState | null): Promise<SessionState | null> {
         if (!state) {
             return null;
         }
 
-        const now = Date.now();
-        if (!this.isSessionRetained(state, now)) {
-            return null;
-        }
-
-        await this.normalizeStoredExpiry(state, now);
-        if (reconcilePlayerStickerPacks(state.gameState, state.players)) {
+        const legacyExpiryRemoved = removeLegacySessionExpiry(state);
+        const stickerPacksChanged = reconcilePlayerStickerPacks(state.gameState, state.players);
+        if (legacyExpiryRemoved || stickerPacksChanged) {
             await this.sessionRepository.save(state);
         }
         return state;
-    }
-
-    private async normalizeStoredExpiry(state: SessionState, now: number): Promise<void> {
-        const retainedUntil = this.retainedUntil(state);
-        if (state.expiresAt >= retainedUntil || retainedUntil <= now) {
-            return;
-        }
-
-        state.expiresAt = retainedUntil;
-        await this.sessionRepository.save(state);
     }
 
     private toSessionInfo(state: SessionState, baseUrl: string): SessionInfo {
@@ -279,7 +259,6 @@ export class SessionService {
             playerJoinUrl: `${baseUrl}/?view=player`,
             boardUrl: `${baseUrl}/?view=board`,
             createdAt: state.createdAt,
-            expiresAt: state.expiresAt,
         };
     }
 

@@ -64,6 +64,5 @@ export function makeSessionState(
     revision: 1,
     updatedAt: Date.now(),
     createdAt: Date.now(),
-    expiresAt: Date.now() + 86_400_000,
   };
 }

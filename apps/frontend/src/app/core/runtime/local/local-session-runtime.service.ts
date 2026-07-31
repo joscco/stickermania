@@ -39,7 +39,6 @@ export class LocalSessionRuntimeService {
       sessionCode: session.sessionCode,
       playerCount: Object.keys(session.players).length,
       createdAt: session.createdAt,
-      expiresAt: session.expiresAt,
     }));
   }
 
@@ -77,7 +76,6 @@ export class LocalSessionRuntimeService {
         sessionId: info.sessionId,
         sessionCode: info.sessionCode,
         createdAt: info.createdAt,
-        expiresAt: info.expiresAt,
       };
     }
     const state = await this.db.getSessionByCode(sessionCode);
@@ -109,7 +107,9 @@ export class LocalSessionRuntimeService {
     if (!state) {
       throw new Error("Session not found.");
     }
-    if (await this.migrateInlineDataUrlsToAssets(state)) {
+    const legacyExpiryRemoved = this.removeLegacySessionExpiry(state);
+    const inlineAssetsMigrated = await this.migrateInlineDataUrlsToAssets(state);
+    if (legacyExpiryRemoved || inlineAssetsMigrated) {
       await this.savePersistedSessionState(state);
     }
     return state;
@@ -216,6 +216,7 @@ export class LocalSessionRuntimeService {
 
     backup.state.sessionId = LOCAL_GAME_ID;
     backup.state.sessionCode = LOCAL_GAME_CODE;
+    this.removeLegacySessionExpiry(backup.state);
 
     const existing = await this.db.getSession(LOCAL_GAME_ID);
     if (existing) {
@@ -236,7 +237,6 @@ export class LocalSessionRuntimeService {
       sessionCode: backup.state.sessionCode,
       playerCount: Object.keys(backup.state.players).length,
       createdAt: backup.state.createdAt,
-      expiresAt: backup.state.expiresAt,
     };
   }
 
@@ -453,6 +453,15 @@ export class LocalSessionRuntimeService {
     return JSON.parse(JSON.stringify(value)) as T;
   }
 
+  private removeLegacySessionExpiry(state: SessionState): boolean {
+    const legacyState = state as SessionState & {expiresAt?: unknown};
+    if (!Object.prototype.hasOwnProperty.call(legacyState, "expiresAt")) {
+      return false;
+    }
+    delete legacyState.expiresAt;
+    return true;
+  }
+
   private revokeObjectUrl(assetId: string): void {
     const url = this.objectUrls.get(assetId);
     if (!url) return;
@@ -473,7 +482,6 @@ export class LocalSessionRuntimeService {
       sessionId: state.sessionId,
       sessionCode: state.sessionCode,
       createdAt: state.createdAt,
-      expiresAt: state.expiresAt,
     };
   }
 
@@ -485,7 +493,6 @@ export class LocalSessionRuntimeService {
       playerJoinUrl: `${baseUrl}?view=player`,
       boardUrl: `${baseUrl}?view=board`,
       createdAt: state.createdAt,
-      expiresAt: state.expiresAt,
     };
   }
 
@@ -497,7 +504,6 @@ export class LocalSessionRuntimeService {
     return typeof state.sessionId === "string"
       && typeof state.sessionCode === "string"
       && typeof state.createdAt === "number"
-      && typeof state.expiresAt === "number"
       && typeof state.revision === "number"
       && !!state.players
       && !!state.gameState

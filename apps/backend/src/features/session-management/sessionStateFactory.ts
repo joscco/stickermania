@@ -22,8 +22,6 @@ export class SessionStateFactory {
             revision: 0,
             updatedAt: now,
             createdAt: now,
-            // expire after the configured retention window
-            expiresAt: now + this.config.sessionTtlHours * 60 * 60 * 1000,
         };
     }
 

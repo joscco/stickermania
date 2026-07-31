@@ -76,6 +76,23 @@ export class CloudStorageAssetRepository implements AssetRepository {
     }
   }
 
+  public async deleteSessionAssets(sessionId: string): Promise<void> {
+    if (!/^[a-zA-Z0-9_-]+$/u.test(sessionId)) {
+      throw new Error("Invalid session ID");
+    }
+
+    const [files] = await this.bucket().getFiles({prefix: `assets/${sessionId}/`});
+    await Promise.all(files.map(async file => {
+      try {
+        await file.delete();
+      } catch (error) {
+        if ((error as {code?: number}).code !== 404) {
+          throw error;
+        }
+      }
+    }));
+  }
+
   public async listSessionAssets(sessionId: string): Promise<SessionAssetInfo[]> {
     const [files] = await this.bucket().getFiles({prefix: `assets/${sessionId}/`});
     return files

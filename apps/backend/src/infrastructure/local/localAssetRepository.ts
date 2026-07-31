@@ -82,6 +82,20 @@ export class LocalAssetRepository implements AssetRepository {
     }
   }
 
+  public async deleteSessionAssets(sessionId: string): Promise<void> {
+    if (!/^[a-zA-Z0-9_-]+$/u.test(sessionId)) {
+      throw new Error("Invalid session ID");
+    }
+
+    const assetsRoot = path.resolve(this.dataRoot, "assets");
+    const sessionAssetsPath = path.resolve(assetsRoot, sessionId);
+    if (!sessionAssetsPath.startsWith(assetsRoot + path.sep)) {
+      throw new Error("Invalid session asset path");
+    }
+
+    await fs.promises.rm(sessionAssetsPath, {recursive: true, force: true});
+  }
+
   public async listSessionAssets(sessionId: string): Promise<SessionAssetInfo[]> {
     const sessionAssetsPath = path.resolve(this.dataRoot, "assets", sessionId);
     const result: SessionAssetInfo[] = [];

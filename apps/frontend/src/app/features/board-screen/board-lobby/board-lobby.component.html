@@ -33,7 +33,8 @@
           Keine aktiven Sessions vorhanden.
         </div>
       } @else {
-        <div animGroup="opacity" [animDelay]="0.25" class="overflow-y-visible scrollbar-none space-y-2 pb-4">
+        <div animGroup="opacity" [animDelay]="0.25"
+             class="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-none space-y-2 pb-4 pr-1">
           @for (session of sessions(); track session.sessionId) {
             <div
               animOnInit="opacity"
@@ -96,7 +97,7 @@
               <button
                 class="shrink-0 rounded-lg p-2 text-taupe-400 hover:text-taupe-600 hover:bg-taupe-50 transition-colors"
                 title="Session löschen"
-                (click)="deleteSession(session.sessionId, $event)"
+                (click)="deleteSession(session.sessionId, session.sessionCode, $event)"
               >
                 <app-svg name="icon-trash" w="20"/>
               </button>

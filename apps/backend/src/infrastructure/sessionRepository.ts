@@ -7,5 +7,4 @@ export interface SessionRepository {
   save(sessionState: SessionState): Promise<void>;
   delete(sessionId: string): Promise<void>;
   listAll(): Promise<SessionState[]>;
-  listExpired(now: number): Promise<SessionState[]>;
 }

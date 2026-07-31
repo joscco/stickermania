@@ -14,7 +14,7 @@ import {SessionRuntimeService} from '../../../core/runtime/session-runtime.servi
   standalone: true,
   imports: [CommonModule, AnimOnInitDirective, AnimGroupDirective, PageRootDirective, AnimPresenceDirective, SvgComponent],
   templateUrl: "./board-lobby.component.html",
-  host: {"class": "h-full"}
+  host: {"class": "block h-full min-h-0 overflow-hidden"}
 })
 export class BoardLobbyComponent implements OnInit {
   public readonly sessionCreated = output<string>();
@@ -56,14 +56,19 @@ export class BoardLobbyComponent implements OnInit {
     this.transitions.leaveAndNavigate(() => this.sessionCreated.emit(code));
   }
 
-  public async deleteSession(sessionId: string, event: Event): Promise<void> {
+  public async deleteSession(sessionId: string, sessionCode: string, event: Event): Promise<void> {
     event.stopPropagation();
     if (this.isSessionLeaving(sessionId)) return;
+    if (!window.confirm(`Session ${sessionCode} endgültig löschen? Alle Bilder und Sticker dieser Session werden ebenfalls gelöscht.`)) {
+      return;
+    }
 
     try {
       await this.sessionRuntime.deleteSession(sessionId);
       this.startSessionLeave(sessionId);
-    } catch { /* ignore */ }
+    } catch {
+      this.errorText.set(`Session ${sessionCode} konnte nicht gelöscht werden.`);
+    }
   }
 
   public downloadState(sessionId: string): "idle" | "loading" | "done" | "error" {

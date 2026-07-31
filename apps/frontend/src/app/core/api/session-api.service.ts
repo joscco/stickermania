@@ -7,7 +7,6 @@ export interface ResolvedSessionInfo {
   sessionId: string;
   sessionCode: string;
   createdAt: number;
-  expiresAt: number;
 }
 
 export interface SessionSummary {
@@ -15,7 +14,6 @@ export interface SessionSummary {
   sessionCode: string;
   playerCount: number;
   createdAt: number;
-  expiresAt: number;
 }
 
 export interface RuntimeInfo {

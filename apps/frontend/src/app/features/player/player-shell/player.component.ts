@@ -107,7 +107,6 @@ export class PlayerComponent implements OnInit, OnDestroy {
           sessionId: (localGame ?? hostGame)!.sessionId,
           sessionCode: (localGame ?? hostGame)!.sessionCode,
           createdAt: (localGame ?? hostGame)!.createdAt,
-          expiresAt: (localGame ?? hostGame)!.expiresAt,
         }
         : await this.sessionRuntime.resolveSessionByCode(sessionCode);
       this.sessionStore.setSession(resolved.sessionId);
