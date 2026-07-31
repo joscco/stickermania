@@ -83,14 +83,14 @@
             @for (sticker of currentStickers(); track sticker.id) {
               <button animOnInit="players" [animDelay]="stickerAnimDelay($index)"
                 type="button"
-                class="checkerboard-sm relative aspect-square w-full max-w-[120px] rounded-[1rem] bg-white p-1.5 active:translate-x-0.5 active:translate-y-0.5 signature-frame min-[390px]:rounded-[1.25rem] min-[390px]:p-2"
+                class="checkerboard-sm relative aspect-square w-full max-w-[120px] overflow-hidden rounded-[1rem] bg-white active:translate-x-0.5 active:translate-y-0.5 signature-frame min-[390px]:rounded-[1.25rem]"
                 (click)="onStickerSelected($event, sticker)"
                 [title]="sticker.name || sticker.id"
               >
                 <app-sticker-img
                   [imageUrl]="sticker.imageUrl"
                   [alt]="sticker.name || sticker.id"
-                  class="pointer-events-none h-full w-full select-none"
+                  class="pointer-events-none absolute inset-1.5 select-none min-[390px]:inset-2"
                 />
               </button>
             }
